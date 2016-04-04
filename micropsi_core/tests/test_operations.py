@@ -50,3 +50,5 @@ def test_autoalign_operation(test_nodenet):
     assert p1.position[0] == p2.position[0]
     assert p1.position[1] < p2.position[1]
     assert p2.position[1] == p3.position[1]
+    result, data = runtime.run_operation(test_nodenet, "autoalign", {}, [p1.uid])
+    assert 'error' in data

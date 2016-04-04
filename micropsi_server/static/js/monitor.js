@@ -15,7 +15,11 @@ $(function(){
     var currentMonitors = [];
 
     var currentSimulationStep = 0;
-    var currentNodenet = $.cookie('selected_nodenet');
+    var currentNodenet = '';
+    var cookieval = $.cookie('selected_nodenet');
+    if (cookieval && cookieval.indexOf('/')){
+        currentNodenet = cookieval.split('/')[0];
+    }
 
     var capturedLoggers = {
         'system': false,
@@ -80,6 +84,10 @@ $(function(){
         currentNodenet = newNodenet;
         init();
     });
+    $(document).on('nodenet_loaded', function(data, newNodenet){
+        currentNodenet = newNodenet;
+        refreshMonitors();
+    });
 
     log_container.on('click', '.logentry', function(event){
         var el = $(this)
@@ -101,26 +109,7 @@ $(function(){
 
     function init() {
         bindEvents();
-        if (currentNodenet = $.cookie('selected_nodenet')) {
-            $('#loading').show();
-            api.call('load_nodenet', {
-                nodenet_uid: currentNodenet,
-                include_links: false
-            }, function(data) {
-                $('#loading').hide();
-                refreshMonitors();
-            },
-            function(data) {
-                $('#loading').hide();
-                if(data.status == 500){
-                    api.defaultErrorCallback(data);
-                } else {
-                    currentNodenet = null;
-                    $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
-                    dialogs.notification(data.data, "Info");
-                }
-            });
-        }
+        refreshMonitors();
     }
 
     function getPollParams(){

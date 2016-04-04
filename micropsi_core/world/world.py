@@ -82,7 +82,7 @@ class World(object):
     supported_worldadapters = ['Default']
 
     def __init__(self, filename, world_type="", name="", owner="", uid=None, engine=None, version=WORLD_VERSION, config={}):
-        """Create a new MicroPsi simulation environment.
+        """Create a new MicroPsi world environment.
 
         Arguments:
             filename: the path and filename of the world data
@@ -187,7 +187,7 @@ class World(object):
                 del self.agents[uid]
 
     def get_world_view(self, step):
-        """ returns a list of world objects, and the current step of the simulation """
+        """ returns a list of world objects, and the current step of the calculation """
         return {
             'objects': self.get_world_objects(),
             'agents': self.data.get('agents', {}),

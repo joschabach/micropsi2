@@ -145,7 +145,7 @@ var api = {
 
     call: function(functionname, params, success_cb, error_cb, method){
         var url = '/rpc/'+functionname;
-        if(method != "post"){
+        if(method == "get"){
             args = '';
             for(var key in params){
                 args += key+'='+encodeURIComponent(JSON.stringify(params[key]))+',';
@@ -154,8 +154,8 @@ var api = {
         }
         $.ajax({
             url: url,
-            data: ((method == "post") ? JSON.stringify(params) : null),
-            type: method || "get",
+            data: ((method != "get") ? JSON.stringify(params) : null),
+            type: method || "post",
             processData: (method == "get"),
             contentType: "application/json",
             success: function(response){
@@ -220,7 +220,7 @@ $(function() {
         dialogs.remote_form_dialog($(event.target).attr('href'));
     }
 
-    $('#menu_nodenet').find('a').on('click', function(event){
+    $('.navbar .nav .dropdown').find('a').on('click', function(event){
         if($(event.target).parent().hasClass("disabled")){
             event.stopImmediatePropagation();
             event.preventDefault();
@@ -233,6 +233,13 @@ $(function() {
             $('#menu_nodenet').find('[data=nodenet-needed]').addClass("disabled")
         }
     });
+    $('a.dropdown-toggle[href=#menu_world]').on('click', function(event){
+        if(currentWorld){
+            $('#menu_world').find('[data=world-needed]').removeClass("disabled")
+        } else {
+            $('#menu_world').find('[data=world-needed]').addClass("disabled")
+        }
+    });
 
     $('a.remote_form_dialog').on('click', remote_form);
 
@@ -241,20 +248,17 @@ $(function() {
         dialogs.remote_form_dialog($(event.target).attr('href'), function(data){
             // refreshNodenetList();  -- TODO: does not work yet (due to paperscript missing proper js integration)
             dialogs.notification('Nodenet created. ID: ' + data.nodenet_uid, 'success');
-            $.cookie('selected_nodenet', data.nodenet_uid, { expires: 7, path: '/' });
+            $.cookie('selected_nodenet', data.nodenet_uid+"/", { expires: 7, path: '/' });
             window.location.reload();
         });
     });
 
     $('.navbar a.nodenet_delete').on('click', function(){
-        if(typeof currentNodenet == 'undefined'){
-            return dialogs.notification("there is no current nodenet selected");
-        }
         dialogs.confirm("Do you really want to delete this nodenet?", function(){
             api.call('delete_nodenet', {nodenet_uid: currentNodenet}, function(data){
                 currentNodenet=null;
                 // refreshNodenetList();  -- TODO: does not work yet (due to paperscript missing proper js integration)
-                $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
+                $.cookie('selected_nodenet', "", { expires: 7, path: '/' });
                 dialogs.notification('Nodenet deleted');
                 window.location.reload();
             });
@@ -263,26 +267,17 @@ $(function() {
 
     $('.navbar a.nodenet_edit').on('click', function(event){
         event.preventDefault();
-        if(typeof currentNodenet == 'undefined'){
-            return dialogs.notification("there is no current nodenet selected");
-        }
         api.call('edit_nodenet', {nodenet_uid: currentNodenet});
     });
 
     $('.navbar a.nodenet_save').on('click', function(event){
         event.preventDefault();
-        if(typeof currentNodenet == 'undefined'){
-            return dialogs.notification("there is no current nodenet selected");
-        }
         $('#loading').show();
         api.call('save_nodenet', {nodenet_uid: currentNodenet});
     });
 
     $('.navbar a.nodenet_revert').on('click', function(event){
         event.preventDefault();
-        if(typeof currentNodenet == 'undefined'){
-            return dialogs.notification("there is no current nodenet selected");
-        }
         $('#loading').show();
         api.call('revert_nodenet', {nodenet_uid: currentNodenet}, function(data){
             dialogs.notification("nodenet reverted");
@@ -293,9 +288,6 @@ $(function() {
 
     $('.navbar a.reload_native_modules').on('click', function(event){
         event.preventDefault();
-        if(typeof currentNodenet == 'undefined'){
-            return dialogs.notification("there is no current nodenet selected");
-        }
         if($(event.target).hasClass("reload_revert")){
             api.call('reload_native_modules', {}, function(){
                 api.call('revert_nodenet', {nodenet_uid: currentNodenet}, function(){
@@ -319,9 +311,6 @@ $(function() {
     });
     $('.navbar a.nodenet_merge').on('click', function(event){
         event.preventDefault();
-        if(typeof currentNodenet == 'undefined'){
-            return dialogs.notification("there is no current nodenet selected");
-        }
         dialogs.remote_form_dialog(event.target.href + '/' + currentNodenet, function(){
             window.location.reload();
         });
@@ -332,6 +321,7 @@ $(function() {
         event.preventDefault();
         dialogs.remote_form_dialog($(event.target).attr('href'), function(data){
             dialogs.notification('World created. ID: ' + data.world_uid, 'success');
+            $(document).trigger('new_world_created', data);
             var url = '/world_list/' + ($.cookie('selected_world') || '');
             $.get(url, {}, function(data){
                 $('#world_list').html(data);
@@ -342,9 +332,6 @@ $(function() {
 
     $('.navbar a.world_delete').on('click', function(event){
         event.preventDefault();
-        if(typeof currentWorld == 'undefined'){
-            return dialogs.notification("there is no current world selected");
-        }
         dialogs.confirm("Do you really want to delete this world?", function(){
             api.call('delete_world',
                 {world_uid: currentWorld},
@@ -359,17 +346,11 @@ $(function() {
 
     $('.navbar a.world_save').on('click', function(event){
         event.preventDefault();
-        if(typeof currentWorld == 'undefined'){
-            return dialogs.notification("there is no current world selected");
-        }
         api.call('save_world', {world_uid: currentWorld});
     });
 
     $('.navbar a.world_revert').on('click', function(event){
         event.preventDefault();
-        if(typeof currentWorld == 'undefined'){
-            return dialogs.notification("there is no current world selected");
-        }
         api.call('revert_world', {world_uid: currentWorld},
             function(){
                 dialogs.notification("World state reverted");
@@ -402,17 +383,11 @@ $(function() {
 
     $('.nodenet_export').on('click', function(event){
         event.preventDefault();
-        if(typeof currentNodenet == 'undefined'){
-            return dialogs.notification("there is no current nodenet selected");
-        }
         window.location.replace(event.target.href + '/' + currentNodenet);
     });
 
     $('.world_export').on('click', function(event){
         event.preventDefault();
-        if(typeof currentWorld == 'undefined'){
-            return dialogs.notification("there is no current world selected");
-        }
         window.location.replace(event.target.href + '/' + currentWorld);
     });
 
@@ -484,8 +459,7 @@ $(function() {
         }, function(data){
             api.defaultErrorCallback(data);
             $('#monitor_modal').modal('hide');
-        },
-        method="post");
+        });
     }
     $('#monitor_modal .btn-primary').on('click', submitMonitorModal);
     $('#monitor_modal form').on('submit', submitMonitorModal);
@@ -680,7 +654,7 @@ updateWorldAdapterSelector = function() {
 
 
 var listeners = {}
-var simulationRunning = false;
+var calculationRunning = false;
 var currentNodenet;
 var runner_properties = {};
 var sections = ['nodenet_editor', 'monitor', 'world_editor'];
@@ -702,7 +676,7 @@ fetch_stepping_info = function(){
         params[key] = listeners[key].input()
     }
     busy = true;
-    api.call('get_current_state', params, success=function(data){
+    api.call('get_calculation_state', params, success=function(data){
         busy = false;
         var start = new Date().getTime();
         window.currentSimulationStep = data.current_nodenet_step;
@@ -715,36 +689,36 @@ fetch_stepping_info = function(){
         $('.nodenet_step').text(data.current_nodenet_step);
         $('.world_step').text(data.current_world_step);
         var text = [];
-        if(data.simulation_condition){
-            if(data.simulation_condition.step_amount){
-                text.push("run " + data.simulation_condition.step_amount + " steps");
-                $('#run_condition_steps').val(data.simulation_condition.step_amount);
+        if(data.calculation_condition){
+            if(data.calculation_condition.step_amount){
+                text.push("run " + data.calculation_condition.step_amount + " steps");
+                $('#run_condition_steps').val(data.calculation_condition.step_amount);
             }
-            if(data.simulation_condition.monitor){
-                text.push('<span style="color: '+data.simulation_condition.monitor.color+';">monitor = ' + data.simulation_condition.monitor.value + '</span>');
-                $('#run_condition_monitor_selector').val(data.simulation_condition.monitor.uid);
-                $('#run_condition_monitor_value').val(data.simulation_condition.monitor.value);
+            if(data.calculation_condition.monitor){
+                text.push('<span style="color: '+data.calculation_condition.monitor.color+';">monitor = ' + data.calculation_condition.monitor.value + '</span>');
+                $('#run_condition_monitor_selector').val(data.calculation_condition.monitor.uid);
+                $('#run_condition_monitor_value').val(data.calculation_condition.monitor.value);
             }
         }
         if(text.length){
-            $('#simulation_controls .runner_condition').html(text.join(" or "));
-            $('#simulation_controls .running_conditional').show();
+            $('#calculation_controls .runner_condition').html(text.join(" or "));
+            $('#calculation_controls .running_conditional').show();
             $('#remove_runner_condition').show();
         } else {
-            $('#simulation_controls .running_conditional').hide();
+            $('#calculation_controls .running_conditional').hide();
             $('#remove_runner_condition').hide();
             $('#set_runner_condition').show();
         }
 
         var end = new Date().getTime();
-        if(data.simulation_running && !busy){
+        if(data.calculation_running && !busy){
             if(runner_properties.timestep - (end - start) > 0){
                 window.setTimeout(fetch_stepping_info, runner_properties.timestep - (end - start));
             } else {
                 $(document).trigger('runner_stepped');
             }
         }
-        setButtonStates(data.simulation_running);
+        setButtonStates(data.calculation_running);
         if(data.user_prompt){
             promptUser(data.user_prompt);
         }
@@ -786,7 +760,7 @@ $(document).on('runner_started', fetch_stepping_info);
 $(document).on('runner_stepped', fetch_stepping_info);
 $(document).on('nodenet_changed', function(event, new_uid){
     currentNodenet = new_uid;
-    $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
+    $.cookie('selected_nodenet', currentNodenet+"/", { expires: 7, path: '/' });
     refreshNodenetList();
 })
 $(document).on('form_submit', function(event, data){
@@ -826,24 +800,24 @@ function setButtonStates(running){
         $(document).prop('title', "▶ " + default_title);
         $('#nodenet_start').addClass('active');
         $('#nodenet_stop').removeClass('active');
-        $('#simulation_controls .runner_running').show();
-        $('#simulation_controls .runner_paused').hide();
+        $('#calculation_controls .runner_running').show();
+        $('#calculation_controls .runner_paused').hide();
     } else {
         $(document).prop('title', default_title);
         $('#nodenet_start').removeClass('active');
         $('#nodenet_stop').addClass('active');
-        $('#simulation_controls .runner_running').hide();
-        $('#simulation_controls .runner_paused').show();
+        $('#calculation_controls .runner_running').hide();
+        $('#calculation_controls .runner_paused').show();
     }
 }
 
 function stepNodenet(event){
     event.preventDefault();
-    if(simulationRunning){
+    if(calculationRunning){
         stopNodenetrunner(event);
     }
     if(currentNodenet){
-        api.call("step_simulation",
+        api.call("step_calculation",
             {nodenet_uid: currentNodenet},
             success=function(data){
                 $(document).trigger('runner_stepped');
@@ -857,7 +831,7 @@ function startNodenetrunner(event){
     event.preventDefault();
     nodenetRunning = true;
     if(currentNodenet){
-        api.call('start_simulation', {nodenet_uid: currentNodenet}, function(){
+        api.call('start_calculation', {nodenet_uid: currentNodenet}, function(){
             $(document).trigger('runner_started');
         });
     } else {
@@ -866,7 +840,7 @@ function startNodenetrunner(event){
 }
 function stopNodenetrunner(event){
     event.preventDefault();
-    api.call('stop_simulation', {nodenet_uid: currentNodenet}, function(){
+    api.call('stop_calculation', {nodenet_uid: currentNodenet}, function(){
         $(document).trigger('runner_stopped');
         nodenetRunning = false;
     });
@@ -878,7 +852,7 @@ function revertAll(event){
     if(currentNodenet){
         $('#loading').show();
         api.call(
-            'revert_simulation',
+            'revert_calculation',
             {nodenet_uid: currentNodenet},
             function(){
                 window.location.reload();
@@ -903,7 +877,15 @@ $.extend( $.fn.dataTableExt.oStdClasses, {
 } );
 
 $(document).ready(function() {
-    currentNodenet = $.cookie('selected_nodenet') || '';
+    var nodenetcookie = $.cookie('selected_nodenet') || '';
+    if (nodenetcookie && nodenetcookie.indexOf('/') > 0){
+        nodenetcookie = nodenetcookie.split("/");
+        currentNodenet = nodenetcookie[0];
+        currentNodeSpace = nodenetcookie[1] || null;
+    } else {
+        currentNodenet = '';
+        currentNodeSpace = '';
+    }
     currentWorld = $.cookie('selected_world') || '';
     $('#nodenet_mgr').dataTable( {
         "sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",

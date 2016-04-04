@@ -86,7 +86,6 @@ def test_register_agent(test_world, test_nodenet):
     world = runtime.worlds[test_world]
     nodenet = runtime.get_nodenet(test_nodenet)
     assert nodenet.uid not in world.data['agents']
-    runtime.load_nodenet(test_nodenet)
     nodenet.world = test_world
     runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
     assert nodenet.uid in world.data['agents']
@@ -117,7 +116,6 @@ def test_set_agent_properties(test_world, test_nodenet):
 def test_agent_dying_unregisters_agent(test_world, test_nodenet):
     world = runtime.worlds[test_world]
     nodenet = runtime.get_nodenet(test_nodenet)
-    runtime.load_nodenet(test_nodenet)
     nodenet.world = test_world
     runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
     assert nodenet.uid in world.agents
@@ -156,7 +154,6 @@ def test_world_does_not_spawn_deleted_agents(test_world, resourcepath):
 def test_reset_datatargets(test_world, test_nodenet):
     world = runtime.worlds[test_world]
     nodenet = runtime.get_nodenet(test_nodenet)
-    runtime.load_nodenet(test_nodenet)
     nodenet.world = test_world
     runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
     world.agents[test_nodenet].datatargets['engine_r'] = 0.7
@@ -169,7 +166,6 @@ def test_reset_datatargets(test_world, test_nodenet):
 def test_worldadapter_update_calls_reset_datatargets(test_world, test_nodenet):
     world = runtime.worlds[test_world]
     nodenet = runtime.get_nodenet(test_nodenet)
-    runtime.load_nodenet(test_nodenet)
     nodenet.world = test_world
     runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
     world.agents[test_nodenet].reset_datatargets = mock.MagicMock(name='reset')

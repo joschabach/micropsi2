@@ -40,8 +40,8 @@ def align(nodenet, nodespace, entity_uids=False):
         sensors = []
         actors = []
         activators = []
-        ymin = min(nodenet.get_node(n).position[1] for n in unaligned_nodes)
-        xmin = min(nodenet.get_node(n).position[0] for n in unaligned_nodes)
+        ymin = min(nodenet.get_node(n).position[1] for n in unaligned_nodes + unaligned_nodespaces)
+        xmin = min(nodenet.get_node(n).position[0] for n in unaligned_nodes + unaligned_nodespaces)
         start_position = (xmin, ymin, 0)
 
     else:

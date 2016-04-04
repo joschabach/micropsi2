@@ -15,18 +15,18 @@
                     <ul class="dropdown-menu">
                         <li><a href="/nodenet/edit" class="nodenet_new">New...</a></li>
                         <li class="divider"></li>
-                        <li  data="nodenet-needed"><a href="#" class="nodenet_delete">Delete</a></li>
-                        <li  data="nodenet-needed"><a href="#" class="nodenet_save">Save</a></li>
-                        <li  data="nodenet-needed"><a href="#" class="nodenet_revert">Revert</a></li>
+                        <li data="nodenet-needed"><a href="#" class="nodenet_delete">Delete</a></li>
+                        <li data="nodenet-needed"><a href="#" class="nodenet_save">Save</a></li>
+                        <li data="nodenet-needed"><a href="#" class="nodenet_revert">Revert</a></li>
                         <li class="divider"></li>
-                        <li  data="nodenet-needed"><a href="#" class="run_recipe">Run a recipe</a></li>
+                        <li data="nodenet-needed"><a href="#" class="run_recipe">Run a recipe</a></li>
                         <li class="divider"></li>
                         <li><a href="#" class="reload_native_modules">Reload Native Modules</a></li>
-                        <li  data="nodenet-needed"><a href="#" class="reload_native_modules reload_revert">Reload &amp; Revert</a></li>
+                        <li data="nodenet-needed"><a href="#" class="reload_native_modules reload_revert">Reload &amp; Revert</a></li>
                         <li class="divider"></li>
-                        <li  data="nodenet-needed"><a href="/nodenet/export" class="nodenet_export">Export to file...</a></li>
+                        <li data="nodenet-needed"><a href="/nodenet/export" class="nodenet_export">Export to file...</a></li>
                         <li><a href="/nodenet/import" class="nodenet_import">Import file...</a></li>
-                        <li  data="nodenet-needed"><a href="/nodenet/merge" class="nodenet_merge">Merge file...</a></li>
+                        <li data="nodenet-needed"><a href="/nodenet/merge" class="nodenet_merge">Merge file...</a></li>
                         %if "manage nodenets" in permissions:
                         <li class="divider"></li>
                         <li><a href="/nodenet_mgt">Show nodenet console...</a></li>
@@ -41,11 +41,11 @@
                     <ul class="dropdown-menu">
                         <li><a href="/world/edit" class="world_new">New...</a></li>
                         <li class="divider"></li>
-                        <li><a href="#" class="world_delete">Delete</a></li>
-                        <li><a href="#" class="world_save">Save</a></li>
-                        <li><a href="#" class="world_revert">Revert</a></li>
+                        <li data="world-needed"><a href="#" class="world_delete">Delete</a></li>
+                        <li data="world-needed"><a href="#" class="world_save">Save</a></li>
+                        <li data="world-needed"><a href="#" class="world_revert">Revert</a></li>
                         <li class="divider"></li>
-                        <li><a href="/world/export" class="world_export">Export to file...</a></li>
+                        <li data="world-needed"><a href="/world/export" class="world_export">Export to file...</a></li>
                         <li><a href="/world/import" class="world_import">Import from file...</a></li>
                     </ul>
                 </li>
@@ -103,7 +103,7 @@
                     %end
                 </div>
             %end
-                <div id="simulation_controls" class="dropdown btn-group pull-right">
+                <div id="calculation_controls" class="dropdown btn-group pull-right">
                     <span class="btn running_indicator disabled">
                         <span class="running_icon runner_paused"><img src="/static/img/resting.gif" /></span>
                         <span class="running_icon runner_running" style="display:none"><img src="/static/img/working.gif" /></span>
@@ -117,16 +117,16 @@
                         Net:<span class="nodenet_step">0</span>
                     </span>
                   <a href="#" id="revert_all" class="btn"  title="revert all" data-nodenet-control><i class="icon-fast-backward"></i></a>
-                  <a href="#" id="nodenet_step_forward" class="btn separated" title="step simulation" data-nodenet-control><i class="icon-step-forward"></i></a>
-                  <a href="#" id="nodenet_start" class="btn" title="run simulation" data-nodenet-control><i class="icon-play"></i></a>
-                  <a href="#" class="btn btn-expand" title="simulation settings" data-toggle="dropdown" data-nodenet-control>
+                  <a href="#" id="nodenet_step_forward" class="btn separated" title="step calculation" data-nodenet-control><i class="icon-step-forward"></i></a>
+                  <a href="#" id="nodenet_start" class="btn" title="run calculation" data-nodenet-control><i class="icon-play"></i></a>
+                  <a href="#" class="btn btn-expand" title="calculation settings" data-toggle="dropdown" data-nodenet-control>
                   ▼</a>
                     <ul id="run_nodenet_choices" class="run_nodenet_choices dropdown-menu">
                         <li><a href="#run" id="remove_runner_condition" data-run="indef">Remove condition</a></li>
                         <li><a href="#condition" id="set_runner_condition" data-run="condition">Set a condition for the runner</a></li>
                     </ul>
 
-                  <a href="#" id="nodenet_stop" title="stop simulation" class="btn" data-nodenet-control><i class="icon-pause"></i></a>
+                  <a href="#" id="nodenet_stop" title="stop calculation" class="btn" data-nodenet-control><i class="icon-pause"></i></a>
                 </div>
 
         </div>

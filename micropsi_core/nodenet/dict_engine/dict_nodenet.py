@@ -145,7 +145,7 @@ class DictNodenet(Nodenet):
         world: an environment for the node net
         worldadapter: an actual world adapter object residing in a world implementation, provides interface
         owner: an id of the user who created the node net
-        step: the current simulation step of the node net
+        step: the current calculation step of the node net
     """
 
     @property
@@ -194,7 +194,7 @@ class DictNodenet(Nodenet):
     def get_data(self, **params):
         data = super().get_data(**params)
         data['nodes'] = self.construct_nodes_dict(**params)
-        data['nodespaces'] = self.construct_nodespaces_dict("Root")
+        data['nodespaces'] = self.construct_nodespaces_dict("Root", transitive=True)
         data['version'] = self._version
         data['modulators'] = self.construct_modulators_dict()
         return data
@@ -202,6 +202,48 @@ class DictNodenet(Nodenet):
     def export_json(self):
         data = self.get_data(complete=True, include_links=False)
         data['links'] = self.construct_links_list()
+        return data
+
+    def get_nodes(self, nodespace_uids=[], include_links=True):
+        """
+        Returns a dict with contents for the given nodespaces
+        """
+        data = {}
+        data['nodes'] = {}
+        data['nodespaces'] = {}
+        followupnodes = []
+        fetch_all = False
+
+        if nodespace_uids == []:
+            nodespace_uids = self.get_nodespace_uids()
+            root = self.get_nodespace(None)
+            data['nodespaces'][root.uid] = root.get_data()
+            fetch_all = True
+        else:
+            nodespace_uids = [self.get_nodespace(uid).uid for uid in nodespace_uids]
+
+        for nodespace_uid in nodespace_uids:
+            data['nodespaces'].update(self.construct_nodespaces_dict(nodespace_uid))
+            nodespace = self.get_nodespace(nodespace_uid)
+            for uid in nodespace.get_known_ids(entitytype="nodes"):
+                node = self.get_node(uid)
+                data['nodes'][uid] = node.get_data(include_links=include_links)
+                if include_links and not fetch_all:
+                    followupnodes.extend(node.get_associated_node_uids())
+
+        if include_links:
+            for uid in set(followupnodes):
+                if uid not in data['nodes']:
+                    node = self.get_node(uid).get_data(include_links=True)
+                    for gate in list(node['links'].keys()):
+                        links = node['links'][gate]
+                        for idx, l in enumerate(links):
+                            if self._nodes[l['target_node_uid']].parent_nodespace not in nodespace_uids:
+                                del links[idx]
+                        if len(node['links'][gate]) == 0:
+                            del node['links'][gate]
+                    data['nodes'][uid] = node
+
         return data
 
     def save(self, filename):
@@ -300,23 +342,28 @@ class DictNodenet(Nodenet):
                 break
         return data
 
-    def construct_nodespaces_dict(self, nodespace_uid):
+    def construct_nodespaces_dict(self, nodespace_uid, transitive=False):
         data = {}
         if nodespace_uid is None:
             nodespace_uid = "Root"
-        for nodespace_candidate_uid in self.get_nodespace_uids():
-            is_in_hierarchy = False
-            if nodespace_candidate_uid == nodespace_uid:
-                is_in_hierarchy = True
-            else:
-                parent_uid = self.get_nodespace(nodespace_candidate_uid).parent_nodespace
-                while parent_uid is not None and parent_uid != nodespace_uid:
-                    parent_uid = self.get_nodespace(parent_uid).parent_nodespace
-                if parent_uid == nodespace_uid:
-                    is_in_hierarchy = True
 
-            if is_in_hierarchy:
-                data[nodespace_candidate_uid] = self.get_nodespace(nodespace_candidate_uid).get_data()
+        if transitive:
+            for nodespace_candidate_uid in self.get_nodespace_uids():
+                is_in_hierarchy = False
+                if nodespace_candidate_uid == nodespace_uid:
+                    is_in_hierarchy = True
+                else:
+                    parent_uid = self.get_nodespace(nodespace_candidate_uid).parent_nodespace
+                    while parent_uid is not None and parent_uid != nodespace_uid:
+                        parent_uid = self.get_nodespace(parent_uid).parent_nodespace
+                    if parent_uid == nodespace_uid:
+                        is_in_hierarchy = True
+
+                if is_in_hierarchy:
+                    data[nodespace_candidate_uid] = self.get_nodespace(nodespace_candidate_uid).get_data()
+        else:
+            for uid in self.get_nodespace(nodespace_uid).get_known_ids('nodespaces'):
+                data[uid] = self.get_nodespace(uid).get_data()
         return data
 
     def get_nodetype(self, type):
@@ -350,12 +397,15 @@ class DictNodenet(Nodenet):
                     data['nodes'][uid] = self.get_node(uid).get_data(include_links=include_links)
         return data
 
-    def get_activation_data(self, nodespace_uid=None, rounded=1):
+    def get_activation_data(self, nodespace_uids=None, rounded=1):
         activations = {}
-        if nodespace_uid is None:
+
+        node_ids = []
+        if nodespace_uids == []:
             node_ids = self._nodes.keys()
         else:
-            node_ids = self.get_nodespace(nodespace_uid).get_known_ids("nodes")
+            for nsuid in nodespace_uids:
+                node_ids.extend(self.get_nodespace(nsuid).get_known_ids("nodes"))
 
         for uid in node_ids:
             node = self.get_node(uid)
@@ -469,7 +519,7 @@ class DictNodenet(Nodenet):
                 self._monitors[mon.uid] = mon
 
     def step(self):
-        """perform a simulation step"""
+        """perform a calculation step"""
         with self.netlock:
 
             self._step += 1
@@ -785,33 +835,45 @@ class DictNodenet(Nodenet):
         from micropsi_core.nodenet import gatefunctions
         return sorted([name for name, func in getmembers(gatefunctions, isfunction)])
 
-    def has_nodespace_changes(self, nodespace_uid, since_step):
-        return self.get_nodespace(nodespace_uid).contents_last_changed >= since_step
+    def has_nodespace_changes(self, nodespace_uids=[], since_step=0):
+        if nodespace_uids == []:
+            nodespace_uids = self.get_nodespace_uids()
 
-    def get_nodespace_changes(self, nodespace_uid, since_step):
-        ns = self.get_nodespace(nodespace_uid)
+        for nodespace_uid in nodespace_uids:
+            if self.get_nodespace(nodespace_uid).contents_last_changed >= since_step:
+                return True
+        return False
+
+    def get_nodespace_changes(self, nodespace_uids=[], since_step=0):
         result = {
             'nodes_dirty': {},
             'nodespaces_dirty': {},
             'nodes_deleted': [],
             'nodespaces_deleted': []
         }
+
+        if nodespace_uids == []:
+            nodespace_uids = self.get_nodespace_uids()
+        else:
+            nodespace_uids = [self.get_nodespace(uid).uid for uid in nodespace_uids]
+
         for i in range(since_step, self.current_step + 1):
             if i in self.deleted_items:
                 result['nodespaces_deleted'].extend(self.deleted_items[i].get('nodespaces_deleted', []))
                 result['nodes_deleted'].extend(self.deleted_items[i].get('nodes_deleted', []))
 
-        for uid in ns.get_known_ids():
-            if uid not in result['nodes_deleted'] and self.is_node(uid):
-                if self.get_node(uid).last_changed >= since_step:
-                    result['nodes_dirty'][uid] = self.get_node(uid).get_data(include_links=True)
-                    for assoc in self.get_node(uid).get_associated_node_uids():
-                        if self.get_node(assoc).parent_nodespace != ns.uid and assoc not in result['nodes_dirty']:
-                            result['nodes_dirty'][assoc] = self.get_node(assoc).get_data(include_links=True)
+        for nsuid in nodespace_uids:
+            for uid in self.get_nodespace(nsuid).get_known_ids():
+                if uid not in result['nodes_deleted'] and self.is_node(uid):
+                    if self.get_node(uid).last_changed >= since_step:
+                        result['nodes_dirty'][uid] = self.get_node(uid).get_data(include_links=True)
+                        for assoc in self.get_node(uid).get_associated_node_uids():
+                            if self.get_node(assoc).parent_nodespace not in nodespace_uids and assoc not in result['nodes_dirty']:
+                                result['nodes_dirty'][assoc] = self.get_node(assoc).get_data(include_links=True)
 
-            elif uid not in result['nodespaces_deleted'] and self.is_nodespace(uid):
-                if self.get_nodespace(uid).last_changed >= since_step:
-                    result['nodespaces_dirty'][uid] = self.get_nodespace(uid).get_data()
+                elif uid not in result['nodespaces_deleted'] and self.is_nodespace(uid):
+                    if self.get_nodespace(uid).last_changed >= since_step:
+                        result['nodespaces_dirty'][uid] = self.get_nodespace(uid).get_data()
         return result
 
     def get_dashboard(self):

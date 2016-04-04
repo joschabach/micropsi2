@@ -195,6 +195,13 @@ class Nodenet(metaclass=ABCMeta):
         return data
 
     @abstractmethod
+    def get_nodes(self, nodespaces=[], include_links=True):
+        """
+        Returns a dict with contents for the given nodespaces
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
     def save(self, filename):
         """
         Saves the nodenet to the given main metadata json file.
@@ -383,7 +390,7 @@ class Nodenet(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
-    def get_activation_data(self, nodespace_uid=None, rounded=1):
+    def get_activation_data(self, nodespace_uids=[], rounded=1):
         """
         Returns a dict of uids to lists of activation values.
         Callers need to know the types of nodes that these activations belong to.
@@ -510,7 +517,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def has_nodespace_changes(self, nodespace_uid, since_step):
+    def has_nodespace_changes(self, nodespace_uids=[], since_step=0):
         """
         Returns true, if the structure of the nodespace has changed since the given step, false otherwise
         Structural changes include everything besides activation
@@ -518,7 +525,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_nodespace_changes(self, nodespace_uid, since_step):
+    def get_nodespace_changes(self, nodespace_uids=[], since_step=0):
         """
         Returns a dictionary of structural changes that happened in the given nodespace
         since the given step
@@ -550,7 +557,7 @@ class Nodenet(metaclass=ABCMeta):
 
     def add_gate_monitor(self, node_uid, gate, sheaf=None, name=None, color=None):
         """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation
-        value in every simulation step.
+        value in every calculation step.
         Returns the uid of the new monitor."""
         mon = monitor.NodeMonitor(self, node_uid, 'gate', gate, sheaf=sheaf, name=name, color=color)
         self._monitors[mon.uid] = mon
@@ -558,7 +565,7 @@ class Nodenet(metaclass=ABCMeta):
 
     def add_slot_monitor(self, node_uid, slot, sheaf=None, name=None, color=None):
         """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
-        value in every simulation step.
+        value in every calculation step.
         Returns the uid of the new monitor."""
         mon = monitor.NodeMonitor(self, node_uid, 'slot', slot, sheaf=sheaf, name=name, color=color)
         self._monitors[mon.uid] = mon
@@ -566,7 +573,7 @@ class Nodenet(metaclass=ABCMeta):
 
     def add_link_monitor(self, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, color=None):
         """Adds a continuous monitor to a link. You can choose to monitor either weight (default) or certainty
-        The monitor will collect respective value in every simulation step.
+        The monitor will collect respective value in every calculation step.
         Returns the uid of the new monitor."""
         mon = monitor.LinkMonitor(self, source_node_uid, gate_type, target_node_uid, slot_type, property=property, name=name, color=color)
         self._monitors[mon.uid] = mon
@@ -574,7 +581,7 @@ class Nodenet(metaclass=ABCMeta):
 
     def add_modulator_monitor(self, modulator, name, color=None):
         """Adds a continuous monitor to a global modulator.
-        The monitor will collect respective value in every simulation step.
+        The monitor will collect respective value in every calculation step.
         Returns the uid of the new monitor."""
         mon = monitor.ModulatorMonitor(self, modulator, name=name, color=color)
         self._monitors[mon.uid] = mon
@@ -582,7 +589,7 @@ class Nodenet(metaclass=ABCMeta):
 
     def add_custom_monitor(self, function, name, color=None):
         """Adds a continuous monitor, that evaluates the given python-code and collects the
-        return-value for every simulation step.
+        return-value for every calculation step.
         Returns the uid of the new monitor."""
         mon = monitor.CustomMonitor(self, function=function, name=name, color=color)
         self._monitors[mon.uid] = mon
@@ -606,15 +613,6 @@ class Nodenet(metaclass=ABCMeta):
 
     def get_dashboard(self):
         data = self.dashboard_values.copy()
-        sensors = {}
-        actors = {}
-        if self.worldadapter_instance:
-            for s in self.worldadapter_instance.get_available_datasources():
-                sensors[s] = self.worldadapter_instance.get_datasource(s)
-            for uid, actor in self.get_actors().items():
-                actors[actor.get_parameter('datatarget')] = actor.activation
-        data['sensors'] = sensors
-        data['actors'] = actors
         data['is_active'] = self.is_active
         data['step'] = self.current_step
         if self.stepping_rate:

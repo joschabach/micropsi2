@@ -167,11 +167,11 @@ def gradient_descent_lstm(netapi, node=None, **params):
     if sequence_length_string is not None:
         SEQUENCE_LENGTH = int(sequence_length_string)
 
-    target = node.get_parameter("group_t_nodes")
+    target_node_group = node.get_parameter("group_t_nodes")
     target_gate = node.get_parameter("group_t_gates")
-    output = node.get_parameter("group_o_nodes")
+    output_node_group = node.get_parameter("group_o_nodes")
     output_gate = node.get_parameter("group_o_gates")
-    input = node.get_parameter("group_i_nodes")
+    input_node_group = node.get_parameter("group_i_nodes")
     input_gate = node.get_parameter("group_i_gates")
     lstm = node.get_parameter("group_c_nodes")
     lstm_gen = "%s_gen" % lstm
@@ -179,15 +179,18 @@ def gradient_descent_lstm(netapi, node=None, **params):
     lstm_gin = "%s_gin" % lstm
     lstm_gou = "%s_gou" % lstm
     lstm_gfg = "%s_gfg" % lstm
+    input = "%s_input" % input_node_group
+    output = "%s_output" % output_node_group
+    target = "%s_target" % target_node_group
 
     nodespace = node.parent_nodespace
 
     if not hasattr(node, 'initialized'):
 
         # create the groups
-        netapi.group_nodes_by_names(nodespace, node_name_prefix=target, gate=target_gate)
-        netapi.group_nodes_by_names(nodespace, node_name_prefix=output, gate=output_gate)
-        netapi.group_nodes_by_names(nodespace, node_name_prefix=input, gate=input_gate)
+        netapi.group_nodes_by_names(nodespace, node_name_prefix=target_node_group, gate=target_gate, group_name=target)
+        netapi.group_nodes_by_names(nodespace, node_name_prefix=output_node_group, gate=output_gate, group_name=output)
+        netapi.group_nodes_by_names(nodespace, node_name_prefix=input_node_group, gate=input_gate, group_name=input)
 
         netapi.group_nodes_by_names(nodespace, node_name_prefix=lstm, gate="gen", group_name=lstm_gen)
         netapi.group_nodes_by_names(nodespace, node_name_prefix=lstm, gate="por", group_name=lstm_por)

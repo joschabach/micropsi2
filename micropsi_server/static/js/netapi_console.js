@@ -123,7 +123,8 @@ $(function(){
 
     registerResizeHandler();
 
-    var autocomplete_data = {};
+    var nametypes = {};
+    var autocomplete_options = {};
     var autocomplete_open = false;
     var autocomplete_pointer = -1;
 
@@ -141,11 +142,27 @@ $(function(){
 
     function enable(){
         input.removeAttr("disabled");
-        if($.isEmptyObject(autocomplete_data)){
-            api.call('get_netapi_signatures', {nodenet_uid: currentNodenet}, function(data){
-                autocomplete_data = data;
-            });
+        if($.isEmptyObject(autocomplete_options)){
+            getAutocompleteOptions();
         }
+    }
+
+    function getAutocompleteOptions(name){
+        params = {nodenet_uid: currentNodenet};
+        if(name){
+            params['name'] = name;
+        }
+        api.call('get_netapi_signatures', params, function(data){
+            if(name){
+                var type = data.types[name]
+                nametypes[name] = type
+                autocomplete_options[type] = data.autocomplete_options[type];
+            } else {
+                nametypes = data.types;
+                autocomplete_options = data.autocomplete_options;
+            }
+        });
+
     }
 
     function disable(){
@@ -161,10 +178,28 @@ $(function(){
             if(isDisabled()) return;
             autocomplete_select(event);
         });
-        input.keydown(function(event){
+        input.keyup(function(event){
             if(isDisabled()) return;
             var code = input.val();
             switch(event.keyCode){
+                case 13:  // Enter
+                    if(autocomplete_open){
+                        autocomplete_select(event);
+                    } else {
+                        submitInput(code);
+                    }
+                    break;
+                case 190: // dot. autocomplete
+                    autocomplete();
+                    break;
+                case 32: // spacebar
+                    if(event.ctrlKey && !autocomplete_open){
+                        autocomplete();
+                    }
+                    break;
+                case 27:  // escape
+                    stop_autocomplete();
+                    break;
                 case 38: // arrow up
                     if(autocomplete_open){
                         event.preventDefault();
@@ -192,30 +227,6 @@ $(function(){
                         input.val(command_history[history_pointer])
                         input.putCursorAtEnd()
                     }
-                    break;
-            }
-        });
-        input.keyup(function(event){
-            if(isDisabled()) return;
-            var code = input.val();
-            switch(event.keyCode){
-                case 13:  // Enter
-                    if(autocomplete_open){
-                        autocomplete_select(event);
-                    } else {
-                        submitInput(code);
-                    }
-                    break;
-                case 190: // dot. autocomplete
-                    autocomplete();
-                    break;
-                case 32: // spacebar
-                    if(event.ctrlKey && !autocomplete_open){
-                        autocomplete();
-                    }
-                    break;
-                case 27:
-                    stop_autocomplete();
                     break;
                 default:
                     history_pointer = -1
@@ -255,12 +266,15 @@ $(function(){
         if(code.indexOf('.') > -1){
             var last = parts[parts.length - 1];
             var obj = parts[parts.length - 2];
+            obj = obj.match(/([a-zA-Z0-9_]+)/g);
+            obj = obj[obj.length - 1];
         }
-        if(!obj || obj != "netapi"){
+        if(!obj || !(obj in nametypes)){
             return stop_autocomplete();
         }
         html = [];
-        for(var key in autocomplete_data){
+        var type = nametypes[obj];
+        for(var key in autocomplete_options[type]){
             if(key && (last == "" || key.startsWith(last))){
                 html.push('<li><a>'+key+'</a></li>');
             }
@@ -284,11 +298,20 @@ $(function(){
             var selected = $(event.target).text();
         }
         var val = input.val()
-        parts = val.split('.');
+        var parts = input.val().split('.');
+        var last = null;
+        var obj = null;
+        if(val.indexOf('.') > -1){
+            var last = parts[parts.length - 1];
+            var obj = parts[parts.length - 2];
+            obj = obj.match(/([a-zA-Z0-9_]+)/g);
+            obj = obj[obj.length - 1];
+        }
         parts.pop()
         val = parts.join('.') + '.'  + selected;
         var params = [];
-        var data = autocomplete_data[selected];
+        var type = nametypes[obj];
+        var data = autocomplete_options[type][selected];
         for(var i=0; i < data.length; i++){
             if(!data[i].default){
                 params.push(data[i].name);
@@ -314,6 +337,7 @@ $(function(){
 
     function submitInput(code){
         api.call('run_netapi_command', {nodenet_uid: currentNodenet, command: code}, function(data){
+            getAutocompleteOptions();
             data = data.replace(/\n+/g, '\n')
             var hist = history.text();
             hist += "\n" + ">>> " + code;

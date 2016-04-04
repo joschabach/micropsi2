@@ -244,3 +244,24 @@ def test_run_netapi_command(test_nodenet):
     result, msg = micropsi.run_netapi_command(test_nodenet, command)
     assert result
     assert len(netapi.get_nodes()) == 4
+
+
+def test_get_netapi_autocomplete(test_nodenet):
+    micropsi.run_netapi_command(test_nodenet, "foonode = netapi.create_node('Pipe', None, 'foo')")
+    micropsi.run_netapi_command(test_nodenet, "foogate = foonode.get_gate('gen')")
+    micropsi.run_netapi_command(test_nodenet, "fooslot = foonode.get_slot('gen')")
+    micropsi.run_netapi_command(test_nodenet, "nodespace = netapi.create_nodespace(None, 'foospace')")
+    micropsi.run_netapi_command(test_nodenet, "barnode = netapi.create_node('Register', None, 'foo')")
+    data = micropsi.get_netapi_autocomplete_data(test_nodenet)
+    data['types']['foonode'] = 'Node'
+    data['types']['foogate'] = 'Gate'
+    data['types']['fooslot'] = 'Slot'
+    data['types']['nodespace'] = 'Nodespace'
+    data['types']['barnode'] = 'Node'
+    assert data['autocomplete_options']['Node']["get_gate"][0]['name'] == 'type'
+    assert data['autocomplete_options']['Gate']["get_links"] == []
+    assert data['autocomplete_options']['Slot']["get_links"] == []
+    assert data['autocomplete_options']['Nodespace']["get_known_ids"][0]['name'] == 'entitytype'
+    data = micropsi.get_netapi_autocomplete_data(test_nodenet, name='foonode')
+    assert list(data['types'].keys()) == ['foonode']
+    assert list(data['autocomplete_options'].keys()) == ['Node']

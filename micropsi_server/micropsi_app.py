@@ -1250,8 +1250,8 @@ def run_netapi_command(nodenet_uid, command):
 
 
 @rpc("get_netapi_signatures")
-def get_netapi_signatures(nodenet_uid):
-    return True, runtime.get_netapi_signatures(nodenet_uid)
+def get_netapi_autocomplete_data(nodenet_uid, name=None):
+    return True, runtime.get_netapi_autocomplete_data(nodenet_uid, name=None)
 
 
 # -----------------------------------------------------------------------------------------------

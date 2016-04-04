@@ -1327,29 +1327,78 @@ def run_netapi_command(nodenet_uid, command):
     return shell.push(command)
 
 
-def get_netapi_signatures(nodenet_uid):
+def get_netapi_autocomplete_data(nodenet_uid, name=None):
     import inspect
-    netapi = get_nodenet(nodenet_uid).netapi
-    methods = inspect.getmembers(netapi, inspect.ismethod)
-    data = {}
-    for name, func in methods:
-        argspec = inspect.getargspec(func)
-        arguments = argspec.args[1:]
-        defaults = argspec.defaults or []
-        params = []
-        diff = len(arguments) - len(defaults)
-        for i, arg in enumerate(arguments):
-            if i >= diff:
-                default = defaults[i - diff]
+    nodenet = get_nodenet(nodenet_uid)
+    nodetypes = get_available_node_types(nodenet_uid)
+
+    shell = netapi_consoles[nodenet_uid]
+    res, locs = shell.push("[k for k in locals() if not k.startswith('_')]")
+    locs = eval(locs)
+
+    def parsemembers(members):
+        data = {}
+        for name, thing in members:
+            if name.startswith('_'):
+                continue
+            if inspect.isroutine(thing):
+                argspec = inspect.getargspec(thing)
+                arguments = argspec.args[1:]
+                defaults = argspec.defaults or []
+                params = []
+                diff = len(arguments) - len(defaults)
+                for i, arg in enumerate(arguments):
+                    if i >= diff:
+                        default = defaults[i - diff]
+                    else:
+                        default = None
+                    params.append({
+                        'name': arg,
+                        'default': default
+                    })
+                data[name] = params
             else:
-                default = None
-            params.append({
-                'name': arg,
-                'default': default
-            })
-        data[name] = params
+                data[name] = None
+        return data
+
+
+    data = {
+        'types': {},
+        'autocomplete_options': {}
+    }
+
+    for n in locs:
+        if name is None or n == name:
+            res, typedescript = shell.push(n)
+            if 'netapi' in typedescript:
+                data['types'][n] = 'netapi'
+            else:
+                # get type of thing.
+                match = re.search('^<([A-Za-z]+) ', typedescript)
+                if match:
+                    typename = match.group(1)
+                    if typename in ['Nodespace', 'Node', 'Gate', 'Slot']:
+                        data['types'][n] = typename
+                    elif typename in nodetypes['nodetypes'] or typename in nodetypes['native_modules']:
+                        data['types'][n] = 'Node'
+                    else:
+                        logging.getLogger('system').debug('no autocomplete for %s' % typename)
+
+    for t in set(data['types'].values()):
+        if t == 'netapi':
+            netapi = nodenet.netapi
+            methods = inspect.getmembers(netapi, inspect.ismethod)
+            data['autocomplete_options']['netapi'] = parsemembers(methods)
+        elif t == 'Nodespace':
+            from micropsi_core.nodenet.nodespace import Nodespace
+            data['autocomplete_options']['Nodespace'] = parsemembers(inspect.getmembers(Nodespace, inspect.isroutine))
+        elif t in ['Node', 'Gate', 'Slot']:
+            from micropsi_core.nodenet import node
+            cls = getattr(node, t)
+            data['autocomplete_options'][t] = parsemembers(inspect.getmembers(cls, inspect.isroutine))
 
     return data
+
 
 # --- end of API
 

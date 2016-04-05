@@ -1,16 +1,24 @@
 
 
 // thanks to Chris Coyier at css-tricks.com
-jQuery.fn.putCursorAtEnd = function() {
+jQuery.fn.putCursorAt = function(index=-1) {
     return this.each(function() {
         $(this).focus()
         // If this function exists...
         if (this.setSelectionRange) {
             // ... then use it (Doesn't work in IE)
             // Double the length because Opera is inconsistent about whether a carriage return is one character or two. Sigh.
-            var len = $(this).val().length * 2;
+            var len = index;
+            if(len < 0){
+                len = $(this).val().length * 2;
+            }
             this.setSelectionRange(len, len);
-        } else {
+        } else if(this.createTextRange){
+            var range = this.createTextRange();
+            range.move('character', index);
+            range.select();
+        }
+        else {
             // ... otherwise replace the contents with itself
             // (Doesn't work in Google Chrome)
             $(this).val($(this).val());
@@ -190,12 +198,12 @@ $(function(){
                         event.preventDefault();
                         history_pointer = command_history.length - 1;
                         input.val(command_history[history_pointer])
-                        input.putCursorAtEnd()
+                        input.putCursorAt(-1)
                     } else if(history_pointer > 0 && code == command_history[history_pointer]) {
                         event.preventDefault();
                         history_pointer -= 1;
                         input.val(command_history[history_pointer])
-                        input.putCursorAtEnd()
+                        input.putCursorAt(-1)
                     }
                     break;
 
@@ -207,7 +215,7 @@ $(function(){
                         event.preventDefault();
                         history_pointer += 1;
                         input.val(command_history[history_pointer])
-                        input.putCursorAtEnd()
+                        input.putCursorAt(-1)
                     }
                     break;
             }
@@ -380,9 +388,15 @@ $(function(){
                     }
                 }
             }
+            var length = val.length;
             val += '(' + params.join(', ') + ')';
+            input.val(val);
+            input.putCursorAt(length + 1);
+
+        } else {
+            input.val(val);
+            input.putCursorAt(-1);
         }
-        input.val(val);
         stop_autocomplete();
     }
 

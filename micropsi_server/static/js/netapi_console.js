@@ -289,7 +289,8 @@ $(function(){
             var last = parts[parts.length - 1];
             var obj = parts[parts.length - 2];
             obj = obj.match(/([a-zA-Z0-9_]+)/g);
-            obj = obj[obj.length - 1];
+            if(obj)
+                obj = obj[obj.length - 1];
         }
         if(!obj || !(obj in nametypes)){
             return stop_autocomplete();

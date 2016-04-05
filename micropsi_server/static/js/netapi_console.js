@@ -373,9 +373,9 @@ $(function(){
             getAutocompleteOptions();
             data = data.replace(/\n+/g, '\n')
             var hist = history.text();
-            hist += "\n" + ">>> " + code;
+            hist += "\n" + code;
             if(data){
-                hist += "\n" + data;
+                hist += "\n# " + data.replace(/\n/g, "\n# ");
             }
             history.text(hist);
             input.val('');
@@ -386,8 +386,8 @@ $(function(){
         }, function(error){
             var hist = history.text();
             if(error.data){
-                hist += "\n" + ">>> " + code;
-                hist += '\nERROR: '+error.data;
+                hist += "\n" + code;
+                hist += '\n# ERROR: '+error.data.replace(/\n/g, "\n# ");
             }
             history.text(hist);
             input.val('');

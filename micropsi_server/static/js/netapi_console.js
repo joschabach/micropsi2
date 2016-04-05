@@ -220,7 +220,9 @@ $(function(){
                     if(autocomplete_open){
                         autocomplete_select(event);
                     } else {
-                        submitInput(code);
+                        if(code.trim().length){
+                            submitInput(code);
+                        }
                     }
                     break;
                 case 190: // dot. autocomplete

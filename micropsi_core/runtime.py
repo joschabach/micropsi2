@@ -1349,18 +1349,17 @@ def get_netapi_autocomplete_data(nodenet_uid, name=None):
                 diff = len(arguments) - len(defaults)
                 for i, arg in enumerate(arguments):
                     if i >= diff:
-                        default = defaults[i - diff]
+                        params.append({
+                            'name': arg,
+                            'default': defaults[i - diff]
+                        })
                     else:
-                        default = None
-                    params.append({
-                        'name': arg,
-                        'default': default
-                    })
+                        params.append({'name': arg})
+
                 data[name] = params
             else:
                 data[name] = None
         return data
-
 
     data = {
         'types': {},

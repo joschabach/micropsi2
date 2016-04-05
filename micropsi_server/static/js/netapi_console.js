@@ -340,10 +340,12 @@ $(function(){
         var data = autocomplete_options[type][selected];
         if(data != null){
             for(var i=0; i < data.length; i++){
-                if(!data[i].default){
+                if(!('default' in data[i])){
                     params.push(data[i].name);
                 } else {
-                    if(isNaN(data[i].default)){
+                    if(data[i].default == null){
+                        params.push(data[i].name+'=None')
+                    } else if(isNaN(data[i].default)){
                         params.push(data[i].name+'='+'"'+data[i].default+'"')
                     } else {
                         params.push(data[i].name+'='+data[i].default)

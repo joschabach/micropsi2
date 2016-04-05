@@ -1317,13 +1317,7 @@ def get_agent_dashboard(nodenet_uid):
 
 
 def run_netapi_command(nodenet_uid, command):
-    import re
     shell = netapi_consoles[nodenet_uid]
-    name = None
-    match = re.search("^([a-zA-Z0-9_])+ ?=", command)
-    if match:
-        name = match.group(1)
-
     return shell.push(command)
 
 

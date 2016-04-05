@@ -225,9 +225,6 @@ $(function(){
                         }
                     }
                     break;
-                case 190: // dot. autocomplete
-                    autocomplete();
-                    break;
                 case 32: // spacebar
                     if(event.ctrlKey && !autocomplete_open){
                         autocomplete();
@@ -242,9 +239,7 @@ $(function(){
                     break;
                 default:
                     history_pointer = -1
-                    if(autocomplete_open){
-                        autocomplete();
-                    }
+                    autocomplete();
             }
         });
         input.blur(function(){
@@ -291,10 +286,35 @@ $(function(){
             obj = obj.match(/([a-zA-Z0-9_]+)/g);
             if(obj)
                 obj = obj[obj.length - 1];
+        } else if(code.match(/^([a-z0-9]+)?$/m)){
+            return autocomplete_names(code);
         }
         if(!obj || !(obj in nametypes)){
             return stop_autocomplete();
         }
+        return autocomplete_properties(obj, last);
+    }
+
+    function autocomplete_names(start){
+        html = [];
+        for(var key in nametypes){
+            if(start.length == 0 || key.startsWith(start)){
+                html.push('<li><a data-complete="name" data="'+key+'">'+key+'</a></li>')
+            }
+        }
+        if(html.length == 0){
+            return stop_autocomplete();
+        }
+        autocomplete_container.html(html.join(''));
+        autocomplete_container.css({
+            'position': 'absolute',
+            'top': input.offset().top + input.height(),
+            'left': input.offset().left + (input.val().length * 4),
+            'display': 'block'
+        });
+    }
+
+    function autocomplete_properties(obj, last){
         html = [];
         var type = nametypes[obj];
         var sorted = Object.keys(autocomplete_options[type]).sort();
@@ -302,9 +322,9 @@ $(function(){
             var key = sorted[i];
             if(key && (last == "" || key.startsWith(last))){
                 if(autocomplete_options[type][key] == null){
-                    html.push('<li><a data="'+key+'">'+key+'</a></li>');
+                    html.push('<li><a data-complete="property" data="'+key+'">'+key+'</a></li>');
                 } else {
-                    html.push('<li><a data="'+key+'">'+key+'()</a></li>');
+                    html.push('<li><a data-complete="property" data="'+key+'">'+key+'()</a></li>');
                 }
             }
         }
@@ -322,10 +342,15 @@ $(function(){
 
     function autocomplete_select(event){
         if($(event.target).attr('id') == 'console_input'){
-            var selected = $('a.selected', autocomplete_container).attr('data');
+            var el = $('a.selected', autocomplete_container)
         } else {
-            var selected = $(event.target).attr('data');
+            var el = $(event.target);
         }
+        if(el.attr('data-complete') == 'name'){
+            input.val(el.attr('data'));
+            return stop_autocomplete();
+        }
+        var selected = el.attr('data');
         var val = input.val()
         var parts = input.val().split('.');
         var last = null;

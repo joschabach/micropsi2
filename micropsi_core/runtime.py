@@ -54,6 +54,59 @@ native_modules = {}
 custom_recipes = {}
 custom_operations = {}
 
+netapi_consoles = {}
+
+from code import InteractiveConsole
+
+
+class FileCacher():
+    "Cache the stdout text so we can analyze it before returning it"
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.out = []
+
+    def write(self,line):
+        self.out.append(line)
+
+    def flush(self):
+        output = '\n'.join(self.out)
+        self.reset()
+        return output
+
+
+class NetapiShell(InteractiveConsole):
+    "Wrapper around Python that can filter input/output to the shell"
+    def __init__(self, netapi):
+        self.stdout = sys.stdout
+        self.stderr = sys.stderr
+        self.outcache = FileCacher()
+        self.errcache = FileCacher()
+        InteractiveConsole.__init__(self, locals={'netapi': netapi})
+        return
+
+    def get_output(self):
+        sys.stdout = self.outcache
+        sys.stderr = self.errcache
+
+    def return_output(self):
+        sys.stdout = self.stdout
+        sys.stderr = self.stderr
+
+    def push(self,line):
+        self.get_output()
+        incomplete = InteractiveConsole.push(self,line)
+        if incomplete:
+            InteractiveConsole.push(self,'\n')
+        self.return_output()
+        err = self.errcache.flush()
+        if err and err.startswith('Traceback'):
+            parts = err.strip().split('\n')
+            return False, "%s: %s" % (parts[-3], parts[-1])
+        out = self.outcache.flush()
+        return True, out.strip()
+
 
 def add_signal_handler(handler):
     signal_handler_registry.append(handler)
@@ -316,6 +369,8 @@ def load_nodenet(nodenet_uid):
 
             nodenets[nodenet_uid].load(os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid + ".json"))
 
+            netapi_consoles[nodenet_uid] = NetapiShell(nodenets[nodenet_uid].netapi)
+
             if "settings" in data:
                 nodenets[nodenet_uid].settings = data["settings"].copy()
             else:
@@ -416,6 +471,7 @@ def unload_nodenet(nodenet_uid):
     """
     if nodenet_uid not in nodenets:
         return False
+    del netapi_consoles[nodenet_uid]
     nodenet = nodenets[nodenet_uid]
     if nodenet.world:
         worlds[nodenet.world].unregister_nodenet(nodenet.uid)
@@ -1258,6 +1314,81 @@ def get_agent_dashboard(nodenet_uid):
         data = net.get_dashboard()
         data['face'] = calc_emoexpression_parameters(net)
         return data
+
+
+def run_netapi_command(nodenet_uid, command):
+    shell = netapi_consoles[nodenet_uid]
+    return shell.push(command)
+
+
+def get_netapi_autocomplete_data(nodenet_uid, name=None):
+    import inspect
+    nodenet = get_nodenet(nodenet_uid)
+    nodetypes = get_available_node_types(nodenet_uid)
+
+    shell = netapi_consoles[nodenet_uid]
+    res, locs = shell.push("[k for k in locals() if not k.startswith('_')]")
+    locs = eval(locs)
+
+    def parsemembers(members):
+        data = {}
+        for name, thing in members:
+            if name.startswith('_'):
+                continue
+            if inspect.isroutine(thing):
+                argspec = inspect.getargspec(thing)
+                arguments = argspec.args[1:]
+                defaults = argspec.defaults or []
+                params = []
+                diff = len(arguments) - len(defaults)
+                for i, arg in enumerate(arguments):
+                    if i >= diff:
+                        params.append({
+                            'name': arg,
+                            'default': defaults[i - diff]
+                        })
+                    else:
+                        params.append({'name': arg})
+
+                data[name] = params
+            else:
+                data[name] = None
+        return data
+
+    data = {
+        'types': {},
+        'autocomplete_options': {}
+    }
+
+    for n in locs:
+        if name is None or n == name:
+            res, typedescript = shell.push(n)
+            if 'netapi' in typedescript:
+                data['types'][n] = 'netapi'
+            else:
+                # get type of thing.
+                match = re.search('^<([A-Za-z]+) ', typedescript)
+                if match:
+                    typename = match.group(1)
+                    if typename in ['Nodespace', 'Node', 'Gate', 'Slot']:
+                        data['types'][n] = typename
+                    elif typename in nodetypes['nodetypes'] or typename in nodetypes['native_modules']:
+                        data['types'][n] = 'Node'
+
+    for t in set(data['types'].values()):
+        if t == 'netapi':
+            netapi = nodenet.netapi
+            methods = inspect.getmembers(netapi, inspect.ismethod)
+            data['autocomplete_options']['netapi'] = parsemembers(methods)
+        elif t == 'Nodespace':
+            from micropsi_core.nodenet.nodespace import Nodespace
+            data['autocomplete_options']['Nodespace'] = parsemembers(inspect.getmembers(Nodespace))
+        elif t in ['Node', 'Gate', 'Slot']:
+            from micropsi_core.nodenet import node
+            cls = getattr(node, t)
+            data['autocomplete_options'][t] = parsemembers(inspect.getmembers(cls))
+
+    return data
 
 
 # --- end of API

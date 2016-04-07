@@ -1317,6 +1317,7 @@ def get_agent_dashboard(nodenet_uid):
 
 
 def run_netapi_command(nodenet_uid, command):
+    get_nodenet(nodenet_uid)
     shell = netapi_consoles[nodenet_uid]
     return shell.push(command)
 

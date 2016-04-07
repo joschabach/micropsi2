@@ -1202,10 +1202,9 @@ function renderLink(link, force) {
     if(nodespaceProperties[currentNodeSpace].renderlinks == 'no'){
         return;
     }
-    if(nodespaceProperties[currentNodeSpace] == 'selection'){
-        var is_hovered = hoverNode && (link.sourceNodeUid == hoverNode.uid || link.targetNodeUid == hoverNode.uid);
+    if(nodespaceProperties[currentNodeSpace].renderlinks == 'selection'){
         var is_selected = selection && (link.sourceNodeUid in selection || link.targetNodeUid in selection);
-        if(!is_hovered && !is_selected){
+        if(!is_selected){
             return;
         }
     }

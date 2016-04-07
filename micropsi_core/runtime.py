@@ -670,6 +670,7 @@ def get_nodespace_list(nodenet_uid):
             'name': nodespace.name,
             'parent': nodespace.parent_nodespace,
             'nodes': {},
+            'properties': nodenet.get_nodespace_properties(uid)
         }
         for nid in nodespace.get_known_ids('nodes'):
             data[uid]['nodes'][nid] = {

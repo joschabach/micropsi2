@@ -890,7 +890,7 @@ $(document).ready(function() {
     $('#nodenet_mgr').dataTable( {
         "sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
         "sPaginationType": "bootstrap"
-    } );
+    });
     $('textarea.loc').autogrow();
     if($('.frontend_section').length == 1){
         $('.frontend_section').addClass('in');
@@ -900,7 +900,7 @@ $(document).ready(function() {
     refreshNodenetList();
     setButtonStates(false);
     if(currentNodenet){
-        fetch_stepping_info();
+        $(document).trigger('nodenet_changed', currentNodenet);
     }
 });
 

@@ -811,11 +811,11 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
         return False, "Could not clone nodes. See log for details."
 
 
-def get_nodespace_changes(nodenet_uid, ndoespaces, since_step):
+def get_nodespace_changes(nodenet_uid, nodespaces, since_step):
     """ Returns a dict of changes that happened in the nodenet in the given nodespace since the given step.
     Contains uids of deleted nodes and nodespaces and the datadicts for changed or added nodes and nodespaces
     """
-    return get_nodenet(nodenet_uid).get_nodespace_changes(ndoespaces, since_step)
+    return get_nodenet(nodenet_uid).get_nodespace_changes(nodespaces, since_step)
 
 
 def get_nodespace_properties(nodenet_uid, nodespace_uid):

@@ -890,7 +890,6 @@ class TheanoNodenet(Nodenet):
                     for s in node.get_slot_types():
                         node.get_slot(s).invalidate_caches()
 
-
     def create_nodespace(self, parent_uid, position, name="", uid=None, options=None):
         if options is None:
             options = {}

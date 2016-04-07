@@ -657,7 +657,7 @@ var listeners = {}
 var calculationRunning = false;
 var currentNodenet;
 var runner_properties = {};
-var sections = ['nodenet_editor', 'monitor', 'world_editor'];
+var sections = ['nodenet_editor', 'netapi_console', 'monitor', 'world_editor'];
 
 
 register_stepping_function = function(type, input, callback){

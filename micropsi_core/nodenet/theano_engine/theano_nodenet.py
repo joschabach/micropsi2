@@ -433,6 +433,8 @@ class TheanoNodenet(Nodenet):
         if initfrom.get('runner_condition'):
             self.set_runner_condition(initfrom['runner_condition'])
 
+        self._nodespace_ui_properties = initfrom.get('nodespace_ui_properties', {})
+
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)
             self.merge_data(initfrom, keep_uids=True, native_module_instances_only=True)
@@ -971,7 +973,7 @@ class TheanoNodenet(Nodenet):
     def delete_nodespace(self, nodespace_uid):
         if nodespace_uid is None or nodespace_uid == self.get_nodespace(None).uid:
             raise ValueError("The root nodespace cannot be deleted.")
-
+        self._nodespace_ui_properties.pop(uid, None)
         partition = self.get_partition(nodespace_uid)
         nodespace_id = nodespace_from_id(nodespace_uid)
         if nodespace_id == 1 and partition.pid != self.rootpartition.pid:

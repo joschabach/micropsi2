@@ -1055,6 +1055,16 @@ def get_nodespace_changes(nodenet_uid, nodespaces, since_step):
     return runtime.get_nodespace_changes(nodenet_uid, nodespaces, since_step)
 
 
+@rpc("get_nodespace_properties")
+def get_nodespace_properties(nodenet_uid, nodespace_uid=None):
+    return True, runtime.get_nodespace_properties(nodenet_uid, nodespace_uid)
+
+
+@rpc("set_nodespace_properties")
+def set_nodespace_properties(nodenet_uid, nodespace_uid, properties):
+    return True, runtime.set_nodespace_properties(nodenet_uid, nodespace_uid, properties)
+
+
 @rpc("get_node")
 def get_node(nodenet_uid, node_uid):
     return runtime.get_node(nodenet_uid, node_uid)
@@ -1242,6 +1252,16 @@ def get_available_operations():
 @rpc('get_agent_dashboard')
 def get_agent_dashboard(nodenet_uid):
     return True, runtime.get_agent_dashboard(nodenet_uid)
+
+
+@rpc("run_netapi_command", permission_required="manage nodenets")
+def run_netapi_command(nodenet_uid, command):
+    return runtime.run_netapi_command(nodenet_uid, command)
+
+
+@rpc("get_netapi_signatures")
+def get_netapi_autocomplete_data(nodenet_uid, name=None):
+    return True, runtime.get_netapi_autocomplete_data(nodenet_uid, name=None)
 
 
 # -----------------------------------------------------------------------------------------------

@@ -316,6 +316,8 @@ class DictNodenet(Nodenet):
         if initfrom.get('runner_condition'):
             self.set_runner_condition(initfrom['runner_condition'])
 
+        self._nodespace_ui_properties = initfrom.get('nodespace_ui_properties', {})
+
         # set up nodespaces; make sure that parent nodespaces exist before children are initialized
         self._nodespaces = {}
         self._nodespaces["Root"] = DictNodespace(self, None, [0, 0, 0], name="Root", uid="Root")
@@ -438,6 +440,7 @@ class DictNodenet(Nodenet):
             self._track_deletion('nodes', node_uid)
 
     def delete_nodespace(self, uid):
+        self._nodespace_ui_properties.pop(uid, None)
         self.delete_node(uid)
 
     def clear(self):

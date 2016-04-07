@@ -66,7 +66,8 @@ class Nodenet(metaclass=ABCMeta):
             'worldadapter': self._worldadapter_uid,
             'version': NODENET_VERSION,
             'runner_condition': self._runner_condition,
-            'use_modulators': self.use_modulators
+            'use_modulators': self.use_modulators,
+            'nodespace_ui_properties': self._nodespace_ui_properties
         }
         return data
 
@@ -154,6 +155,7 @@ class Nodenet(metaclass=ABCMeta):
 
         self.owner = owner
         self._monitors = {}
+        self._nodespace_ui_properties = {}
 
         self.netlock = Lock()
 
@@ -295,6 +297,23 @@ class Nodenet(metaclass=ABCMeta):
         Returns true if the given UID is the UID of an existing Nodespace object
         """
         pass  # pragma: no cover
+
+    def set_nodespace_properties(self, nodespace_uid, data):
+        """
+        Sets a persistent property for UI purposes for the given nodespace
+        """
+        if nodespace_uid not in self._nodespace_ui_properties:
+            self._nodespace_ui_properties[nodespace_uid] = {}
+        self._nodespace_ui_properties[nodespace_uid].update(data)
+
+    def get_nodespace_properties(self, nodespace_uid=None):
+        """
+        Return the nodespace properties of all or only the given nodespace
+        """
+        if nodespace_uid:
+            return self._nodespace_ui_properties.get(nodespace_uid, {})
+        else:
+            return self._nodespace_ui_properties
 
     @abstractmethod
     def set_entity_positions(self, positions):

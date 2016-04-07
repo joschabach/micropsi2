@@ -449,3 +449,14 @@ def test_get_nodespace_changes_cycles(fixed_nodenet):
         net.step()
     result = micropsi.get_nodespace_changes(fixed_nodenet, [None], 1)
     assert nodes['B2'].uid not in result['nodes_deleted']
+
+
+def test_nodespace_properties(test_nodenet):
+    data = {'testvalue': 'foobar'}
+    rootns = micropsi.get_nodenet(test_nodenet).get_nodespace(None)
+    micropsi.set_nodespace_properties(test_nodenet, rootns.uid, data)
+    assert micropsi.nodenets[test_nodenet].metadata['nodespace_ui_properties'][rootns.uid] == data
+    assert micropsi.get_nodespace_properties(test_nodenet, rootns.uid) == data
+    micropsi.save_nodenet(test_nodenet)
+    micropsi.revert_nodenet(test_nodenet)
+    assert micropsi.get_nodespace_properties(test_nodenet, rootns.uid) == data

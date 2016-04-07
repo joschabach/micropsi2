@@ -818,6 +818,16 @@ def get_nodespace_changes(nodenet_uid, ndoespaces, since_step):
     return get_nodenet(nodenet_uid).get_nodespace_changes(ndoespaces, since_step)
 
 
+def get_nodespace_properties(nodenet_uid, nodespace_uid):
+    """ retrieve the ui properties for the given nodespace"""
+    return get_nodenet(nodenet_uid).get_nodespace_properties(nodespace_uid)
+
+
+def set_nodespace_properties(nodenet_uid, nodespace_uid, properties):
+    """ sets the ui properties for the given nodespace"""
+    return get_nodenet(nodenet_uid).set_nodespace_properties(nodespace_uid, properties)
+
+
 def __pythonify(name):
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name).lower()
     return re.sub('([\s+\W])', '_', s1)

@@ -1,7 +1,7 @@
 
 
 // thanks to Chris Coyier at css-tricks.com
-jQuery.fn.putCursorAt = function(index=-1) {
+jQuery.fn.putCursorAt = function(index) {
     return this.each(function() {
         $(this).focus()
         // If this function exists...

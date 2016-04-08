@@ -103,6 +103,9 @@ if (nodenetcookie && nodenetcookie.indexOf('/') > 0){
 
 nodespaceProperties = {};
 
+// compatibility
+renderlinks_default = $.cookie('renderlinks') || 'always';
+
 currentWorldadapter = null;
 
 var currentSheaf = "default";
@@ -273,7 +276,7 @@ function setCurrentNodenet(uid, nodespace, changed){
                 if(!(key in nodespaceProperties)){
                     nodespaceProperties[key] = {};
                 }
-                if(!nodespaceProperties[key].renderlinks) nodespaceProperties[key].renderlinks = 'always';
+                if(!nodespaceProperties[key].renderlinks) nodespaceProperties[key].renderlinks = renderlinks_default;
                 if(!nodespaceProperties[key].activation_display) nodespaceProperties[key].activation_display = 'redgreen';
             }
             if(nodenetChanged){

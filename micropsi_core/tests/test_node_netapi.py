@@ -1141,3 +1141,12 @@ def test_unlink_slot(test_nodenet):
     netapi.unlink_slot(node, 'por', source_gate_name='sur')
     assert len(node.get_slot('por').get_links()) == 2  # pipe1:gen, pipe2:gen
     assert len(node.get_slot('sur').get_links()) == 2  # only sur->por unlinked
+
+
+def test_nodespace_properties(test_nodenet):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    rootns = netapi.get_nodespace(None)
+    netapi.set_nodespace_properties(None, {'foo': 'bar'})
+    data = netapi.get_nodespace_properties()
+    assert data[rootns.uid] == {'foo': 'bar'}

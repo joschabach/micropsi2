@@ -329,7 +329,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def delete_nodespace(self, uid):
+    def delete_nodespace(self, nodespace_uid):
         """
         Deletes the nodespace with the given UID, and everything it contains
         """

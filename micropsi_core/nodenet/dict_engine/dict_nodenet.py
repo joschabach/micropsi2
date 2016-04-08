@@ -439,9 +439,9 @@ class DictNodenet(Nodenet):
             del self._nodes[node_uid]
             self._track_deletion('nodes', node_uid)
 
-    def delete_nodespace(self, uid):
-        self._nodespace_ui_properties.pop(uid, None)
-        self.delete_node(uid)
+    def delete_nodespace(self, nodespace_uid):
+        self._nodespace_ui_properties.pop(nodespace_uid, None)
+        self.delete_node(nodespace_uid)
 
     def clear(self):
         super(DictNodenet, self).clear()

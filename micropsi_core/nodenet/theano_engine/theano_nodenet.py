@@ -972,7 +972,7 @@ class TheanoNodenet(Nodenet):
     def delete_nodespace(self, nodespace_uid):
         if nodespace_uid is None or nodespace_uid == self.get_nodespace(None).uid:
             raise ValueError("The root nodespace cannot be deleted.")
-        self._nodespace_ui_properties.pop(uid, None)
+        self._nodespace_ui_properties.pop(nodespace_uid, None)
         partition = self.get_partition(nodespace_uid)
         nodespace_id = nodespace_from_id(nodespace_uid)
         if nodespace_id == 1 and partition.pid != self.rootpartition.pid:

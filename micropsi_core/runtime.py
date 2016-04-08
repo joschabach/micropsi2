@@ -875,7 +875,7 @@ def get_nodespace_changes(nodenet_uid, nodespaces, since_step):
     return get_nodenet(nodenet_uid).get_nodespace_changes(nodespaces, since_step)
 
 
-def get_nodespace_properties(nodenet_uid, nodespace_uid):
+def get_nodespace_properties(nodenet_uid, nodespace_uid=None):
     """ retrieve the ui properties for the given nodespace"""
     return get_nodenet(nodenet_uid).get_nodespace_properties(nodespace_uid)
 

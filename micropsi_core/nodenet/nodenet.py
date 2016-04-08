@@ -302,6 +302,7 @@ class Nodenet(metaclass=ABCMeta):
         """
         Sets a persistent property for UI purposes for the given nodespace
         """
+        nodespace_uid = self.get_nodespace(nodespace_uid).uid
         if nodespace_uid not in self._nodespace_ui_properties:
             self._nodespace_ui_properties[nodespace_uid] = {}
         self._nodespace_ui_properties[nodespace_uid].update(data)

@@ -460,3 +460,5 @@ def test_nodespace_properties(test_nodenet):
     micropsi.save_nodenet(test_nodenet)
     micropsi.revert_nodenet(test_nodenet)
     assert micropsi.get_nodespace_properties(test_nodenet, rootns.uid) == data
+    properties = micropsi.get_nodespace_properties(test_nodenet)
+    assert properties[rootns.uid] == data

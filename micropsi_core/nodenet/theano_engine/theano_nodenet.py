@@ -1429,14 +1429,16 @@ class TheanoNodenet(Nodenet):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
 
+        partition = self.get_partition(nodespace_uid)
+
         if group_name is None:
             group_name = node_name_prefix
 
         ids = []
         for uid, name in self.names.items():
-            partition = self.get_partition(uid)
-            if self.is_node(uid) and name.startswith(node_name_prefix) and \
-                    (partition.allocated_node_parents[node_from_id(uid)] == nodespace_from_id(nodespace_uid)):
+            parentpartition = self.get_partition(uid)
+            if parentpartition == partition and self.is_node(uid) and name.startswith(node_name_prefix) and \
+                    (parentpartition.allocated_node_parents[node_from_id(uid)] == nodespace_from_id(nodespace_uid)):
                 ids.append(uid)
         self.group_nodes_by_ids(nodespace_uid, ids, group_name, gatetype, sortby)
 

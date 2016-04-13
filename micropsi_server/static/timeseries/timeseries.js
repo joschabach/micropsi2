@@ -9,9 +9,14 @@ $(function(){
 
     var first, last, total;
 
+    var advance_nodenet = $('#timeseries_controls_nodenet');
+    var nodenet_amount = $('#timeseries_controls_nodenet_amount')
+
     function get_world_data(){
         return {step: currentWorldSimulationStep};
     }
+
+    $('.section.world .editor_field').height('auto');
 
     function set_world_data(data){
         if(!initialized){
@@ -48,7 +53,13 @@ $(function(){
     function set_world_state(event){
         var value = parseInt(slider.val());
         api.call('set_world_data', {world_uid: currentWorld, data: {step: value}}, function(){
-            $(document).trigger('runner_stepped');
+            if(advance_nodenet.attr('checked')){
+                api.call('step_nodenet', {nodenet_uid: currentNodenet, amount: parseInt(nodenet_amount.val())}, function(){
+                    $(document).trigger('runner_stepped');
+                });
+            } else {
+                $(document).trigger('runner_stepped');
+            }
         });
     }
 

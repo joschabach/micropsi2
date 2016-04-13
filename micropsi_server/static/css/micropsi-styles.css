@@ -665,9 +665,6 @@ p.clear {
   background-color: #0081c2 !important;
 }
 
-#timeseries_controls label{
-  padding-top: 2em;
-}
 #timeseries_controls .slider.slider-horizontal {
   width: 100% !important;
 }

@@ -23,8 +23,15 @@ class TimeSeries(World):
     """
     supported_worldadapters = ['TimeSeriesRunner']
 
+    assets = {
+        'js': "timeseries/timeseries.js",
+        'template': 'timeseries/timeseries.tpl'
+    }
+
     def __init__(self, filename, world_type="TimeSeries", name="", owner="", engine=None, uid=None, version=1, config={}):
         World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version, config=config)
+
+        self.data['assets'] = self.assets
 
         filename = config.get('time_series_data_file', "timeseries.npz")
         if os.path.isabs(filename):

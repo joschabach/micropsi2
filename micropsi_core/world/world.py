@@ -321,6 +321,11 @@ class World(object):
             return True
         return False
 
+    def set_user_data(self, data):
+        """ Sets some data from the user. Implement this in your worldclass to allow
+        the user to set certain properties of this world"""
+        pass
+
     def __del__(self):
         """Empty destructor"""
         pass

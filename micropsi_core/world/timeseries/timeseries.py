@@ -163,6 +163,12 @@ class TimeSeries(World):
              'options': ["True", "False"]}
         ]
 
+    def set_user_data(self, data):
+        """ Allow the user to set the step of this world"""
+        if 'step' in data:
+            self.last_realtime_step = datetime.utcnow().timestamp() * 1000
+            self.current_step = data['step']
+
     def get_world_view(self, step):
         return {
             'first_timestamp': str(self.timestamps[0]),

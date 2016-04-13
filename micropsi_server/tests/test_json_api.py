@@ -217,6 +217,18 @@ def test_step_calculation(app, test_nodenet):
     assert response.json_body['data']['current_step'] == 1
 
 
+def test_step_nodenet(app, test_nodenet, test_world):
+    app.set_auth()
+    app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, nodenet_name="new_name", worldadapter="Braitenberg", world_uid=test_world))
+    app.post_json('/rpc/step_nodenet', {'nodenet_uid': test_nodenet})
+    from micropsi_core import runtime
+    assert runtime.nodenets[test_nodenet].current_step == 1
+    assert runtime.worlds[test_world].current_step == 0
+    app.post_json('/rpc/step_nodenet', {'nodenet_uid': test_nodenet, 'amount': 10})
+    assert runtime.nodenets[test_nodenet].current_step == 11
+    assert runtime.worlds[test_world].current_step == 0
+
+
 def test_get_calculation_state(app, test_nodenet, test_world, node):
     from time import sleep
     app.set_auth()

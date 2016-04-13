@@ -844,6 +844,11 @@ def step_calculation(nodenet_uid):
     return True, runtime.step_nodenet(nodenet_uid)
 
 
+@rpc("step_nodenet", permission_required="manage nodenets")
+def step_nodenet(nodenet_uid, amount=1):
+    return True, runtime.step_nodenet(nodenet_uid, True, amount)
+
+
 @rpc("revert_calculation", permission_required="manage nodenets")
 def revert_calculation(nodenet_uid):
     return runtime.revert_nodenet(nodenet_uid, True)

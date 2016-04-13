@@ -626,17 +626,18 @@ def stop_nodenetrunner(nodenet_uid):
     return True
 
 
-def step_nodenet(nodenet_uid):
+def step_nodenet(nodenet_uid, nodenet_only=False, amount=1):
     """Advances the given nodenet by one calculation step.
 
     Arguments:
         nodenet_uid: The uid of the nodenet
     """
     nodenet = get_nodenet(nodenet_uid)
-    nodenet.timed_step()
-    nodenet.update_monitors()
-    if nodenet.world and nodenet.current_step % configs['runner_factor'] == 0:
-        worlds[nodenet.world].step()
+    for i in range(amount):
+        nodenet.timed_step()
+        nodenet.update_monitors()
+        if not nodenet_only and nodenet.world and nodenet.current_step % configs['runner_factor'] == 0:
+            worlds[nodenet.world].step()
     return nodenet.current_step
 
 

@@ -20,7 +20,7 @@ $(function(){
             total = data['total_timestamps'];
             slider.slider({
                 'min': 0,
-                'max': data['total_timestamps'],
+                'max': total - 1,
                 'width': '100%',
                 'step': 1,
                 'value': data['current_step'],
@@ -37,8 +37,8 @@ $(function(){
                 }
 
             });
-            $('.firstval', container).text(first.toLocaleString('de'));
-            $('.lastval', container).text(last.toLocaleString('de'));
+            $('.firstval', container).html(first.toLocaleString('de').replace(', ', '<br />'));
+            $('.lastval', container).html(last.toLocaleString('de').replace(', ', '<br />'));
             initialized = true;
             slider.on('slideStop', set_world_state);
         }
@@ -46,7 +46,10 @@ $(function(){
     }
 
     function set_world_state(event){
-        console.log(event);
+        var value = parseInt(slider.val());
+        api.call('set_world_data', {world_uid: currentWorld, data: {step: value}}, function(){
+            $(document).trigger('runner_stepped');
+        });
     }
 
     register_stepping_function('world', get_world_data, set_world_data);

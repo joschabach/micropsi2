@@ -30,7 +30,7 @@ class Minecraft(World):
 
     assets = {
         'template': 'minecraft/minecraft.tpl',
-        'js': 'minecraft/minecraft.js',
+        'paperjs': 'minecraft/minecraft.js',
         'x': 256,
         'y': 256,
     }
@@ -144,7 +144,7 @@ class Minecraft2D(Minecraft):
 
     assets = {
         'template': 'minecraft/minecraft.tpl',
-        'js': 'minecraft/minecraft2d.js',
+        'paperjs': 'minecraft/minecraft2d.js',
     }
 
     def step(self):

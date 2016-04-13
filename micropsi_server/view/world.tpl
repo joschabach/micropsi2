@@ -46,6 +46,8 @@
 
 <script src="/static/js/world.js" type="text/paperscript" canvas="world"></script>
 
-%if world_assets.get('js'):
+%if world_assets.get('paperjs'):
     <script src="/static/{{world_assets['js']}}" type="text/paperscript" canvas="world"></script>
+%elif world_assets.get('js'):
+    <script src="/static/{{world_assets['js']}}" type="text/javascript"></script>
 %end

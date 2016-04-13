@@ -168,6 +168,9 @@ class TimeSeries(World):
         if 'step' in data:
             self.last_realtime_step = datetime.utcnow().timestamp() * 1000
             self.current_step = data['step']
+            for uid in self.agents:
+                with self.agents[uid].datasource_lock:
+                    self.agents[uid].update()
 
     def get_world_view(self, step):
         return {

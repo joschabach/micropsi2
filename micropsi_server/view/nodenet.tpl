@@ -253,8 +253,9 @@
     <div class="seperator" style="text-align:center;"><a class="resizeHandle" id="nodenetSizeHandle"> </a></div>
 </div>
 
-
-% include netapi_console
+% if console:
+    % include netapi_console
+% end
 
 <div class="dropdown" id="node_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#node_menu"></a>

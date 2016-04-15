@@ -42,8 +42,11 @@ class Monitor(metaclass=ABCMeta):
         }
 
     @abstractmethod
-    def step(self, step):
+    def getvalue(self):
         pass  # pragma: no cover
+
+    def step(self, step):
+        self.values[step] = self.getvalue(step)
 
     def clear(self):
         self.values = {}
@@ -69,14 +72,14 @@ class NodeMonitor(Monitor):
         })
         return data
 
-    def step(self, step):
+    def getvalue(self):
         if self.nodenet.is_node(self.node_uid):
             if self.type == 'gate' and self.target in self.nodenet.get_node(self.node_uid).get_gate_types():
-                self.values[step] = self.nodenet.get_node(self.node_uid).get_gate(self.target).activations[self.sheaf]
+                return self.nodenet.get_node(self.node_uid).get_gate(self.target).activations[self.sheaf]
             if self.type == 'slot' and self.target in self.nodenet.get_node(self.node_uid).get_slot_types():
-                self.values[step] = self.nodenet.get_node(self.node_uid).get_slot(self.target).activations[self.sheaf]
+                return self.nodenet.get_node(self.node_uid).get_slot(self.target).activations[self.sheaf]
         else:
-            self.values[step] = None
+            return None
 
 
 class LinkMonitor(Monitor):
@@ -112,12 +115,12 @@ class LinkMonitor(Monitor):
                         return l
         return None
 
-    def step(self, step):
+    def getvalue(self):
         link = self.find_link()
         if link:
-            self.values[step] = getattr(self.find_link(), self.property)
+            return getattr(self.find_link(), self.property)
         else:
-            self.values[step] = None
+            return None
 
 
 class ModulatorMonitor(Monitor):
@@ -135,8 +138,8 @@ class ModulatorMonitor(Monitor):
         })
         return data
 
-    def step(self, step):
-        self.values[step] = self.nodenet.get_modulator(self.modulator)
+    def getvalue(self):
+        return self.nodenet.get_modulator(self.modulator)
 
 
 class CustomMonitor(Monitor):
@@ -153,5 +156,5 @@ class CustomMonitor(Monitor):
         })
         return data
 
-    def step(self, step):
-        self.values[step] = self.compiled_function(self.nodenet.netapi)
+    def getvalue(self):
+        return self.compiled_function(self.nodenet.netapi)

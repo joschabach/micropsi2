@@ -1288,20 +1288,10 @@ def run_operation(nodenet_uid, name, parameters, selection_uids):
             params[key] = parameters[key]
     if name in custom_operations:
         func = custom_operations[name]['function']
-        if cfg['micropsi2'].get('profile_runner'):
-            profiler = cProfile.Profile()
-            profiler.enable()
         result = {}
         ret = func(netapi, selection_uids, **params)
         if ret:
             result.update(ret)
-        if cfg['micropsi2'].get('profile_runner'):
-            profiler.disable()
-            s = io.StringIO()
-            sortby = 'cumtime'
-            ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
-            ps.print_stats('nodenet')
-            logging.getLogger("agent.%s" % nodenet_uid).debug(s.getvalue())
         return True, result
     else:
         return False, "Operation not found"

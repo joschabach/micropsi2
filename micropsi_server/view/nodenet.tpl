@@ -76,14 +76,6 @@
                         <td><select name="nodenet_worldadapter" id="nodenet_worldadapter"></select></td>
                     </tr>
                     <tr>
-                        <td><label for="nodenet_renderlinks">render links</label></td>
-                        <td><select name="nodenet_renderlinks" type="checkbox" name="nodenet_renderlinks" id="nodenet_renderlinks">
-                            <option value="always">always</option>
-                            <option value="selection">on selected nodes</option>
-                            <option value="no">never</opeion>
-                        </select></td>
-                    </tr>
-                    <tr>
                         <td><label for="nodenet_snap">Snap to grid</label></td>
                         <td><input type="checkbox" name="nodenet_snap" id="nodenet_snap" /></td>
                     </tr>
@@ -109,6 +101,21 @@
                     <tr>
                         <td><label for="nodespace_name">Name</label></td>
                         <td><input type="text" name="nodespace_name" id="nodespace_name"></td>
+                    </tr>
+                    <tr>
+                        <td><label for="nodespace_renderlinks">render links</label></td>
+                        <td><select name="nodespace_renderlinks" type="checkbox" name="nodespace_renderlinks" id="nodespace_renderlinks">
+                            <option value="always">always</option>
+                            <option value="selection">on selected nodes</option>
+                            <option value="no">never</opeion>
+                        </select></td>
+                    </tr>
+                    <tr>
+                        <td><label for="nodespace_activation_display">activation display</label></td>
+                        <td><select name="nodespace_activation_display" type="checkbox" name="nodespace_activation_display" id="nodespace_activation_display">
+                            <option value="redgreen">red / green</option>
+                            <option value="alpha">opacity / green</option>
+                        </select></td>
                     </tr>
                 </table>
                 <div class="controls">

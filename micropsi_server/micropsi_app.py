@@ -1057,6 +1057,16 @@ def get_nodespace_changes(nodenet_uid, nodespaces, since_step):
     return runtime.get_nodespace_changes(nodenet_uid, nodespaces, since_step)
 
 
+@rpc("get_nodespace_properties")
+def get_nodespace_properties(nodenet_uid, nodespace_uid=None):
+    return True, runtime.get_nodespace_properties(nodenet_uid, nodespace_uid)
+
+
+@rpc("set_nodespace_properties")
+def set_nodespace_properties(nodenet_uid, nodespace_uid, properties):
+    return True, runtime.set_nodespace_properties(nodenet_uid, nodespace_uid, properties)
+
+
 @rpc("get_node")
 def get_node(nodenet_uid, node_uid):
     return runtime.get_node(nodenet_uid, node_uid)

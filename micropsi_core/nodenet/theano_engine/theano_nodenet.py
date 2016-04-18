@@ -466,7 +466,8 @@ class TheanoNodenet(Nodenet):
         uidmap[self.rootpartition.rootnodespace_uid] = self.rootpartition.rootnodespace_uid
 
         # make sure we have the partition NoNs large enough to store the native modules:
-        node_maxindex = max(n['index'] for n in nodenet_data.get('nodes', {}).values())
+        indexes = [n['index'] for n in nodenet_data.get('nodes', {}).values()]
+        node_maxindex = max(indexes) if indexes else 10
         if self.rootpartition.NoN <= node_maxindex:
             self.rootpartition.grow_number_of_nodes((node_maxindex - self.rootpartition.NoN) + 1)
 

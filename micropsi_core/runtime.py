@@ -299,7 +299,7 @@ def get_nodenet(nodenet_uid):
         if nodenet_uid in get_available_nodenets():
             load_nodenet(nodenet_uid)
         else:
-            return None
+            raise KeyError("Unknown nodenet")
     return nodenets[nodenet_uid]
 
 

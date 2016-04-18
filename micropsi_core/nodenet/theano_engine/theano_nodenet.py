@@ -465,6 +465,11 @@ class TheanoNodenet(Nodenet):
         # re-use the root nodespace
         uidmap[self.rootpartition.rootnodespace_uid] = self.rootpartition.rootnodespace_uid
 
+        # make sure we have the partition NoNs large enough to store the native modules:
+        node_maxindex = max(n['index'] for n in nodenet_data.get('nodes', {}).values())
+        if self.rootpartition.NoN <= node_maxindex:
+            self.rootpartition.grow_number_of_nodes((node_maxindex - self.rootpartition.NoN) + 1)
+
         # instantiate partitions
         partitions_to_instantiate = nodenet_data.get('partition_parents', {})
         largest_pid = 0
@@ -474,10 +479,10 @@ class TheanoNodenet(Nodenet):
                 largest_pid = pid
             self.create_partition(pid,
                                   parent_uid,
-                                  True,
-                                  round(len(nodenet_data.get('nodes', {}).keys()) * 1.2 + 1),
-                                  7,
-                                  round(len(set(nodenet_data.get('nodespaces', {}).keys())) * 1.2) + 1)
+                                  sparse=True,
+                                  initial_number_of_nodes=round(node_maxindex * 1.2 + 1),
+                                  average_elements_per_node_assumption=7,
+                                  initial_number_of_nodespaces=round(len(set(nodenet_data.get('nodespaces', {}).keys())) * 1.2) + 1)
         self.last_allocated_partition = largest_pid
 
         # merge in spaces, make sure that parent nodespaces exist before children are initialized

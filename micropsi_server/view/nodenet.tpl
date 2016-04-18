@@ -261,7 +261,7 @@
 </div>
 
 % if console:
-    % include netapi_console
+    % include("netapi_console")
 % end
 
 <div class="dropdown" id="node_menu">

@@ -433,6 +433,8 @@ class TheanoNodenet(Nodenet):
         if initfrom.get('runner_condition'):
             self.set_runner_condition(initfrom['runner_condition'])
 
+        self._nodespace_ui_properties = initfrom.get('nodespace_ui_properties', {})
+
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)
             self.merge_data(initfrom, keep_uids=True, native_module_instances_only=True)
@@ -463,6 +465,12 @@ class TheanoNodenet(Nodenet):
         # re-use the root nodespace
         uidmap[self.rootpartition.rootnodespace_uid] = self.rootpartition.rootnodespace_uid
 
+        # make sure we have the partition NoNs large enough to store the native modules:
+        indexes = [n['index'] for n in nodenet_data.get('nodes', {}).values()]
+        node_maxindex = max(indexes) if indexes else 10
+        if self.rootpartition.NoN <= node_maxindex:
+            self.rootpartition.grow_number_of_nodes((node_maxindex - self.rootpartition.NoN) + 1)
+
         # instantiate partitions
         partitions_to_instantiate = nodenet_data.get('partition_parents', {})
         largest_pid = 0
@@ -472,10 +480,10 @@ class TheanoNodenet(Nodenet):
                 largest_pid = pid
             self.create_partition(pid,
                                   parent_uid,
-                                  True,
-                                  round(len(nodenet_data.get('nodes', {}).keys()) * 1.2 + 1),
-                                  7,
-                                  round(len(set(nodenet_data.get('nodespaces', {}).keys())) * 1.2) + 1)
+                                  sparse=True,
+                                  initial_number_of_nodes=round(node_maxindex * 1.2 + 1),
+                                  average_elements_per_node_assumption=7,
+                                  initial_number_of_nodespaces=round(len(set(nodenet_data.get('nodespaces', {}).keys())) * 1.2) + 1)
         self.last_allocated_partition = largest_pid
 
         # merge in spaces, make sure that parent nodespaces exist before children are initialized
@@ -888,7 +896,6 @@ class TheanoNodenet(Nodenet):
                     for s in node.get_slot_types():
                         node.get_slot(s).invalidate_caches()
 
-
     def create_nodespace(self, parent_uid, position, name="", uid=None, options=None):
         if options is None:
             options = {}
@@ -971,7 +978,7 @@ class TheanoNodenet(Nodenet):
     def delete_nodespace(self, nodespace_uid):
         if nodespace_uid is None or nodespace_uid == self.get_nodespace(None).uid:
             raise ValueError("The root nodespace cannot be deleted.")
-
+        self._nodespace_ui_properties.pop(nodespace_uid, None)
         partition = self.get_partition(nodespace_uid)
         nodespace_id = nodespace_from_id(nodespace_uid)
         if nodespace_id == 1 and partition.pid != self.rootpartition.pid:

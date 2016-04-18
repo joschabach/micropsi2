@@ -33,15 +33,6 @@ class DictNodespace(NetEntity, Nodespace):
         self.contents_last_changed = nodenet.current_step
         nodenet._register_nodespace(self)
 
-    def get_data(self):
-        return {
-            "uid": self.uid,
-            "index": self.index,
-            "name": self.name,
-            "position": self.position,
-            "parent_nodespace": self.parent_nodespace,
-        }
-
     def get_known_ids(self, entitytype=None):
         if entitytype:
             if entitytype not in self.__netentities:

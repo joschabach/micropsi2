@@ -573,5 +573,13 @@ class NetAPI(object):
                     if link.weight > 0:
                         link._set_weight(max(link.weight * decay_factor, 0))
 
+    def get_nodespace_properties(self, nodespace_uid=None):
+        """ retrieve the ui properties for the given nodespace"""
+        return self.__nodenet.get_nodespace_properties(nodespace_uid)
+
+    def set_nodespace_properties(self, nodespace_uid, properties):
+        """ sets the ui properties for the given nodespace"""
+        self.__nodenet.set_nodespace_properties(nodespace_uid, properties)
+
     def announce_nodes(self, nodespace_uid, numer_of_nodes, average_element_per_node):
         pass

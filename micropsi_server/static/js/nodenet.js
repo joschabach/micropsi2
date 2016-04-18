@@ -340,13 +340,9 @@ function setCurrentNodenet(uid, nodespace, changed){
             refreshNodespace(nodespace)
         },
         function(data) {
-            if(data.status == 500 || data.status === 0){
-                api.defaultErrorCallback(data);
-            } else {
-                currentNodenet = null;
-                $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
-                dialogs.notification(data.data, "Info");
-            }
+            api.defaultErrorCallback(data);
+            $('#loading').hide();
+            $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
         });
 }
 

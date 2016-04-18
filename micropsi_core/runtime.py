@@ -315,71 +315,69 @@ def load_nodenet(nodenet_uid):
     if nodenet_uid in nodenet_data:
         world_uid = worldadapter = None
 
-        nodenet_lock.acquire()
+        with nodenet_lock:
 
-        if cfg['micropsi2'].get('single_agent_mode'):
-            # unload all other nodenets if single_agent_mode is selected
-            for uid in list(nodenets.keys()):
-                if uid != nodenet_uid:
-                    unload_nodenet(uid)
+            if cfg['micropsi2'].get('single_agent_mode'):
+                # unload all other nodenets if single_agent_mode is selected
+                for uid in list(nodenets.keys()):
+                    if uid != nodenet_uid:
+                        unload_nodenet(uid)
 
-        if nodenet_uid not in nodenets:
-            data = nodenet_data[nodenet_uid]
+            if nodenet_uid not in nodenets:
+                data = nodenet_data[nodenet_uid]
 
-            worldadapter_instance = None
-            if hasattr(data, 'world') and data.world:
-                if data.world in worlds:
-                    world_uid = data.world
-                    worldadapter = data.get('worldadapter')
+                worldadapter_instance = None
+                if hasattr(data, 'world') and data.world:
+                    if data.world in worlds:
+                        world_uid = data.world
+                        worldadapter = data.get('worldadapter')
+                    else:
+                        logging.getLogger("system").warn("World %s for nodenet %s not found" % (data.world, data.uid))
+
+                if world_uid:
+                    result, worldadapter_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet_uid)
+                    if not result:
+                        logging.getLogger('system').warn(worldadapter_instance)
+                        worldadapter_instance = None
+                        worldadapter = None
+                        world_uid = None
+
+                engine = data.get('engine') or 'dict_engine'
+
+                logger.register_logger("agent.%s" % nodenet_uid, cfg['logging']['level_agent'])
+
+                params = {
+                    'name': data.name,
+                    'worldadapter': worldadapter,
+                    'worldadapter_instance': worldadapter_instance,
+                    'world': world_uid,
+                    'owner': data.owner,
+                    'uid': data.uid,
+                    'native_modules': filter_native_modules(engine),
+                    'use_modulators': data.get('use_modulators', True)  # getter for compatibility
+                }
+                if engine == 'dict_engine':
+                    from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
+                    nodenets[nodenet_uid] = DictNodenet(**params)
+                elif engine == 'theano_engine':
+                    from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
+                    nodenets[nodenet_uid] = TheanoNodenet(**params)
+                # Add additional engine types here
                 else:
-                    logging.getLogger("system").warn("World %s for nodenet %s not found" % (data.world, data.uid))
+                    return False, "Nodenet %s requires unknown engine %s" % (nodenet_uid, engine)
 
-            if world_uid:
-                result, worldadapter_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet_uid)
-                if not result:
-                    logging.getLogger('system').warn(worldadapter_instance)
-                    worldadapter_instance = None
-                    worldadapter = None
-                    world_uid = None
+                nodenets[nodenet_uid].load(os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid + ".json"))
 
-            engine = data.get('engine') or 'dict_engine'
+                netapi_consoles[nodenet_uid] = NetapiShell(nodenets[nodenet_uid].netapi)
 
-            logger.register_logger("agent.%s" % nodenet_uid, cfg['logging']['level_agent'])
-
-            params = {
-                'name': data.name,
-                'worldadapter': worldadapter,
-                'worldadapter_instance': worldadapter_instance,
-                'world': world_uid,
-                'owner': data.owner,
-                'uid': data.uid,
-                'native_modules': filter_native_modules(engine),
-                'use_modulators': data.get('use_modulators', True)  # getter for compatibility
-            }
-            if engine == 'dict_engine':
-                from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
-                nodenets[nodenet_uid] = DictNodenet(**params)
-            elif engine == 'theano_engine':
-                from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
-                nodenets[nodenet_uid] = TheanoNodenet(**params)
-            # Add additional engine types here
+                if "settings" in data:
+                    nodenets[nodenet_uid].settings = data["settings"].copy()
+                else:
+                    nodenets[nodenet_uid].settings = {}
             else:
-                nodenet_lock.release()
-                return False, "Nodenet %s requires unknown engine %s" % (nodenet_uid, engine)
+                world_uid = nodenets[nodenet_uid].world or None
+                worldadapter = nodenets[nodenet_uid].worldadapter
 
-            nodenets[nodenet_uid].load(os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid + ".json"))
-
-            netapi_consoles[nodenet_uid] = NetapiShell(nodenets[nodenet_uid].netapi)
-
-            if "settings" in data:
-                nodenets[nodenet_uid].settings = data["settings"].copy()
-            else:
-                nodenets[nodenet_uid].settings = {}
-        else:
-            world_uid = nodenets[nodenet_uid].world or None
-            worldadapter = nodenets[nodenet_uid].worldadapter
-
-        nodenet_lock.release()
         return True, nodenet_uid
     return False, "Nodenet %s not found in %s" % (nodenet_uid, PERSISTENCY_PATH)
 

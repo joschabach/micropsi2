@@ -276,8 +276,12 @@ function setCurrentNodenet(uid, nodespace, changed){
                 if(!(key in nodespaceProperties)){
                     nodespaceProperties[key] = {};
                 }
-                if(!nodespaceProperties[key].renderlinks) nodespaceProperties[key].renderlinks = renderlinks_default;
-                if(!nodespaceProperties[key].activation_display) nodespaceProperties[key].activation_display = 'redgreen';
+                if(!nodespaceProperties[key].renderlinks){
+                    nodespaceProperties[key].renderlinks = renderlinks_default;
+                }
+                if(!nodespaceProperties[key].activation_display){
+                    nodespaceProperties[key].activation_display = 'redgreen';
+                }
             }
             if(nodenetChanged){
                 clipboard = {};
@@ -354,7 +358,9 @@ function getNodespaceList(){
         for(var i=0; i < sorted.length; i++){
             nodespaces[sorted[i].uid] = sorted[i];
             html += '<li><a href="#" data-nodespace="'+sorted[i].uid+'">'+sorted[i].name+'</a></li>';
-            nodespaceProperties[sorted[i].uid] = sorted[i].properties;
+            for(var key in sorted[i].properties){
+                nodespaceProperties[sorted[i].uid][key] = sorted[i].properties[key];
+            }
         }
         $('#nodespace_control ul').html(html);
         $("#current_nodespace_name").text(nodespaces[currentNodeSpace].name);

@@ -469,7 +469,8 @@ def unload_nodenet(nodenet_uid):
     """
     if nodenet_uid not in nodenets:
         return False
-    del netapi_consoles[nodenet_uid]
+    if nodenet_uid in netapi_consoles:
+        del netapi_consoles[nodenet_uid]
     nodenet = nodenets[nodenet_uid]
     if nodenet.world:
         worlds[nodenet.world].unregister_nodenet(nodenet.uid)
@@ -1324,6 +1325,8 @@ def run_netapi_command(nodenet_uid, command):
 def get_netapi_autocomplete_data(nodenet_uid, name=None):
     import inspect
     nodenet = get_nodenet(nodenet_uid)
+    if nodenet is None or nodenet_uid not in netapi_consoles:
+        return {}
     nodetypes = get_available_node_types(nodenet_uid)
 
     shell = netapi_consoles[nodenet_uid]

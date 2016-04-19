@@ -38,8 +38,8 @@ h3 {
 .log_WARNING{color: #942628;}
 .log_ERROR {color: #e12628;}
 
-.delete_monitor i { opacity: 0.5; }
-.delete_monitor:hover i { opacity: 1; }
+.monitor_action i { opacity: 0.5; }
+.monitor_action:hover i { opacity: 1; }
 
 .logentry{
   display:block;

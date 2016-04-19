@@ -253,7 +253,9 @@ $(function(){
             if(currentMonitors.indexOf(mon.uid) > -1){
                 html += ' checked="checked"';
             }
-            html += ' /> <label for="'+mon.uid+'" style="display:inline;color:'+mon.color+'"><strong>' + mon.name + '</strong></label> <a href="#" class="delete_monitor" title="delete monitor" data="'+mon.uid+'"><i class="icon-trash"></i></a></li>';
+            html += ' /> <label for="'+mon.uid+'" style="display:inline;color:'+mon.color+'"><strong>' + mon.name + '</strong></label>';
+            html += '<a href="#" class="delete_monitor monitor_action" title="delete monitor" data="'+mon.uid+'"><i class="icon-trash"></i></a>';
+            html += '<a href="/monitor/export/'+currentNodenet+'-'+mon.uid+'" class="monitor_action" title="export monitor"><i class="icon-download-alt"></i></a></li>';
         }
         list.html(html);
         $('.monitor_checkbox', list).on('change', updateMonitorSelection);

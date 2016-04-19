@@ -111,6 +111,7 @@ $(function(){
         }
     });
 
+    var monitor_list_items = [];
 
     function init() {
         bindEvents();
@@ -247,6 +248,13 @@ $(function(){
         var html = '';
         var sorted = Object.values(monitors);
         sorted.sort(sortByName);
+        var keys = Object.keys(monitors);
+        var changed = $(keys).not(monitor_list_items).length != 0 || $(monitor_list_items).not(keys).length != 0;
+        if(!changed){
+            return;
+        }
+        monitor_list_items = [];
+        var els = $('.monitor');
         for(var i = 0; i < sorted.length; i++){
             var mon = sorted[i];
             html += '<li><input type="checkbox" class="monitor_checkbox" value="'+mon.uid+'" id="'+mon.uid+'"';
@@ -256,6 +264,7 @@ $(function(){
             html += ' /> <label for="'+mon.uid+'" style="display:inline;color:'+mon.color+'"><strong>' + mon.name + '</strong></label>';
             html += '<a href="#" class="delete_monitor monitor_action" title="delete monitor" data="'+mon.uid+'"><i class="icon-trash"></i></a>';
             html += '<a href="/monitor/export/'+currentNodenet+'-'+mon.uid+'" class="monitor_action" title="export monitor"><i class="icon-download-alt"></i></a></li>';
+            monitor_list_items.push(mon.uid);
         }
         list.html(html);
         $('.monitor_checkbox', list).on('change', updateMonitorSelection);

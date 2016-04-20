@@ -101,9 +101,10 @@ if (nodenetcookie && nodenetcookie.indexOf('/') > 0){
     currentNodeSpace = '';
 }
 
-if(!$.cookie('renderlinks')){
-    $.cookie('renderlinks', 'always');
-}
+nodespaceProperties = {};
+
+// compatibility
+renderlinks_default = $.cookie('renderlinks') || 'always';
 
 currentWorldadapter = null;
 
@@ -160,14 +161,6 @@ globalDataSources = [];
 globalDataTargets = [];
 
 available_operations = {};
-
-$(document).on('load_nodenet', function(event, uid){
-    ns = 'Root';
-    if(uid == currentNodenet){
-        ns = currentNodeSpace;
-    }
-    setCurrentNodenet(uid, ns);
-});
 
 $(document).on('nodenet_changed', function(event, new_nodenet){
     setCurrentNodenet(new_nodenet, null, true);
@@ -238,7 +231,6 @@ function setNodenetValues(data){
     $('#nodenet_uid').val(currentNodenet);
     $('#nodenet_name').val(data.name);
     $('#nodenet_snap').attr('checked', data.snap_to_grid);
-    $('#nodenet_renderlinks').val(nodenet_data.renderlinks);
     if (!jQuery.isEmptyObject(worldadapters)) {
         var worldadapter_select = $('#nodenet_worldadapter');
         worldadapter_select.val(data.worldadapter);
@@ -279,6 +271,18 @@ function setCurrentNodenet(uid, nodespace, changed){
 
             currentNodenet = uid;
             currentNodeSpace = data.rootnodespace;
+            nodespaceProperties = data.nodespace_ui_properties;
+            for(var key in data.nodespaces){
+                if(!(key in nodespaceProperties)){
+                    nodespaceProperties[key] = {};
+                }
+                if(!nodespaceProperties[key].renderlinks){
+                    nodespaceProperties[key].renderlinks = renderlinks_default;
+                }
+                if(!nodespaceProperties[key].activation_display){
+                    nodespaceProperties[key].activation_display = 'redgreen';
+                }
+            }
             if(nodenetChanged){
                 clipboard = {};
                 selection = {};
@@ -291,7 +295,6 @@ function setCurrentNodenet(uid, nodespace, changed){
             $(document).trigger('nodenet_loaded', uid);
 
             nodenet_data = data;
-            nodenet_data['renderlinks'] = $.cookie('renderlinks') || 'always';
             nodenet_data['snap_to_grid'] = $.cookie('snap_to_grid') || viewProperties.snap_to_grid;
 
             showDefaultForm();
@@ -341,13 +344,9 @@ function setCurrentNodenet(uid, nodespace, changed){
             refreshNodespace(nodespace)
         },
         function(data) {
-            if(data.status == 500 || data.status === 0){
-                api.defaultErrorCallback(data);
-            } else {
-                currentNodenet = null;
-                $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
-                dialogs.notification(data.data, "Info");
-            }
+            api.defaultErrorCallback(data);
+            $('#loading').hide();
+            $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
         });
 }
 
@@ -359,6 +358,9 @@ function getNodespaceList(){
         for(var i=0; i < sorted.length; i++){
             nodespaces[sorted[i].uid] = sorted[i];
             html += '<li><a href="#" data-nodespace="'+sorted[i].uid+'">'+sorted[i].name+'</a></li>';
+            for(var key in sorted[i].properties){
+                nodespaceProperties[sorted[i].uid][key] = sorted[i].properties[key];
+            }
         }
         $('#nodespace_control ul').html(html);
         $("#current_nodespace_name").text(nodespaces[currentNodeSpace].name);
@@ -426,7 +428,7 @@ function setNodespaceData(data, changed){
             }
         }
 
-        if(nodenet_data.renderlinks == 'selection'){
+        if(nodespaceProperties[currentNodeSpace].renderlinks == 'selection'){
             loadLinksForSelection(function(data){
                 for(var uid in links) {
                     if(!(uid in data)) {
@@ -585,7 +587,7 @@ function get_nodenet_params(){
     return {
         'nodespaces': [currentNodeSpace],
         'step': currentSimulationStep - 1,
-        'include_links': $.cookie('renderlinks') == 'always',
+        'include_links': nodespaceProperties[currentNodeSpace].renderlinks == 'always',
     }
 }
 function get_nodenet_diff_params(){
@@ -616,7 +618,7 @@ function refreshNodespace(nodespace, step, callback){
         nodenet_uid: currentNodenet,
         nodespaces: [nodespace],
     };
-    params.include_links = nodenet_data['renderlinks'] == 'always';
+    params.include_links = nodespaceProperties[nodespace].renderlinks == 'always';
     api.call('get_nodes', params , success=function(data){
         var changed = nodespace != currentNodeSpace;
         if(changed){
@@ -1202,13 +1204,12 @@ function createPlaceholder(node, direction, point){
 
 // draw link
 function renderLink(link, force) {
-    if(nodenet_data.renderlinks == 'no' && !force){
+    if(nodespaceProperties[currentNodeSpace].renderlinks == 'no'){
         return;
     }
-    if(nodenet_data.renderlinks == 'selection' && !force){
-        var is_hovered = hoverNode && (link.sourceNodeUid == hoverNode.uid || link.targetNodeUid == hoverNode.uid);
+    if(nodespaceProperties[currentNodeSpace].renderlinks == 'selection'){
         var is_selected = selection && (link.sourceNodeUid in selection || link.targetNodeUid in selection);
-        if(!is_hovered && !is_selected){
+        if(!is_selected){
             return;
         }
     }
@@ -1251,7 +1252,13 @@ function renderLink(link, force) {
     linkItem.name = "link";
     var linkContainer = new Group(linkItem);
     linkContainer.name = link.uid;
-
+    if (nodespaceProperties[currentNodeSpace].activation_display == 'alpha'){
+        if(sourceNode){
+            linkContainer.opacity = Math.max(0.1, sourceNode.sheaves[currentSheaf].activation)
+        } else {
+            linkContainer.opacity = 0.1
+        }
+    }
     linkLayer.addChild(linkContainer);
 }
 
@@ -1796,8 +1803,23 @@ function setActivation(node) {
     }
     if (node.uid in nodeLayer.children) {
         var nodeItem = nodeLayer.children[node.uid];
-        node.fillColor = nodeItem.children["activation"].children["body"].fillColor =
-            activationColor(node.sheaves[currentSheaf].activation, viewProperties.nodeColor);
+        if((nodespaceProperties[currentNodeSpace].activation_display != 'alpha') || node.sheaves[currentSheaf].activation > 0.5){
+            node.fillColor = nodeItem.children["activation"].children["body"].fillColor =
+                activationColor(node.sheaves[currentSheaf].activation, viewProperties.nodeColor);
+        }
+        if(nodespaceProperties[currentNodeSpace].activation_display == 'alpha'){
+            for(var i in nodeItem.children){
+                if(nodeItem.children[i].name == 'labelText'){
+                    nodeItem.children[i].opacity = 0;
+                    if (node.sheaves[currentSheaf].activation > 0.5){
+                        nodeItem.children[i].opacity = node.sheaves[currentSheaf].activation;
+                    }
+                } else {
+                    nodeItem.children[i].opacity = Math.max(0.1, node.sheaves[currentSheaf].activation)
+                }
+            }
+        }
+
         if (!isCompact(node) && (node.slotIndexes.length || node.gateIndexes.length)) {
             var i=0;
             var type;
@@ -1881,7 +1903,7 @@ function deselectLink(linkUid) {
         delete selection[linkUid];
         if(linkUid in linkLayer.children){
             var linkShape = linkLayer.children[linkUid].children["link"];
-            if(nodenet_data.renderlinks == 'no' || nodenet_data.renderlinks == 'selection'){
+            if(nodespaceProperties[currentNodeSpace].renderlinks == 'no' || nodespaceProperties[currentNodeSpace].renderlinks == 'selection'){
                 linkLayer.children[linkUid].remove();
             }
             linkShape.children["line"].strokeColor = links[linkUid].strokeColor;
@@ -2387,7 +2409,7 @@ function onMouseUp(event) {
         selectionRectangle.width = selectionRectangle.height = 1;
         selectionBox.setBounds(selectionRectangle);
     }
-    if(currentNodenet && nodenet_data && nodenet_data['renderlinks'] == 'selection'){
+    if(currentNodenet && nodenet_data && nodespaceProperties[currentNodeSpace].renderlinks == 'selection'){
         loadLinksForSelection();
     }
 }
@@ -3497,7 +3519,7 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
                                 nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
                             }
                         }
-                        if(nodenet_data.renderlinks == 'always'){
+                        if(nodespaceProperties[currentNodeSpace].renderlinks == 'always'){
                             addLink(link);
                         }
                     });
@@ -3750,8 +3772,6 @@ function handleEditNodenet(event){
     if(worldadapter){
         params.worldadapter = worldadapter;
     }
-    nodenet_data.renderlinks = $('#nodenet_renderlinks').val();
-    $.cookie('renderlinks', nodenet_data.renderlinks || '', {path: '/', expires: 7})
     nodenet_data.snap_to_grid = $('#nodenet_snap').attr('checked');
     $.cookie('snap_to_grid', nodenet_data.snap_to_grid || '', {path: '/', expires: 7})
     api.call("set_nodenet_properties", params,
@@ -3760,7 +3780,8 @@ function handleEditNodenet(event){
             if(reload){
                 window.location.reload();
             } else {
-                setCurrentNodenet(currentNodenet, currentNodeSpace);
+                // setCurrentNodenet(currentNodenet, currentNodeSpace);
+                refreshNodespace();
             }
         }
     );
@@ -3771,6 +3792,27 @@ function handleEditNodespace(event){
     var name = $('#nodespace_name').val();
     if(name != nodespaces[currentNodeSpace].name){
         renameNode(currentNodeSpace, name);
+    }
+    properties = {};
+    properties['renderlinks'] = $('#nodespace_renderlinks').val();
+    properties['activation_display'] = $('#nodespace_activation_display').val();
+    var update = false;
+    for(var key in properties){
+        if(properties[key] != nodespaceProperties[currentNodeSpace][key]){
+            update = true;
+            nodespaceProperties[currentNodeSpace][key] = properties[key];
+        } else {
+            delete properties[key];
+        }
+    }
+    if(update){
+        params = {nodenet_uid: currentNodenet, nodespace_uid: currentNodeSpace, properties: properties}
+        api.call('set_nodespace_properties', params);
+        if ('renderlinks' in properties){
+            refreshNodespace();
+        } else {
+            redrawNodeNet();
+        }
     }
 }
 
@@ -4079,6 +4121,8 @@ function updateNodespaceForm(){
         } else {
             $('#nodespace_name').removeAttr('disabled');
         }
+        $('#nodespace_renderlinks').val(nodespaceProperties[currentNodeSpace].renderlinks);
+        $('#nodespace_activation_display').val(nodespaceProperties[currentNodeSpace].activation_display);
     }
 }
 

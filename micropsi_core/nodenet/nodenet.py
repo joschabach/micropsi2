@@ -66,7 +66,8 @@ class Nodenet(metaclass=ABCMeta):
             'worldadapter': self._worldadapter_uid,
             'version': NODENET_VERSION,
             'runner_condition': self._runner_condition,
-            'use_modulators': self.use_modulators
+            'use_modulators': self.use_modulators,
+            'nodespace_ui_properties': self._nodespace_ui_properties
         }
         return data
 
@@ -154,6 +155,7 @@ class Nodenet(metaclass=ABCMeta):
 
         self.owner = owner
         self._monitors = {}
+        self._nodespace_ui_properties = {}
 
         self.netlock = Lock()
 
@@ -296,6 +298,24 @@ class Nodenet(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
+    def set_nodespace_properties(self, nodespace_uid, data):
+        """
+        Sets a persistent property for UI purposes for the given nodespace
+        """
+        nodespace_uid = self.get_nodespace(nodespace_uid).uid
+        if nodespace_uid not in self._nodespace_ui_properties:
+            self._nodespace_ui_properties[nodespace_uid] = {}
+        self._nodespace_ui_properties[nodespace_uid].update(data)
+
+    def get_nodespace_properties(self, nodespace_uid=None):
+        """
+        Return the nodespace properties of all or only the given nodespace
+        """
+        if nodespace_uid:
+            return self._nodespace_ui_properties.get(nodespace_uid, {})
+        else:
+            return self._nodespace_ui_properties
+
     @abstractmethod
     def set_entity_positions(self, positions):
         """ Sets the position of nodes or nodespaces.
@@ -310,7 +330,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def delete_nodespace(self, uid):
+    def delete_nodespace(self, nodespace_uid):
         """
         Deletes the nodespace with the given UID, and everything it contains
         """

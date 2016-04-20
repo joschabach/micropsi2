@@ -299,7 +299,7 @@ def get_nodenet(nodenet_uid):
         if nodenet_uid in get_available_nodenets():
             load_nodenet(nodenet_uid)
         else:
-            return None
+            raise KeyError("Unknown nodenet")
     return nodenets[nodenet_uid]
 
 
@@ -315,71 +315,69 @@ def load_nodenet(nodenet_uid):
     if nodenet_uid in nodenet_data:
         world_uid = worldadapter = None
 
-        nodenet_lock.acquire()
+        with nodenet_lock:
 
-        if cfg['micropsi2'].get('single_agent_mode'):
-            # unload all other nodenets if single_agent_mode is selected
-            for uid in list(nodenets.keys()):
-                if uid != nodenet_uid:
-                    unload_nodenet(uid)
+            if cfg['micropsi2'].get('single_agent_mode'):
+                # unload all other nodenets if single_agent_mode is selected
+                for uid in list(nodenets.keys()):
+                    if uid != nodenet_uid:
+                        unload_nodenet(uid)
 
-        if nodenet_uid not in nodenets:
-            data = nodenet_data[nodenet_uid]
+            if nodenet_uid not in nodenets:
+                data = nodenet_data[nodenet_uid]
 
-            worldadapter_instance = None
-            if hasattr(data, 'world') and data.world:
-                if data.world in worlds:
-                    world_uid = data.world
-                    worldadapter = data.get('worldadapter')
+                worldadapter_instance = None
+                if hasattr(data, 'world') and data.world:
+                    if data.world in worlds:
+                        world_uid = data.world
+                        worldadapter = data.get('worldadapter')
+                    else:
+                        logging.getLogger("system").warn("World %s for nodenet %s not found" % (data.world, data.uid))
+
+                if world_uid:
+                    result, worldadapter_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet_uid)
+                    if not result:
+                        logging.getLogger('system').warn(worldadapter_instance)
+                        worldadapter_instance = None
+                        worldadapter = None
+                        world_uid = None
+
+                engine = data.get('engine') or 'dict_engine'
+
+                logger.register_logger("agent.%s" % nodenet_uid, cfg['logging']['level_agent'])
+
+                params = {
+                    'name': data.name,
+                    'worldadapter': worldadapter,
+                    'worldadapter_instance': worldadapter_instance,
+                    'world': world_uid,
+                    'owner': data.owner,
+                    'uid': data.uid,
+                    'native_modules': filter_native_modules(engine),
+                    'use_modulators': data.get('use_modulators', True)  # getter for compatibility
+                }
+                if engine == 'dict_engine':
+                    from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
+                    nodenets[nodenet_uid] = DictNodenet(**params)
+                elif engine == 'theano_engine':
+                    from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
+                    nodenets[nodenet_uid] = TheanoNodenet(**params)
+                # Add additional engine types here
                 else:
-                    logging.getLogger("system").warn("World %s for nodenet %s not found" % (data.world, data.uid))
+                    return False, "Nodenet %s requires unknown engine %s" % (nodenet_uid, engine)
 
-            if world_uid:
-                result, worldadapter_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet_uid)
-                if not result:
-                    logging.getLogger('system').warn(worldadapter_instance)
-                    worldadapter_instance = None
-                    worldadapter = None
-                    world_uid = None
+                nodenets[nodenet_uid].load(os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid + ".json"))
 
-            engine = data.get('engine') or 'dict_engine'
+                netapi_consoles[nodenet_uid] = NetapiShell(nodenets[nodenet_uid].netapi)
 
-            logger.register_logger("agent.%s" % nodenet_uid, cfg['logging']['level_agent'])
-
-            params = {
-                'name': data.name,
-                'worldadapter': worldadapter,
-                'worldadapter_instance': worldadapter_instance,
-                'world': world_uid,
-                'owner': data.owner,
-                'uid': data.uid,
-                'native_modules': filter_native_modules(engine),
-                'use_modulators': data.get('use_modulators', True)  # getter for compatibility
-            }
-            if engine == 'dict_engine':
-                from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
-                nodenets[nodenet_uid] = DictNodenet(**params)
-            elif engine == 'theano_engine':
-                from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
-                nodenets[nodenet_uid] = TheanoNodenet(**params)
-            # Add additional engine types here
+                if "settings" in data:
+                    nodenets[nodenet_uid].settings = data["settings"].copy()
+                else:
+                    nodenets[nodenet_uid].settings = {}
             else:
-                nodenet_lock.release()
-                return False, "Nodenet %s requires unknown engine %s" % (nodenet_uid, engine)
+                world_uid = nodenets[nodenet_uid].world or None
+                worldadapter = nodenets[nodenet_uid].worldadapter
 
-            nodenets[nodenet_uid].load(os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid + ".json"))
-
-            netapi_consoles[nodenet_uid] = NetapiShell(nodenets[nodenet_uid].netapi)
-
-            if "settings" in data:
-                nodenets[nodenet_uid].settings = data["settings"].copy()
-            else:
-                nodenets[nodenet_uid].settings = {}
-        else:
-            world_uid = nodenets[nodenet_uid].world or None
-            worldadapter = nodenets[nodenet_uid].worldadapter
-
-        nodenet_lock.release()
         return True, nodenet_uid
     return False, "Nodenet %s not found in %s" % (nodenet_uid, PERSISTENCY_PATH)
 
@@ -471,7 +469,8 @@ def unload_nodenet(nodenet_uid):
     """
     if nodenet_uid not in nodenets:
         return False
-    del netapi_consoles[nodenet_uid]
+    if nodenet_uid in netapi_consoles:
+        del netapi_consoles[nodenet_uid]
     nodenet = nodenets[nodenet_uid]
     if nodenet.world:
         worlds[nodenet.world].unregister_nodenet(nodenet.uid)
@@ -726,6 +725,7 @@ def get_nodespace_list(nodenet_uid):
             'name': nodespace.name,
             'parent': nodespace.parent_nodespace,
             'nodes': {},
+            'properties': nodenet.get_nodespace_properties(uid)
         }
         for nid in nodespace.get_known_ids('nodes'):
             data[uid]['nodes'][nid] = {
@@ -867,11 +867,21 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
         return False, "Could not clone nodes. See log for details."
 
 
-def get_nodespace_changes(nodenet_uid, ndoespaces, since_step):
+def get_nodespace_changes(nodenet_uid, nodespaces, since_step):
     """ Returns a dict of changes that happened in the nodenet in the given nodespace since the given step.
     Contains uids of deleted nodes and nodespaces and the datadicts for changed or added nodes and nodespaces
     """
-    return get_nodenet(nodenet_uid).get_nodespace_changes(ndoespaces, since_step)
+    return get_nodenet(nodenet_uid).get_nodespace_changes(nodespaces, since_step)
+
+
+def get_nodespace_properties(nodenet_uid, nodespace_uid=None):
+    """ retrieve the ui properties for the given nodespace"""
+    return get_nodenet(nodenet_uid).get_nodespace_properties(nodespace_uid)
+
+
+def set_nodespace_properties(nodenet_uid, nodespace_uid, properties):
+    """ sets the ui properties for the given nodespace"""
+    return get_nodenet(nodenet_uid).set_nodespace_properties(nodespace_uid, properties)
 
 
 def __pythonify(name):
@@ -1288,20 +1298,10 @@ def run_operation(nodenet_uid, name, parameters, selection_uids):
             params[key] = parameters[key]
     if name in custom_operations:
         func = custom_operations[name]['function']
-        if cfg['micropsi2'].get('profile_runner'):
-            profiler = cProfile.Profile()
-            profiler.enable()
         result = {}
         ret = func(netapi, selection_uids, **params)
         if ret:
             result.update(ret)
-        if cfg['micropsi2'].get('profile_runner'):
-            profiler.disable()
-            s = io.StringIO()
-            sortby = 'cumtime'
-            ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
-            ps.print_stats('nodenet')
-            logging.getLogger("agent.%s" % nodenet_uid).debug(s.getvalue())
         return True, result
     else:
         return False, "Operation not found"
@@ -1325,6 +1325,8 @@ def run_netapi_command(nodenet_uid, command):
 def get_netapi_autocomplete_data(nodenet_uid, name=None):
     import inspect
     nodenet = get_nodenet(nodenet_uid)
+    if nodenet is None or nodenet_uid not in netapi_consoles:
+        return {}
     nodetypes = get_available_node_types(nodenet_uid)
 
     shell = netapi_consoles[nodenet_uid]

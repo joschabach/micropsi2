@@ -46,6 +46,10 @@ $(function(){
 
     init();
 
+    if(!$('#nodenet_editor').length && currentNodenet){
+        refreshMonitors();
+    }
+
     $('.layoutbtn').on('click', function(event){
         event.preventDefault();
         var target = $(event.target);
@@ -83,6 +87,7 @@ $(function(){
     $(document).on('nodenet_changed', function(data, newNodenet){
         currentNodenet = newNodenet;
         init();
+        refreshMonitors();
     });
     $(document).on('nodenet_loaded', function(data, newNodenet){
         currentNodenet = newNodenet;
@@ -109,7 +114,6 @@ $(function(){
 
     function init() {
         bindEvents();
-        refreshMonitors();
     }
 
     function getPollParams(){

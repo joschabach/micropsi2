@@ -33,6 +33,8 @@ from configuration import config as cfg
 VERSION = cfg['micropsi2']['version']
 APPTITLE = cfg['micropsi2']['apptitle']
 
+INCLUDE_CONSOLE = cfg['micropsi2']['host'] == 'localhost'
+
 APP_PATH = os.path.dirname(__file__)
 
 micropsi_app = Bottle()
@@ -170,13 +172,13 @@ def server_static(filepath):
 def index():
     first_user = usermanager.users == {}
     user_id, permissions, token = get_request_data()
-    return _add_world_list("viewer", mode="all", first_user=first_user, logging_levels=runtime.get_logging_levels(), version=VERSION, user_id=user_id, permissions=permissions)
+    return _add_world_list("viewer", mode="all", first_user=first_user, logging_levels=runtime.get_logging_levels(), version=VERSION, user_id=user_id, permissions=permissions, console=INCLUDE_CONSOLE)
 
 
 @micropsi_app.route("/nodenet")
 def nodenet():
     user_id, permissions, token = get_request_data()
-    return template("viewer", mode="nodenet", version=VERSION, user_id=user_id, permissions=permissions)
+    return template("viewer", mode="nodenet", version=VERSION, user_id=user_id, permissions=permissions, console=INCLUDE_CONSOLE)
 
 
 @micropsi_app.route("/monitors")
@@ -1060,6 +1062,16 @@ def get_nodespace_changes(nodenet_uid, nodespaces, since_step):
     return runtime.get_nodespace_changes(nodenet_uid, nodespaces, since_step)
 
 
+@rpc("get_nodespace_properties")
+def get_nodespace_properties(nodenet_uid, nodespace_uid=None):
+    return True, runtime.get_nodespace_properties(nodenet_uid, nodespace_uid)
+
+
+@rpc("set_nodespace_properties")
+def set_nodespace_properties(nodenet_uid, nodespace_uid, properties):
+    return True, runtime.set_nodespace_properties(nodenet_uid, nodespace_uid, properties)
+
+
 @rpc("get_node")
 def get_node(nodenet_uid, node_uid):
     return runtime.get_node(nodenet_uid, node_uid)
@@ -1251,7 +1263,10 @@ def get_agent_dashboard(nodenet_uid):
 
 @rpc("run_netapi_command", permission_required="manage nodenets")
 def run_netapi_command(nodenet_uid, command):
-    return runtime.run_netapi_command(nodenet_uid, command)
+    if INCLUDE_CONSOLE:
+        return runtime.run_netapi_command(nodenet_uid, command)
+    else:
+        raise RuntimeError("Netapi console only available if serving to localhost only")
 
 
 @rpc("get_netapi_signatures")

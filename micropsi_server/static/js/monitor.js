@@ -262,8 +262,8 @@ $(function(){
                 html += ' checked="checked"';
             }
             html += ' /> <label for="'+mon.uid+'" style="display:inline;color:'+mon.color+'"><strong>' + mon.name + '</strong></label>';
-            html += '<a href="#" class="delete_monitor monitor_action" title="delete monitor" data="'+mon.uid+'"><i class="icon-trash"></i></a>';
-            html += '<a href="/monitor/export/'+currentNodenet+'-'+mon.uid+'" class="monitor_action" title="export monitor"><i class="icon-download-alt"></i></a></li>';
+            html += ' <a href="#" class="delete_monitor monitor_action" title="delete monitor" data="'+mon.uid+'"><i class="icon-trash"></i></a>';
+            html += ' <a href="/monitor/export/'+currentNodenet+'-'+mon.uid+'" class="monitor_action" title="export monitor"><i class="icon-download-alt"></i></a></li>';
             monitor_list_items.push(mon.uid);
         }
         list.html(html);
@@ -339,6 +339,12 @@ $(function(){
                     if (step >= xstart && step <= xmax) {
                         y2max = Math.max(y2max, monitors[uid].values[step]);
                         y2min = Math.min(y2min, monitors[uid].values[step]);
+                    }
+                } else if(monitors[uid].classname == 'GroupMonitor'){
+                    y1values.concat(monitors[uid].values[step]);
+                    if (step >= xstart && step <= xmax) {
+                        y1max = Math.max(y1max, Math.max.apply(Math, monitors[uid].values[step]));
+                        y1min = Math.min(y1min, Math.min.apply(Math, monitors[uid].values[step]));
                     }
                 } else {
                     y1values.push(monitors[uid].values[step]);
@@ -449,6 +455,39 @@ $(function(){
                         return ((position && d[0] == position) ? 4 : 2);
                       });
 
+            } else if(monitors[uid].classname == 'GroupMonitor'){
+                for(var i = 0; i < monitors[uid].values[step].length; i++){
+                    var line = d3.svg.line()
+                        .x(function(d) {
+                            return x(d[0]);
+                        })
+                        .y(function(d) {
+                            return y1(d[1]);
+                        })
+                        .defined(function(d){
+                            return d[1] == 0 || Boolean(d[1])
+                        });
+                    for (var step in monitors[uid].values) {
+                        step = parseInt(step, 10);
+                        if(step >= xstart && step <= xmax){
+                            if(monitors[uid].values[step]){
+                                data.push([step, parseFloat(monitors[uid].values[step][i])]);
+                            } else {
+                                data.push([step, null]);
+                            }
+                        }
+                    }
+                    var points = svg.selectAll(".point")
+                        .data(data)
+                        .enter().append("svg:circle")
+                        .filter(function(d, i){ return d[1] == 0 || Boolean(d[1]) })
+                         .attr("fill", function(d, i) { return monitors[uid].color })
+                         .attr("cx", function(d, i) { return x(d[0]); })
+                         .attr("cy", function(d, i) { return y1(d[1]); })
+                         .attr("r", function(d) {
+                            return ((position && d[0] == position) ? 4 : 2);
+                          });
+                }
             } else {
                 var line = d3.svg.line()
                     .x(function(d) {

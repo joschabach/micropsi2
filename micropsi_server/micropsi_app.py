@@ -878,6 +878,12 @@ def merge_nodenet_rpc(nodenet_uid, nodenet_data):
 
 
 # World
+
+@rpc("step_nodenets_in_world")
+def step_nodenets_in_world(world_uid, nodenet_uid=None, steps=1):
+    return runtime.step_nodenets_in_world(world_uid, nodenet_uid=nodenet_uid, steps=steps)
+
+
 @rpc("get_available_worlds")
 def get_available_worlds(user_id=None):
     data = {}

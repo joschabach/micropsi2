@@ -639,6 +639,25 @@ def step_nodenet(nodenet_uid):
     return nodenet.current_step
 
 
+def step_nodenets_in_world(world_uid, nodenet_uid=None, steps=1):
+    """ Advances all nodenets registered in the given world
+    (or, only the given nodenet) by the given number of steps"""
+    nodenet = None
+    if nodenet_uid is not None:
+        nodenet = get_nodenet(nodenet_uid)
+    if nodenet and nodenet.world == world_uid:
+        for i in range(steps):
+            nodenet.timed_step()
+            nodenet.update_monitors()
+    else:
+        for i in range(steps):
+            for uid in worlds[world_uid].agents:
+                nodenet = get_nodenet(uid)
+                nodenet.timed_step()
+                nodenet.update_monitors()
+    return True
+
+
 def revert_nodenet(nodenet_uid, also_revert_world=False):
     """Returns the nodenet to the last saved state."""
     nodenet = get_nodenet(nodenet_uid)

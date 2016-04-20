@@ -48,22 +48,33 @@ $(function(){
             slider.on('slideStop', set_world_state);
         }
         slider.slider('setValue', data['current_step']);
+        $('.world_step').text(data.current_step);
     }
 
     function set_world_state(event){
         var value = parseInt(slider.val());
         api.call('set_world_data', {world_uid: currentWorld, data: {step: value}}, function(){
             if(advance_nodenet.attr('checked')){
-                api.call('step_nodenet', {nodenet_uid: currentNodenet, amount: parseInt(nodenet_amount.val())}, function(){
-                    $(document).trigger('runner_stepped');
+                var nn_uid = (currentNodenet) ? currentNodenet : null;
+                api.call('step_nodenets_in_world', {world_uid: currentWorld, nodenet_uid: nn_uid, steps: parseInt(nodenet_amount.val())}, function(){
+                    if(nn_uid){
+                        $(document).trigger('runner_stepped');
+                    } else {
+                        console.log('qwer');
+                    }
                 });
             } else {
-                $(document).trigger('runner_stepped');
+                get_world_state();
             }
         });
     }
 
+    function get_world_state(){
+        api.call('get_world_view', {'world_uid': currentWorld, 'step': 0}, set_world_data);
+    }
+
     register_stepping_function('world', get_world_data, set_world_data);
 
-    api.call('get_world_view', {'world_uid': currentWorld, 'step': 0}, set_world_data);
+    get_world_state();
+
 });

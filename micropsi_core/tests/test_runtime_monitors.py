@@ -199,3 +199,33 @@ def test_fetch_partial_monitor_data(fixed_nodenet):
     values = data[uid]['values']
     assert len(values.keys()) == 41
     assert set(list(values.keys())) == set(range(10, 51))
+
+
+def test_add_group_monitor(test_nodenet):
+    nodenet = micropsi.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    nodespace = netapi.get_nodespace(None)
+    nodes = []
+    for i in range(10):
+        node = netapi.create_node('Register', None, "testnode_%d" % i)
+        nodes.append(node)
+        if i > 0:
+            netapi.link(nodes[i - 1], 'gen', node, 'gen')
+    source = netapi.create_node("Register", None, "Source")
+    netapi.link(source, 'gen', source, 'gen')
+    netapi.link(source, 'gen', nodes[0], 'gen')
+    source.activation = 1
+    monitor_uid = netapi.add_group_monitor(nodespace.uid, 'testndoes', node_name_prefix='testnode', gate='gen', color='purple')
+    for i in range(5):
+        micropsi.step_nodenet(test_nodenet)
+    data = micropsi.export_monitor_data(test_nodenet, monitor_uid=monitor_uid)
+    assert set(data['values'][4][:4]) == {1.0}  # first 4 active
+    assert set(data['values'][4][4:]) == {0.0}  # rest off
+    micropsi.save_nodenet(test_nodenet)
+    micropsi.revert_nodenet(test_nodenet)
+    data2 = micropsi.export_monitor_data(test_nodenet, monitor_uid=monitor_uid)
+    assert data2 == data
+    micropsi.step_nodenet(test_nodenet)
+    data3 = micropsi.export_monitor_data(test_nodenet, monitor_uid=monitor_uid)
+    assert set(data3['values'][6][:6]) == {1.0}  # first 6 active
+    assert set(data3['values'][6][6:]) == {0.0}  # rest off

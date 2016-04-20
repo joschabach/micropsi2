@@ -549,6 +549,12 @@ class NetAPI(object):
         Returns the uid of the new monitor."""
         return self.__nodenet.add_custom_monitor(function, name, color=color)
 
+    def add_group_monitor(self, nodespace, name, node_name_prefix='', node_uids=[], gate='gen', color=None):
+        """Adds a continuous monitor, that tracks the activations of the given group
+        return-value for every calculation step.
+        Returns the uid of the new monitor."""
+        return self.__nodenet.add_group_monitor(nodespace, name, node_name_prefix=node_name_prefix, node_uids=node_uids, gate=gate, color=color)
+
     def get_monitor(self, uid):
         """Returns the monitor with the given uid"""
         return self.__nodenet.get_monitor(uid)

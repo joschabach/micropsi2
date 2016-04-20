@@ -615,6 +615,14 @@ class Nodenet(metaclass=ABCMeta):
         self._monitors[mon.uid] = mon
         return mon.uid
 
+    def add_group_monitor(self, nodespace, name, node_name_prefix='', node_uids=[], gate='gen', color=None):
+        """Adds a continuous monitor, that tracks the activations of the given group
+        return-value for every calculation step.
+        Returns the uid of the new monitor."""
+        mon = monitor.GroupMonitor(self, nodespace, name, node_name_prefix, node_uids, gate, color=color)
+        self._monitors[mon.uid] = mon
+        return mon.uid
+
     def get_monitor(self, uid):
         return self._monitors.get(uid)
 

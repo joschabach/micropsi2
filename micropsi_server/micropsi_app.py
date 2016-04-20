@@ -1019,6 +1019,11 @@ def add_custom_monitor(nodenet_uid, function, name, color=None):
     return True, runtime.add_custom_monitor(nodenet_uid, function, name, color=color)
 
 
+@rpc("add_group_monitor")
+def add_group_monitor(nodenet_uid, nodespace, name, node_name_prefix='', node_uids=[], gate='gen', color=None):
+    return True, runtime.add_group_monitor(nodenet_uid, nodespace, name, node_name_prefix=node_name_prefix, node_uids=node_uids, gate=gate, color=color)
+
+
 @rpc("remove_monitor")
 def remove_monitor(nodenet_uid, monitor_uid):
     try:

@@ -50,6 +50,13 @@ def add_custom_monitor(nodenet_uid, function, name, color=None):
     return nodenet.add_custom_monitor(function, name, color=color)
 
 
+def add_group_monitor(nodenet_uid, nodespace, name, node_name_prefix='', node_uids=[], gate='gen', color=None):
+    """Adds a group monitor, that tracks the activations of the given group
+    Returns the uid of the new monitor."""
+    nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
+    return nodenet.add_group_monitor(nodespace, name, node_name_prefix=node_name_prefix, node_uids=node_uids, gate=gate, color=color)
+
+
 def remove_monitor(nodenet_uid, monitor_uid):
     """Deletes an activation monitor."""
     micropsi_core.runtime.get_nodenet(nodenet_uid).remove_monitor(monitor_uid)

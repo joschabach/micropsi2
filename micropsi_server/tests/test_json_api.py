@@ -689,6 +689,62 @@ def test_add_custom_monitor(app, test_nodenet):
     assert response.json_body['data']['name'] == 'nodecount'
 
 
+def test_add_group_monitor_by_name(app, test_nodenet):
+    app.set_auth()
+    uids = []
+    for i in range(3):
+        response = app.post_json('/rpc/add_node', params={
+            'nodenet_uid': test_nodenet,
+            'type': 'Register',
+            'position': [23, 23, 12],
+            'nodespace': None,
+            'name': 'Testnode %d' % i
+        })
+        uids.append(response.json_body['data'])
+    response = app.post_json('/rpc/add_group_monitor', {
+        'nodenet_uid': test_nodenet,
+        'name': 'testmonitor',
+        'nodespace': None,
+        'node_name_prefix': 'Testnode',
+        'gate': 'gen'
+    })
+    mon_uid = response.json_body['data']
+    response = app.post_json('/rpc/export_monitor_data', params={
+        'nodenet_uid': test_nodenet,
+        'monitor_uid': mon_uid
+    })
+    assert response.json_body['data']['name'] == 'testmonitor'
+    assert response.json_body['data']['node_uids'] == uids
+
+
+def test_add_group_monitor_by_ids(app, test_nodenet):
+    app.set_auth()
+    uids = []
+    for i in range(3):
+        response = app.post_json('/rpc/add_node', params={
+            'nodenet_uid': test_nodenet,
+            'type': 'Register',
+            'position': [23, 23, 12],
+            'nodespace': None,
+            'name': 'Testnode %d' % i
+        })
+        uids.append(response.json_body['data'])
+    response = app.post_json('/rpc/add_group_monitor', {
+        'nodenet_uid': test_nodenet,
+        'name': 'testmonitor',
+        'nodespace': None,
+        'node_uids': uids,
+        'gate': 'gen'
+    })
+    mon_uid = response.json_body['data']
+    response = app.post_json('/rpc/export_monitor_data', params={
+        'nodenet_uid': test_nodenet,
+        'monitor_uid': mon_uid
+    })
+    assert response.json_body['data']['name'] == 'testmonitor'
+    assert response.json_body['data']['node_uids'] == uids
+
+
 def test_remove_monitor(app, test_nodenet, node):
     response = app.post_json('/rpc/add_gate_monitor', params={
         'nodenet_uid': test_nodenet,

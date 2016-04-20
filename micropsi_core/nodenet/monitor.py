@@ -52,6 +52,37 @@ class Monitor(metaclass=ABCMeta):
         self.values = {}
 
 
+class GroupMonitor(Monitor):
+
+    def __init__(self, nodenet, nodespace, name, name_prefix='', node_uids=[], gate='gen', uid=None, color=None, values={}, **_):
+        super().__init__(nodenet, name=name, uid=uid, color=color, values=values)
+        self.nodespace = nodespace
+        self.node_uids = node_uids
+        self.name_prefix = name_prefix
+        self.gate = gate
+        if len(node_uids) == 0:
+            self.nodenet.group_nodes_by_names(nodespace, name_prefix, gatetype=gate, group_name=name)
+            self.node_uids = self.nodenet.get_node_uids(nodespace, name)
+        else:
+            self.nodenet.group_nodes_by_ids(nodespace, node_uids, name, gatetype=gate)
+
+    def get_data(self):
+        data = super().get_data()
+        data.update({
+            "nodespace": self.nodespace,
+            "node_uids": self.node_uids,
+            "gate": self.gate
+        })
+        return data
+
+    def getvalue(self):
+        data = self.nodenet.get_activations(self.nodespace, self.name)
+        if type(data) == list:
+            return data
+        else:
+            return data.tolist()
+
+
 class NodeMonitor(Monitor):
 
     def __init__(self, nodenet, node_uid, type, target, sheaf=None, name=None, uid=None, color=None, values={}, **_):

@@ -397,6 +397,9 @@ class TheanoNodenet(Nodenet):
             # determine whether we have a complete json dump, or our theano npz partition files:
             nodes_data = initfrom.get('nodes', {})
 
+            # pop the monitors:
+            monitors = initfrom.pop('monitors', {})
+
             # initialize
             self.initialize_nodenet(initfrom)
 
@@ -412,6 +415,15 @@ class TheanoNodenet(Nodenet):
             # (numerical native module types are runtime dependent and may differ from when allocated_nodes
             # was saved).
             self.reload_native_modules(self.native_module_definitions)
+
+            for monitorid in monitors:
+                data = monitors[monitorid]
+                if hasattr(monitor, data['classname']):
+                    mon = getattr(monitor, data['classname'])(self, **data)
+                    self._monitors[mon.uid] = mon
+                else:
+                    self.logger.warn('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], monitorid))
+
 
             # re-initialize step operators for theano recompile to new shared variables
             self.initialize_stepoperators()

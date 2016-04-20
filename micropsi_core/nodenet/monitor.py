@@ -46,7 +46,7 @@ class Monitor(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     def step(self, step):
-        self.values[step] = self.getvalue(step)
+        self.values[step] = self.getvalue()
 
     def clear(self):
         self.values = {}

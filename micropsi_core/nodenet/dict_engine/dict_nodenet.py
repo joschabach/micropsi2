@@ -322,6 +322,9 @@ class DictNodenet(Nodenet):
         self._nodespaces = {}
         self._nodespaces["Root"] = DictNodespace(self, None, [0, 0, 0], name="Root", uid="Root")
 
+        if 'current_step' in initfrom:
+            self._step = initfrom['current_step']
+
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)
             self.merge_data(initfrom, keep_uids=True)

@@ -74,6 +74,8 @@ GATE_DEFAULTS = {
 
 gatefunction_icons = {
     'sigmoid': 'Σ',
+    'elu': 'E',
+    'relu': 'R',
     'absolute': '|x|',
     'one_over_x': '1/x',
     'identity': ''

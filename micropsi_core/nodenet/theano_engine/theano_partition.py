@@ -547,7 +547,9 @@ class TheanoPartition():
         # apply GATE_FUNCTION_RELU to masked gates
         if self.has_gatefunction_relu:
             x = gate_function_output + self.g_theta
-            gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_RELU), T.nnet.relu(x), gate_function_output)
+            gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_RELU), T.maximum(x, 0.), gate_function_output)
+            # wait for theano 0.7.1 for this to work
+            #gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_RELU), T.nnet.relu(x), gate_function_output)
         # apply GATE_FUNCTION_DIST to masked gates
         if self.has_gatefunction_one_over_x:
             gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_DIST), T.switch(T.neq(0, gate_function_output), 1 / gate_function_output, 0), gate_function_output)

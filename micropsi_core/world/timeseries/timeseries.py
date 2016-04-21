@@ -23,8 +23,15 @@ class TimeSeries(World):
     """
     supported_worldadapters = ['TimeSeriesRunner']
 
+    assets = {
+        'js': "timeseries/timeseries.js",
+        'template': 'timeseries/timeseries.tpl'
+    }
+
     def __init__(self, filename, world_type="TimeSeries", name="", owner="", engine=None, uid=None, version=1, config={}):
         World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version, config=config)
+
+        self.data['assets'] = self.assets
 
         filename = config.get('time_series_data_file', "timeseries.npz")
         if os.path.isabs(filename):
@@ -155,6 +162,24 @@ class TimeSeries(World):
              'default': 'False',
              'options': ["True", "False"]}
         ]
+
+    def set_user_data(self, data):
+        """ Allow the user to set the step of this world"""
+        if 'step' in data:
+            self.last_realtime_step = datetime.utcnow().timestamp() * 1000
+            self.current_step = data['step']
+            for uid in self.agents:
+                with self.agents[uid].datasource_lock:
+                    self.agents[uid].update()
+
+    def get_world_view(self, step):
+        return {
+            'first_timestamp': self.timestamps[0].isoformat(),
+            'last_timestamp': self.timestamps[-1].isoformat(),
+            'total_timestamps': len(self.timestamps),
+            'current_timestamp': self.timestamps[self.current_step].isoformat(),
+            'current_step': self.current_step,
+        }
 
 
 class TimeSeriesRunner(ArrayWorldAdapter):

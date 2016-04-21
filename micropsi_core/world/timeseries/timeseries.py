@@ -174,10 +174,10 @@ class TimeSeries(World):
 
     def get_world_view(self, step):
         return {
-            'first_timestamp': str(self.timestamps[0]),
-            'last_timestamp': str(self.timestamps[-1]),
+            'first_timestamp': self.timestamps[0].isoformat(),
+            'last_timestamp': self.timestamps[-1].isoformat(),
             'total_timestamps': len(self.timestamps),
-            'current_timestamp': str(self.timestamps[self.current_step]),
+            'current_timestamp': self.timestamps[self.current_step].isoformat(),
             'current_step': self.current_step,
         }
 

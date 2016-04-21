@@ -228,7 +228,7 @@ def get_string_gatefunction_type(type):
     elif type == GATE_FUNCTION_SIGMOID:
         return "sigmoid"
     elif type == GATE_FUNCTION_RELU:
-        return "rect"
+        return "relu"
     elif type == GATE_FUNCTION_DIST:
         return "one_over_x"
     elif type == GATE_FUNCTION_ELU:

@@ -268,9 +268,9 @@ function setCurrentNodenet(uid, nodespace, changed){
             toggleButtons(true);
 
             var nodenetChanged = changed || (uid != currentNodenet);
-
             currentNodenet = uid;
             currentNodeSpace = data.rootnodespace;
+            currentWorldadapter = data.worldadapter;
             nodespaceProperties = data.nodespace_ui_properties;
             for(var key in data.nodespaces){
                 if(!(key in nodespaceProperties)){
@@ -373,7 +373,7 @@ function setNodespaceData(data, changed){
     nodenetscope.activate();
     if (data && !jQuery.isEmptyObject(data)){
         currentSimulationStep = data.current_step || 0;
-        currentWorldadapter = data.worldadapter;
+
         nodenetRunning = data.is_active;
 
         if(!('selectionBox' in nodeLayer)){

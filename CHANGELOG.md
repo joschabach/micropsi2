@@ -1,5 +1,5 @@
 
-0.8-alpha6 (unreleased)
+0.8-alpha6 (2016-04-22)
 ==========
 
  * Operations for selections of nodes/nodespaces

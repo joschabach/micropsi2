@@ -9,26 +9,6 @@ from spock.mcp.mcpacket import Packet
 
 class MinecraftGraphLocomotion(WorldAdapter):
 
-    supported_datasources = [
-        'health',
-        'food',
-        'temperature',
-        'food_supply',
-        'fatigue',
-        'awake',
-        'current_location_index'
-    ]
-
-    supported_datatargets = [
-        'take_exit_one',
-        'take_exit_two',
-        'take_exit_three',
-        'pitch',
-        'yaw',
-        'eat',
-        'sleep'
-    ]
-
     loco_node_template = {
         'uid': "",
         'name': "",
@@ -168,16 +148,22 @@ class MinecraftGraphLocomotion(WorldAdapter):
     def __init__(self, world, uid=None, **data):
         super().__init__(world, uid, **data)
 
-        self.datatarget_feedback = {}
-        self.datatarget_history = {}
-        for key in self.datatargets:
-            self.datatarget_feedback[key] = 0
-            self.datatarget_history[key] = 0
+        self.datasources = {
+            'health': 1,
+            'food': 1,
+            'temperature': 0.5,
+            'food_supply': 0,
+            'fatigue': 0,
+            'awake': 1,
+            'current_location_index': 0
+        }
 
-        self.datasources['health'] = 1
-        self.datasources['food'] = 1
-        self.datasources['temperature'] = 0.5
-        self.datasources['awake'] = 1
+        targets = ['take_exit_one', 'take_exit_two', 'take_exit_three', 'pitch', 'yaw', 'eat', 'sleep']
+        self.datatarget_history = {}
+        for t in targets:
+            self.datatargets[t] = 0
+            self.datatarget_feedback[t] = 0
+            self.datatarget_history[t] = 0
 
         # a collection of conditions to check on every update(..), eg., for action feedback
         self.waiting_list = []
@@ -218,7 +204,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         self.datasources['food'] = self.spockplugin.clientinfo.health['food'] / 20
 
     def update_data_sources_and_targets(self):
-        """called on every world simulation step to advance the life of the agent"""
+        """called on every world calculation step to advance the life of the agent"""
 
         self.datasources['awake'] = 0 if self.sleeping else 1
 

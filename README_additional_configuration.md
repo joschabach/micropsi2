@@ -37,7 +37,7 @@ Windows support for advanced features is experimental.
 * From the mingw Folder, add the `bin` Folder to your PATH environment variable
 * Install pycrypto for python3.4. Get one of the [pycrypto windows binaries](https://github.com/axper/python3-pycrypto-windows-installer), open the WinPython Control Panel, click "Add Packages", select the downloaded pycrypto installer, and click "Install packages"
 * now you can install our modified spock via
-`pip install -e -e git+https://github.com/micropsi-industries/spock.git#egg=spock-dev`
+`pip install -e git+https://github.com/micropsi-industries/spock.git#egg=spock-dev`
 * this should lead to a working MicroPsi with Theano and minecraft support.
 * install the optional packages with `pip install cherrypy pytest mock webtest`
 * run `python start_micropsi_server.py`

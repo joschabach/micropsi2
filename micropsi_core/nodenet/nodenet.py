@@ -65,7 +65,9 @@ class Nodenet(metaclass=ABCMeta):
             'world': self._world_uid,
             'worldadapter': self._worldadapter_uid,
             'version': NODENET_VERSION,
-            'runner_condition': self._runner_condition
+            'runner_condition': self._runner_condition,
+            'use_modulators': self.use_modulators,
+            'nodespace_ui_properties': self._nodespace_ui_properties
         }
         return data
 
@@ -135,7 +137,7 @@ class Nodenet(metaclass=ABCMeta):
         """
         self._worldadapter_instance = _worldadapter_instance
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None):
+    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, use_modulators=True, worldadapter_instance=None):
         """
         Constructor for the abstract base class, must be called by implementations
         """
@@ -143,8 +145,9 @@ class Nodenet(metaclass=ABCMeta):
         self._name = name
         self._world_uid = world
         self._worldadapter_uid = worldadapter if world else None
-        self._worldadapter_instance = None
+        self._worldadapter_instance = worldadapter_instance
         self.is_active = False
+        self.use_modulators = use_modulators
 
         self._version = NODENET_VERSION  # used to check compatibility of the node net data
         self._uid = uid
@@ -152,6 +155,7 @@ class Nodenet(metaclass=ABCMeta):
 
         self.owner = owner
         self._monitors = {}
+        self._nodespace_ui_properties = {}
 
         self.netlock = Lock()
 
@@ -165,6 +169,12 @@ class Nodenet(metaclass=ABCMeta):
         self.deleted_items = {}
         self.stepping_rate = []
         self.dashboard_values = {}
+
+        self._modulators = {}
+        if use_modulators:
+            from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators as emo
+            for modulator in emo.writeable_modulators + emo.readable_modulators:
+                self._modulators[modulator] = 1
 
     def get_data(self, complete=False, include_links=True):
         """
@@ -185,6 +195,13 @@ class Nodenet(metaclass=ABCMeta):
             'modulators': {},
         })
         return data
+
+    @abstractmethod
+    def get_nodes(self, nodespaces=[], include_links=True):
+        """
+        Returns a dict with contents for the given nodespaces
+        """
+        pass  # pragma: no cover
 
     @abstractmethod
     def save(self, filename):
@@ -281,6 +298,24 @@ class Nodenet(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
+    def set_nodespace_properties(self, nodespace_uid, data):
+        """
+        Sets a persistent property for UI purposes for the given nodespace
+        """
+        nodespace_uid = self.get_nodespace(nodespace_uid).uid
+        if nodespace_uid not in self._nodespace_ui_properties:
+            self._nodespace_ui_properties[nodespace_uid] = {}
+        self._nodespace_ui_properties[nodespace_uid].update(data)
+
+    def get_nodespace_properties(self, nodespace_uid=None):
+        """
+        Return the nodespace properties of all or only the given nodespace
+        """
+        if nodespace_uid:
+            return self._nodespace_ui_properties.get(nodespace_uid, {})
+        else:
+            return self._nodespace_ui_properties
+
     @abstractmethod
     def set_entity_positions(self, positions):
         """ Sets the position of nodes or nodespaces.
@@ -295,7 +330,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def delete_nodespace(self, uid):
+    def delete_nodespace(self, nodespace_uid):
         """
         Deletes the nodespace with the given UID, and everything it contains
         """
@@ -375,7 +410,7 @@ class Nodenet(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
-    def get_activation_data(self, nodespace_uid=None, rounded=1):
+    def get_activation_data(self, nodespace_uids=[], rounded=1):
         """
         Returns a dict of uids to lists of activation values.
         Callers need to know the types of nodes that these activations belong to.
@@ -391,26 +426,23 @@ class Nodenet(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
-    @abstractmethod
     def get_modulator(self, modulator):
         """
         Returns the numeric value of the given global modulator
         """
-        pass  # pragma: no cover
+        return self._modulators.get(modulator, 1)
 
-    @abstractmethod
     def change_modulator(self, modulator, diff):
         """
         Changes the value of the given global modulator by the value of diff
         """
-        pass  # pragma: no cover
+        self._modulators[modulator] = self._modulators.get(modulator, 0) + diff
 
-    @abstractmethod
     def set_modulator(self, modulator, value):
         """
         Changes the value of the given global modulator to the given value
         """
-        pass  # pragma: no cover
+        self._modulators[modulator] = value
 
     @abstractmethod
     def get_standard_nodetype_definitions(self):
@@ -505,7 +537,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def has_nodespace_changes(self, nodespace_uid, since_step):
+    def has_nodespace_changes(self, nodespace_uids=[], since_step=0):
         """
         Returns true, if the structure of the nodespace has changed since the given step, false otherwise
         Structural changes include everything besides activation
@@ -513,7 +545,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_nodespace_changes(self, nodespace_uid, since_step):
+    def get_nodespace_changes(self, nodespace_uids=[], since_step=0):
         """
         Returns a dictionary of structural changes that happened in the given nodespace
         since the given step
@@ -545,7 +577,7 @@ class Nodenet(metaclass=ABCMeta):
 
     def add_gate_monitor(self, node_uid, gate, sheaf=None, name=None, color=None):
         """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation
-        value in every simulation step.
+        value in every calculation step.
         Returns the uid of the new monitor."""
         mon = monitor.NodeMonitor(self, node_uid, 'gate', gate, sheaf=sheaf, name=name, color=color)
         self._monitors[mon.uid] = mon
@@ -553,7 +585,7 @@ class Nodenet(metaclass=ABCMeta):
 
     def add_slot_monitor(self, node_uid, slot, sheaf=None, name=None, color=None):
         """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
-        value in every simulation step.
+        value in every calculation step.
         Returns the uid of the new monitor."""
         mon = monitor.NodeMonitor(self, node_uid, 'slot', slot, sheaf=sheaf, name=name, color=color)
         self._monitors[mon.uid] = mon
@@ -561,7 +593,7 @@ class Nodenet(metaclass=ABCMeta):
 
     def add_link_monitor(self, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, color=None):
         """Adds a continuous monitor to a link. You can choose to monitor either weight (default) or certainty
-        The monitor will collect respective value in every simulation step.
+        The monitor will collect respective value in every calculation step.
         Returns the uid of the new monitor."""
         mon = monitor.LinkMonitor(self, source_node_uid, gate_type, target_node_uid, slot_type, property=property, name=name, color=color)
         self._monitors[mon.uid] = mon
@@ -569,7 +601,7 @@ class Nodenet(metaclass=ABCMeta):
 
     def add_modulator_monitor(self, modulator, name, color=None):
         """Adds a continuous monitor to a global modulator.
-        The monitor will collect respective value in every simulation step.
+        The monitor will collect respective value in every calculation step.
         Returns the uid of the new monitor."""
         mon = monitor.ModulatorMonitor(self, modulator, name=name, color=color)
         self._monitors[mon.uid] = mon
@@ -577,7 +609,7 @@ class Nodenet(metaclass=ABCMeta):
 
     def add_custom_monitor(self, function, name, color=None):
         """Adds a continuous monitor, that evaluates the given python-code and collects the
-        return-value for every simulation step.
+        return-value for every calculation step.
         Returns the uid of the new monitor."""
         mon = monitor.CustomMonitor(self, function=function, name=name, color=color)
         self._monitors[mon.uid] = mon
@@ -601,15 +633,6 @@ class Nodenet(metaclass=ABCMeta):
 
     def get_dashboard(self):
         data = self.dashboard_values.copy()
-        sensors = {}
-        actors = {}
-        if self.worldadapter_instance:
-            for s in self.worldadapter_instance.get_available_datasources():
-                sensors[s] = self.worldadapter_instance.get_datasource(s)
-            for uid, actor in self.get_actors().items():
-                actors[actor.get_parameter('datatarget')] = actor.activation
-        data['sensors'] = sensors
-        data['actors'] = actors
         data['is_active'] = self.is_active
         data['step'] = self.current_step
         if self.stepping_rate:

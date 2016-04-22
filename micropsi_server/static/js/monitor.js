@@ -15,7 +15,11 @@ $(function(){
     var currentMonitors = [];
 
     var currentSimulationStep = 0;
-    var currentNodenet = $.cookie('selected_nodenet');
+    var currentNodenet = '';
+    var cookieval = $.cookie('selected_nodenet');
+    if (cookieval && cookieval.indexOf('/')){
+        currentNodenet = cookieval.split('/')[0];
+    }
 
     var capturedLoggers = {
         'system': false,
@@ -41,6 +45,10 @@ $(function(){
     var logs_to_add = [];
 
     init();
+
+    if(!$('#nodenet_editor').length && currentNodenet){
+        refreshMonitors();
+    }
 
     $('.layoutbtn').on('click', function(event){
         event.preventDefault();
@@ -79,6 +87,11 @@ $(function(){
     $(document).on('nodenet_changed', function(data, newNodenet){
         currentNodenet = newNodenet;
         init();
+        refreshMonitors();
+    });
+    $(document).on('nodenet_loaded', function(data, newNodenet){
+        currentNodenet = newNodenet;
+        refreshMonitors();
     });
 
     log_container.on('click', '.logentry', function(event){
@@ -101,26 +114,6 @@ $(function(){
 
     function init() {
         bindEvents();
-        if (currentNodenet = $.cookie('selected_nodenet')) {
-            $('#loading').show();
-            api.call('load_nodenet', {
-                nodenet_uid: currentNodenet,
-                include_links: false
-            }, function(data) {
-                $('#loading').hide();
-                refreshMonitors();
-            },
-            function(data) {
-                $('#loading').hide();
-                if(data.status == 500){
-                    api.defaultErrorCallback(data);
-                } else {
-                    currentNodenet = null;
-                    $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
-                    dialogs.notification(data.data, "Info");
-                }
-            });
-        }
     }
 
     function getPollParams(){

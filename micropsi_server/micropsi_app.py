@@ -33,6 +33,8 @@ from configuration import config as cfg
 VERSION = cfg['micropsi2']['version']
 APPTITLE = cfg['micropsi2']['apptitle']
 
+INCLUDE_CONSOLE = cfg['micropsi2']['host'] == 'localhost'
+
 APP_PATH = os.path.dirname(__file__)
 
 micropsi_app = Bottle()
@@ -170,13 +172,13 @@ def server_static(filepath):
 def index():
     first_user = usermanager.users == {}
     user_id, permissions, token = get_request_data()
-    return _add_world_list("viewer", mode="all", first_user=first_user, logging_levels=runtime.get_logging_levels(), version=VERSION, user_id=user_id, permissions=permissions)
+    return _add_world_list("viewer", mode="all", first_user=first_user, logging_levels=runtime.get_logging_levels(), version=VERSION, user_id=user_id, permissions=permissions, console=INCLUDE_CONSOLE)
 
 
 @micropsi_app.route("/nodenet")
 def nodenet():
     user_id, permissions, token = get_request_data()
-    return template("viewer", mode="nodenet", version=VERSION, user_id=user_id, permissions=permissions)
+    return template("viewer", mode="nodenet", version=VERSION, user_id=user_id, permissions=permissions, console=INCLUDE_CONSOLE)
 
 
 @micropsi_app.route("/monitors")
@@ -485,7 +487,7 @@ def select_nodenet_from_console(nodenet_uid):
     result, uid = runtime.load_nodenet(nodenet_uid)
     if not result:
         return template("error", msg="Could not select nodenet")
-    response.set_cookie("selected_nodenet", nodenet_uid, path="/")
+    response.set_cookie("selected_nodenet", nodenet_uid + "/", path="/")
     redirect("/")
 
 
@@ -578,7 +580,7 @@ def write_nodenet():
     user_id, permissions, token = get_request_data()
     params = dict((key, request.forms.getunicode(key)) for key in request.forms)
     if "manage nodenets" in permissions:
-        result, nodenet_uid = runtime.new_nodenet(params['nn_name'], engine=params['nn_engine'], worldadapter=params['nn_worldadapter'], template=params.get('nn_template'), owner=user_id, world_uid=params.get('nn_world'))
+        result, nodenet_uid = runtime.new_nodenet(params['nn_name'], engine=params['nn_engine'], worldadapter=params['nn_worldadapter'], template=params.get('nn_template'), owner=user_id, world_uid=params.get('nn_world'), use_modulators=params.get('nn_modulators', False))
         if result:
             return dict(status="success", msg="Nodenet created", nodenet_uid=nodenet_uid)
         else:
@@ -617,7 +619,9 @@ def edit_world_form():
     token = request.get_cookie("token")
     id = request.params.get('id', None)
     title = 'Edit World' if id is not None else 'New World'
-    return template("world_form.tpl", title=title, worldtypes=runtime.get_available_world_types(),
+    worldtypes = runtime.get_available_world_types()
+    return template("world_form.tpl", title=title,
+        worldtypes=worldtypes,
         version=VERSION,
         user_id=usermanager.get_user_id_for_session_token(token),
         permissions=usermanager.get_permissions_for_session_token(token))
@@ -626,9 +630,14 @@ def edit_world_form():
 @micropsi_app.route("/world/edit", method="POST")
 def edit_world():
     params = dict((key, request.forms.getunicode(key)) for key in request.forms)
+    type = params['world_type']
+    config = {}
+    for p in params:
+        if p.startswith(type + '_'):
+            config[p[len(type) + 1:]] = params[p]
     user_id, permissions, token = get_request_data()
     if "manage worlds" in permissions:
-        result, uid = runtime.new_world(params['world_name'], params['world_type'], user_id)
+        result, uid = runtime.new_world(params['world_name'], params['world_type'], user_id, config=config)
         if result:
             return dict(status="success", msg="World created", world_uid=uid)
         else:
@@ -699,31 +708,24 @@ def show_dashboard():
 #         ##  ##      ##   ##   ###  ##
 #         ##  ###### ##     ##  ## # ##
 #         ##      ##  ##   ##   ##  ###
-#        ##   #####    #####    ##   ##
+#        ##   #####    #####    ##   ## JSON
 #
 #
 #################################################################
 
 
-@rpc("select_nodenet")
-def select_nodenet(nodenet_uid):
-    return runtime.load_nodenet(nodenet_uid)
+@rpc("get_nodenet_metadata")
+def get_nodenet_metadata(nodenet_uid, nodespace='Root', include_links=True):
+    return True, runtime.get_nodenet_metadata(nodenet_uid)
 
 
-@rpc("load_nodenet")
-def load_nodenet(nodenet_uid, nodespace='Root', include_links=True):
-    result, uid = runtime.load_nodenet(nodenet_uid)
-    if result:
-        data = runtime.get_nodenet_data(nodenet_uid, nodespace, -1, include_links)
-        data['nodetypes'] = runtime.get_available_node_types(nodenet_uid)
-        data['recipes'] = runtime.get_available_recipes()
-        return True, data
-    else:
-        return False, uid
+@rpc("get_nodes")
+def get_nodes(nodenet_uid, nodespaces=[], include_links=True):
+    return True, runtime.get_nodes(nodenet_uid, nodespaces, include_links)
 
 
 @rpc("new_nodenet")
-def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadapter=None, world_uid=None):
+def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadapter=None, world_uid=None, use_modulators=None):
     if owner is None:
         owner, _, _ = get_request_data()
     return runtime.new_nodenet(
@@ -732,12 +734,18 @@ def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadap
         worldadapter=worldadapter,
         template=template,
         owner=owner,
-        world_uid=world_uid)
+        world_uid=world_uid,
+        use_modulators=use_modulators)
 
 
-@rpc("get_current_state")
-def get_current_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
-    return runtime.get_current_state(nodenet_uid, nodenet=nodenet, nodenet_diff=nodenet_diff, world=world, monitors=monitors, dashboard=dashboard)
+@rpc("get_calculation_state")
+def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
+    return runtime.get_calculation_state(nodenet_uid, nodenet=nodenet, nodenet_diff=nodenet_diff, world=world, monitors=monitors, dashboard=dashboard)
+
+
+@rpc("get_nodenet_changes")
+def get_nodenet_changes(nodenet_uid, nodespaces=[], since_step=0):
+    return runtime.get_nodenet_changes(nodenet_uid, nodespaces=nodespaces, since_step=since_step)
 
 
 @rpc("generate_uid")
@@ -745,11 +753,29 @@ def generate_uid():
     return True, tools.generate_uid()
 
 
+@rpc("create_auth_token")
+def create_auth_token(user, password, remember=True):
+    # log in new user
+    token = usermanager.start_session(user, password, remember)
+    if token:
+        return True, token
+    else:
+        if user in usermanager.users:
+            return False, "User name and password do not match"
+        else:
+            return False, "User unknown"
+
+@rpc("invalidate_auth_token")
+def invalidate_auth_token(token):
+    usermanager.end_session(token)
+    return True
+
+
 @rpc("get_available_nodenets")
-def get_available_nodenets(user_id):
-    if user_id not in usermanager.users:
+def get_available_nodenets(user_id=None):
+    if user_id and user_id not in usermanager.users:
         return False, 'User not found'
-    return True, runtime.get_available_nodenets(user_id)
+    return True, runtime.get_available_nodenets(owner=user_id)
 
 
 @rpc("delete_nodenet", permission_required="manage nodenets")
@@ -774,8 +800,8 @@ def set_node_activation(nodenet_uid, node_uid, activation):
     return runtime.set_node_activation(nodenet_uid, node_uid, activation)
 
 
-@rpc("start_simulation", permission_required="manage nodenets")
-def start_simulation(nodenet_uid):
+@rpc("start_calculation", permission_required="manage nodenets")
+def start_calculation(nodenet_uid):
     return runtime.start_nodenetrunner(nodenet_uid)
 
 
@@ -805,19 +831,24 @@ def get_runner_properties():
     return True, runtime.get_runner_properties()
 
 
-@rpc("get_is_simulation_running")
-def get_is_simulation_running(nodenet_uid):
+@rpc("get_is_calculation_running")
+def get_is_calculation_running(nodenet_uid):
     return True, runtime.get_is_nodenet_running(nodenet_uid)
 
 
-@rpc("stop_simulation", permission_required="manage nodenets")
-def stop_simulation(nodenet_uid):
+@rpc("stop_calculation", permission_required="manage nodenets")
+def stop_calculation(nodenet_uid):
     return runtime.stop_nodenetrunner(nodenet_uid)
 
 
-@rpc("step_simulation", permission_required="manage nodenets")
-def step_simulation(nodenet_uid):
+@rpc("step_calculation", permission_required="manage nodenets")
+def step_calculation(nodenet_uid):
     return True, runtime.step_nodenet(nodenet_uid)
+
+
+@rpc("revert_calculation", permission_required="manage nodenets")
+def revert_calculation(nodenet_uid):
+    return runtime.revert_nodenet(nodenet_uid, True)
 
 
 @rpc("revert_nodenet", permission_required="manage nodenets")
@@ -847,6 +878,12 @@ def merge_nodenet_rpc(nodenet_uid, nodenet_data):
 
 
 # World
+
+@rpc("step_nodenets_in_world")
+def step_nodenets_in_world(world_uid, nodenet_uid=None, steps=1):
+    return runtime.step_nodenets_in_world(world_uid, nodenet_uid=nodenet_uid, steps=steps)
+
+
 @rpc("get_available_worlds")
 def get_available_worlds(user_id=None):
     data = {}
@@ -864,9 +901,9 @@ def get_world_properties(world_uid):
 
 
 @rpc("get_worldadapters")
-def get_worldadapters(world_uid):
+def get_worldadapters(world_uid, nodenet_uid=None):
     try:
-        return True, runtime.get_worldadapters(world_uid)
+        return True, runtime.get_worldadapters(world_uid, nodenet_uid=nodenet_uid)
     except KeyError:
         return False, 'World %s not found' % world_uid
 
@@ -914,7 +951,7 @@ def new_world(world_name, world_type, owner=None):
 
 @rpc("get_available_world_types")
 def get_available_world_types():
-    return True, runtime.get_available_world_types()
+    return True, sorted(runtime.get_available_world_types().keys())
 
 
 @rpc("delete_world", permission_required="manage worlds")
@@ -928,8 +965,13 @@ def get_world_view(world_uid, step):
 
 
 @rpc("set_world_properties", permission_required="manage worlds")
-def set_world_data(world_uid, world_name=None, owner=None):
+def set_world_properties(world_uid, world_name=None, owner=None):
     return runtime.set_world_properties(world_uid, world_name, owner)
+
+
+@rpc("set_world_data")
+def set_world_data(world_uid, data):
+    return runtime.set_world_data(world_uid, data)
 
 
 @rpc("revert_world", permission_required="manage worlds")
@@ -1016,19 +1058,24 @@ def get_nodespace_list(nodenet_uid):
     return True, runtime.get_nodespace_list(nodenet_uid)
 
 
-@rpc("get_nodespace")
-def get_nodespace(nodenet_uid, nodespace, step, include_links=True):
-    return True, runtime.get_nodenet_data(nodenet_uid, nodespace, step, include_links)
-
-
 @rpc("get_nodespace_activations")
-def get_nodespace_activations(nodenet_uid, nodespace, last_call_step=-1):
-    return True, runtime.get_nodenet_activation_data(nodenet_uid, nodespace, last_call_step)
+def get_nodespace_activations(nodenet_uid, nodespaces, last_call_step=-1):
+    return True, runtime.get_nodenet_activation_data(nodenet_uid, nodespaces, last_call_step)
 
 
 @rpc("get_nodespace_changes")
-def get_nodespace_changes(nodenet_uid, nodespace_uid, since_step):
-    return runtime.get_nodespace_changes(nodenet_uid, nodespace_uid, since_step)
+def get_nodespace_changes(nodenet_uid, nodespaces, since_step):
+    return runtime.get_nodespace_changes(nodenet_uid, nodespaces, since_step)
+
+
+@rpc("get_nodespace_properties")
+def get_nodespace_properties(nodenet_uid, nodespace_uid=None):
+    return True, runtime.get_nodespace_properties(nodenet_uid, nodespace_uid)
+
+
+@rpc("set_nodespace_properties")
+def set_nodespace_properties(nodenet_uid, nodespace_uid, properties):
+    return True, runtime.set_nodespace_properties(nodenet_uid, nodespace_uid, properties)
 
 
 @rpc("get_node")
@@ -1067,8 +1114,8 @@ def delete_nodes(nodenet_uid, node_uids):
 
 
 @rpc("delete_nodespace", permission_required="manage nodenets")
-def delete_nodespace(nodenet_uid, nodespace_uid):
-    return runtime.delete_nodespace(nodenet_uid, nodespace_uid)
+def delete_nodespace(nodenet_uid, nodespace):
+    return runtime.delete_nodespace(nodenet_uid, nodespace)
 
 
 @rpc("align_nodes", permission_required="manage nodenets")
@@ -1205,9 +1252,32 @@ def get_available_recipes():
     return True, runtime.get_available_recipes()
 
 
+@rpc("run_operation")
+def run_operation(nodenet_uid, name, parameters, selection_uids):
+    return runtime.run_operation(nodenet_uid, name, parameters, selection_uids)
+
+
+@rpc('get_available_operations')
+def get_available_operations():
+    return True, runtime.get_available_operations()
+
+
 @rpc('get_agent_dashboard')
 def get_agent_dashboard(nodenet_uid):
     return True, runtime.get_agent_dashboard(nodenet_uid)
+
+
+@rpc("run_netapi_command", permission_required="manage nodenets")
+def run_netapi_command(nodenet_uid, command):
+    if INCLUDE_CONSOLE:
+        return runtime.run_netapi_command(nodenet_uid, command)
+    else:
+        raise RuntimeError("Netapi console only available if serving to localhost only")
+
+
+@rpc("get_netapi_signatures")
+def get_netapi_autocomplete_data(nodenet_uid, name=None):
+    return True, runtime.get_netapi_autocomplete_data(nodenet_uid, name=None)
 
 
 # -----------------------------------------------------------------------------------------------
@@ -1217,6 +1287,7 @@ def main(host=None, port=None):
     port = port or cfg['micropsi2']['port']
     server = cfg['micropsi2']['server']
     print("Starting App on Port " + str(port))
+    runtime.initialize()
     run(micropsi_app, host=host, port=port, quiet=True, server=server)
 
 if __name__ == "__main__":

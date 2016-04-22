@@ -47,14 +47,12 @@ class MinecraftVision(MinecraftGraphLocomotion, MinecraftProjectionMixin):
             for j in range(self.len_y):
                 name = "fov__%02d_%02d" % (i, j)
                 self.datasources[name] = 0.
-                self.supported_datasources.append(name)
 
         # add datasources for fovea position sensors aka fov_pos__*_*
         for x in range(self.tiling_x):
             for y in range(self.tiling_y):
                 name = "fov_pos__%02d_%02d" % (y, x)
                 self.datasources[name] = 0.
-                self.supported_datasources.append(name)
 
         # add fovea actors to datatargets, datatarget_feedback, datatarget_history, and actions
         for x in range(self.tiling_x):
@@ -63,7 +61,6 @@ class MinecraftVision(MinecraftGraphLocomotion, MinecraftProjectionMixin):
                 self.datatargets[name] = 0.
                 self.datatarget_feedback[name] = 0.
                 self.datatarget_history[name] = 0.
-                self.supported_datatargets.append(name)
                 self.actions.append(name)
 
         self.simulated_vision = False
@@ -87,7 +84,7 @@ class MinecraftVision(MinecraftGraphLocomotion, MinecraftProjectionMixin):
         self.visual_field = {}
 
     def update_data_sources_and_targets(self):
-        """called on every world simulation step to advance the life of the agent"""
+        """called on every world calculation step to advance the life of the agent"""
 
         # first thing when spock initialization is done, determine current loco node
         if self.simulated_vision:

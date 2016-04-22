@@ -52,7 +52,7 @@ class NetAPI(object):
         """
         return self.__nodenet.get_node(uid)
 
-    def get_nodes(self, nodespace=None, node_name_prefix=None, nodetype=None):
+    def get_nodes(self, nodespace=None, node_name_prefix=None, nodetype=None, sortby='id'):
         """
         Returns a list of nodes in the given nodespace (all Nodespaces if None) whose names start with
         the given prefix (all if None)
@@ -71,6 +71,12 @@ class NetAPI(object):
             if node_name_prefix is not None and not node.name.startswith(node_name_prefix):
                 continue
             nodes.append(node)
+
+        if sortby == 'ids':
+            nodes = sorted(nodes, key=lambda node: node.uid)
+        elif sortby == 'names':
+            nodes = sorted(nodes, key=lambda node: node.name)
+
         return nodes
 
     def get_nodes_in_gate_field(self, node, gate=None, no_links_to=None, nodespace=None):
@@ -218,11 +224,27 @@ class NetAPI(object):
         target_node_uid = target_node.uid if target_node is not None else None
         source_node.unlink(source_gate, target_node_uid, target_slot)
 
+    def unlink_gate(self, node, gate_name, target_node_uid=None, target_slot_name=None):
+        """
+        Deletes all links from the given gate, optionally filtered by target_node_uid or target_slot_name
+        """
+        node.unlink(gate_name, target_node_uid=target_node_uid, slot_name=target_slot_name)
+
+    def unlink_slot(self, node, slot_name, source_node_uid=None, source_gate_name=None):
+        """
+        Deletes all links to the given slot, optionally filtered by source_node_uid or source_gate_name
+        """
+        for l in node.get_slot(slot_name).get_links():
+            if source_node_uid is None or l.source_node.uid == source_node_uid:
+                if source_gate_name is None or l.source_gate.type == source_gate_name:
+                    l.source_node.unlink(l.source_gate.type, target_node_uid=node.uid, slot_name=slot_name)
+
     def unlink_direction(self, node, gateslot=None):
         """
-        Deletes all links from a node ending at the given gate or originating at the given slot
+        Deletes all links from a node ending at the given slot or originating at the given gate
         Read this as 'delete all por linkage from this node'
         """
+        self.logger.warn("unlink direction is deprecated. use unlink_gate and unlink_slot")
         node.unlink(gateslot)
 
         links_to_delete = set()
@@ -232,15 +254,13 @@ class NetAPI(object):
                     links_to_delete.add(link)
 
         for link in links_to_delete:
-            link.source_node.unlink(gateslot, node.uid)
+            link.source_node.unlink(target_node_uid=node.uid, slot_name=gateslot)
 
     def link_actor(self, node, datatarget, weight=1, certainty=1, gate='sub', slot='sur'):
         """
         Links a node to an actor. If no actor exists in the node's nodespace for the given datatarget,
         a new actor will be created, otherwise the first actor found will be used
         """
-        if datatarget not in self.worldadapter.get_available_datatargets():
-            raise KeyError("Data target %s not found" % datatarget)
         actor = None
         for uid, candidate in self.__nodenet.get_actors(node.parent_nodespace).items():
             if candidate.get_parameter('datatarget') == datatarget:
@@ -252,13 +272,11 @@ class NetAPI(object):
         self.link(node, gate, actor, 'gen', weight, certainty)
         # self.link(actor, 'gen', node, slot)
 
-    def link_sensor(self, node, datasource, slot='sur'):
+    def link_sensor(self, node, datasource, slot='sur', weight=1):
         """
         Links a node to a sensor. If no sensor exists in the node's nodespace for the given datasource,
         a new sensor will be created, otherwise the first sensor found will be used
         """
-        if datasource not in self.worldadapter.get_available_datasources():
-            raise KeyError("Data source %s not found" % datasource)
         sensor = None
         for uid, candidate in self.__nodenet.get_sensors(node.parent_nodespace).items():
             if candidate.get_parameter('datasource') == datasource:
@@ -267,7 +285,7 @@ class NetAPI(object):
             sensor = self.create_node("Sensor", node.parent_nodespace, datasource)
             sensor.set_parameter('datasource', datasource)
 
-        self.link(sensor, 'gen', node, slot)
+        self.link(sensor, 'gen', node, slot, weight)
 
     def import_actors(self, nodespace, datatarget_prefix=None):
         """
@@ -377,6 +395,12 @@ class NetAPI(object):
         from micropsi_core.nodenet.node_alignment import align
         if nodespace in self.__nodenet.get_nodespace_uids():
             align(self.__nodenet, nodespace)
+
+    def autoalign_entities(self, nodespace, entity_uids):
+        """ Calls the autoalignment on the given entities in the given nodespace """
+        from micropsi_core.nodenet.node_alignment import align
+        if nodespace in self.__nodenet.get_nodespace_uids():
+            align(self.__nodenet, nodespace, entity_uids)
 
     def get_modulator(self, modulator):
         """
@@ -497,31 +521,31 @@ class NetAPI(object):
 
     def add_gate_monitor(self, node_uid, gate, sheaf=None, name=None, color=None):
         """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation
-        value in every simulation step.
+        value in every calculation step.
         Returns the uid of the new monitor."""
         return self.__nodenet.add_gate_monitor(node_uid, gate, sheaf=sheaf, name=name, color=color)
 
     def add_slot_monitor(self, node_uid, slot, sheaf=None, name=None, color=None):
         """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
-        value in every simulation step.
+        value in every calculation step.
         Returns the uid of the new monitor."""
         return self.__nodenet.add_slot_monitor(node_uid, slot, sheaf=sheaf, name=name, color=color)
 
     def add_link_monitor(self, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, color=None):
         """Adds a continuous monitor to a link. You can choose to monitor either weight (default) or certainty
-        The monitor will collect respective value in every simulation step.
+        The monitor will collect respective value in every calculation step.
         Returns the uid of the new monitor."""
         return self.__nodenet.add_link_monitor(source_node_uid, gate_type, target_node_uid, slot_type, property=property, name=name, color=color)
 
     def add_modulator_monitor(self, modulator, name, color=None):
         """Adds a continuous monitor to a global modulator.
-        The monitor will collect respective value in every simulation step.
+        The monitor will collect respective value in every calculation step.
         Returns the uid of the new monitor."""
         return self.__nodenet.add_modulator_monitor(modulator, name, color=color)
 
     def add_custom_monitor(self, function, name, color=None):
         """Adds a continuous monitor, that evaluates the given python-code and collects the
-        return-value for every simulation step.
+        return-value for every calculation step.
         Returns the uid of the new monitor."""
         return self.__nodenet.add_custom_monitor(function, name, color=color)
 
@@ -539,15 +563,23 @@ class NetAPI(object):
 
     def decay_por_links(self, nodespace_uid):
         """ Decayes all por-links in the given nodespace """
-        decay_factor = self.__nodenet.get_modulator('base_porret_decay_factor')
+        porretdecay = self.__nodenet.get_modulator('base_porret_decay_factor')
         nodes = self.get_nodes(nodespace=nodespace_uid, nodetype="Pipe")
-        pordecay = (1 - self.__nodenet.get_modulator('por_ret_decay'))
-        if decay_factor and pordecay is not None and pordecay > 0:
+        decay_factor = (1 - porretdecay)
+        if porretdecay != 0:
             for node in nodes:
                 porgate = node.get_gate('por')
                 for link in porgate.get_links():
                     if link.weight > 0:
-                        link._set_weight(max(link.weight * pordecay, 0))
+                        link._set_weight(max(link.weight * decay_factor, 0))
+
+    def get_nodespace_properties(self, nodespace_uid=None):
+        """ retrieve the ui properties for the given nodespace"""
+        return self.__nodenet.get_nodespace_properties(nodespace_uid)
+
+    def set_nodespace_properties(self, nodespace_uid, properties):
+        """ sets the ui properties for the given nodespace"""
+        self.__nodenet.set_nodespace_properties(nodespace_uid, properties)
 
     def announce_nodes(self, nodespace_uid, numer_of_nodes, average_element_per_node):
         pass

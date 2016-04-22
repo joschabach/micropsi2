@@ -1,4 +1,4 @@
-%include menu.tpl version = version
+%include("menu.tpl", version=version)
 
 <div class="row-fluid">
     <p>
@@ -30,4 +30,4 @@
 </div>
 
 
-%rebase boilerplate title = "About MicroPsi 2"
+%rebase("boilerplate.tpl", title="About MicroPsi 2")

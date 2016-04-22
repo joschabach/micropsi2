@@ -42,12 +42,15 @@ def test_get_world_properties(test_world):
     assert test_world == wp["uid"]
 
 
-def test_get_worldadapters(test_world):
+def test_get_worldadapters(test_world, test_nodenet):
     wa = micropsi.get_worldadapters(test_world)
-    assert 'engine_l' in wa['Braitenberg']['datatargets']
-    assert 'engine_r' in wa['Braitenberg']['datatargets']
-    assert 'brightness_l' in wa['Braitenberg']['datasources']
-    assert 'brightness_r' in wa['Braitenberg']['datasources']
+    assert 'Braitenberg' in wa
+    assert 'description' in wa['Braitenberg']
+    assert 'datasources' not in wa['Braitenberg']
+    runtime.set_nodenet_properties(test_nodenet, worldadapter='Braitenberg', world_uid=test_world)
+    wa = micropsi.get_worldadapters(test_world, test_nodenet)
+    assert wa['Braitenberg']['datatargets'] == ['engine_l', 'engine_r']
+    assert wa['Braitenberg']['datasources'] == ['brightness_l', 'brightness_r']
 
 
 def test_add_worldobject(test_world):
@@ -83,7 +86,6 @@ def test_register_agent(test_world, test_nodenet):
     world = runtime.worlds[test_world]
     nodenet = runtime.get_nodenet(test_nodenet)
     assert nodenet.uid not in world.data['agents']
-    runtime.load_nodenet(test_nodenet)
     nodenet.world = test_world
     runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
     assert nodenet.uid in world.data['agents']
@@ -114,7 +116,6 @@ def test_set_agent_properties(test_world, test_nodenet):
 def test_agent_dying_unregisters_agent(test_world, test_nodenet):
     world = runtime.worlds[test_world]
     nodenet = runtime.get_nodenet(test_nodenet)
-    runtime.load_nodenet(test_nodenet)
     nodenet.world = test_world
     runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
     assert nodenet.uid in world.agents
@@ -153,7 +154,6 @@ def test_world_does_not_spawn_deleted_agents(test_world, resourcepath):
 def test_reset_datatargets(test_world, test_nodenet):
     world = runtime.worlds[test_world]
     nodenet = runtime.get_nodenet(test_nodenet)
-    runtime.load_nodenet(test_nodenet)
     nodenet.world = test_world
     runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
     world.agents[test_nodenet].datatargets['engine_r'] = 0.7
@@ -163,39 +163,24 @@ def test_reset_datatargets(test_world, test_nodenet):
     assert world.agents[test_nodenet].datatargets['engine_r'] == 0
 
 
-def test_actuators_do_not_reset_each_others_datatarget(test_world, test_nodenet):
-    world = runtime.worlds[test_world]
-    nodenet = runtime.get_nodenet(test_nodenet)
-    runtime.load_nodenet(test_nodenet)
-    nodenet.world = test_world
-    runtime.set_runner_properties(200, 1)
-    runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
-    actor1 = nodenet.netapi.create_node("Actor", None)
-    actor2 = nodenet.netapi.create_node("Actor", None)
-    actor1.set_parameter('datatarget', 'engine_r')
-    actor2.set_parameter('datatarget', 'engine_r')
-    reg1 = nodenet.netapi.create_node("Register", None)
-    reg2 = nodenet.netapi.create_node("Register", None)
-    nodenet.netapi.link(reg1, 'gen', actor1, 'gen')
-    nodenet.netapi.link(reg2, 'gen', actor2, 'gen')
-    reg1.activation = 0.7
-    reg2.activation = 0.3
-    mock_reset = mock.Mock(return_value=None)
-    world.agents[test_nodenet].reset_datatargets = mock_reset
-    runtime.step_nodenet(test_nodenet)
-    assert world.agents[test_nodenet].datatargets['engine_r'] == 1
-
-
 def test_worldadapter_update_calls_reset_datatargets(test_world, test_nodenet):
     world = runtime.worlds[test_world]
     nodenet = runtime.get_nodenet(test_nodenet)
-    runtime.load_nodenet(test_nodenet)
     nodenet.world = test_world
     runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
-    runtime.set_runner_properties(1, 1)
     world.agents[test_nodenet].reset_datatargets = mock.MagicMock(name='reset')
     runtime.step_nodenet(test_nodenet)
     world.agents[test_nodenet].reset_datatargets.assert_called_once_with()
+
+
+def test_worlds_are_configurable():
+    res, uid = runtime.new_world('testworld', 'Island', config={'foo': 'bar', '42': '23'})
+    assert uid in runtime.worlds
+    assert runtime.worlds[uid].data['config']['foo'] == 'bar'
+    runtime.revert_world(uid)
+    assert runtime.worlds[uid].data['config']['foo'] == 'bar'
+    assert runtime.worlds[uid].data['config']['42'] == '23'
+
 
 """
 def test_get_world_view(micropsi, test_world):

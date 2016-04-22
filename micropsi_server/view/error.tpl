@@ -1,4 +1,4 @@
-%include menu.tpl
+%include("menu.tpl")
 <div class="row-fluid">
     <div class="span6">
         <div class="well">
@@ -41,4 +41,4 @@
    <a class="btn btn-large btn-danger" href="/">Life must go on</a>
 </div>
 
-%rebase boilerplate title = "MicroPsi Error"
+%rebase("boilerplate.tpl", title="MicroPsi Error")

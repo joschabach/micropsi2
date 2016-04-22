@@ -1,12 +1,12 @@
 from threading import Thread
 
+from spock import plugins as spockplugins
 from spock.client import Client
-from spock.plugins import DefaultPlugins
 from spock.plugins.core.event import EventPlugin
 from spock.plugins.helpers.clientinfo import ClientInfoPlugin
 from spock.plugins.helpers.move import MovementPlugin
-from spock.plugins.helpers.world import WorldPlugin
 from spock.plugins.helpers.reconnect import ReConnectPlugin
+from spock.plugins.helpers.world import WorldPlugin
 
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
@@ -18,8 +18,10 @@ from micropsi_core.world.minecraft.minecraft_histogram_vision import MinecraftHi
 
 class Minecraft(World):
     """
-    mandatory: list of world adapters that are supported
+    A minecraft world.
+    Connects to a minecraft server and serves as a bridge between agent and server. See config.ini for configuration
     """
+
     supported_worldadapters = [
         'MinecraftWorldAdapter',
         'MinecraftBraitenberg',
@@ -30,29 +32,26 @@ class Minecraft(World):
 
     assets = {
         'template': 'minecraft/minecraft.tpl',
-        'js': 'minecraft/minecraft.js',
+        'paperjs': 'minecraft/minecraft.js',
         'x': 256,
         'y': 256,
     }
 
-    # thread and spock only exist once
-    instances = {
-        'spock': None,
-        'thread': None
-    }
-
-    def __init__(self, filename, world_type="Minecraft", name="", owner="", engine=None, uid=None, version=1):
+    def __init__(self, filename, world_type="Minecraft", name="", owner="", engine=None, uid=None, version=1, config={}):
         """
         Initializes spock client including MicropsiPlugin, starts minecraft communication thread.
         """
         from micropsi_core.runtime import add_signal_handler
 
+        self.instances = {
+            'spock': None,
+            'thread': None
+        }
         # do spock things first, then initialize micropsi world because the latter requires self.spockplugin
-
         # register all necessary spock plugins
         # DefaultPlugins contain EventPlugin, NetPlugin, TimerPlugin, AuthPlugin,
         # ThreadPoolPlugin, StartPlugin and KeepalivePlugin
-        plugins = DefaultPlugins
+        plugins = spockplugins.DefaultPlugins
         plugins.append(ClientInfoPlugin)
         plugins.append(MovementPlugin)
         plugins.append(WorldPlugin)
@@ -127,13 +126,20 @@ class Minecraft(World):
     def kill_minecraft_thread(self, *args):
         """
         """
-        self.spockplugin.event.kill()
-        self.instances['thread'].join()
+        if hasattr(self, 'spockplugin'):
+            self.spockplugin.event.kill()
+            self.instances['thread'].join()
         # self.spockplugin.threadpool.shutdown(False)
+
+    def __del__(self):
+        from importlib import reload
+        self.kill_minecraft_thread()
+        reload(spockplugins)
 
 
 class Minecraft2D(Minecraft):
-    """ mandatory: list of world adapters that are supported"""
+    """ A Minecraft world that offers a 2d visualization of the agent's perspective"""
+
     supported_worldadapters = [
         'MinecraftWorldAdapter',
         'MinecraftGraphLocomotion'
@@ -141,17 +147,27 @@ class Minecraft2D(Minecraft):
 
     assets = {
         'template': 'minecraft/minecraft.tpl',
-        'js': 'minecraft/minecraft2d.js',
+        'paperjs': 'minecraft/minecraft2d.js',
     }
 
     def step(self):
         """
-        Is called on every world step to advance the simulation.
+        Is called on every world step to advance the calculation.
         """
         World.step(self)
 
         # a 2D perspective projection
         self.get_perspective_projection(self.spockplugin.clientinfo.position)
+
+    def get_world_view(self, step):
+        """ returns a list of world objects, and the current step of the calculation """
+        return {
+            'objects': self.get_world_objects(),
+            'agents': self.data.get('agents', {}),
+            'current_step': self.current_step,
+            'projection': self.data['projection'],
+            'assets': self.assets
+        }
 
     def get_perspective_projection(self, agent_info):
         """
@@ -322,9 +338,6 @@ class MinecraftWorldAdapter(WorldAdapter):
     moves into one of the four cardinal directions ( until it dies ).
     """
 
-    supported_datasources = ['x', 'y', 'z', 'yaw', 'pitch', 'groundtype']
-    supported_datatargets = ['go_north', 'go_east', 'go_west', 'go_south', 'yaw', 'pitch']
-
     spawn_position = {
         'x': -105,
         'y': 63,
@@ -334,6 +347,9 @@ class MinecraftWorldAdapter(WorldAdapter):
     def __init__(self, world, uid=None, **data):
         world.spockplugin.clientinfo.spawn_position = self.spawn_position
         WorldAdapter.__init__(self, world, uid=uid, **data)
+        self.datasources = dict((i, 0) for i in ['x', 'y', 'z', 'yaw', 'pitch', 'groundtype'])
+        self.datatargets = dict((i, 0) for i in ['go_north', 'go_east', 'go_west', 'go_south', 'yaw', 'pitch'])
+
 
     def initialize_worldobject(self, data):
 
@@ -345,7 +361,7 @@ class MinecraftWorldAdapter(WorldAdapter):
         self.datasources['groundtype'] = self.get_groundtype()
 
     def update_data_sources_and_targets(self):
-        """ Advances the agent's life on every cycle of the world simulation. """
+        """ Advances the agent's life on every cycle of the world calculation. """
         import random
 
         # translate data targets
@@ -405,25 +421,27 @@ class MinecraftWorldAdapter(WorldAdapter):
 
 class MinecraftBraitenberg(WorldAdapter):
 
-    supported_datasources = [
-        'diamond_offset_x',
-        'diamond_offset_z',
-        'grd_stone',
-        'grd_dirt',
-        'grd_wood',
-        'grd_coal',
-        'obstcl_x+',
-        'obstcl_x-',
-        'obstcl_z+',
-        'obstcl_z-'
-    ]
-    supported_datatargets = [
-        'move_x',
-        'move_z'
-    ]
+    def __init__(self, world, uid=None, **data):
+        super().__init__(world, uid, **data)
+        self.datasources = {
+            'diamond_offset_x': 0,
+            'diamond_offset_z': 0,
+            'grd_stone': 0,
+            'grd_dirt': 0,
+            'grd_wood': 0,
+            'grd_coal': 0,
+            'obstcl_x+': 0,
+            'obstcl_x-': 0,
+            'obstcl_z+': 0,
+            'obstcl_z-': 0
+        }
+        self.datatargets = {
+            'move_x': 0,
+            'move_z': 0
+        }
 
     def update_data_sources_and_targets(self):
-        """called on every world simulation step to advance the life of the agent"""
+        """called on every world calculation step to advance the life of the agent"""
         # find diamond
         bot_x = self.world.spockplugin.clientinfo.position['x']
         bot_y = self.world.spockplugin.clientinfo.position['y']

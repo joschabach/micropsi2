@@ -12,7 +12,7 @@
 
                              <td>
                                 <div class="btn-group" id="world_list">
-                                    %include nodenet_list type="world",mine=mine,others=others,current=current
+                                    %include("nodenet_list.tpl", type="world", mine=mine, others=others, current=current)
                                 </div>
                             </td>
                         </tr>
@@ -44,8 +44,10 @@
 </div>
 
 
-<script src="/static/js/world.js" type="text/paperscript" canvas="world"></script>
+<script src="/static/js/world.js" type="text/javascript"></script>
 
-%if world_assets.get('js'):
-    <script src="/static/{{world_assets['js']}}" type="text/paperscript" canvas="world"></script>
+%if world_assets.get('paperjs'):
+    <script src="/static/{{world_assets['paperjs']}}" type="text/paperscript" canvas="world"></script>
+%elif world_assets.get('js'):
+    <script src="/static/{{world_assets['js']}}" type="text/javascript"></script>
 %end

@@ -482,6 +482,9 @@ class Gate(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
+    def __repr__(self):
+        return "<Gate %s of node %s)>" % (self.type, self.node)
+
 
 class Slot(metaclass=ABCMeta):
     """
@@ -547,6 +550,9 @@ class Slot(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
+    def __repr__(self):
+        return "<Slot %s of node %s)>" % (self.type, self.node)
+
 
 class Nodetype(object):
     """Every node has a type, which is defined by its slot types, gate types, its node function and a list of
@@ -593,22 +599,27 @@ class Nodetype(object):
 
     @nodefunction_name.setter
     def nodefunction_name(self, nodefunction_name):
+        import os
+        from importlib.machinery import SourceFileLoader
         self._nodefunction_name = nodefunction_name
         try:
-            from micropsi_core.nodenet import nodefunctions
-            if hasattr(nodefunctions, nodefunction_name):
-                self.nodefunction = getattr(nodefunctions, nodefunction_name)
+            if self.path:
+                module = SourceFileLoader("nodefunctions", self.path).load_module()
+                self.nodefunction = getattr(module, nodefunction_name)
             else:
-                import nodefunctions as custom_nodefunctions
-                self.nodefunction = getattr(custom_nodefunctions, nodefunction_name)
+                from micropsi_core.nodenet import nodefunctions
+                if hasattr(nodefunctions, nodefunction_name):
+                    self.nodefunction = getattr(nodefunctions, nodefunction_name)
+                else:
+                    self.logger.warning("Can not find definition of nodefunction %s" % nodefunction_name)
 
         except (ImportError, AttributeError) as err:
-            self.logger.warn("Import error while importing node function: nodefunctions.%s %s" % (nodefunction_name, err))
+            self.logger.warning("Import error while importing node function: nodefunctions.%s %s" % (nodefunction_name, err))
             raise err
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None,
-                 symbol=None, shape=None, engine=None, parameter_defaults=None):
+                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category=''):
         """Initializes or creates a nodetype.
 
         Arguments:
@@ -626,6 +637,9 @@ class Nodetype(object):
         self.name = name
         self.slottypes = slottypes or {}
         self.gatetypes = gatetypes or {}
+
+        self.path = path
+        self.category = category
 
         self.logger = nodenet.logger
 

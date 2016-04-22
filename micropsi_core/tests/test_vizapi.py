@@ -47,7 +47,7 @@ def test_save_file(test_nodenet, resourcepath):
     assert os.path.isfile(filepath)
 
 
-def test_plot_from_nodefunc(test_nodenet, resourcepath, nodetype_def, nodefunc_def):
+def test_plot_from_nodefunc(test_nodenet, resourcepath):
     import os
     from random import random
     from time import sleep
@@ -61,14 +61,17 @@ def test_plot_from_nodefunc(test_nodenet, resourcepath, nodetype_def, nodefunc_d
     assert os.path.abspath(returnpath) == os.path.abspath(filepath)
     assert os.path.isfile(filepath)
     os.remove(filepath)
-    with open(nodetype_def, 'w') as fp:
+    os.mkdir(os.path.join(resourcepath, 'plotter'))
+    nodetype_file = os.path.join(resourcepath, "plotter", "nodetypes.json")
+    nodefunc_file = os.path.join(resourcepath, "plotter", "nodefunctions.py")
+    with open(nodetype_file, 'w') as fp:
         fp.write("""{"Plotter": {
             "name": "Plotter",
             "slottypes": [],
             "nodefunction_name": "plotfunc",
             "gatetypes": [],
             "parameters": ["plotpath"]}}""")
-    with open(nodefunc_def, 'w') as fp:
+    with open(nodefunc_file, 'w') as fp:
         fp.write("""
 def plotfunc(netapi, node=None, **params):
     import os
@@ -82,10 +85,8 @@ def plotfunc(netapi, node=None, **params):
     micropsi.reload_native_modules()
     node = nodenet.netapi.create_node("Plotter", None, name="Plotter")
     node.set_parameter("plotpath", resourcepath)
-    micropsi.set_runner_properties(1000, 1)
     micropsi.start_nodenetrunner(test_nodenet)
     sleep(2)
     micropsi.stop_nodenetrunner(test_nodenet)
-    print(micropsi.MicropsiRunner.last_nodenet_exception)
     assert micropsi.MicropsiRunner.last_nodenet_exception == {}
     assert os.path.isfile(os.path.join(resourcepath, "plot.png"))

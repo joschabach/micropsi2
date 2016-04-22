@@ -24,7 +24,7 @@ except OSError:
     warnings.warn('Can not read config from inifile %s' % filename)
     raise RuntimeError('Can not read config from inifile %s' % filename)
 
-config['micropsi2']['version'] = "0.7-alpha5"
+config['micropsi2']['version'] = "0.8-alpha6"
 config['micropsi2']['apptitle'] = "MicroPsi"
 
 homedir = config['micropsi2']['data_directory'].startswith('~')
@@ -43,6 +43,6 @@ for level in ['level_agent', 'level_system', 'level_world']:
         config['logging'][level] = 'WARNING'
 
 config.add_section('paths')
-config['paths']['resource_path'] = os.path.join(os.path.dirname(__file__), data_path)
+config['paths']['data_directory'] = os.path.join(os.path.dirname(__file__), data_path)
 config['paths']['usermanager_path'] = os.path.join(os.path.dirname(__file__), 'resources', 'user-db.json')
 config['paths']['server_settings_path'] = os.path.join(os.path.dirname(__file__), 'resources', 'server-config.json')

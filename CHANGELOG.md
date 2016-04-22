@@ -1,4 +1,17 @@
 
+0.8-alpha6 (2016-04-22)
+==========
+
+ * Operations for selections of nodes/nodespaces
+ * Test infrastructure for nodenets and native modules
+ * Gradient descent native modules built-in
+ * Nodenet/native module data structure changed
+ * Faster sensors for theano
+ * Configurable worlds
+ * New timeseries world
+ * Netapi console if serving for localhost only
+
+
 0.7-alpha5 (2016-02-04)
 ==========
 

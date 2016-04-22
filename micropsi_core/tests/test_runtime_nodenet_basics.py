@@ -49,8 +49,11 @@ def test_nodenet_data_gate_parameters(fixed_nodenet):
     assert data == {'gen': {'threshold': 1}}
 
 
-def test_user_prompt(fixed_nodenet, nodetype_def, nodefunc_def):
-    with open(nodetype_def, 'w') as fp:
+def test_user_prompt(fixed_nodenet, resourcepath):
+    import os
+    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
+    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    with open(nodetype_file, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
             "slottypes": ["gen", "foo", "bar"],\
@@ -61,7 +64,7 @@ def test_user_prompt(fixed_nodenet, nodetype_def, nodefunc_def):
                 "testparam": 13\
               }\
             }}')
-    with open(nodefunc_def, 'w') as fp:
+    with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
     micropsi.reload_native_modules()
@@ -74,7 +77,7 @@ def test_user_prompt(fixed_nodenet, nodetype_def, nodefunc_def):
         "foobar",
         options
     )
-    result, data = micropsi.get_current_state(fixed_nodenet, nodenet={'nodespace': 'Root'})
+    result, data = micropsi.get_calculation_state(fixed_nodenet, nodenet={})
     assert 'user_prompt' in data
     assert data['user_prompt']['msg'] == 'foobar'
     assert data['user_prompt']['node']['uid'] == uid
@@ -100,7 +103,7 @@ def test_user_notification(test_nodenet, node):
     api = micropsi.nodenets[test_nodenet].netapi
     node_obj = api.get_node(node)
     api.notify_user(node_obj, "Hello there")
-    result, data = micropsi.get_current_state(test_nodenet, nodenet={'nodespace': 'Root'})
+    result, data = micropsi.get_calculation_state(test_nodenet, nodenet={'nodespaces': [None]})
     assert 'user_prompt' in data
     assert data['user_prompt']['node']['uid'] == node
     assert data['user_prompt']['msg'] == "Hello there"
@@ -231,18 +234,70 @@ def test_clone_nodes_copies_gate_params(fixed_nodenet):
     assert round(copy.get_gate_parameters()['gen']['maximum'], 2) == 0.1
 
 
-def test_modulators(fixed_nodenet):
+def test_modulators(fixed_nodenet, engine):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
+    # assert modulators are instantiated from the beginning
+    assert nodenet._modulators != {}
+    assert nodenet.get_modulator('emo_activation') is not None
 
-    nodenet.netapi.change_modulator("test_modulator", 0.42)
-    assert nodenet.netapi.get_modulator("test_modulator") == 0.42
-
+    # set a modulator
     nodenet.set_modulator("test_modulator", -1)
     assert nodenet.netapi.get_modulator("test_modulator") == -1
 
+    # assert change_modulator sets diff.
+    nodenet.netapi.change_modulator("test_modulator", 0.42)
+    assert round(nodenet.netapi.get_modulator("test_modulator"), 4) == -0.58
 
-def test_node_parameters(fixed_nodenet, nodetype_def, nodefunc_def):
-    with open(nodetype_def, 'w') as fp:
+    # no modulators should be set if we disable the emotional_parameter module
+    res, uid = micropsi.new_nodenet('foobar', engine, use_modulators=False)
+    new_nodenet = micropsi.get_nodenet(uid)
+    assert new_nodenet._modulators == {}
+    # and no Emo-stepoperator should be set.
+    for item in new_nodenet.stepoperators:
+        assert 'Emotional' not in item.__class__.__name__
+
+
+def test_modulators_sensor_actor_connection(test_nodenet, test_world):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    micropsi.set_nodenet_properties(test_nodenet, worldadapter="Braitenberg", world_uid=test_world)
+    res, s1_id = micropsi.add_node(test_nodenet, "Sensor", [10, 10], None, name="brightness_l", parameters={'datasource': 'brightness_l'})
+    res, s2_id = micropsi.add_node(test_nodenet, "Sensor", [20, 20], None, name="emo_activation", parameters={'datasource': 'emo_activation'})
+    res, a1_id = micropsi.add_node(test_nodenet, "Actor", [30, 30], None, name="engine_l", parameters={'datatarget': 'engine_l'})
+    res, a2_id = micropsi.add_node(test_nodenet, "Actor", [40, 40], None, name="base_importance_of_intention", parameters={'datatarget': 'base_importance_of_intention'})
+    res, r1_id = micropsi.add_node(test_nodenet, "Register", [10, 30], None, name="r1")
+    res, r2_id = micropsi.add_node(test_nodenet, "Register", [10, 30], None, name="r2")
+    s1 = nodenet.get_node(s1_id)
+    s2 = nodenet.get_node(s2_id)
+    r1 = nodenet.get_node(r1_id)
+    r2 = nodenet.get_node(r2_id)
+    s2.set_gate_parameter('gen', 'maximum', 999)
+    micropsi.add_link(test_nodenet, r1_id, 'gen', a1_id, 'gen')
+    micropsi.add_link(test_nodenet, r2_id, 'gen', a2_id, 'gen')
+    r1.activation = 0.3
+    r2.activation = 0.7
+    emo_val = nodenet.get_modulator("emo_activation")
+
+    # patch reset method, to check if datatarget was written
+    def nothing():
+        pass
+    nodenet.worldadapter_instance.reset_datatargets = nothing
+
+    nodenet.step()
+    assert round(nodenet.worldadapter_instance.datatargets['engine_l'], 3) == 0.3
+    assert round(s1.activation, 3) == round(nodenet.worldadapter_instance.get_datasource_value('brightness_l'), 3)
+    assert round(s2.activation, 3) == round(emo_val, 3)
+    assert round(nodenet.get_modulator('base_importance_of_intention'), 3) == 0.7
+    assert round(nodenet.worldadapter_instance.datatargets['engine_l'], 3) == 0.3
+    emo_val = nodenet.get_modulator("emo_activation")
+    nodenet.step()
+    assert round(s2.activation, 3) == round(emo_val, 3)
+
+
+def test_node_parameters(fixed_nodenet, resourcepath):
+    import os
+    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
+    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    with open(nodetype_file, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
             "slottypes": ["gen", "foo", "bar"],\
@@ -258,7 +313,7 @@ def test_node_parameters(fixed_nodenet, nodetype_def, nodefunc_def):
                 "protocol_mode": "all_active"\
             }}\
         }')
-    with open(nodefunc_def, 'w') as fp:
+    with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
     assert micropsi.reload_native_modules()
@@ -294,15 +349,18 @@ def test_delete_linked_nodes(fixed_nodenet):
     netapi.delete_node(evil_two)
 
 
-def test_multiple_nodenet_interference(engine, nodetype_def, nodefunc_def):
-    with open(nodetype_def, 'w') as fp:
+def test_multiple_nodenet_interference(engine, resourcepath):
+    import os
+    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
+    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    with open(nodetype_file, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
             "slottypes": ["gen", "foo", "bar"],\
             "gatetypes": ["gen", "foo", "bar"],\
             "nodefunction_name": "testnodefunc"\
         }}')
-    with open(nodefunc_def, 'w') as fp:
+    with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    node.get_gate('gen').gate_function(17)")
 
     micropsi.reload_native_modules()
@@ -346,7 +404,7 @@ def test_multiple_nodenet_interference(engine, nodetype_def, nodefunc_def):
 def test_get_nodespace_changes(fixed_nodenet):
     net = micropsi.nodenets[fixed_nodenet]
     net.step()
-    result = micropsi.get_nodespace_changes(fixed_nodenet, None, 0)
+    result = micropsi.get_nodespace_changes(fixed_nodenet, [None], 0)
     assert set(result['nodes_dirty'].keys()) == set(net.get_node_uids())
     assert result['nodes_deleted'] == []
     assert result['nodespaces_dirty'] == {}
@@ -360,9 +418,9 @@ def test_get_nodespace_changes(fixed_nodenet):
     net.netapi.link(newnode, 'gen', nodes['B1'], 'gen')
     newspace = net.netapi.create_nodespace(None, "nodespace")
     net.step()
-    test = micropsi.get_nodenet_activation_data(fixed_nodenet, None, 1)
+    test = micropsi.get_nodenet_activation_data(fixed_nodenet, [None], 1)
     assert test['has_changes']
-    result = micropsi.get_nodespace_changes(fixed_nodenet, None, 1)
+    result = micropsi.get_nodespace_changes(fixed_nodenet, [None], 1)
     assert nodes['B2'].uid in result['nodes_deleted']
     assert nodes['A1'].uid in result['nodes_dirty']
     assert nodes['A2'].uid in result['nodes_dirty']
@@ -373,7 +431,7 @@ def test_get_nodespace_changes(fixed_nodenet):
     assert len(result['nodes_dirty'].keys()) == 4
     assert len(result['nodespaces_dirty'].keys()) == 1
     net.step()
-    test = micropsi.get_nodenet_activation_data(fixed_nodenet, None, 2)
+    test = micropsi.get_nodenet_activation_data(fixed_nodenet, [None], 2)
     assert not test['has_changes']
 
 
@@ -385,9 +443,22 @@ def test_get_nodespace_changes_cycles(fixed_nodenet):
         nodes[n.name] = n
     net.netapi.delete_node(nodes['B2'])
     net.step()
-    result = micropsi.get_nodespace_changes(fixed_nodenet, None, 1)
+    result = micropsi.get_nodespace_changes(fixed_nodenet, [None], 1)
     assert nodes['B2'].uid in result['nodes_deleted']
     for i in range(101):
         net.step()
-    result = micropsi.get_nodespace_changes(fixed_nodenet, None, 1)
+    result = micropsi.get_nodespace_changes(fixed_nodenet, [None], 1)
     assert nodes['B2'].uid not in result['nodes_deleted']
+
+
+def test_nodespace_properties(test_nodenet):
+    data = {'testvalue': 'foobar'}
+    rootns = micropsi.get_nodenet(test_nodenet).get_nodespace(None)
+    micropsi.set_nodespace_properties(test_nodenet, rootns.uid, data)
+    assert micropsi.nodenets[test_nodenet].metadata['nodespace_ui_properties'][rootns.uid] == data
+    assert micropsi.get_nodespace_properties(test_nodenet, rootns.uid) == data
+    micropsi.save_nodenet(test_nodenet)
+    micropsi.revert_nodenet(test_nodenet)
+    assert micropsi.get_nodespace_properties(test_nodenet, rootns.uid) == data
+    properties = micropsi.get_nodespace_properties(test_nodenet)
+    assert properties[rootns.uid] == data

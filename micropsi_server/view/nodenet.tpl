@@ -76,14 +76,6 @@
                         <td><select name="nodenet_worldadapter" id="nodenet_worldadapter"></select></td>
                     </tr>
                     <tr>
-                        <td><label for="nodenet_renderlinks">render links</label></td>
-                        <td><select name="nodenet_renderlinks" type="checkbox" name="nodenet_renderlinks" id="nodenet_renderlinks">
-                            <option value="always">always</option>
-                            <option value="selection">on selected nodes</option>
-                            <option value="no">never</opeion>
-                        </select></td>
-                    </tr>
-                    <tr>
                         <td><label for="nodenet_snap">Snap to grid</label></td>
                         <td><input type="checkbox" name="nodenet_snap" id="nodenet_snap" /></td>
                     </tr>
@@ -92,12 +84,11 @@
                     <button type="submit" class="btn btn-primary">Apply</button>
                 </div>
                 <p>&nbsp;</p>
-                <p><strong>global modulators</strong>
                 <div class="modulators_container">
+                    <strong>global modulators</strong>
                     <table class="modulators table-striped table-condensed">
                     </table>
                 </div>
-                </p>
             </form>
 
             <form class="form-horizontal default_form hide" id="edit_nodespace_form">
@@ -110,6 +101,21 @@
                     <tr>
                         <td><label for="nodespace_name">Name</label></td>
                         <td><input type="text" name="nodespace_name" id="nodespace_name"></td>
+                    </tr>
+                    <tr>
+                        <td><label for="nodespace_renderlinks">render links</label></td>
+                        <td><select name="nodespace_renderlinks" type="checkbox" name="nodespace_renderlinks" id="nodespace_renderlinks">
+                            <option value="always">always</option>
+                            <option value="selection">on selected nodes</option>
+                            <option value="no">never</opeion>
+                        </select></td>
+                    </tr>
+                    <tr>
+                        <td><label for="nodespace_activation_display">activation display</label></td>
+                        <td><select name="nodespace_activation_display" type="checkbox" name="nodespace_activation_display" id="nodespace_activation_display">
+                            <option value="redgreen">red / green</option>
+                            <option value="alpha">opacity / green</option>
+                        </select></td>
                     </tr>
                 </table>
                 <div class="controls">
@@ -227,7 +233,7 @@
                             </table>
                         </td>
                     </tr>
-                    <tr class="node">
+                    <tr>
                         <td> &nbsp;</td>
                         <td>
                             <button type="submit" class="btn btn-primary">Apply</button>
@@ -253,6 +259,10 @@
     </div>
     <div class="seperator" style="text-align:center;"><a class="resizeHandle" id="nodenetSizeHandle"> </a></div>
 </div>
+
+% if console:
+    % include("netapi_console")
+% end
 
 <div class="dropdown" id="node_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#node_menu"></a>

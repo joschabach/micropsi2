@@ -11,12 +11,7 @@ from datetime import datetime
 
 class TimeSeries(World):
     """ A world that cycles through a fixed time series loaded from a file.
-    This world looks for a file named timeseries.npz in the data_directory
-    that has been set in configuration. This is a stopgap, we want to add the
-    option to choose a file whenever such worlds are instantiated in the GUI.
-
     The file should be a numpy archive with the following fields:
-
     'data': numpy array of shape (nr of ids) x (nr of timestamps)
     'timestamps', a list of timestamps - the legend for the data's second axis
     'ids': a list of IDs - the legend for data's first axis.

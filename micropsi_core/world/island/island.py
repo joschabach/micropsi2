@@ -8,8 +8,8 @@ from micropsi_core.world.island import png
 
 
 class Island(World):
+    """ A simple Doerner Island-World"""
 
-    """ mandatory: list of world adapters that are supported"""
     supported_worldadapters = ['Braitenberg', 'Survivor', 'StructuredObjects']
 
     groundmap = {

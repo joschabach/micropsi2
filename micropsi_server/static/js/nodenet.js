@@ -91,11 +91,24 @@ prerenderLayer.visible = false;
 
 viewProperties.zoomFactor = parseFloat($.cookie('zoom_factor')) || viewProperties.zoomFactor;
 
-currentNodenet = $.cookie('selected_nodenet') || '';
-currentNodeSpace = $.cookie('selected_nodespace') || '';
-if(!$.cookie('renderlinks')){
-    $.cookie('renderlinks', 'always');
+var nodenetcookie = $.cookie('selected_nodenet') || '';
+if (nodenetcookie && nodenetcookie.indexOf('/') > 0){
+    nodenetcookie = nodenetcookie.split("/");
+    currentNodenet = nodenetcookie[0];
+    currentNodeSpace = nodenetcookie[1] || null;
+} else {
+    currentNodenet = '';
+    currentNodeSpace = '';
 }
+
+nodespaceProperties = {};
+
+// compatibility
+nodespace_property_defaults = {
+    'renderlinks': ($.cookie('renderlinks') || 'always'),
+    'activation_display': 'redgreen'
+}
+
 
 currentWorldadapter = null;
 
@@ -110,6 +123,7 @@ selectionBox.name = "selectionBox";
 
 nodetypes = {};
 native_modules = {};
+native_module_categories = {};
 available_gatetypes = [];
 nodespaces = {};
 sorted_nodetypes = [];
@@ -150,16 +164,13 @@ registerResizeHandler();
 globalDataSources = [];
 globalDataTargets = [];
 
-$(document).on('load_nodenet', function(event, uid){
-    ns = 'Root';
-    if(uid == currentNodenet){
-        ns = currentNodeSpace;
-    }
-    setCurrentNodenet(uid, ns);
-});
+available_operations = {};
 
 $(document).on('nodenet_changed', function(event, new_nodenet){
     setCurrentNodenet(new_nodenet, null, true);
+});
+$(document).on('new_world_created', function(data){
+    get_available_worlds();
 });
 
 function toggleButtons(on){
@@ -176,25 +187,25 @@ function get_available_worlds(){
             html += '<option value="'+uid+'">'+data[uid].name+'</option>';
         }
         $('#nodenet_world').html(html);
+        if(currentNodenet && nodenet_data){
+            $('#nodenet_world').val(nodenet_data.world);
+        }
     });
 }
 
 function get_available_worldadapters(world_uid, callback){
     worldadapters = {};
     if(world_uid){
-        api.call("get_worldadapters", {world_uid: world_uid},
+        api.call("get_worldadapters", {world_uid: world_uid, nodenet_uid: currentNodenet},
             success=function(data){
                 worldadapters = data;
-                currentWorld = world_uid;
                 var str = '';
                 var name;
                 var keys = Object.keys(worldadapters);
                 keys.sort();
                 for (var idx in keys){
                     name = keys[idx];
-                    worldadapters[name].datasources = worldadapters[name].datasources.sort();
-                    worldadapters[name].datatargets = worldadapters[name].datatargets.sort();
-                    str += '<option>'+name+'</option>';
+                    str += '<option title="'+worldadapters[name]['description']+'">'+name+'</option>';
                 }
                 $('#nodenet_worldadapter').html(str);
                 if(callback){
@@ -224,7 +235,6 @@ function setNodenetValues(data){
     $('#nodenet_uid').val(currentNodenet);
     $('#nodenet_name').val(data.name);
     $('#nodenet_snap').attr('checked', data.snap_to_grid);
-    $('#nodenet_renderlinks').val(nodenet_data.renderlinks);
     if (!jQuery.isEmptyObject(worldadapters)) {
         var worldadapter_select = $('#nodenet_worldadapter');
         worldadapter_select.val(data.worldadapter);
@@ -234,47 +244,69 @@ function setNodenetValues(data){
     }
 }
 
+function buildCategoryTree(item, path, idx){
+    if (idx < path.length){
+        name = path[idx];
+        if (!item[name]){
+            item[name] = {};
+        }
+        buildCategoryTree(item[name], path, idx + 1);
+    }
+}
+
+
+api.call("get_available_operations", {}, function(data){
+    available_operations = data
+});
+
+
 function setCurrentNodenet(uid, nodespace, changed){
     if(!nodespace){
-        nodespace = "Root";
+        nodespace = null;
     }
     $('#loading').show();
-    api.call('load_nodenet',
-        {nodenet_uid: uid,
-            nodespace: nodespace,
-            include_links: $.cookie('renderlinks') == 'always',
-        },
+    api.call('get_nodenet_metadata', {nodenet_uid: uid},
         function(data){
             $('#loading').hide();
             nodenetscope.activate();
             toggleButtons(true);
 
             var nodenetChanged = changed || (uid != currentNodenet);
-            var nodespaceChanged = changed || (nodespace != currentNodeSpace);
-
+            currentNodenet = uid;
+            currentNodeSpace = data.rootnodespace;
+            currentWorldadapter = data.worldadapter;
+            nodespaceProperties = data.nodespace_ui_properties;
+            for(var key in data.nodespaces){
+                if(!(key in nodespaceProperties)){
+                    nodespaceProperties[key] = {};
+                }
+                if(!nodespaceProperties[key].renderlinks){
+                    nodespaceProperties[key].renderlinks = nodespace_property_defaults.renderlinks;
+                }
+                if(!nodespaceProperties[key].activation_display){
+                    nodespaceProperties[key].activation_display = nodespace_property_defaults.activation_display;
+                }
+            }
             if(nodenetChanged){
-                $(document).trigger('nodenetChanged', uid);
                 clipboard = {};
                 selection = {};
                 nodespaces = {};
+                nodes = {};
+                links = {};
+                nodeLayer.removeChildren();
+                linkLayer.removeChildren();
             }
+            $(document).trigger('nodenet_loaded', uid);
 
             nodenet_data = data;
-            nodenet_data['renderlinks'] = $.cookie('renderlinks') || 'always';
             nodenet_data['snap_to_grid'] = $.cookie('snap_to_grid') || viewProperties.snap_to_grid;
 
             showDefaultForm();
-            currentNodeSpace = data['nodespace'];
-            currentNodenet = uid;
 
-            nodes = {};
-            links = {};
-            nodeLayer.removeChildren();
-            linkLayer.removeChildren();
-
-            $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
+            $.cookie('selected_nodenet', currentNodenet+"/", { expires: 7, path: '/' });
             if(nodenetChanged || jQuery.isEmptyObject(nodetypes)){
                 nodetypes = data.nodetypes;
+                native_modules = data.native_modules;
                 sorted_nodetypes = Object.keys(nodetypes);
                 sorted_nodetypes.sort(function(a, b){
                     if(a < b) return -1;
@@ -288,9 +320,17 @@ function setCurrentNodenet(uid, nodespace, changed){
                     if(a > b) return 1;
                     return 0;
                 });
+
+                categories = [];
                 for(var key in native_modules){
                     nodetypes[key] = native_modules[key];
+                    categories.push(native_modules[key].category.split('/'));
                 }
+                native_module_categories = {}
+                for(var i =0; i < categories.length; i++){
+                    buildCategoryTree(native_module_categories, categories[i], 0);
+                }
+
                 available_gatetypes = [];
                 for(var key in nodetypes){
                     $.merge(available_gatetypes, nodetypes[key].gatetypes || []);
@@ -301,22 +341,16 @@ function setCurrentNodenet(uid, nodespace, changed){
                     showDefaultForm();
                 });
                 get_available_gatefunctions();
-                setNodespaceData(data, true);
                 getNodespaceList();
-            } else {
-                setNodespaceData(data, (nodespaceChanged));
+                $(document).trigger('refreshNodenetList');
             }
-            $(document).trigger('refreshNodenetList');
             nodenet_loaded = true;
+            refreshNodespace(nodespace)
         },
         function(data) {
-            if(data.status == 500 || data.status === 0){
-                api.defaultErrorCallback(data);
-            } else {
-                currentNodenet = null;
-                $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
-                dialogs.notification(data.data, "Info");
-            }
+            api.defaultErrorCallback(data);
+            $('#loading').hide();
+            $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
         });
 }
 
@@ -328,6 +362,9 @@ function getNodespaceList(){
         for(var i=0; i < sorted.length; i++){
             nodespaces[sorted[i].uid] = sorted[i];
             html += '<li><a href="#" data-nodespace="'+sorted[i].uid+'">'+sorted[i].name+'</a></li>';
+            for(var key in sorted[i].properties){
+                nodespaceProperties[sorted[i].uid][key] = sorted[i].properties[key];
+            }
         }
         $('#nodespace_control ul').html(html);
         $("#current_nodespace_name").text(nodespaces[currentNodeSpace].name);
@@ -340,7 +377,7 @@ function setNodespaceData(data, changed){
     nodenetscope.activate();
     if (data && !jQuery.isEmptyObject(data)){
         currentSimulationStep = data.current_step || 0;
-        currentWorldadapter = data.worldadapter;
+
         nodenetRunning = data.is_active;
 
         if(!('selectionBox' in nodeLayer)){
@@ -395,7 +432,7 @@ function setNodespaceData(data, changed){
             }
         }
 
-        if(nodenet_data.renderlinks == 'selection'){
+        if(nodespaceProperties[currentNodeSpace].renderlinks == 'selection'){
             loadLinksForSelection(function(data){
                 for(var uid in links) {
                     if(!(uid in data)) {
@@ -490,18 +527,20 @@ function setNodespaceDiffData(data, changed){
         }
         // activations:
         for(var uid in data.activations){
-            activations = data.activations[uid];
-            var gen = 0
-            for(var i=0; i < nodes[uid].gateIndexes.length; i++){
-                var type = nodes[uid].gateIndexes[i];
-                nodes[uid].gates[type].sheaves['default'].activation = activations[i];
-                if(type == 'gen'){
-                    gen = activations[i];
+            if (uid in nodes){
+                activations = data.activations[uid];
+                var gen = 0
+                for(var i=0; i < nodes[uid].gateIndexes.length; i++){
+                    var type = nodes[uid].gateIndexes[i];
+                    nodes[uid].gates[type].sheaves['default'].activation = activations[i];
+                    if(type == 'gen'){
+                        gen = activations[i];
+                    }
                 }
+                nodes[uid].sheaves['default'].activation = gen;
+                setActivation(nodes[uid]);
+                redrawNodeLinks(nodes[uid]);
             }
-            nodes[uid].sheaves['default'].activation = gen;
-            setActivation(nodes[uid]);
-            redrawNodeLinks(nodes[uid]);
         }
         updateModulators(data.modulators);
 
@@ -550,14 +589,14 @@ function addLinks(link_data){
 
 function get_nodenet_params(){
     return {
-        'nodespace': currentNodeSpace,
+        'nodespaces': [currentNodeSpace],
         'step': currentSimulationStep - 1,
-        'include_links': $.cookie('renderlinks') == 'always',
+        'include_links': nodespaceProperties[currentNodeSpace].renderlinks == 'always',
     }
 }
 function get_nodenet_diff_params(){
     return {
-        'nodespace': currentNodeSpace,
+        'nodespaces': [currentNodeSpace],
         'step': window.currentSimulationStep,
     }
 }
@@ -581,19 +620,20 @@ function refreshNodespace(nodespace, step, callback){
     nodespace = nodespace || currentNodeSpace;
     params = {
         nodenet_uid: currentNodenet,
-        nodespace: nodespace,
-        step: currentSimulationStep
+        nodespaces: [nodespace],
+        include_links: true
     };
-    if(step){
-        params.step = step;
+    if(nodespaceProperties[nodespace] && nodespaceProperties[nodespace].renderlinks != 'always'){
+        params.include_links = false;
     }
-    params.include_links = nodenet_data['renderlinks'] == 'always';
-    api.call('get_nodespace', params , success=function(data){
+    api.call('get_nodes', params , success=function(data){
         var changed = nodespace != currentNodeSpace;
         if(changed){
             currentNodeSpace = nodespace;
-            $.cookie('selected_nodespace', currentNodeSpace, { expires: 7, path: '/' });
-            $("#current_nodespace_name").text(nodespaces[nodespace].name);
+            $.cookie('selected_nodenet', currentNodenet+"/"+currentNodeSpace, { expires: 7, path: '/' });
+            if(!$.isEmptyObject(nodespaces)){
+                $("#current_nodespace_name").text(nodespaces[nodespace].name);
+            }
             nodeLayer.removeChildren();
             linkLayer.removeChildren();
         }
@@ -616,21 +656,28 @@ function updateModulators(data){
     var sorted = [];
     globalDataSources = [];
     globalDataTargets = [];
-
+    if($.isEmptyObject(data)){
+        return $('.modulators_container').hide();
+    }
+    $('.modulators_container').show();
     for(key in data){
         sorted.push({'name': key, 'value': data[key]});
     }
     sorted.sort(sortByName);
+    var emo_html = '';
+    var base_html = ''
     // display reversed to get emo_ before base_
-    for(var i = sorted.length-1; i >=0; i--){
-        html += '<tr><td>'+sorted[i].name+'</td><td>'+sorted[i].value.toFixed(2)+'</td><td><button class="btn btn-mini" data="'+sorted[i].name+'">monitor</button></td></tr>'
+    for(var i = 0; i < sorted.length; i++){
+        var html = '<tr><td>'+sorted[i].name+'</td><td>'+sorted[i].value.toFixed(2)+'</td><td><button class="btn btn-mini" data="'+sorted[i].name+'">monitor</button></td></tr>';
         if(sorted[i].name.substr(0, 3) == "emo"){
+            emo_html += html
             globalDataSources.push(sorted[i].name);
         } else {
+            base_html += html
             globalDataTargets.push(sorted[i].name);
         }
     }
-    table.html(html);
+    table.html(emo_html + base_html);
     $('button', table).each(function(idx, button){
         $(button).on('click', function(evt){
             evt.preventDefault();
@@ -1164,13 +1211,12 @@ function createPlaceholder(node, direction, point){
 
 // draw link
 function renderLink(link, force) {
-    if(nodenet_data.renderlinks == 'no' && !force){
+    if(nodespaceProperties[currentNodeSpace].renderlinks == 'no'){
         return;
     }
-    if(nodenet_data.renderlinks == 'selection' && !force){
-        var is_hovered = hoverNode && (link.sourceNodeUid == hoverNode.uid || link.targetNodeUid == hoverNode.uid);
+    if(nodespaceProperties[currentNodeSpace].renderlinks == 'selection'){
         var is_selected = selection && (link.sourceNodeUid in selection || link.targetNodeUid in selection);
-        if(!is_hovered && !is_selected){
+        if(!is_selected){
             return;
         }
     }
@@ -1213,7 +1259,13 @@ function renderLink(link, force) {
     linkItem.name = "link";
     var linkContainer = new Group(linkItem);
     linkContainer.name = link.uid;
-
+    if (nodespaceProperties[currentNodeSpace].activation_display == 'alpha'){
+        if(sourceNode){
+            linkContainer.opacity = Math.max(0.1, sourceNode.sheaves[currentSheaf].activation)
+        } else {
+            linkContainer.opacity = 0.1
+        }
+    }
     linkLayer.addChild(linkContainer);
 }
 
@@ -1758,8 +1810,23 @@ function setActivation(node) {
     }
     if (node.uid in nodeLayer.children) {
         var nodeItem = nodeLayer.children[node.uid];
-        node.fillColor = nodeItem.children["activation"].children["body"].fillColor =
-            activationColor(node.sheaves[currentSheaf].activation, viewProperties.nodeColor);
+        if((nodespaceProperties[currentNodeSpace].activation_display != 'alpha') || node.sheaves[currentSheaf].activation > 0.5){
+            node.fillColor = nodeItem.children["activation"].children["body"].fillColor =
+                activationColor(node.sheaves[currentSheaf].activation, viewProperties.nodeColor);
+        }
+        if(nodespaceProperties[currentNodeSpace].activation_display == 'alpha'){
+            for(var i in nodeItem.children){
+                if(nodeItem.children[i].name == 'labelText'){
+                    nodeItem.children[i].opacity = 0;
+                    if (node.sheaves[currentSheaf].activation > 0.5){
+                        nodeItem.children[i].opacity = node.sheaves[currentSheaf].activation;
+                    }
+                } else {
+                    nodeItem.children[i].opacity = Math.max(0.1, node.sheaves[currentSheaf].activation)
+                }
+            }
+        }
+
         if (!isCompact(node) && (node.slotIndexes.length || node.gateIndexes.length)) {
             var i=0;
             var type;
@@ -1775,7 +1842,7 @@ function setActivation(node) {
                     viewProperties.nodeColor);
             }
         }
-    } else console.warn ("node "+node.uid+" not found in current view");
+    }
 }
 
 // mark node as selected, and add it to the selected nodes
@@ -1843,7 +1910,7 @@ function deselectLink(linkUid) {
         delete selection[linkUid];
         if(linkUid in linkLayer.children){
             var linkShape = linkLayer.children[linkUid].children["link"];
-            if(nodenet_data.renderlinks == 'no' || nodenet_data.renderlinks == 'selection'){
+            if(nodespaceProperties[currentNodeSpace].renderlinks == 'no' || nodespaceProperties[currentNodeSpace].renderlinks == 'selection'){
                 linkLayer.children[linkUid].remove();
             }
             linkShape.children["line"].strokeColor = links[linkUid].strokeColor;
@@ -2349,7 +2416,7 @@ function onMouseUp(event) {
         selectionRectangle.width = selectionRectangle.height = 1;
         selectionBox.setBounds(selectionRectangle);
     }
-    if(currentNodenet && nodenet_data && nodenet_data['renderlinks'] == 'selection'){
+    if(currentNodenet && nodenet_data && nodespaceProperties[currentNodeSpace].renderlinks == 'selection'){
         loadLinksForSelection();
     }
 }
@@ -2552,6 +2619,37 @@ function initializeDialogs(){
 
 var clickPosition = null;
 
+function buildRecursiveDropdown(cat, html, current_category, generate_items){
+    if(!current_category){
+        current_category='';
+    }
+    var catentries = []
+    for(var key in cat){
+        catentries.push(key);
+    }
+    catentries.sort();
+    for(var i = 0; i < catentries.length; i++){
+        if(catentries[i] == ''){
+            continue;
+        }
+        var newcategory = current_category || '';
+        if(current_category == ''){
+            newcategory += catentries[i]
+        }
+        else {
+            newcategory += '/'+catentries[i];
+        }
+        html += '<li class="noop"><a>'+catentries[i]+'<i class="icon-chevron-right"></i></a>';
+        html += '<ul class="sub-menu dropdown-menu">'
+        html += buildRecursiveDropdown(cat[catentries[i]], '', newcategory, generate_items);
+        html += '</ul></li>';
+    }
+
+    html += generate_items(current_category);
+
+    return html
+}
+
 function openContextMenu(menu_id, event) {
     event.cancelBubble = true;
     if(!currentNodenet){
@@ -2571,39 +2669,46 @@ function openContextMenu(menu_id, event) {
                 html += '<li><a data-create-node="' + sorted_nodetypes[idx] + '">Create ' + sorted_nodetypes[idx] +'</a></li>';
         }
         if(Object.keys(native_modules).length){
-            html += '<li class="divider"></li><li><a>Create Native Module<i class="icon-chevron-right"></i></a>';
+            html += '<li class="divider"></li><li class="noop"><a>Create Native Module<i class="icon-chevron-right"></i></a>';
             html += '<ul class="sub-menu dropdown-menu">';
-            for(var idx in sorted_native_modules){
-                html += '<li><a data-create-node="' + sorted_native_modules[idx] + '">Create '+ native_modules[sorted_native_modules[idx]].name +' Node</a></li>';
-            }
+            html += buildRecursiveDropdown(native_module_categories, '', '', function(current_category){
+                items = '';
+                for(var idx in sorted_native_modules){
+                    key = sorted_native_modules[idx];
+                    if(native_modules[key].category == current_category){
+                        items += '<li><a data-create-node="' + key + '">'+ native_modules[key].name +'</a></li>';
+                    }
+                }
+                return items;
+            });
             html += '</ul></li>';
         }
-        html += '<li class="divider"></li><li><a data-auto-align="true">Autoalign Nodes</a></li>';
         html += '<li class="divider"></li><li data-paste-nodes';
         if(Object.keys(clipboard).length === 0){
             html += ' class="disabled"';
         }
         html += '><a href="#">Paste nodes</a></li>';
+        html += getOperationsDropdownHTML(["Nodespace"], 1);
         list.html(html);
     }
     $(menu_id+" .dropdown-toggle").dropdown("toggle");
+    $(menu_id+" li.noop > a").on('click', function(event){event.stopPropagation();})
 }
 
 function openMultipleNodesContextMenu(event){
-    var typecheck = null;
-    var sametype = true;
     var node = null;
     var compact = false;
+    var nodetypes = [];
+    var count = 0
     for(var uid in selection){
+        if(!node) node = nodes[uid];
         if(isCompact(nodes[uid])) {
             compact = true;
         }
-        if(typecheck == null || typecheck == nodes[uid].type){
-            typecheck = nodes[uid].type;
-            node = nodes[uid];
-        } else {
-            sametype = false;
+        if(nodetypes.indexOf(nodes[uid].type) == -1){
+            nodetypes.push(nodes[uid].type);
         }
+        count += 1;
     }
     var menu = $('#multi_node_menu .nodenet_menu');
     var html = '';
@@ -2613,7 +2718,10 @@ function openMultipleNodesContextMenu(event){
     html += '<li data-copy-nodes><a href="#">Copy nodes</a></li>'+
         '<li data-paste-nodes><a href="#">Paste nodes</a></li>'+
         '<li><a href="#">Delete nodes</a></li>';
-    if(sametype){
+
+    html += getOperationsDropdownHTML(nodetypes, count);
+
+    if(nodetypes.length == 1){
         html += '<li class="divider"></li>' + getNodeLinkageContextMenuHTML(node);
     }
     html += '<li data-generate-fragment><a href="#">Generate netapi fragment</a></li>';
@@ -2624,6 +2732,50 @@ function openMultipleNodesContextMenu(event){
         $('#multi_node_menu li[data-paste-nodes]').removeClass('disabled');
     }
     openContextMenu('#multi_node_menu', event);
+}
+
+function getOperationsDropdownHTML(nodetypes, count){
+    operation_categories = {};
+    sorted_operations = [];
+
+    applicable_operations = {};
+    for(var key in available_operations){
+        var conditions = available_operations[key].selection;
+        if((conditions.nodetypes.length == 0 || $(nodetypes).not(conditions.nodetypes).get().length == 0) &&
+           (count >= conditions.mincount) &&
+           (conditions.maxcount < 0 || count <= conditions.maxcount)){
+                applicable_operations[key] = available_operations[key]
+        }
+    }
+
+    categories = [];
+    for(var key in applicable_operations){
+        categories.push(applicable_operations[key].category.split('/'));
+    }
+    operation_categories = {}
+    for(var i =0; i < categories.length; i++){
+        buildCategoryTree(operation_categories, categories[i], 0);
+    }
+    sorted_operations = Object.keys(applicable_operations).sort();
+
+    var html = '';
+    if(sorted_operations.length){
+        html += '<li class="divider"></li><li class="noop"><a>Operations<i class="icon-chevron-right"></i></a><ul class="sub-menu dropdown-menu">';
+        html += buildRecursiveDropdown(operation_categories, '', '', function(current_category){
+            items = '';
+            for(var idx in sorted_operations){
+                key = sorted_operations[idx];
+                if(applicable_operations[key].category == current_category){
+                    items += '<li><a title="'+applicable_operations[key].docstring+'" data-run-operation="' + key + '">'+ key +'</a></li>';
+                }
+            }
+            return items;
+        });
+        html += '</ul></li>';
+    } else {
+        html += '<li class="divider"></li><li class="noop disabled"><a>Operations</a></li>';
+    }
+    return html;
 }
 
 function getNodeLinkageContextMenuHTML(node){
@@ -2696,7 +2848,6 @@ function handleContextMenu(event) {
     switch (clickType) {
         case null: // create nodes
             var type = $el.attr("data-create-node");
-            var autoalign = $el.attr("data-auto-align");
             var callback = function(data){
                 dialogs.notification('Node created', 'success');
             };
@@ -2727,9 +2878,7 @@ function handleContextMenu(event) {
                     };
                     break;
             }
-            if(autoalign){
-                autoalignmentHandler();
-            } else if(type) {
+            if(type) {
                 if(nodenet_data.snap_to_grid){
                     var xpos = Math.round(clickPosition.x / 10) * 10;
                     var ypos = Math.round(clickPosition.y / 10) * 10;
@@ -2741,6 +2890,10 @@ function handleContextMenu(event) {
                     ypos/viewProperties.zoomFactor,
                     "", type, null, callback);
             } else{
+                if($el.attr('data-run-operation')){
+                    selectOperation($el.attr('data-run-operation'));
+                    break;
+                }
                 return false;
             }
             break;
@@ -2786,18 +2939,22 @@ function handleContextMenu(event) {
                     }
                     break;
                 default:
-                    var linktype = $(event.target).attr('data-link-type');
-                    if (linktype) {
-                        var forwardlinktype = linktype;
-                        if(forwardlinktype.indexOf('/')){
-                            forwardlinktype = forwardlinktype.split('/')[0];
-                        }
-                        for(var uid in selection){
-                            clickIndex = nodes[uid].gateIndexes.indexOf(forwardlinktype);
-                            createLinkHandler(uid, clickIndex, linktype);
-                        }
+                    if($el.attr('data-run-operation')){
+                        selectOperation($el.attr('data-run-operation'));
                     } else {
-                        openLinkCreationDialog(path.name)
+                        var linktype = $(event.target).attr('data-link-type');
+                        if (linktype) {
+                            var forwardlinktype = linktype;
+                            if(forwardlinktype.indexOf('/')){
+                                forwardlinktype = forwardlinktype.split('/')[0];
+                            }
+                            for(var uid in selection){
+                                clickIndex = nodes[uid].gateIndexes.indexOf(forwardlinktype);
+                                createLinkHandler(uid, clickIndex, linktype);
+                            }
+                        } else {
+                            openLinkCreationDialog(path.name)
+                        }
                     }
             }
             break;
@@ -2847,6 +3004,79 @@ function handleContextMenu(event) {
     view.draw();
 }
 
+function selectOperation(name){
+    var modal = $('#operations-modal');
+    if(available_operations[name].parameters.length){
+        $('#recipe_modal .docstring').html(available_operations[name].docstring);
+        var html = '';
+        for(var i in available_operations[name].parameters){
+            var param = available_operations[name].parameters[i];
+            html += '' +
+            '<div class="control-group">'+
+                '<label class="control-label" for="op_'+param.name+'_input">'+param.name+'</label>'+
+                '<div class="controls">'+
+                    '<input type="text" name="'+param.name+'" class="input-xlarge" id="op_'+param.name+'_input" value="'+((param.default == null) ? '' : param.default)+'"/>'+
+                '</div>'+
+            '</div>';
+        }
+        $('fieldset', modal).html(html);
+        var run = function(){
+            data = $('form', modal).serializeArray();
+            parameters = {};
+            for(var i=0; i < data.length; i++){
+                parameters[data[i].name] = data[i].value
+            }
+            modal.modal('hide');
+            runOperation(name, parameters);
+        };
+        $('form', modal).on('submit', run);
+        $('.btn-primary', modal).on('click', run);
+        modal.modal('show');
+    } else {
+        runOperation(name);
+    }
+}
+
+function runOperation(name, params){
+    var selection_uids = Object.keys(selection);
+    if(selection_uids.length == 0){
+        selection_uids = [currentNodeSpace];
+    }
+    api.call('run_operation', {
+        'nodenet_uid': currentNodenet,
+        'name': $el.attr('data-run-operation'),
+        'parameters': params || {},
+        'selection_uids': selection_uids}, function(data){
+            refreshNodespace();
+            if(!$.isEmptyObject(data)){
+                html = '';
+                if(data.content_type && data.content_type.indexOf("image") > -1){
+                    html += '<p><img src="'+data.content_type+','+data.data+'" /></p>';
+                    delete data.content_type
+                    delete data.data
+                }
+                if(Object.keys(data).length){
+                    html += '<dl>';
+                    for(var key in data){
+                        html += '<dt>'+key+':</dt>';
+                        if(typeof data[key] == 'string'){
+                            html += '<dd>'+data[key]+'</dd>';
+                        } else {
+                            html += '<dd>'+JSON.stringify(data[key])+'</dd>';
+                        }
+                    }
+                    html += '</dl>';
+                }
+                if(html){
+                    $('#recipe_result .modal-body').html(html);
+                    $('#recipe_result').modal('show');
+                    $('#recipe_result button').off();
+                }
+            }
+        }
+    );
+}
+
 function openLinkCreationDialog(nodeUid){
     $("#link_target_node").html('');
     $('#link_target_slot').html('');
@@ -2867,50 +3097,49 @@ function openLinkCreationDialog(nodeUid){
 }
 
 function get_datasource_options(worldadapter, value){
-    var sources = worldadapters[worldadapter].datasources;
-    html = '<optgroup label="Datasources">';
-    for(var i in sources){
-        html += '<option value="'+sources[i]+'"'+ ((value && value==sources[i]) ? ' selected="selected"':'') +'>'+sources[i]+'</option>';
+    var html = '';
+    if(worldadapter){
+        var sources = worldadapters[worldadapter].datasources;
+        html += '<optgroup label="Datasources">';
+        for(var i in sources){
+            html += '<option value="'+sources[i]+'"'+ ((value && value==sources[i]) ? ' selected="selected"':'') +'>'+sources[i]+'</option>';
+        }
+        if(value && sources.indexOf(value) < 0) {
+            html += '<option value="'+value+'"selected="selected">'+value+'</option>';
+        }
+        html += '</optgroup>';
     }
-    if(value && sources.indexOf(value) < 0) {
-        html += '<option value="'+value+'"selected="selected">'+value+'</option>';
+    if(globalDataSources.length){
+        html += '<optgroup label="Nodenet Globals">';
+        for(var i in globalDataSources){
+            html += '<option value="'+globalDataSources[i]+'"'+ ((value && value==globalDataSources[i]) ? ' selected="selected"':'') +'>'+globalDataSources[i]+'</option>';
+        }
+        html += '</optgroup>';
     }
-    html += '</optgroup>';
-    html += '<optgroup label="Nodenet Globals">';
-    for(var i in globalDataSources){
-        html += '<option value="'+globalDataSources[i]+'"'+ ((value && value==globalDataSources[i]) ? ' selected="selected"':'') +'>'+globalDataSources[i]+'</option>';
-    }
-    html += '</optgroup>';
     return html;
 }
 
 function get_datatarget_options(worldadapter, value){
-    var targets = worldadapters[worldadapter].datatargets;
-    html = '<optgroup label="Datatargets">';
-    for(var i in targets){
-        html += '<option value="'+targets[i]+'"'+ ((value && value==targets[i]) ? ' selected="selected"':'') +'>'+targets[i]+'</option>';
+    var html = '';
+    if(worldadapter){
+        var targets = worldadapters[worldadapter].datatargets;
+        html += '<optgroup label="Datatargets">';
+        for(var i in targets){
+            html += '<option value="'+targets[i]+'"'+ ((value && value==targets[i]) ? ' selected="selected"':'') +'>'+targets[i]+'</option>';
+        }
+        if(value && targets.indexOf(value) < 0) {
+            html += '<option value="'+value+'"selected="selected">'+value+'</option>';
+        }
+        html += '</optgroup>';
     }
-    if(value && targets.indexOf(value) < 0) {
-        html += '<option value="'+value+'"selected="selected">'+value+'</option>';
+    if(globalDataTargets.length){
+        html += '<optgroup label="Nodenet Globals">';
+        for(var i in globalDataTargets){
+            html += '<option value="'+globalDataTargets[i]+'"'+ ((value && value==globalDataTargets[i]) ? ' selected="selected"':'') +'>'+globalDataTargets[i]+'</option>';
+        }
+        html += '</optgroup>';
     }
-    html += '</optgroup>';
-    html += '<optgroup label="Nodenet Globals">';
-    for(var i in globalDataTargets){
-        html += '<option value="'+globalDataTargets[i]+'"'+ ((value && value==globalDataTargets[i]) ? ' selected="selected"':'') +'>'+globalDataTargets[i]+'</option>';
-    }
-    html += '</optgroup>';
     return html;
-}
-
-// rearrange nodes in the current nodespace
-function autoalignmentHandler() {
-    api.call("align_nodes", {
-            nodenet_uid: currentNodenet,
-            nodespace: currentNodeSpace
-        },
-        function(data){
-            setCurrentNodenet(currentNodenet, currentNodeSpace);
-        });
 }
 
 // let user create a new node
@@ -2942,6 +3171,9 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
     }
     api.call(method, params,
         success=function(uid){
+            if(type == 'Nodespace'){
+                nodespaceProperties[uid] = nodespace_property_defaults
+            }
             addNode(new Node(uid, x, y, currentNodeSpace, name || '', type, null, null, parameters));
             view.draw();
             selectNode(uid);
@@ -3023,7 +3255,7 @@ function deleteNodeHandler(nodeUid) {
     function deleteNodespaceOnServer(nodespace_uid){
         var params = {
             nodenet_uid: currentNodenet,
-            nodespace_uid: nodespace_uid
+            nodespace: nodespace_uid
         }
         api.call("delete_nodespace", params,
             success=function(data){
@@ -3301,7 +3533,7 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
                                 nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
                             }
                         }
-                        if(nodenet_data.renderlinks == 'always'){
+                        if(nodespaceProperties[currentNodeSpace].renderlinks == 'always'){
                             addLink(link);
                         }
                     });
@@ -3474,7 +3706,7 @@ function updateNodeParameters(nodeUid, parameters){
         nodenet_uid: currentNodenet,
         node_uid: nodeUid,
         parameters: parameters
-    }, api.defaultSuccessCallback, api.defaultErrorCallback, "post");
+    }, api.defaultSuccessCallback, api.defaultErrorCallback);
 }
 
 // handler for renaming the node
@@ -3554,8 +3786,6 @@ function handleEditNodenet(event){
     if(worldadapter){
         params.worldadapter = worldadapter;
     }
-    nodenet_data.renderlinks = $('#nodenet_renderlinks').val();
-    $.cookie('renderlinks', nodenet_data.renderlinks || '', {path: '/', expires: 7})
     nodenet_data.snap_to_grid = $('#nodenet_snap').attr('checked');
     $.cookie('snap_to_grid', nodenet_data.snap_to_grid || '', {path: '/', expires: 7})
     api.call("set_nodenet_properties", params,
@@ -3564,7 +3794,8 @@ function handleEditNodenet(event){
             if(reload){
                 window.location.reload();
             } else {
-                setCurrentNodenet(currentNodenet, currentNodeSpace);
+                // setCurrentNodenet(currentNodenet, currentNodeSpace);
+                refreshNodespace();
             }
         }
     );
@@ -3575,6 +3806,27 @@ function handleEditNodespace(event){
     var name = $('#nodespace_name').val();
     if(name != nodespaces[currentNodeSpace].name){
         renameNode(currentNodeSpace, name);
+    }
+    properties = {};
+    properties['renderlinks'] = $('#nodespace_renderlinks').val();
+    properties['activation_display'] = $('#nodespace_activation_display').val();
+    var update = false;
+    for(var key in properties){
+        if(properties[key] != nodespaceProperties[currentNodeSpace][key]){
+            update = true;
+            nodespaceProperties[currentNodeSpace][key] = properties[key];
+        } else {
+            delete properties[key];
+        }
+    }
+    if(update){
+        params = {nodenet_uid: currentNodenet, nodespace_uid: currentNodeSpace, properties: properties}
+        api.call('set_nodespace_properties', params);
+        if ('renderlinks' in properties){
+            refreshNodespace();
+        } else {
+            redrawNodeNet();
+        }
     }
 }
 
@@ -3822,16 +4074,12 @@ function getNodeParameterHTML(parameters, parameter_values){
             var i;
             switch(name){
                 case "datatarget":
-                    if(currentWorldadapter in worldadapters){
-                        var opts = get_datatarget_options(currentWorldadapter, value);
-                        input = "<select name=\"datatarget\" class=\"inplace\" id=\"node_datatarget\">"+opts+"</select>";
-                    }
+                    var opts = get_datatarget_options(currentWorldadapter, value);
+                    input = "<select name=\"datatarget\" class=\"inplace\" id=\"node_datatarget\">"+opts+"</select>";
                     break;
                 case "datasource":
-                    if(currentWorldadapter in worldadapters){
-                        var opts = get_datasource_options(currentWorldadapter, value);
-                        input = "<select name=\"datasource\" class=\"inplace\" id=\"node_datasource\">"+opts+"</select>";
-                    }
+                    var opts = get_datasource_options(currentWorldadapter, value);
+                    input = "<select name=\"datasource\" class=\"inplace\" id=\"node_datasource\">"+opts+"</select>";
                     break;
                 default:
                     if(parameter_values && parameter_values[name]){
@@ -3887,12 +4135,8 @@ function updateNodespaceForm(){
         } else {
             $('#nodespace_name').removeAttr('disabled');
         }
-        var nodetypehtml = '';
-        for(var idx in sorted_nodetypes){
-            if(nodetypes[sorted_nodetypes[idx]].gatetypes && nodetypes[sorted_nodetypes[idx]].gatetypes.length > 0){
-                nodetypehtml += '<option>' + sorted_nodetypes[idx] + '</option>';
-            }
-        }
+        $('#nodespace_renderlinks').val(nodespaceProperties[currentNodeSpace].renderlinks);
+        $('#nodespace_activation_display').val(nodespaceProperties[currentNodeSpace].activation_display);
     }
 }
 

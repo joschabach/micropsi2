@@ -19,20 +19,6 @@ def prepare(fixed_nodenet):
     return nodenet, netapi, source
 
 
-def add_dummyworld(fixed_nodenet):
-    nodenet = micropsi.get_nodenet(fixed_nodenet)
-    if nodenet.world:
-        nodenet.world.unregister_nodenet(nodenet)
-
-    worlduid = micropsi.new_world("DummyWorld", "DummyWorld", "DummyOwner")[1]
-
-    nodenet.world = worlduid
-    nodenet.worldadapter = "DummyWorldAdapter"
-
-    micropsi.worlds[worlduid].register_nodenet("DummyWorldAdapter", nodenet)
-    return micropsi.worlds[worlduid]
-
-
 def test_node_netapi_create_register_node(fixed_nodenet):
     # test register node creation
     net, netapi, source = prepare(fixed_nodenet)
@@ -774,7 +760,7 @@ def test_autoalign_updates_last_changed(fixed_nodenet):
     net.step()
     net.step()
     netapi.autoalign_nodespace(netapi.get_nodespace(None).uid)
-    changes = net.get_nodespace_changes(None, 2)
+    changes = net.get_nodespace_changes([None], 2)
     for uid in net.get_node_uids():
         if net.get_node(uid).position != [12, 13, 11]:
             assert uid in changes['nodes_dirty']
@@ -1074,3 +1060,93 @@ def test_set_dashboard_value(test_nodenet, node):
     netapi = nodenet.netapi
     netapi.set_dashboard_value('foo', 'bar')
     assert nodenet.dashboard_values['foo'] == 'bar'
+
+
+def test_decay_porret_links(test_nodenet):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    pipes = []
+    netapi.set_modulator('base_porret_decay_factor', 0.1)
+    for i in range(10):
+        node = netapi.create_node("Pipe", None, "P%d" % i)
+        pipes.append(node)
+        if i > 0:
+            netapi.link_with_reciprocal(pipes[i - 1], node, 'porret', weight=0.1 * i)
+
+    netapi.link_with_reciprocal(pipes[0], pipes[1], 'subsur', weight=0.5)
+    reg = netapi.create_node("Register", None, "source")
+    netapi.link(reg, 'gen', pipes[0], 'gen', 0.4)
+    netapi.decay_por_links(None)
+    for i in range(9):
+        assert round(pipes[i].get_gate('por').get_links()[0].weight, 3) == round(0.1 * (i + 1) * 0.9, 3)
+    # sub/sur/ret/gen links unchanged
+    assert round(reg.get_gate('gen').get_links()[0].weight, 3) == 0.4
+    assert round(pipes[0].get_gate('sub').get_links()[0].weight, 3) == 0.5
+    assert round(pipes[7].get_gate('ret').get_links()[0].weight, 3) == 0.7
+
+
+def test_unlink_gate(test_nodenet):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    node = netapi.create_node("Pipe", None)
+    pipe1 = netapi.create_node("Pipe", None)
+    pipe2 = netapi.create_node("Pipe", None)
+    netapi.link_with_reciprocal(node, pipe1, 'subsur')
+    netapi.link_with_reciprocal(node, pipe2, 'subsur')
+    netapi.link(node, 'por', pipe1, 'gen')
+    netapi.link(node, 'por', pipe2, 'gen')
+    netapi.link(node, 'por', pipe1, 'sur')
+    micropsi.save_nodenet(test_nodenet)
+    netapi.unlink_gate(node, 'por')
+    assert node.get_gate('por').empty
+    assert not node.get_gate('sub').empty
+    micropsi.revert_nodenet(test_nodenet)
+    netapi = micropsi.nodenets[test_nodenet].netapi
+    node = netapi.get_node(node.uid)
+    netapi.unlink_gate(node, 'por', target_node_uid=pipe1.uid)
+    assert len(node.get_gate('por').get_links()) == 1
+    assert node.get_gate('por').get_links()[0].target_node.uid == pipe2.uid
+    micropsi.revert_nodenet(test_nodenet)
+    netapi = micropsi.nodenets[test_nodenet].netapi
+    node = netapi.get_node(node.uid)
+    netapi.unlink_gate(node, 'por', target_slot_name='sur')
+    assert len(node.get_gate('por').get_links()) == 2  # pipe1:gen, pipe2:gen
+    assert len(node.get_gate('sub').get_links()) == 2  # only por->sub unlinked
+
+
+def test_unlink_slot(test_nodenet):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    node = netapi.create_node("Pipe", None)
+    pipe1 = netapi.create_node("Pipe", None)
+    pipe2 = netapi.create_node("Pipe", None)
+    netapi.link_with_reciprocal(node, pipe1, 'subsur')
+    netapi.link_with_reciprocal(node, pipe2, 'subsur')
+    netapi.link(pipe1, 'gen', node, 'por')
+    netapi.link(pipe2, 'gen', node, 'por')
+    netapi.link(pipe1, 'sur', node, 'por')
+    micropsi.save_nodenet(test_nodenet)
+    netapi.unlink_slot(node, 'por')
+    assert node.get_slot('por').empty
+    assert not node.get_slot('sur').empty
+    micropsi.revert_nodenet(test_nodenet)
+    netapi = micropsi.nodenets[test_nodenet].netapi
+    node = netapi.get_node(node.uid)
+    netapi.unlink_slot(node, 'por', source_node_uid=pipe1.uid)
+    assert len(node.get_slot('por').get_links()) == 1
+    assert node.get_slot('por').get_links()[0].source_node.uid == pipe2.uid
+    micropsi.revert_nodenet(test_nodenet)
+    netapi = micropsi.nodenets[test_nodenet].netapi
+    node = netapi.get_node(node.uid)
+    netapi.unlink_slot(node, 'por', source_gate_name='sur')
+    assert len(node.get_slot('por').get_links()) == 2  # pipe1:gen, pipe2:gen
+    assert len(node.get_slot('sur').get_links()) == 2  # only sur->por unlinked
+
+
+def test_nodespace_properties(test_nodenet):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    rootns = netapi.get_nodespace(None)
+    netapi.set_nodespace_properties(None, {'foo': 'bar'})
+    data = netapi.get_nodespace_properties()
+    assert data[rootns.uid] == {'foo': 'bar'}

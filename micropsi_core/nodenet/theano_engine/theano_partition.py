@@ -237,6 +237,9 @@ class TheanoPartition():
 
         self.allocated_elements_to_activators = np.zeros(self.NoE, dtype=np.int32)
 
+        self.sensor_indices = np.zeros(0, dtype=np.int32)  # index := datasource, value:=node_id
+        self.actuator_indices = np.zeros(0, dtype=np.int32)  # index := datatarget, value:=node_id
+
         self.inlinks = {}
 
         self.deleted_items = {}
@@ -668,7 +671,6 @@ class TheanoPartition():
         self.n_node_retlinked.set_value(n_node_retlinked_array)
 
     def grow_number_of_nodes(self, growby):
-
         new_NoN = int(self.NoN + growby)
 
         new_allocated_nodes = np.zeros(new_NoN, dtype=np.int32)
@@ -808,10 +810,10 @@ class TheanoPartition():
             try:
                 self.logger.info("Loading nodenet %s partition %i bulk data from file %s" % (self.nodenet.name, self.pid, datafilename))
                 datafile = np.load(datafilename)
-            except ValueError:
+            except ValueError:  # pragma: no cover
                 self.logger.warn("Could not read nodenet data from file %s" % datafile)
                 return False
-            except IOError:
+            except IOError:  # pragma: no cover
                 self.logger.warn("Could not open nodenet file %s" % datafile)
                 return False
 
@@ -832,73 +834,73 @@ class TheanoPartition():
             self.a_prev = theano.shared(value=a_prev_array.astype(T.config.floatX), name="a_prev", borrow=True)
 
         else:
-            self.logger.warn("no sizeinformation in file, falling back to defaults")
+            self.logger.warn("no sizeinformation in file, falling back to defaults")  # pragma: no cover
 
         # the load bulk data into numpy arrays
         if 'allocated_nodes' in datafile:
             self.allocated_nodes = datafile['allocated_nodes']
         else:
-            self.logger.warn("no allocated_nodes in file, falling back to defaults")
+            self.logger.warn("no allocated_nodes in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_node_offsets' in datafile:
             self.allocated_node_offsets = datafile['allocated_node_offsets']
         else:
-            self.logger.warn("no allocated_node_offsets in file, falling back to defaults")
+            self.logger.warn("no allocated_node_offsets in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_elements_to_nodes' in datafile:
             self.allocated_elements_to_nodes = datafile['allocated_elements_to_nodes']
         else:
-            self.logger.warn("no allocated_elements_to_nodes in file, falling back to defaults")
+            self.logger.warn("no allocated_elements_to_nodes in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces' in datafile:
             self.allocated_nodespaces = datafile['allocated_nodespaces']
         else:
-            self.logger.warn("no allocated_nodespaces in file, falling back to defaults")
+            self.logger.warn("no allocated_nodespaces in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_node_parents' in datafile:
             self.allocated_node_parents = datafile['allocated_node_parents']
         else:
-            self.logger.warn("no allocated_node_parents in file, falling back to defaults")
+            self.logger.warn("no allocated_node_parents in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_elements_to_activators' in datafile:
             self.allocated_elements_to_activators = datafile['allocated_elements_to_activators']
         else:
-            self.logger.warn("no allocated_elements_to_activators in file, falling back to defaults")
+            self.logger.warn("no allocated_elements_to_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces_por_activators' in datafile:
             self.allocated_nodespaces_por_activators = datafile['allocated_nodespaces_por_activators']
         else:
-            self.logger.warn("no allocated_nodespaces_por_activators in file, falling back to defaults")
+            self.logger.warn("no allocated_nodespaces_por_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces_ret_activators' in datafile:
             self.allocated_nodespaces_ret_activators = datafile['allocated_nodespaces_ret_activators']
         else:
-            self.logger.warn("no allocated_nodespaces_ret_activators in file, falling back to defaults")
+            self.logger.warn("no allocated_nodespaces_ret_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces_sub_activators' in datafile:
             self.allocated_nodespaces_sub_activators = datafile['allocated_nodespaces_sub_activators']
         else:
-            self.logger.warn("no allocated_nodespaces_sub_activators in file, falling back to defaults")
+            self.logger.warn("no allocated_nodespaces_sub_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces_sur_activators' in datafile:
             self.allocated_nodespaces_sur_activators = datafile['allocated_nodespaces_sur_activators']
         else:
-            self.logger.warn("no allocated_nodespaces_sur_activators in file, falling back to defaults")
+            self.logger.warn("no allocated_nodespaces_sur_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces_cat_activators' in datafile:
             self.allocated_nodespaces_cat_activators = datafile['allocated_nodespaces_cat_activators']
         else:
-            self.logger.warn("no allocated_nodespaces_cat_activators in file, falling back to defaults")
+            self.logger.warn("no allocated_nodespaces_cat_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces_exp_activators' in datafile:
             self.allocated_nodespaces_exp_activators = datafile['allocated_nodespaces_exp_activators']
         else:
-            self.logger.warn("no allocated_nodespaces_exp_activators in file, falling back to defaults")
+            self.logger.warn("no allocated_nodespaces_exp_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces_sampling_activators' in datafile:
             self.allocated_nodespaces_sampling_activators = datafile['allocated_nodespaces_sampling_activators']
         else:
-            self.logger.warn("no allocated_nodespaces_por_activators in file, falling back to defaults")
+            self.logger.warn("no allocated_nodespaces_por_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'w_data' in datafile and 'w_indices' in datafile and 'w_indptr' in datafile:
             w = sp.csr_matrix((datafile['w_data'], datafile['w_indices'], datafile['w_indptr']), shape = (self.NoE, self.NoE))
@@ -909,62 +911,62 @@ class TheanoPartition():
             self.a = theano.shared(value=datafile['a'].astype(T.config.floatX), name="a", borrow=False)
             self.a_in = theano.shared(value=np.zeros_like(datafile['a']).astype(T.config.floatX), name="a_in", borrow=False)
         else:
-            self.logger.warn("no w_data, w_indices or w_indptr in file, falling back to defaults")
+            self.logger.warn("no w_data, w_indices or w_indptr in file, falling back to defaults")  # pragma: no cover
 
         if 'g_theta' in datafile:
             self.g_theta = theano.shared(value=datafile['g_theta'].astype(T.config.floatX), name="theta", borrow=False)
         else:
-            self.logger.warn("no g_theta in file, falling back to defaults")
+            self.logger.warn("no g_theta in file, falling back to defaults")  # pragma: no cover
 
         if 'g_factor' in datafile:
             self.g_factor = theano.shared(value=datafile['g_factor'].astype(T.config.floatX), name="g_factor", borrow=False)
         else:
-            self.logger.warn("no g_factor in file, falling back to defaults")
+            self.logger.warn("no g_factor in file, falling back to defaults")  # pragma: no cover
 
         if 'g_threshold' in datafile:
             self.g_threshold = theano.shared(value=datafile['g_threshold'].astype(T.config.floatX), name="g_threshold", borrow=False)
         else:
-            self.logger.warn("no g_threshold in file, falling back to defaults")
+            self.logger.warn("no g_threshold in file, falling back to defaults")  # pragma: no cover
 
         if 'g_amplification' in datafile:
             self.g_amplification = theano.shared(value=datafile['g_amplification'].astype(T.config.floatX), name="g_amplification", borrow=False)
         else:
-            self.logger.warn("no g_amplification in file, falling back to defaults")
+            self.logger.warn("no g_amplification in file, falling back to defaults")  # pragma: no cover
 
         if 'g_min' in datafile:
             self.g_min = theano.shared(value=datafile['g_min'].astype(T.config.floatX), name="g_min", borrow=False)
         else:
-            self.logger.warn("no g_min in file, falling back to defaults")
+            self.logger.warn("no g_min in file, falling back to defaults")  # pragma: no cover
 
         if 'g_max' in datafile:
             self.g_max = theano.shared(value=datafile['g_max'].astype(T.config.floatX), name="g_max", borrow=False)
         else:
-            self.logger.warn("no g_max in file, falling back to defaults")
+            self.logger.warn("no g_max in file, falling back to defaults")  # pragma: no cover
 
         if 'g_function_selector' in datafile:
             self.g_function_selector = theano.shared(value=datafile['g_function_selector'], name="gatefunction", borrow=False)
         else:
-            self.logger.warn("no g_function_selector in file, falling back to defaults")
+            self.logger.warn("no g_function_selector in file, falling back to defaults")  # pragma: no cover
 
         if 'g_expect' in datafile:
             self.g_expect = theano.shared(value=datafile['g_expect'], name="expectation", borrow=False)
         else:
-            self.logger.warn("no g_expect in file, falling back to defaults")
+            self.logger.warn("no g_expect in file, falling back to defaults")  # pragma: no cover
 
         if 'g_countdown' in datafile:
             self.g_countdown = theano.shared(value=datafile['g_countdown'], name="countdown", borrow=False)
         else:
-            self.logger.warn("no g_countdown in file, falling back to defaults")
+            self.logger.warn("no g_countdown in file, falling back to defaults")  # pragma: no cover
 
         if 'g_wait' in datafile:
             self.g_wait = theano.shared(value=datafile['g_wait'], name="wait", borrow=False)
         else:
-            self.logger.warn("no g_wait in file, falling back to defaults")
+            self.logger.warn("no g_wait in file, falling back to defaults")  # pragma: no cover
 
         if 'n_function_selector' in datafile:
             self.n_function_selector = theano.shared(value=datafile['n_function_selector'], name="nodefunction_per_gate", borrow=False)
         else:
-            self.logger.warn("no n_function_selector in file, falling back to defaults")
+            self.logger.warn("no n_function_selector in file, falling back to defaults")  # pragma: no cover
 
         # reconstruct other states
         self.por_ret_dirty = True
@@ -1026,10 +1028,10 @@ class TheanoPartition():
         if os.path.isfile(datafilename):
             try:
                 datafile = np.load(datafilename)
-            except ValueError:
+            except ValueError:  # pragma: no cover
                 self.logger.warn("Could not read nodenet data from file %s" % datafile)
                 return False
-            except IOError:
+            except IOError:  # pragma: no cover
                 self.logger.warn("Could not open nodenet file %s" % datafile)
                 return False
 
@@ -1068,149 +1070,147 @@ class TheanoPartition():
                 inlink_from_offset += inlink_from_lengths[i]
                 inlink_to_offset += inlink_to_lengths[i]
         else:
-            self.logger.warn("no or incomplete inlink information in file, no inter-partition links will be loaded")
+            self.logger.warn("no or incomplete inlink information in file, no inter-partition links will be loaded")  # pragma: no cover
 
     def grow_number_of_nodespaces(self, growby):
 
         new_NoNS = int(self.NoNS + growby)
 
-        with self.nodenet.netlock:
-            new_allocated_nodespaces = np.zeros(new_NoNS, dtype=np.int32)
-            new_allocated_nodespaces[0:self.NoNS] = self.allocated_nodespaces
-            self.allocated_nodespaces = new_allocated_nodespaces
+        new_allocated_nodespaces = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces[0:self.NoNS] = self.allocated_nodespaces
+        self.allocated_nodespaces = new_allocated_nodespaces
 
-            new_allocated_nodespaces_por_activators = np.zeros(new_NoNS, dtype=np.int32)
-            new_allocated_nodespaces_por_activators[0:self.NoNS] = self.allocated_nodespaces_por_activators
-            self.allocated_nodespaces_por_activators = new_allocated_nodespaces_por_activators
+        new_allocated_nodespaces_por_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_por_activators[0:self.NoNS] = self.allocated_nodespaces_por_activators
+        self.allocated_nodespaces_por_activators = new_allocated_nodespaces_por_activators
 
-            new_allocated_nodespaces_ret_activators = np.zeros(new_NoNS, dtype=np.int32)
-            new_allocated_nodespaces_ret_activators[0:self.NoNS] = self.allocated_nodespaces_ret_activators
-            self.allocated_nodespaces_ret_activators = new_allocated_nodespaces_ret_activators
+        new_allocated_nodespaces_ret_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_ret_activators[0:self.NoNS] = self.allocated_nodespaces_ret_activators
+        self.allocated_nodespaces_ret_activators = new_allocated_nodespaces_ret_activators
 
-            new_allocated_nodespaces_sub_activators = np.zeros(new_NoNS, dtype=np.int32)
-            new_allocated_nodespaces_sub_activators[0:self.NoNS] = self.allocated_nodespaces_sub_activators
-            self.allocated_nodespaces_sub_activators = new_allocated_nodespaces_sub_activators
+        new_allocated_nodespaces_sub_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_sub_activators[0:self.NoNS] = self.allocated_nodespaces_sub_activators
+        self.allocated_nodespaces_sub_activators = new_allocated_nodespaces_sub_activators
 
-            new_allocated_nodespaces_sur_activators = np.zeros(new_NoNS, dtype=np.int32)
-            new_allocated_nodespaces_sur_activators[0:self.NoNS] = self.allocated_nodespaces_sur_activators
-            self.allocated_nodespaces_sur_activators = new_allocated_nodespaces_sur_activators
+        new_allocated_nodespaces_sur_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_sur_activators[0:self.NoNS] = self.allocated_nodespaces_sur_activators
+        self.allocated_nodespaces_sur_activators = new_allocated_nodespaces_sur_activators
 
-            new_allocated_nodespaces_cat_activators = np.zeros(new_NoNS, dtype=np.int32)
-            new_allocated_nodespaces_cat_activators[0:self.NoNS] = self.allocated_nodespaces_cat_activators
-            self.allocated_nodespaces_cat_activators = new_allocated_nodespaces_cat_activators
+        new_allocated_nodespaces_cat_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_cat_activators[0:self.NoNS] = self.allocated_nodespaces_cat_activators
+        self.allocated_nodespaces_cat_activators = new_allocated_nodespaces_cat_activators
 
-            new_allocated_nodespaces_exp_activators = np.zeros(new_NoNS, dtype=np.int32)
-            new_allocated_nodespaces_exp_activators[0:self.NoNS] = self.allocated_nodespaces_exp_activators
-            self.allocated_nodespaces_exp_activators = new_allocated_nodespaces_exp_activators
+        new_allocated_nodespaces_exp_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_exp_activators[0:self.NoNS] = self.allocated_nodespaces_exp_activators
+        self.allocated_nodespaces_exp_activators = new_allocated_nodespaces_exp_activators
 
-            new_allocated_nodespaces_sampling_activators = np.zeros(new_NoNS, dtype=np.int32)
-            new_allocated_nodespaces_sampling_activators[0:self.NoNS] = self.allocated_nodespaces_sampling_activators
-            self.allocated_nodespaces_sampling_activators = new_allocated_nodespaces_sampling_activators
+        new_allocated_nodespaces_sampling_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_sampling_activators[0:self.NoNS] = self.allocated_nodespaces_sampling_activators
+        self.allocated_nodespaces_sampling_activators = new_allocated_nodespaces_sampling_activators
 
-            new_nodespaces_last_changed = np.zeros(new_NoNS, dtype=np.int32)
-            new_nodespaces_last_changed[0:self.NoNS] = self.nodespaces_last_changed
-            self.nodespaces_last_changed = new_nodespaces_last_changed
+        new_nodespaces_last_changed = np.zeros(new_NoNS, dtype=np.int32)
+        new_nodespaces_last_changed[0:self.NoNS] = self.nodespaces_last_changed
+        self.nodespaces_last_changed = new_nodespaces_last_changed
 
-            new_nodespaces_contents_last_changed = np.zeros(new_NoNS, dtype=np.int32)
-            new_nodespaces_contents_last_changed[0:self.NoNS] = self.nodespaces_contents_last_changed
-            self.nodespaces_contents_last_changed = new_nodespaces_contents_last_changed
+        new_nodespaces_contents_last_changed = np.zeros(new_NoNS, dtype=np.int32)
+        new_nodespaces_contents_last_changed[0:self.NoNS] = self.nodespaces_contents_last_changed
+        self.nodespaces_contents_last_changed = new_nodespaces_contents_last_changed
 
-            self.has_new_usages = True
-            self.NoNS = new_NoNS
+        self.has_new_usages = True
+        self.NoNS = new_NoNS
 
     def grow_number_of_elements(self, growby):
 
         new_NoE = int(self.NoE + growby)
 
-        with self.nodenet.netlock:
-            new_allocated_elements_to_nodes = np.zeros(new_NoE, dtype=np.int32)
-            new_allocated_elements_to_nodes[0:self.NoE] = self.allocated_elements_to_nodes
-            self.allocated_elements_to_nodes = new_allocated_elements_to_nodes
+        new_allocated_elements_to_nodes = np.zeros(new_NoE, dtype=np.int32)
+        new_allocated_elements_to_nodes[0:self.NoE] = self.allocated_elements_to_nodes
+        self.allocated_elements_to_nodes = new_allocated_elements_to_nodes
 
-            new_allocated_elements_to_activators = np.zeros(new_NoE, dtype=np.int32)
-            new_allocated_elements_to_activators[0:self.NoE] = self.allocated_elements_to_activators
-            self.allocated_elements_to_activators = new_allocated_elements_to_activators
+        new_allocated_elements_to_activators = np.zeros(new_NoE, dtype=np.int32)
+        new_allocated_elements_to_activators[0:self.NoE] = self.allocated_elements_to_activators
+        self.allocated_elements_to_activators = new_allocated_elements_to_activators
 
-            if self.sparse:
-                new_w = sp.csr_matrix((new_NoE, new_NoE), dtype=self.nodenet.scipyfloatX)
-            else:
-                new_w = np.zeros((new_NoE, new_NoE), dtype=self.nodenet.scipyfloatX)
-            new_w[0:self.NoE, 0:self.NoE] = self.w.get_value(borrow=True)
-            self.w.set_value(new_w, borrow=True)
+        if self.sparse:
+            new_w = sp.csr_matrix((new_NoE, new_NoE), dtype=self.nodenet.scipyfloatX)
+        else:
+            new_w = np.zeros((new_NoE, new_NoE), dtype=self.nodenet.scipyfloatX)
+        new_w[0:self.NoE, 0:self.NoE] = self.w.get_value(borrow=True)
+        self.w.set_value(new_w, borrow=True)
 
-            new_a = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
-            new_a[0:self.NoE] = self.a.get_value(borrow=True)
-            self.a.set_value(new_a, borrow=True)
+        new_a = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_a[0:self.NoE] = self.a.get_value(borrow=True)
+        self.a.set_value(new_a, borrow=True)
 
-            new_a_shifted = np.lib.stride_tricks.as_strided(new_a, shape=(new_NoE, 7), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
-            self.a_shifted.set_value(new_a_shifted, borrow=True)
+        new_a_shifted = np.lib.stride_tricks.as_strided(new_a, shape=(new_NoE, 7), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
+        self.a_shifted.set_value(new_a_shifted, borrow=True)
 
-            new_a_in = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
-            new_a_in[0:self.NoE] = self.a_in.get_value(borrow=True)
-            self.a_in.set_value(new_a_in, borrow=True)
+        new_a_in = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_a_in[0:self.NoE] = self.a_in.get_value(borrow=True)
+        self.a_in.set_value(new_a_in, borrow=True)
 
-            new_a_prev = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
-            new_a_prev[0:self.NoE] = self.a_prev.get_value(borrow=True)
-            self.a_prev.set_value(new_a_prev, borrow=True)
+        new_a_prev = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_a_prev[0:self.NoE] = self.a_prev.get_value(borrow=True)
+        self.a_prev.set_value(new_a_prev, borrow=True)
 
-            new_g_theta = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
-            new_g_theta[0:self.NoE] = self.g_theta.get_value(borrow=True)
-            self.g_theta.set_value(new_g_theta, borrow=True)
+        new_g_theta = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_theta[0:self.NoE] = self.g_theta.get_value(borrow=True)
+        self.g_theta.set_value(new_g_theta, borrow=True)
 
-            new_g_theta_shifted = np.lib.stride_tricks.as_strided(new_g_theta, shape=(self.NoE, 7), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
-            self.g_theta_shifted.set_value(new_g_theta_shifted, borrow=True)
+        new_g_theta_shifted = np.lib.stride_tricks.as_strided(new_g_theta, shape=(self.NoE, 7), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
+        self.g_theta_shifted.set_value(new_g_theta_shifted, borrow=True)
 
-            new_g_factor = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
-            new_g_factor[0:self.NoE] = self.g_factor.get_value(borrow=True)
-            self.g_factor.set_value(new_g_factor, borrow=True)
+        new_g_factor = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_factor[0:self.NoE] = self.g_factor.get_value(borrow=True)
+        self.g_factor.set_value(new_g_factor, borrow=True)
 
-            new_g_threshold = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
-            new_g_threshold[0:self.NoE] = self.g_threshold.get_value(borrow=True)
-            self.g_threshold.set_value(new_g_threshold, borrow=True)
+        new_g_threshold = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_threshold[0:self.NoE] = self.g_threshold.get_value(borrow=True)
+        self.g_threshold.set_value(new_g_threshold, borrow=True)
 
-            new_g_amplification = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
-            new_g_amplification[0:self.NoE] = self.g_amplification.get_value(borrow=True)
-            self.g_amplification.set_value(new_g_amplification, borrow=True)
+        new_g_amplification = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_amplification[0:self.NoE] = self.g_amplification.get_value(borrow=True)
+        self.g_amplification.set_value(new_g_amplification, borrow=True)
 
-            new_g_min = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
-            new_g_min[0:self.NoE] = self.g_min.get_value(borrow=True)
-            self.g_min.set_value(new_g_min, borrow=True)
+        new_g_min = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_min[0:self.NoE] = self.g_min.get_value(borrow=True)
+        self.g_min.set_value(new_g_min, borrow=True)
 
-            new_g_max = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
-            new_g_max[0:self.NoE] =  self.g_max.get_value(borrow=True)
-            self.g_max.set_value(new_g_max, borrow=True)
+        new_g_max = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_max[0:self.NoE] =  self.g_max.get_value(borrow=True)
+        self.g_max.set_value(new_g_max, borrow=True)
 
-            new_g_function_selector = np.zeros(new_NoE, dtype=np.int8)
-            new_g_function_selector[0:self.NoE] = self.g_function_selector.get_value(borrow=True)
-            self.g_function_selector.set_value(new_g_function_selector, borrow=True)
+        new_g_function_selector = np.zeros(new_NoE, dtype=np.int8)
+        new_g_function_selector[0:self.NoE] = self.g_function_selector.get_value(borrow=True)
+        self.g_function_selector.set_value(new_g_function_selector, borrow=True)
 
-            new_g_expect = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
-            new_g_expect[0:self.NoE] = self.g_expect.get_value(borrow=True)
-            self.g_expect.set_value(new_g_expect, borrow=True)
+        new_g_expect = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_expect[0:self.NoE] = self.g_expect.get_value(borrow=True)
+        self.g_expect.set_value(new_g_expect, borrow=True)
 
-            new_g_countdown = np.zeros(new_NoE, dtype=np.int16)
-            new_g_countdown[0:self.NoE] = self.g_countdown.get_value(borrow=True)
-            self.g_countdown.set_value(new_g_countdown, borrow=True)
+        new_g_countdown = np.zeros(new_NoE, dtype=np.int16)
+        new_g_countdown[0:self.NoE] = self.g_countdown.get_value(borrow=True)
+        self.g_countdown.set_value(new_g_countdown, borrow=True)
 
-            new_g_wait = np.ones(new_NoE, dtype=np.int16)
-            new_g_wait[0:self.NoE] = self.g_wait.get_value(borrow=True)
-            self.g_wait.set_value(new_g_wait, borrow=True)
+        new_g_wait = np.ones(new_NoE, dtype=np.int16)
+        new_g_wait[0:self.NoE] = self.g_wait.get_value(borrow=True)
+        self.g_wait.set_value(new_g_wait, borrow=True)
 
-            new_n_function_selector = np.zeros(new_NoE, dtype=np.int8)
-            new_n_function_selector[0:self.NoE] = self.n_function_selector.get_value(borrow=True)
-            self.n_function_selector.set_value(new_n_function_selector, borrow=True)
+        new_n_function_selector = np.zeros(new_NoE, dtype=np.int8)
+        new_n_function_selector[0:self.NoE] = self.n_function_selector.get_value(borrow=True)
+        self.n_function_selector.set_value(new_n_function_selector, borrow=True)
 
-            new_n_node_porlinked = np.zeros(new_NoE, dtype=np.int8)
-            self.n_node_porlinked.set_value(new_n_node_porlinked, borrow=True)
+        new_n_node_porlinked = np.zeros(new_NoE, dtype=np.int8)
+        self.n_node_porlinked.set_value(new_n_node_porlinked, borrow=True)
 
-            new_n_node_retlinked = np.zeros(new_NoE, dtype=np.int8)
-            self.n_node_retlinked.set_value(new_n_node_retlinked, borrow=True)
+        new_n_node_retlinked = np.zeros(new_NoE, dtype=np.int8)
+        self.n_node_retlinked.set_value(new_n_node_retlinked, borrow=True)
 
-            self.NoE = new_NoE
-            self.has_new_usages = True
+        self.NoE = new_NoE
+        self.has_new_usages = True
 
-            if self.has_pipes:
-                self.por_ret_dirty = True
+        if self.has_pipes:
+            self.por_ret_dirty = True
 
     def announce_nodes(self, number_of_nodes, average_elements_per_node):
 
@@ -1429,6 +1429,14 @@ class TheanoPartition():
         self.g_function_selector.set_value(g_function_selector_array, borrow=True)
         self.allocated_elements_to_nodes[np.where(self.allocated_elements_to_nodes == node_id)[0]] = 0
 
+        if type == SENSOR:
+            sensor_index = np.where(self.sensor_indices == node_id)[0]
+            self.sensor_indices[sensor_index] = 0
+
+        if type == ACTUATOR:
+            actuator_index = np.where(self.actuator_indices == node_id)[0]
+            self.actuator_indices[actuator_index] = 0
+
         if type == PIPE:
             n_function_selector_array = self.n_function_selector.get_value(borrow=True)
             n_function_selector_array[offset + GEN] = NFPG_PIPE_NON
@@ -1551,10 +1559,10 @@ class TheanoPartition():
     def delete_nodespace(self, nodespace_id):
         children_ids = np.where(self.allocated_nodespaces == nodespace_id)[0]
         for child_id in children_ids:
-            self.delete_nodespace(child_id)
+            self.nodenet.delete_nodespace(nodespace_to_id(child_id, self.pid))
         node_ids = np.where(self.allocated_node_parents == nodespace_id)[0]
         for node_id in node_ids:
-            self.delete_node(node_id)
+            self.nodenet.delete_node(node_to_id(node_id, self.pid))
             self.nodenet.clear_supplements(node_to_id(node_id, self.pid))
 
         self.nodenet.clear_supplements(nodespace_to_id(nodespace_id, self.pid))
@@ -1760,14 +1768,14 @@ class TheanoPartition():
             return w_matrix[rows,cols]
 
     def set_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to, new_w):
-        if nodespace_from_uid not in self.nodegroups or group_from not in self.nodegroups[nodespace_from_uid]:
-            raise ValueError("Group %s does not exist in nodespace %s." % (group_from, nodespace_from_uid))
-        if nodespace_to_uid not in self.nodegroups or group_to not in self.nodegroups[nodespace_to_uid]:
-            raise ValueError("Group %s does not exist in nodespace %s." % (group_to, nodespace_to_uid))
-        if len(self.nodegroups[nodespace_from_uid][group_from]) != new_w.shape[1]:
-            raise ValueError("group_from %s has length %i, but new_w.shape[1] is %i" % (group_from, len(self.nodegroups[nodespace_from_uid][group_from]), new_w.shape[1]))
-        if len(self.nodegroups[nodespace_to_uid][group_to]) != new_w.shape[0]:
-            raise ValueError("group_to %s has length %i, but new_w.shape[0] is %i" % (group_to, len(self.nodegroups[nodespace_to_uid][group_to]), new_w.shape[0]))
+        #if nodespace_from_uid not in self.nodegroups or group_from not in self.nodegroups[nodespace_from_uid]:
+        #    raise ValueError("Group %s does not exist in nodespace %s." % (group_from, nodespace_from_uid))
+        #if nodespace_to_uid not in self.nodegroups or group_to not in self.nodegroups[nodespace_to_uid]:
+        #    raise ValueError("Group %s does not exist in nodespace %s." % (group_to, nodespace_to_uid))
+        #if len(self.nodegroups[nodespace_from_uid][group_from]) != new_w.shape[1]:
+        #    raise ValueError("group_from %s has length %i, but new_w.shape[1] is %i" % (group_from, len(self.nodegroups[nodespace_from_uid][group_from]), new_w.shape[1]))
+        #if len(self.nodegroups[nodespace_to_uid][group_to]) != new_w.shape[0]:
+        #    raise ValueError("group_to %s has length %i, but new_w.shape[0] is %i" % (group_to, len(self.nodegroups[nodespace_to_uid][group_to]), new_w.shape[0]))
 
         w_matrix = self.w.get_value(borrow=True)
         grp_from = self.nodegroups[nodespace_from_uid][group_from]
@@ -1776,18 +1784,16 @@ class TheanoPartition():
         w_matrix[rows, cols] = new_w
         self.w.set_value(w_matrix, borrow=True)
 
-        for id in self.allocated_elements_to_nodes[grp_from]:
-            self.nodes_last_changed[id] = self.nodenet.current_step
-            self.nodespaces_contents_last_changed[self.allocated_node_parents[id]] = self.nodenet.current_step
-        for id in self.allocated_elements_to_nodes[grp_to]:
-            self.nodes_last_changed[id] = self.nodenet.current_step
-            self.nodespaces_contents_last_changed[self.allocated_node_parents[id]] = self.nodenet.current_step
+        cstep = self.nodenet.current_step
+        self.nodes_last_changed[self.allocated_elements_to_nodes[grp_from]] = cstep
+        self.nodespaces_contents_last_changed[self.allocated_node_parents[self.allocated_elements_to_nodes[grp_from]]] = cstep
+        self.nodes_last_changed[self.allocated_elements_to_nodes[grp_to]] = cstep
+        self.nodespaces_contents_last_changed[self.allocated_node_parents[self.allocated_elements_to_nodes[grp_to]]] = cstep
 
-        # todo: only set this if one of the groups is por/ret relevant
-        if self.has_pipes:
-            self.por_ret_dirty = True
+        self.por_ret_dirty = self.has_pipes
 
     def set_inlink_weights(self, partition_from_spid, new_from_elements, new_to_elements, new_weights):
+        from_partition = self.nodenet.partitions[partition_from_spid]
         if partition_from_spid in self.inlinks:
             theano_from_elements = self.inlinks[partition_from_spid][0]
             theano_to_elements = self.inlinks[partition_from_spid][1]
@@ -1807,8 +1813,6 @@ class TheanoPartition():
             theano_from_elements = theano.shared(value=old_from_elements, name=fromname, borrow=True)
             theano_to_elements = theano.shared(value=old_to_elements, name=toname, borrow=True)
             theano_weights = theano.shared(value=old_weights.astype(T.config.floatX), name=weightsname, borrow=True)
-
-            from_partition = self.nodenet.partitions[partition_from_spid]
 
             propagation_function = self.get_compiled_propagate_inlinks(
                 from_partition,
@@ -1834,9 +1838,9 @@ class TheanoPartition():
         theano_to_elements.set_value(to_elements, borrow=True)
         theano_weights.set_value(weights, borrow=True)
 
-        for id in self.allocated_elements_to_nodes[theano_from_elements.get_value()]:
-            self.nodes_last_changed[id] = self.nodenet.current_step
-            self.nodespaces_contents_last_changed[self.allocated_node_parents[id]] = self.nodenet.current_step
+        for id in from_partition.allocated_elements_to_nodes[theano_from_elements.get_value()]:
+            from_partition.nodes_last_changed[id] = self.nodenet.current_step
+            from_partition.nodespaces_contents_last_changed[from_partition.allocated_node_parents[id]] = self.nodenet.current_step
         for id in self.allocated_elements_to_nodes[theano_to_elements.get_value()]:
             self.nodes_last_changed[id] = self.nodenet.current_step
             self.nodespaces_contents_last_changed[self.allocated_node_parents[id]] = self.nodenet.current_step
@@ -1858,6 +1862,225 @@ class TheanoPartition():
         nodespace_ids = np.where(self.nodespaces_last_changed >= since_step)[0]
         nodespace_ids = nodespace_ids[np.where(self.allocated_nodespaces[nodespace_ids] == ns_id)[0]]
         return node_ids, nodespace_ids
+
+    def get_node_data(self, ids=None, nodespace_ids=None, complete=False, include_links=True, include_followupnodes=True):
+
+        a = self.a.get_value(borrow=True)
+        g_threshold_array = self.g_threshold.get_value(borrow=True)
+        g_amplification_array = self.g_amplification.get_value(borrow=True)
+        g_min_array = self.g_min.get_value(borrow=True)
+        g_max_array = self.g_max.get_value(borrow=True)
+        g_theta = self.g_theta.get_value(borrow=True)
+        g_function_selector = self.g_function_selector.get_value(borrow=True)
+        w = self.w.get_value(borrow=True)
+
+        if nodespace_ids is not None:
+            node_ids = np.where(self.allocated_node_parents == nodespace_ids)[0]
+        else:
+            node_ids = np.nonzero(self.allocated_nodes)[0]
+
+        if ids is not None:
+            node_ids = np.intersect1d(node_ids, ids)
+
+        nodes = {}
+        followupuids = set()
+        for id in node_ids:
+            uid = node_to_id(id, self.pid)
+            strtype = get_string_node_type(self.allocated_nodes[id], self.nodenet.native_modules)
+            nodetype = self.nodenet.get_nodetype(strtype)
+
+            gate_functions = {}
+            gate_parameters = {}
+            gate_activations = {}
+            links = {}
+            for gate in self.nodenet.get_nodetype(strtype).gatetypes:
+                numericalgate = get_numerical_gate_type(gate, self.nodenet.get_nodetype(strtype))
+                element = self.allocated_node_offsets[id] + numericalgate
+                gate_functions[gate] = get_string_gatefunction_type(g_function_selector[element])
+
+                parameters = {}
+                threshold = g_threshold_array[element].item()
+                if 'threshold' not in nodetype.gate_defaults[gate] or threshold != nodetype.gate_defaults[gate]['threshold']:
+                    parameters['threshold'] = float(threshold)
+
+                amplification = g_amplification_array[element].item()
+                if 'amplification' not in nodetype.gate_defaults[gate] or amplification != nodetype.gate_defaults[gate]['amplification']:
+                    parameters['amplification'] = float(amplification)
+
+                minimum = g_min_array[element].item()
+                if 'minimum' not in nodetype.gate_defaults[gate] or minimum != nodetype.gate_defaults[gate]['minimum']:
+                    parameters['minimum'] = float(minimum)
+
+                maximum = g_max_array[element].item()
+                if 'maximum' not in nodetype.gate_defaults[gate] or maximum != nodetype.gate_defaults[gate]['maximum']:
+                    parameters['maximum'] = float(maximum)
+
+                theta = g_theta[element].item()
+                if 'theta' not in nodetype.gate_defaults[gate] or theta != nodetype.gate_defaults[gate]['theta']:
+                    parameters['theta'] = float(theta)
+
+                if not len(parameters) == 0:
+                    gate_parameters[gate] = parameters
+
+                gate_activations[gate] = {"default": {
+                    "name": "default",
+                    "uid": "default",
+                    "activation": float(a[element])}}
+
+            state = None
+            if uid in self.native_module_instances:
+                state = self.native_module_instances.get(uid).clone_state()
+
+            parameters = {}
+            if strtype == "Sensor":
+                sensor_element = self.allocated_node_offsets[id] + GEN
+                datasource_index = np.where(self.sensor_indices == sensor_element)[0]
+                if len(datasource_index) == 0:
+                    parameters['datasource'] = None
+                else:
+                    parameters['datasource'] = self.nodenet.get_datasources()[datasource_index[0]]
+            elif strtype == "Actor":
+                actuator_element = self.allocated_node_offsets[id] + GEN
+                datatarget_index = np.where(self.actuator_indices == actuator_element)[0]
+                if len(datatarget_index) == 0:
+                    parameters['datatarget'] = None
+                else:
+                    parameters['datatarget'] = self.nodenet.get_datatargets()[datatarget_index[0]]
+            elif strtype == "Activator":
+                activator_type = None
+                if id in self.allocated_nodespaces_por_activators:
+                    activator_type = "por"
+                elif id in self.allocated_nodespaces_ret_activators:
+                    activator_type = "ret"
+                elif id in self.allocated_nodespaces_sub_activators:
+                    activator_type = "sub"
+                elif id in self.allocated_nodespaces_sur_activators:
+                    activator_type = "sur"
+                elif id in self.allocated_nodespaces_cat_activators:
+                    activator_type = "cat"
+                elif id in self.allocated_nodespaces_exp_activators:
+                    activator_type = "exp"
+                elif id in self.allocated_nodespaces_sampling_activators:
+                    activator_type = "sampling"
+                parameters['type'] = activator_type
+            elif strtype == "Pipe":
+                g_expect_array = self.g_expect.get_value(borrow=True)
+                value = g_expect_array[self.allocated_node_offsets[id] + get_numerical_gate_type("sur")].item()
+                parameters['expectation'] = value
+                g_wait_array = self.g_wait.get_value(borrow=True)
+                parameters['wait'] = g_wait_array[self.allocated_node_offsets[id] + get_numerical_gate_type("sur")].item()
+            elif strtype == "Comment":
+                parameters = self.comment_instances.get(uid).clone_parameters()
+            elif strtype in self.nodenet.native_modules:
+                parameters = self.native_module_instances.get(uid).clone_parameters()
+
+            data = {"uid": uid,
+                    "name": self.nodenet.names.get(uid, uid),
+                    "position": self.nodenet.positions.get(uid, (10, 10, 10)),
+                    "parent_nodespace": nodespace_to_id(self.allocated_node_parents[id], self.pid),
+                    "type": strtype,
+                    "parameters": parameters,
+                    "state": state,
+                    "gate_parameters": gate_parameters,
+                    "sheaves": {"default": {"name": "default",
+                                "uid": "default",
+                                "activation": float(a[self.allocated_node_offsets[id] + GEN])}},
+                    "activation": float(a[self.allocated_node_offsets[id] + GEN]),
+                    "gate_activations": gate_activations,
+                    "gate_functions": gate_functions}
+            if complete:
+                data['index'] = id
+            if include_links:
+                data['links'] = {}
+
+            nodes[uid] = data
+
+        # fill in links if requested
+        if include_links:
+            slots, gates = np.nonzero(w)
+            for index, gate_index in enumerate(gates):
+                source_id = self.allocated_elements_to_nodes[gate_index]
+                source_uid = node_to_id(source_id, self.pid)
+                if source_uid not in nodes:
+                    continue
+
+                source_type = self.allocated_nodes[source_id]
+                source_nodetype = self.nodenet.get_nodetype(get_string_node_type(source_type, self.nodenet.native_modules))
+                source_gate_numerical = gate_index - self.allocated_node_offsets[source_id]
+                source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
+
+                slot_index = slots[index]
+                target_id = self.allocated_elements_to_nodes[slot_index]
+                target_uid = node_to_id(target_id, self.pid)
+                target_type = self.allocated_nodes[target_id]
+                target_nodetype = self.nodenet.get_nodetype(get_string_node_type(target_type, self.nodenet.native_modules))
+                target_slot_numerical = slot_index - self.allocated_node_offsets[target_id]
+                target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
+                linkdict = {"weight": float(w[slot_index, gate_index]),
+                            "certainty": 1,
+                            "target_slot_name": target_slot_type,
+                            "target_node_uid": target_uid}
+                if source_gate_type not in nodes[source_uid]["links"]:
+                    nodes[source_uid]["links"][source_gate_type] = []
+                nodes[source_uid]["links"][source_gate_type].append(linkdict)
+                followupuids.add(target_uid)
+
+            # outgoing cross-partition links
+            for partition_to_spid, to_partition in self.nodenet.partitions.items():
+                if self.spid in to_partition.inlinks:
+                    inlinks = to_partition.inlinks[self.spid]
+                    from_elements = inlinks[0].get_value(borrow=True)
+                    to_elements = inlinks[1].get_value(borrow=True)
+                    w = inlinks[2].get_value(borrow=True)
+                    slots, gates = np.nonzero(w)
+                    for index, gate_index in enumerate(gates):
+                        source_id = self.allocated_elements_to_nodes[from_elements[gate_index]]
+                        source_uid = node_to_id(source_id, self.pid)
+                        if source_uid not in nodes:
+                            continue
+
+                        source_type = self.allocated_nodes[source_id]
+                        source_nodetype = self.nodenet.get_nodetype(get_string_node_type(source_type, self.nodenet.native_modules))
+                        source_gate_numerical = from_elements[gate_index] - self.allocated_node_offsets[source_id]
+                        source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
+
+                        slot_index = slots[index]
+                        target_id = to_partition.allocated_elements_to_nodes[to_elements[slot_index]]
+                        target_uid = node_to_id(target_id, to_partition.pid)
+                        target_type = to_partition.allocated_nodes[target_id]
+                        target_nodetype = to_partition.nodenet.get_nodetype(get_string_node_type(target_type, to_partition.nodenet.native_modules))
+                        target_slot_numerical = to_elements[slot_index] - to_partition.allocated_node_offsets[target_id]
+                        target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
+                        linkdict = {"weight": float(w[slot_index, gate_index]),
+                                    "certainty": 1,
+                                    "target_slot_name": target_slot_type,
+                                    "target_node_uid": target_uid}
+                        if source_gate_type not in nodes[source_uid]["links"]:
+                            nodes[source_uid]["links"][source_gate_type] = []
+                        nodes[source_uid]["links"][source_gate_type].append(linkdict)
+                        followupuids.add(target_uid)
+
+            # incoming cross-partition links need to be checked for followup nodes in the other partition
+            # even though we're not interested in the links themselves as they will be delivered with the nodes
+            # in the other partition.
+            # having to deliver followupnodes for links that aren't even our business is really annoying.
+            for from_partition_id, inlinks in self.inlinks.items():
+                from_partition = self.nodenet.partitions[from_partition_id]
+                from_elements = inlinks[0].get_value(borrow=True)
+                to_elements = inlinks[1].get_value(borrow=True)
+                w = inlinks[2].get_value(borrow=True)
+                slots, gates = np.nonzero(w)
+                for index, gate_index in enumerate(gates):
+                    source_id = from_partition.allocated_elements_to_nodes[from_elements[gate_index]]
+                    source_uid = node_to_id(source_id, from_partition.pid)
+
+                    slot_index = slots[index]
+                    target_id = self.allocated_elements_to_nodes[to_elements[slot_index]]
+                    target_uid = node_to_id(target_id, self.pid)
+                    if target_uid in nodes:
+                        followupuids.add(source_uid)
+
+        return nodes, followupuids
 
     def integrity_check(self):
 

@@ -52,7 +52,7 @@ from configuration import config as cfg
 
 ADMIN_USER = "admin"  # default name of the admin user
 DEFAULT_ROLE = "Restricted"  # new users can create and edit nodenets, but not create worlds
-IDLE_TIME_BEFORE_SESSION_EXPIRES = 360000  # after 100h idle time, expire the user session (but not the simulation)
+IDLE_TIME_BEFORE_SESSION_EXPIRES = 360000  # after 100h idle time, expire the user session (but not the calculation)
 TIME_INTERVAL_BETWEEN_EXPIRATION_CHECKS = 3600  # check every hour if we should log out users
 
 USER_ROLES = {  # sets of strings; each represents a permission.
@@ -89,7 +89,7 @@ class UserManager(object):
         # set up persistence
         if userfile_path is None:
             userfile_path = cfg['paths']['usermanager_path']
-        micropsi_core.tools.mkdir(os.path.dirname(userfile_path))
+        os.makedirs(os.path.dirname(userfile_path), exist_ok=True)
 
         self.user_file_name = userfile_path  # todo: make this work without a file system
         try:
@@ -104,10 +104,16 @@ class UserManager(object):
             self.users = {}
 
         # set up sessions
-        for i in self.users:
-            active_session = self.users[i]["session_token"]
-            if active_session:
-                self.sessions[active_session] = i
+        for name in self.users:
+
+            # compatibility for files before multi-session-feature
+            if "session_token" in self.users[name] and "sessions" not in self.users[name]:
+                self.users[name]["sessions"] = {
+                    self.users[name]["session_token"]: {"expires": self.users[name]["session_expires"]}
+                }
+
+            for token in self.users[name]["sessions"]:
+                self.sessions[token] = name
 
         # set up session cleanup
         def _session_expiration():
@@ -134,35 +140,35 @@ class UserManager(object):
             role: a string corresponding to a user role (such as "Administrator", or "Restricted")
             uid: a string that acts as a unique, immutable handle (so we can store resources for this user)
         """
-        if user_id and not user_id in self.users:
+        if user_id and user_id not in self.users:
             self.users[user_id] = {
                 "uid": uid or user_id,
                 "hashed_password": hashlib.md5(password.encode('utf-8')).hexdigest(),
                 "role": role,
-                "session_token": None,
-                "session_expires": False
+                "sessions": {}
             }
             self.save_users()
             return True
-        else: return False
+        else:
+            return False
 
     def save_users(self):
         """stores the user data to a file"""
         with open(self.user_file_name, mode='w+') as file:
-            json.dump(self.users, file, indent = 4)
+            json.dump(self.users, file, indent=4)
 
     def list_users(self):
         """returns a dictionary with all users currently known to the user manager for display purposes"""
-        return { i: {
-            "role": self.users[i]["role"],
-            "is_active": True if self.users[i]["session_token"] else False }
-                 for i in self.users }
+        return dict((name, {
+            "role": self.users[name]["role"],
+            "is_active": True if self.users[name]["sessions"] else False})
+            for name in self.users)
 
     def set_user_id(self, user_id_old, user_id_new):
         """returns the new username if the user has been renamed successfully, the old username if the new one was
         already in use, and None if the old username did not exist"""
         if user_id_old in self.users:
-            if not user_id_new in self.users:
+            if user_id_new not in self.users:
                 self.users[user_id_new] = self.users[user_id_old]
                 del self.users[user_id_old]
                 self.save_users()
@@ -191,13 +197,14 @@ class UserManager(object):
         """deletes the specified user, returns True if successful"""
         if user_id in self.users:
             # if the user is still active, kill the session
-            if self.users[user_id]["session_token"]: self.end_session(self.users[user_id]["session_token"])
+            for token in list(self.users[user_id]["sessions"].keys()):
+                self.end_session(token)
             del self.users[user_id]
             self.save_users()
             return True
         return False
 
-    def start_session(self, user_id, password = None, keep_logged_in_forever=True):
+    def start_session(self, user_id, password=None, keep_logged_in_forever=True):
         """authenticates the specified user, returns session token if successful, or None if not.
 
         Arguments:
@@ -206,11 +213,12 @@ class UserManager(object):
             keep_logged_in_forever (optional): if True, the session will not expire unless manually logging off
         """
         if password is None or self.test_password(user_id, password):
-            session_token = str(uuid.UUID(bytes = os.urandom(16)))
-            self.users[user_id]["session_token"] = session_token
+            session_token = str(uuid.UUID(bytes=os.urandom(16)))
+            self.users[user_id]["sessions"][session_token] = {
+                "expires": not keep_logged_in_forever
+            }
             self.sessions[session_token] = user_id
             if keep_logged_in_forever:
-                self.users[user_id]["session_expires"] = False
                 self.save_users()
             else:
                 self.refresh_session(session_token)
@@ -230,8 +238,11 @@ class UserManager(object):
         if session_token in self.sessions and user_id in self.users:
             current_user = self.sessions[session_token]
             if current_user in self.users:
-                self.users[current_user]["session_token"] = None
-                self.users[user_id]["session_token"] = session_token
+                session = self.users[current_user]["sessions"][session_token]
+                del self.users[current_user]["sessions"][session_token]
+                self.users[user_id]["sessions"].update({
+                    session_token: session
+                })
                 self.sessions[session_token] = user_id
                 self.refresh_session(session_token)
                 self.save_users()
@@ -251,7 +262,7 @@ class UserManager(object):
             user_id = self.sessions[session_token]
             del self.sessions[session_token]
             if user_id in self.users:
-                self.users[user_id]["session_token"] = None
+                del self.users[user_id]["sessions"][session_token]
 
     def end_all_sessions(self):
         """useful during a reset of the runtime, because all open user sessions will persist during shutdown"""
@@ -263,22 +274,21 @@ class UserManager(object):
         """resets the idle time until a currently active session expires to some point in the future"""
         if session_token in self.sessions:
             user_id = self.sessions[session_token]
-            if self.users[user_id]["session_expires"]:
-                self.users[user_id]["session_expires"] = (datetime.datetime.now() + datetime.timedelta(
+            if self.users[user_id]["sessions"][session_token]["expires"]:
+                self.users[user_id]["sessions"][session_token]["expires"] = (datetime.datetime.now() + datetime.timedelta(
                     seconds=IDLE_TIME_BEFORE_SESSION_EXPIRES)).isoformat()
 
     def check_for_expired_user_sessions(self):
         """removes all user sessions that have been idle for too long"""
-
         change_flag = False
         now = datetime.datetime.now().isoformat()
         sessions = self.sessions.copy()
         for session_token in sessions:
             user_id = self.sessions[session_token]
-            if self.users[user_id]["session_expires"]:
-                if self.users[user_id]["session_expires"] < now:
-                    self.end_session(session_token)
-                    change_flag = True
+            expires = self.users[user_id]["sessions"][session_token]["expires"]
+            if expires and expires < now:
+                self.end_session(session_token)
+                change_flag = True
         if change_flag:
             self.save_users()
 
@@ -289,7 +299,6 @@ class UserManager(object):
         Example usage:
             if "create nodenets" in usermanager.get_permissions(my_session): ...
         """
-
         if session_token in self.sessions:
             user_id = self.sessions[session_token]
             if user_id in self.users:
@@ -306,4 +315,3 @@ class UserManager(object):
             return self.sessions[session_token]
         else:
             return "Guest"
-

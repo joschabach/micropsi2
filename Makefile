@@ -17,9 +17,17 @@ clean:
 	rm -rf include lib .Python bin
 
 tests:
-	bin/py.test
+	-bin/py.test
+	-bin/py.test --agents
 
 test-coverage:
 	bin/py.test --cov micropsi_core --cov micropsi_server --cov-report html
+
+test-toolkit:
+	bin/py.test
+
+test-agents:
+	bin/py.test --agents
+
 
 .PHONY: run

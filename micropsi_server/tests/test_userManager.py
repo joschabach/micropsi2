@@ -70,47 +70,42 @@ def test_set_user_password(user_mgr, eliza):
 
 
 def test_start_session(user_mgr, eliza):
-    user_mgr.end_session(user_mgr.users["eliza"]["session_token"])
-    assert user_mgr.users["eliza"]["session_token"] is None
+    user_mgr.end_session(eliza)
+    assert user_mgr.users["eliza"]["sessions"] == {}
     assert user_mgr.start_session("eliza", password="wrong") is None
-    assert user_mgr.users["eliza"]["session_token"] is None
+    assert user_mgr.users["eliza"]["sessions"] == {}
     token = user_mgr.start_session("eliza", password="qwerty")
     assert token is not None
-    assert token == user_mgr.users["eliza"]["session_token"]
+    assert token in user_mgr.users["eliza"]["sessions"]
 
 
 def test_get_user_id_for_session_token(user_mgr, eliza):
-    token = user_mgr.start_session("eliza")
-    assert user_mgr.get_user_id_for_session_token(token) == "eliza"
+    assert user_mgr.get_user_id_for_session_token(eliza) == "eliza"
     assert user_mgr.get_user_id_for_session_token("notoken") == "Guest"
 
 
 def test_get_permissions_for_session_token(user_mgr, eliza):
-    token = user_mgr.users["eliza"]["session_token"]
-    perms = user_mgr.get_permissions_for_session_token(token)
+    perms = user_mgr.get_permissions_for_session_token(eliza)
     assert "manage server" in perms
     assert "manage users" not in perms
     user_mgr.set_user_role("eliza", "Guest")
-    perms = user_mgr.get_permissions_for_session_token(token)
+    perms = user_mgr.get_permissions_for_session_token(eliza)
     assert "manage server" not in perms
 
 
 def test_switch_user_for_session_token(user_mgr, eliza):
     user_mgr.create_user("norbert", "abcd", "Full")
-    user_mgr.start_session("norbert")
-    token = user_mgr.users["norbert"]["session_token"]
+    token = user_mgr.start_session("norbert")
     user_mgr.switch_user_for_session_token("eliza", token)
-    token1 = user_mgr.users["norbert"]["session_token"]
-    token2 = user_mgr.users["eliza"]["session_token"]
-    assert token1 is None
-    assert token2 == token
+    assert user_mgr.users["norbert"]["sessions"] == {}
+    assert token in user_mgr.users["eliza"]["sessions"]
+    # assert eliza's own session is still valid
+    assert eliza in user_mgr.users["eliza"]["sessions"]
 
 
 def test_end_session(user_mgr, eliza):
-    token = user_mgr.users["eliza"]["session_token"]
-    assert token is not None
-    user_mgr.end_session(token)
-    assert user_mgr.users["eliza"]["session_token"] is None
+    user_mgr.end_session(eliza)
+    assert user_mgr.users["eliza"]["sessions"] == {}
 
 
 def test_test_password(user_mgr, eliza):
@@ -119,14 +114,14 @@ def test_test_password(user_mgr, eliza):
 
 
 def test_end_all_sessions(user_mgr, eliza):
-    user_mgr.start_session("eliza")
     user_mgr.create_user("norbert", "abcd", "Full")
-    user_mgr.start_session("norbert")
-    assert user_mgr.users["eliza"]["session_token"] is not None
-    assert user_mgr.users["norbert"]["session_token"] is not None
+    norbert = user_mgr.start_session("norbert")
+    assert eliza in user_mgr.users["eliza"]["sessions"]
+    assert norbert in user_mgr.users["norbert"]["sessions"]
     user_mgr.end_all_sessions()
-    assert user_mgr.users["eliza"]["session_token"] is None
-    assert user_mgr.users["norbert"]["session_token"] is None
+    assert user_mgr.users["eliza"]["sessions"] == {}
+    assert user_mgr.users["norbert"]["sessions"] == {}
+    assert user_mgr.sessions == {}
 
 
 def test_delete_user(user_mgr):
@@ -139,19 +134,27 @@ def test_delete_user(user_mgr):
 def test_check_for_expired_user_sessions(user_mgr, eliza):
     t = datetime.datetime.now().time().isoformat()
     user_mgr.create_user("norbert", "abcd", "Full")
-    user_mgr.start_session("norbert", keep_logged_in_forever=False)
-    user_mgr.users["norbert"]["session_expires"] = repr(t)
-    user_mgr.start_session("eliza", keep_logged_in_forever=True)
-    assert user_mgr.users["eliza"]["session_expires"] is False
+    norbert = user_mgr.start_session("norbert", keep_logged_in_forever=False)
+    user_mgr.users["norbert"]["sessions"][norbert]['expires'] = repr(t)
+    assert user_mgr.users["eliza"]["sessions"][eliza]["expires"] is False
     user_mgr.check_for_expired_user_sessions()
-    assert user_mgr.users["norbert"]["session_token"] is None
-    assert user_mgr.users["eliza"]["session_token"] is not None
+    assert user_mgr.users["norbert"]["sessions"] == {}
+    assert user_mgr.users["eliza"]["sessions"] != {}
 
 
-def test_refresh_session(user_mgr, eliza):
+def test_refresh_session(user_mgr):
+    user_mgr.create_user("norbert", "abcd", "Full")
+    norbert = user_mgr.start_session("norbert", keep_logged_in_forever=False)
     t = datetime.datetime.now().isoformat()
-    token = user_mgr.start_session("eliza", keep_logged_in_forever=False)
-    user_mgr.users["eliza"]["session_expires"] = t
-    user_mgr.refresh_session(token)
+    user_mgr.users["norbert"]["sessions"][norbert]["expires"] = t
+    user_mgr.refresh_session(norbert)
     user_mgr.check_for_expired_user_sessions()
-    assert user_mgr.users["eliza"]["session_token"] is token
+    assert norbert in user_mgr.users["norbert"]["sessions"]
+
+
+def test_multiple_sessions_for_user(user_mgr, eliza):
+    eliza2 = user_mgr.start_session("eliza", keep_logged_in_forever=False)
+    assert user_mgr.get_user_id_for_session_token(eliza) == "eliza"
+    assert user_mgr.get_user_id_for_session_token(eliza2) == "eliza"
+    assert not user_mgr.users["eliza"]["sessions"][eliza]['expires']
+    assert user_mgr.users["eliza"]["sessions"][eliza2]['expires']

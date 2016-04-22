@@ -35,30 +35,77 @@ from .micropsi_logger import MicropsiLogger
 
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
-RESOURCE_PATH = cfg['paths']['resource_path']
 
-configs = config.ConfigurationManager(cfg['paths']['server_settings_path'])
+signal_handler_registry = []
+runner = {'timestep': 1000, 'runner': None, 'factor': 1}
+
+nodenet_lock = threading.Lock()
+
+# global variables set by intialize()
+RESOURCE_PATH = None
+PERSISTENCY_PATH = None
+
+configs = None
+logger = None
 
 worlds = {}
 nodenets = {}
 native_modules = {}
 custom_recipes = {}
+custom_operations = {}
 
-runner = {'timestep': 1000, 'runner': None, 'factor': 1}
+netapi_consoles = {}
 
-signal_handler_registry = []
+from code import InteractiveConsole
 
-logger = MicropsiLogger({
-    'system': cfg['logging']['level_system'],
-    'world': cfg['logging']['level_world']
-}, cfg['logging'].get('logfile'))
 
-nodenet_lock = threading.Lock()
+class FileCacher():
+    "Cache the stdout text so we can analyze it before returning it"
+    def __init__(self):
+        self.reset()
 
-if cfg['micropsi2'].get('profile_runner'):
-    import cProfile
-    import pstats
-    import io
+    def reset(self):
+        self.out = []
+
+    def write(self,line):
+        self.out.append(line)
+
+    def flush(self):
+        output = '\n'.join(self.out)
+        self.reset()
+        return output
+
+
+class NetapiShell(InteractiveConsole):
+    "Wrapper around Python that can filter input/output to the shell"
+    def __init__(self, netapi):
+        self.stdout = sys.stdout
+        self.stderr = sys.stderr
+        self.outcache = FileCacher()
+        self.errcache = FileCacher()
+        InteractiveConsole.__init__(self, locals={'netapi': netapi})
+        return
+
+    def get_output(self):
+        sys.stdout = self.outcache
+        sys.stderr = self.errcache
+
+    def return_output(self):
+        sys.stdout = self.stdout
+        sys.stderr = self.stderr
+
+    def push(self,line):
+        self.get_output()
+        incomplete = InteractiveConsole.push(self,line)
+        if incomplete:
+            InteractiveConsole.push(self,'\n')
+        self.return_output()
+        err = self.errcache.flush()
+        if err and err.startswith('Traceback'):
+            parts = err.strip().split('\n')
+            return False, "%s: %s" % (parts[-3], parts[-1])
+        out = self.outcache.flush()
+        return True, out.strip()
 
 
 def add_signal_handler(handler):
@@ -82,6 +129,7 @@ class MicropsiRunner(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         if cfg['micropsi2'].get('profile_runner'):
+            import cProfile
             self.profiler = cProfile.Profile()
         else:
             self.profiler = None
@@ -142,6 +190,8 @@ class MicropsiRunner(threading.Thread):
                 average_duration = self.sum_of_durations / self.number_of_samples
                 if self.total_steps % self.granularity == 0:
                     if self.profiler:
+                        import pstats
+                        import io
                         s = io.StringIO()
                         sortby = 'cumtime'
                         ps = pstats.Stats(self.profiler, stream=s).sort_stats(sortby)
@@ -249,7 +299,7 @@ def get_nodenet(nodenet_uid):
         if nodenet_uid in get_available_nodenets():
             load_nodenet(nodenet_uid)
         else:
-            return None
+            raise KeyError("Unknown nodenet")
     return nodenets[nodenet_uid]
 
 
@@ -265,126 +315,143 @@ def load_nodenet(nodenet_uid):
     if nodenet_uid in nodenet_data:
         world_uid = worldadapter = None
 
-        nodenet_lock.acquire()
+        with nodenet_lock:
 
-        if cfg['micropsi2'].get('single_agent_mode'):
-            # unload all other nodenets if single_agent_mode is selected
-            for uid in list(nodenets.keys()):
-                if uid != nodenet_uid:
-                    unload_nodenet(uid)
+            if cfg['micropsi2'].get('single_agent_mode'):
+                # unload all other nodenets if single_agent_mode is selected
+                for uid in list(nodenets.keys()):
+                    if uid != nodenet_uid:
+                        unload_nodenet(uid)
 
-        if nodenet_uid not in nodenets:
-            data = nodenet_data[nodenet_uid]
+            if nodenet_uid not in nodenets:
+                data = nodenet_data[nodenet_uid]
 
-            if hasattr(data, 'world') and data.world:
-                if data.world in worlds:
-                    world_uid = data.world
-                    worldadapter = data.get('worldadapter')
+                worldadapter_instance = None
+                if hasattr(data, 'world') and data.world:
+                    if data.world in worlds:
+                        world_uid = data.world
+                        worldadapter = data.get('worldadapter')
+                    else:
+                        logging.getLogger("system").warn("World %s for nodenet %s not found" % (data.world, data.uid))
+
+                if world_uid:
+                    result, worldadapter_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet_uid)
+                    if not result:
+                        logging.getLogger('system').warn(worldadapter_instance)
+                        worldadapter_instance = None
+                        worldadapter = None
+                        world_uid = None
+
+                engine = data.get('engine') or 'dict_engine'
+
+                logger.register_logger("agent.%s" % nodenet_uid, cfg['logging']['level_agent'])
+
+                params = {
+                    'name': data.name,
+                    'worldadapter': worldadapter,
+                    'worldadapter_instance': worldadapter_instance,
+                    'world': world_uid,
+                    'owner': data.owner,
+                    'uid': data.uid,
+                    'native_modules': filter_native_modules(engine),
+                    'use_modulators': data.get('use_modulators', True)  # getter for compatibility
+                }
+                if engine == 'dict_engine':
+                    from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
+                    nodenets[nodenet_uid] = DictNodenet(**params)
+                elif engine == 'theano_engine':
+                    from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
+                    nodenets[nodenet_uid] = TheanoNodenet(**params)
+                # Add additional engine types here
                 else:
-                    logging.getLogger("system").warn("World %s for nodenet %s not found" % (data.world, data.uid))
+                    return False, "Nodenet %s requires unknown engine %s" % (nodenet_uid, engine)
 
-            engine = data.get('engine', 'dict_engine')
+                nodenets[nodenet_uid].load(os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid + ".json"))
 
-            logger.register_logger("agent.%s" % nodenet_uid, cfg['logging']['level_agent'])
+                netapi_consoles[nodenet_uid] = NetapiShell(nodenets[nodenet_uid].netapi)
 
-            if engine == 'dict_engine':
-                from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
-                nodenets[nodenet_uid] = DictNodenet(
-                    name=data.name, worldadapter=worldadapter,
-                    world=world_uid, owner=data.owner, uid=data.uid,
-                    native_modules=filter_native_modules(engine))
-            elif engine == 'theano_engine':
-                from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
-                nodenets[nodenet_uid] = TheanoNodenet(
-                    name=data.name, worldadapter=worldadapter,
-                    world=world_uid, owner=data.owner, uid=data.uid,
-                    native_modules=filter_native_modules(engine))
-            # Add additional engine types here
+                if "settings" in data:
+                    nodenets[nodenet_uid].settings = data["settings"].copy()
+                else:
+                    nodenets[nodenet_uid].settings = {}
             else:
-                nodenet_lock.release()
-                return False, "Nodenet %s requires unknown engine %s" % (nodenet_uid, engine)
+                world_uid = nodenets[nodenet_uid].world or None
+                worldadapter = nodenets[nodenet_uid].worldadapter
 
-            nodenets[nodenet_uid].load(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + ".json"))
-
-            if "settings" in data:
-                nodenets[nodenet_uid].settings = data["settings"].copy()
-            else:
-                nodenets[nodenet_uid].settings = {}
-        else:
-            world_uid = nodenets[nodenet_uid].world or None
-            worldadapter = nodenets[nodenet_uid].worldadapter
-        if world_uid:
-            worlds[world_uid].register_nodenet(worldadapter, nodenets[nodenet_uid])
-
-        nodenet_lock.release()
         return True, nodenet_uid
-    return False, "Nodenet %s not found in %s" % (nodenet_uid, RESOURCE_PATH)
+    return False, "Nodenet %s not found in %s" % (nodenet_uid, PERSISTENCY_PATH)
 
 
-def get_nodenet_data(nodenet_uid, nodespace, step=0, include_links=True):
-    """ returns the current state of the nodenet """
+def get_nodenet_metadata(nodenet_uid):
+    """ returns the given nodenet's metadata"""
     nodenet = get_nodenet(nodenet_uid)
     data = nodenet.metadata
-    if step > nodenet.current_step:
-        return data
-    with nodenet.netlock:
-        if not nodenets[nodenet_uid].is_nodespace(nodespace):
-            nodespace = nodenets[nodenet_uid].get_nodespace(None).uid
-        data.update(nodenets[nodenet_uid].get_nodespace_data(nodespace, include_links))
-        data['nodespace'] = nodespace
-        data.update({
-            'nodetypes': nodenet.get_standard_nodetype_definitions(),
-            'native_modules': filter_native_modules(nodenet.engine),
-            'monitors': nodenet.construct_monitors_dict()
-        })
+    data.update({
+        'nodetypes': nodenet.get_standard_nodetype_definitions(),
+        'nodespaces': nodenet.construct_nodespaces_dict(None, transitive=True),
+        'native_modules': filter_native_modules(nodenet.engine),
+        'monitors': nodenet.construct_monitors_dict(),
+        'rootnodespace': nodenet.get_nodespace(None).uid
+    })
     return data
 
 
-def get_nodenet_activation_data(nodenet_uid, nodespace=None, last_call_step=-1):
+def get_nodenet_activation_data(nodenet_uid, nodespaces=[], last_call_step=-1):
     nodenet = get_nodenet(nodenet_uid)
     with nodenet.netlock:
         data = {
-            'activations': nodenet.get_activation_data(nodespace, rounded=1),
-            'has_changes': nodenet.has_nodespace_changes(nodespace, last_call_step)
+            'activations': nodenet.get_activation_data(nodespaces, rounded=1),
+            'has_changes': nodenet.has_nodespace_changes(nodespaces, last_call_step)
         }
     return data
 
 
-def get_current_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
-    """ returns the current state of the nodenet
-    TODO: maybe merge with above get_nodenet_data?
+def get_nodes(nodenet_uid, nodespaces=[], include_links=True):
+    """Return data for the given nodespaces"""
+    nodenet = get_nodenet(nodenet_uid)
+    return nodenet.get_nodes(nodespaces, include_links)
+
+
+def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
+    """ returns the current state of the calculation
     """
     data = {}
     nodenet_obj = get_nodenet(nodenet_uid)
     if nodenet_obj is not None:
         condition = nodenet_obj.get_runner_condition()
         if condition:
-            data['simulation_condition'] = condition
+            data['calculation_condition'] = condition
             if 'monitor' in condition:
                 monitor = nodenet_obj.get_monitor(condition['monitor']['uid'])
                 if monitor:
-                    data['simulation_condition']['monitor']['color'] = monitor.color
+                    data['calculation_condition']['monitor']['color'] = monitor.color
                 else:
-                    del data['simulation_condition']['monitor']
-        data['simulation_running'] = nodenet_obj.is_active
+                    del data['calculation_condition']['monitor']
+        data['calculation_running'] = nodenet_obj.is_active
         data['current_nodenet_step'] = nodenet_obj.current_step
         data['current_world_step'] = worlds[nodenet_obj.world].current_step if nodenet_obj.world else 0
         if nodenet is not None:
-            data['nodenet'] = get_nodenet_data(nodenet_uid=nodenet_uid, **nodenet)
+            if not type(nodenet) == dict:
+                nodenet = {}
+            data['nodenet'] = get_nodes(nodenet_uid, nodespaces=nodenet.get('nodespaces', []), include_links=nodenet.get('include_links', True))
         if nodenet_diff is not None:
-            activations = get_nodenet_activation_data(nodenet_uid, last_call_step=nodenet_diff['step'], nodespace=nodenet_diff.get('nodespace'))
+            activations = get_nodenet_activation_data(nodenet_uid, last_call_step=nodenet_diff['step'], nodespaces=nodenet_diff.get('nodespaces', []))
             data['nodenet_diff'] = {
                 'activations': activations['activations'],
                 'modulators': nodenet_obj.construct_modulators_dict()
             }
             if activations['has_changes']:
-                data['nodenet_diff']['changes'] = nodenet_obj.get_nodespace_changes(nodenet_diff.get('nodespace'), nodenet_diff['step'])
+                data['nodenet_diff']['changes'] = nodenet_obj.get_nodespace_changes(nodenet_diff.get('nodespaces', []), nodenet_diff['step'])
         if nodenet_obj.user_prompt:
             data['user_prompt'] = nodenet_obj.user_prompt
             nodenet_obj.user_prompt = None
         if world is not None and nodenet_obj.world:
+            if not type(world) == dict:
+                world = {}
             data['world'] = get_world_view(world_uid=nodenet_obj.world, **world)
         if monitors is not None:
+            if not type(monitors) == dict:
+                monitors = {}
             data['monitors'] = get_monitoring_info(nodenet_uid=nodenet_uid, **monitors)
         if dashboard is not None:
             data['dashboard'] = get_agent_dashboard(nodenet_uid)
@@ -402,15 +469,17 @@ def unload_nodenet(nodenet_uid):
     """
     if nodenet_uid not in nodenets:
         return False
+    if nodenet_uid in netapi_consoles:
+        del netapi_consoles[nodenet_uid]
     nodenet = nodenets[nodenet_uid]
     if nodenet.world:
-        worlds[nodenet.world].unregister_nodenet(nodenet)
+        worlds[nodenet.world].unregister_nodenet(nodenet.uid)
     del nodenets[nodenet_uid]
     logger.unregister_logger('agent.%s' % nodenet_uid)
     return True
 
 
-def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=None, owner="", world_uid=None, uid=None):
+def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=None, owner="", world_uid=None, uid=None, use_modulators=True):
     """Creates a new node net manager and registers it.
 
     Arguments:
@@ -436,14 +505,15 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
         owner=owner,
         world=world_uid,
         settings={},
-        engine=engine)
+        engine=engine,
+        use_modulators=use_modulators)
 
-    filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
+    filename = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
     nodenet_data[data['uid']] = Bunch(**data)
     load_nodenet(data['uid'])
     if template is not None and template in nodenet_data:
         load_nodenet(template)
-        data_to_merge = nodenets[template].export_json()
+        data_to_merge = get_nodenet(template).export_json()
         data_to_merge.update(data)
         load_nodenet(uid)
         nodenets[uid].merge_data(data_to_merge)
@@ -457,7 +527,7 @@ def delete_nodenet(nodenet_uid):
 
     Simple unloading is maintained automatically when a nodenet is suspended and another one is accessed.
     """
-    filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json')
+    filename = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid + '.json')
     nodenet = get_nodenet(nodenet_uid)
     nodenet.remove(filename)
     unload_nodenet(nodenet_uid)
@@ -468,9 +538,9 @@ def delete_nodenet(nodenet_uid):
 def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None):
     """Sets the supplied parameters (and only those) for the nodenet with the given uid."""
 
-    nodenet = nodenets[nodenet_uid]
-    if nodenet.world and nodenet.world != world_uid:
-        worlds[nodenet.world].unregister_nodenet(nodenet)
+    nodenet = get_nodenet(nodenet_uid)
+    if nodenet.world and (nodenet.world != world_uid or nodenet.worldadapter != worldadapter):
+        worlds[nodenet.world].unregister_nodenet(nodenet.uid)
         nodenet.world = None
     if worldadapter is None:
         worldadapter = nodenet.worldadapter
@@ -478,7 +548,9 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
         assert worldadapter in worlds[world_uid].supported_worldadapters
         nodenet.world = world_uid
         nodenet.worldadapter = worldadapter
-        worlds[world_uid].register_nodenet(worldadapter, nodenet)
+        result, wa_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet.uid)
+        if result:
+            nodenet.worldadapter_instance = wa_instance
     if nodenet_name:
         nodenet.name = nodenet_name
     if owner:
@@ -496,10 +568,10 @@ def start_nodenetrunner(nodenet_uid):
 
 
 def set_runner_properties(timestep, factor):
-    """Sets the speed of the nodenet simulation in ms.
+    """Sets the speed of the nodenet calculation in ms.
 
     Argument:
-        timestep: sets the simulation speed.
+        timestep: sets the calculation speed.
     """
     configs['runner_timestep'] = timestep
     runner['timestep'] = timestep
@@ -510,19 +582,20 @@ def set_runner_properties(timestep, factor):
 
 def set_runner_condition(nodenet_uid, monitor=None, steps=None):
     """ registers a condition that stops the runner if it is fulfilled"""
+    nodenet = get_nodenet(nodenet_uid)
     condition = {}
     if monitor is not None:
         condition['monitor'] = monitor
     if steps is not None:
-        condition['step'] = nodenets[nodenet_uid].current_step + steps
+        condition['step'] = nodenet.current_step + steps
         condition['step_amount'] = steps
     if condition:
-        nodenets[nodenet_uid].set_runner_condition(condition)
+        nodenet.set_runner_condition(condition)
     return True, condition
 
 
 def remove_runner_condition(nodenet_uid):
-    nodenets[nodenet_uid].unset_runner_condition()
+    get_nodenet(nodenet_uid).unset_runner_condition()
     return True
 
 
@@ -536,12 +609,13 @@ def get_runner_properties():
 
 def get_is_nodenet_running(nodenet_uid):
     """Returns True if a nodenet runner is active for the given nodenet, False otherwise."""
-    return nodenets[nodenet_uid].is_active
+    return get_nodenet(nodenet_uid).is_active
 
 
 def stop_nodenetrunner(nodenet_uid):
     """Stops the thread for the given nodenet."""
-    nodenets[nodenet_uid].is_active = False
+    nodenet = get_nodenet(nodenet_uid)
+    nodenet.is_active = False
     test = {nodenets[uid].is_active for uid in nodenets}
     if True not in test:
         test = {worlds[uid].is_active for uid in worlds}
@@ -552,20 +626,43 @@ def stop_nodenetrunner(nodenet_uid):
 
 
 def step_nodenet(nodenet_uid):
-    """Advances the given nodenet by one simulation step.
+    """Advances the given nodenet by one calculation step.
 
     Arguments:
         nodenet_uid: The uid of the nodenet
     """
-    nodenets[nodenet_uid].timed_step()
-    nodenets[nodenet_uid].update_monitors()
-    if nodenets[nodenet_uid].world and nodenets[nodenet_uid].current_step % configs['runner_factor'] == 0:
-        worlds[nodenets[nodenet_uid].world].step()
-    return nodenets[nodenet_uid].current_step
+    nodenet = get_nodenet(nodenet_uid)
+    nodenet.timed_step()
+    nodenet.update_monitors()
+    if nodenet.world and nodenet.current_step % configs['runner_factor'] == 0:
+        worlds[nodenet.world].step()
+    return nodenet.current_step
 
 
-def revert_nodenet(nodenet_uid):
+def step_nodenets_in_world(world_uid, nodenet_uid=None, steps=1):
+    """ Advances all nodenets registered in the given world
+    (or, only the given nodenet) by the given number of steps"""
+    nodenet = None
+    if nodenet_uid is not None:
+        nodenet = get_nodenet(nodenet_uid)
+    if nodenet and nodenet.world == world_uid:
+        for i in range(steps):
+            nodenet.timed_step()
+            nodenet.update_monitors()
+    else:
+        for i in range(steps):
+            for uid in worlds[world_uid].agents:
+                nodenet = get_nodenet(uid)
+                nodenet.timed_step()
+                nodenet.update_monitors()
+    return True
+
+
+def revert_nodenet(nodenet_uid, also_revert_world=False):
     """Returns the nodenet to the last saved state."""
+    nodenet = get_nodenet(nodenet_uid)
+    if also_revert_world and nodenet_uid in nodenets and nodenet.world:
+        revert_world(nodenet.world)
     unload_nodenet(nodenet_uid)
     load_nodenet(nodenet_uid)
     return True
@@ -573,8 +670,8 @@ def revert_nodenet(nodenet_uid):
 
 def save_nodenet(nodenet_uid):
     """Stores the nodenet on the server (but keeps it open)."""
-    nodenet = nodenets[nodenet_uid]
-    nodenet.save(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'))
+    nodenet = get_nodenet(nodenet_uid)
+    nodenet.save(os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'))
     nodenet_data[nodenet_uid] = Bunch(**nodenet.metadata)
     return True
 
@@ -584,7 +681,7 @@ def export_nodenet(nodenet_uid):
 
     Returns a string that contains the nodenet state in JSON format.
     """
-    return json.dumps(nodenets[nodenet_uid].export_json(), sort_keys=True, indent=4)
+    return json.dumps(get_nodenet(nodenet_uid).export_json(), sort_keys=True, indent=4)
 
 
 def import_nodenet(string, owner=None):
@@ -603,13 +700,17 @@ def import_nodenet(string, owner=None):
             raise RuntimeError("A nodenet with this ID already exists.")
     if 'owner':
         import_data['owner'] = owner
+    nodenet_uid = import_data['uid']
+    filename = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, import_data['uid'] + '.json')
+    meta = parse_definition(import_data, filename)
+    nodenet_data[nodenet_uid] = meta
     # assert import_data['world'] in worlds
-    filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, import_data['uid'] + '.json')
     with open(filename, 'w+') as fp:
-        fp.write(json.dumps(import_data))
-    nodenet_data[import_data['uid']] = parse_definition(import_data, filename)
-    load_nodenet(import_data['uid'])
-    return import_data['uid']
+        fp.write(json.dumps(meta))
+    load_nodenet(nodenet_uid)
+    merge_nodenet(nodenet_uid, string, keep_uids=True)
+    save_nodenet(nodenet_uid)
+    return nodenet_uid
 
 
 def merge_nodenet(nodenet_uid, string, keep_uids=False):
@@ -620,7 +721,7 @@ def merge_nodenet(nodenet_uid, string, keep_uids=False):
         string: a string that contains the nodenet data that is to be merged in JSON format.
         keep_uids: if true, no uid replacement will be performed. Dangerous.
     """
-    nodenet = nodenets[nodenet_uid]
+    nodenet = get_nodenet(nodenet_uid)
     data = json.loads(string)
     nodenet.merge_data(data, keep_uids)
     return True
@@ -634,7 +735,7 @@ def get_nodespace_list(nodenet_uid):
      - nodespace parent
      - a list of nodes (uid, name, and type) residing in that nodespace
     """
-    nodenet = nodenets[nodenet_uid]
+    nodenet = get_nodenet(nodenet_uid)
     data = {}
     for uid in nodenet.get_nodespace_uids():
         nodespace = nodenet.get_nodespace(uid)
@@ -643,6 +744,7 @@ def get_nodespace_list(nodenet_uid):
             'name': nodespace.name,
             'parent': nodespace.parent_nodespace,
             'nodes': {},
+            'properties': nodenet.get_nodespace_properties(uid)
         }
         for nid in nodespace.get_known_ids('nodes'):
             data[uid]['nodes'][nid] = {
@@ -672,10 +774,11 @@ def get_node(nodenet_uid, node_uid, include_links=True):
         "parent_nodespace" (str): the uid of the nodespace this node lives in
     }
     """
-    if nodenets[nodenet_uid].is_node(node_uid):
-        return True, nodenets[nodenet_uid].get_node(node_uid).get_data(include_links=include_links)
-    elif nodenets[nodenet_uid].is_nodespace(node_uid):
-        data = nodenets[nodenet_uid].get_nodespace(node_uid).get_data()
+    nodenet = get_nodenet(nodenet_uid)
+    if nodenet.is_node(node_uid):
+        return True, nodenet.get_node(node_uid).get_data(include_links=include_links)
+    elif nodenet.is_nodespace(node_uid):
+        data = nodenet.get_nodespace(node_uid).get_data()
         data['type'] = 'Nodespace'
         return True, data
     else:
@@ -783,11 +886,21 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
         return False, "Could not clone nodes. See log for details."
 
 
-def get_nodespace_changes(nodenet_uid, nodespace_uid, since_step):
+def get_nodespace_changes(nodenet_uid, nodespaces, since_step):
     """ Returns a dict of changes that happened in the nodenet in the given nodespace since the given step.
     Contains uids of deleted nodes and nodespaces and the datadicts for changed or added nodes and nodespaces
     """
-    return nodenets[nodenet_uid].get_nodespace_changes(nodespace_uid, since_step)
+    return get_nodenet(nodenet_uid).get_nodespace_changes(nodespaces, since_step)
+
+
+def get_nodespace_properties(nodenet_uid, nodespace_uid=None):
+    """ retrieve the ui properties for the given nodespace"""
+    return get_nodenet(nodenet_uid).get_nodespace_properties(nodespace_uid)
+
+
+def set_nodespace_properties(nodenet_uid, nodespace_uid, properties):
+    """ sets the ui properties for the given nodespace"""
+    return get_nodenet(nodenet_uid).set_nodespace_properties(nodespace_uid, properties)
 
 
 def __pythonify(name):
@@ -825,9 +938,9 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
         else:
             lines.append("%s = netapi.create_nodespace(None)" % (varname))
         idmap[nodespace.uid] = varname
-        xpos.append(node.position[0])
-        ypos.append(node.position[1])
-        zpos.append(node.position[2])
+        xpos.append(nodespace.position[0])
+        ypos.append(nodespace.position[1])
+        zpos.append(nodespace.position[2])
 
     # nodes and gates
     for i, node in enumerate(nodes):
@@ -925,28 +1038,27 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     lines.append("")
 
     # positions
-    origin = [100, 100, 100]
+    origin = [100, 100, 0]
     factor = [int(min(xpos)), int(min(ypos)), int(min(zpos))]
-    lines.append("origin_pos = (%d, %d)" % origin)
+    lines.append("origin_pos = (%d, %d, %d)" % (origin[0], origin[1], origin[2]))
     for node in nodes + nodespaces:
         x = int(node.position[0] - factor[0])
         y = int(node.position[1] - factor[1])
         z = int(node.position[2] - factor[2])
-        lines.append("%s.position = [origin_pos[0] + %i, origin_pos[1] + %i, origin_pos[2] + %i]" % (idmap[node.uid], x, y, z))
+        lines.append("%s.position = (origin_pos[0] + %i, origin_pos[1] + %i, origin_pos[2] + %i)" % (idmap[node.uid], x, y, z))
 
     return "\n".join(lines)
 
 
 def set_entity_positions(nodenet_uid, positions):
     """ Takes a dict with node_uids as keys and new positions for the nodes as values """
-    nodenet = nodenets[nodenet_uid]
-    nodenet.set_entity_positions(positions)
+    get_nodenet(nodenet_uid).set_entity_positions(positions)
     return True
 
 
 def set_node_name(nodenet_uid, node_uid, name):
     """Sets the display name of the node"""
-    nodenet = nodenets[nodenet_uid]
+    nodenet = get_nodenet(nodenet_uid)
     if nodenet.is_node(node_uid):
         nodenet.get_node(node_uid).name = name
     elif nodenet.is_nodespace(node_uid):
@@ -956,30 +1068,30 @@ def set_node_name(nodenet_uid, node_uid, name):
 
 def set_node_state(nodenet_uid, node_uid, state):
     """ Sets the state of the given node to the given state"""
-    node = nodenets[nodenet_uid].get_node(node_uid)
+    node = get_nodenet(nodenet_uid).get_node(node_uid)
     for key in state:
         node.set_state(key, state[key])
     return True
 
 
 def set_node_activation(nodenet_uid, node_uid, activation):
-    nodenets[nodenet_uid].get_node(node_uid).activation = activation
+    get_nodenet(nodenet_uid).get_node(node_uid).activation = activation
     return True
 
 
 def delete_nodes(nodenet_uid, node_uids):
     """Removes the nodes with the given uids"""
-    nodenet = nodenets[nodenet_uid]
+    nodenet = get_nodenet(nodenet_uid)
     with nodenet.netlock:
         for uid in node_uids:
             if nodenet.is_node(uid):
-                nodenets[nodenet_uid].delete_node(uid)
+                nodenet.delete_node(uid)
     return True
 
 
 def delete_nodespace(nodenet_uid, nodespace_uid):
     """ Removes the given node space and all its contents"""
-    nodenet = nodenets[nodenet_uid]
+    nodenet = get_nodenet(nodenet_uid)
     with nodenet.netlock:
         if nodenet.is_nodespace(nodespace_uid):
             nodenet.delete_nodespace(nodespace_uid)
@@ -989,22 +1101,24 @@ def delete_nodespace(nodenet_uid, nodespace_uid):
 
 def get_available_node_types(nodenet_uid):
     """Returns a list of available node types. (Including native modules.)"""
-    nodenet = nodenets[nodenet_uid]
-    all_nodetypes = filter_native_modules(nodenet.engine)
-    all_nodetypes.update(nodenet.get_standard_nodetype_definitions())
-    return all_nodetypes
+    nodenet = get_nodenet(nodenet_uid)
+    return {
+        'nodetypes': nodenet.get_standard_nodetype_definitions(),
+        'native_modules': filter_native_modules(nodenet.engine)
+    }
 
 
 def get_available_native_module_types(nodenet_uid):
     """Returns a list of native modules.
     If an nodenet uid is supplied, filter for node types defined within this nodenet."""
-    return filter_native_modules(nodenets[nodenet_uid].engine)
+    return filter_native_modules(get_nodenet(nodenet_uid).engine)
 
 
 def set_node_parameters(nodenet_uid, node_uid, parameters):
     """Sets a dict of arbitrary values to make the node stateful."""
+    nodenet = get_nodenet(nodenet_uid)
     for key, value in parameters.items():
-        nodenets[nodenet_uid].get_node(node_uid).set_parameter(key, value)
+        nodenet.get_node(node_uid).set_parameter(key, value)
     return True
 
 
@@ -1012,14 +1126,14 @@ def get_gatefunction(nodenet_uid, node_uid, gate_type):
     """
     Returns the name of the gate function configured for that given node and gate
     """
-    return nodenets[nodenet_uid].get_node(node_uid).get_gatefunction_name(gate_type)
+    return get_nodenet(nodenet_uid).get_node(node_uid).get_gatefunction_name(gate_type)
 
 
 def set_gatefunction(nodenet_uid, node_uid, gate_type, gatefunction=None):
     """
     Sets the gate function of the given node and gate.
     """
-    nodenets[nodenet_uid].get_node(node_uid).set_gatefunction_name(gate_type, gatefunction)
+    get_nodenet(nodenet_uid).get_node(node_uid).set_gatefunction_name(gate_type, gatefunction)
     return True
 
 
@@ -1027,33 +1141,36 @@ def get_available_gatefunctions(nodenet_uid):
     """
     Returns a list of names of the available gatefunctions
     """
-    return nodenets[nodenet_uid].get_available_gatefunctions()
+    return get_nodenet(nodenet_uid).get_available_gatefunctions()
 
 
 def set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters):
     """Sets the gate parameters of the given gate of the given node to the supplied dictionary."""
+    nodenet = get_nodenet(nodenet_uid)
     for key, value in parameters.items():
-        nodenets[nodenet_uid].get_node(node_uid).set_gate_parameter(gate_type, key, value)
+        nodenet.get_node(node_uid).set_gate_parameter(gate_type, key, value)
     return True
 
 
 def get_available_datasources(nodenet_uid):
     """Returns a list of available datasource types for the given nodenet."""
-    if nodenets[nodenet_uid].worldadapter_instance:
-        return nodenets[nodenet_uid].worldadapter_instance.get_available_datasources()
+    nodenet = get_nodenet(nodenet_uid)
+    if nodenet.worldadapter_instance:
+        return nodenet.worldadapter_instance.get_available_datasources()
     return []
 
 
 def get_available_datatargets(nodenet_uid):
     """Returns a list of available datatarget types for the given nodenet."""
-    if nodenets[nodenet_uid].worldadapter_instance:
-        return nodenets[nodenet_uid].worldadapter_instance.get_available_datatargets()
+    nodenet = get_nodenet(nodenet_uid)
+    if nodenet.worldadapter_instance:
+        return nodenet.worldadapter_instance.get_available_datatargets()
     return []
 
 
 def bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource):
     """Associates the datasource type to the sensor node with the given uid."""
-    node = nodenets[nodenet_uid].get_node(sensor_uid)
+    node = get_nodenet(nodenet_uid).get_node(sensor_uid)
     if node.type == "Sensor":
         node.set_parameter('datasource', datasource)
         return True
@@ -1062,7 +1179,7 @@ def bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource):
 
 def bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget):
     """Associates the datatarget type to the actor node with the given uid."""
-    node = nodenets[nodenet_uid].get_node(actor_uid)
+    node = get_nodenet(nodenet_uid).get_node(actor_uid)
     if node.type == "Actor":
         node.set_parameter('datatarget', datatarget)
         return True
@@ -1080,7 +1197,7 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
         weight: the weight of the link (a float)
         certainty (optional): a probabilistic parameter for the link
     """
-    nodenet = nodenets[nodenet_uid]
+    nodenet = get_nodenet(nodenet_uid)
     with nodenet.netlock:
         success = nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
     uid = None
@@ -1091,14 +1208,13 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
 
 def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
     """Set weight of the given link."""
-    nodenet = nodenets[nodenet_uid]
-    return nodenet.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
+    return get_nodenet(nodenet_uid).set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
 
 
 def get_links_for_nodes(nodenet_uid, node_uids):
     """ Returns a list of links connected to the given nodes,
     and their connected nodes, if they are not in the same nodespace"""
-    nodenet = nodenets[nodenet_uid]
+    nodenet = get_nodenet(nodenet_uid)
     source_nodes = [nodenet.get_node(uid) for uid in node_uids]
     links = {}
     nodes = {}
@@ -1115,21 +1231,21 @@ def get_links_for_nodes(nodenet_uid, node_uids):
 
 def delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type):
     """Delete the given link."""
-    nodenet = nodenets[nodenet_uid]
-    return nodenet.delete_link(source_node_uid, gate_type, target_node_uid, slot_type)
+    return get_nodenet(nodenet_uid).delete_link(source_node_uid, gate_type, target_node_uid, slot_type)
 
 
 def align_nodes(nodenet_uid, nodespace):
     """Perform auto-alignment of nodes in the current nodespace"""
-    result = node_alignment.align(nodenets[nodenet_uid], nodespace)
+    result = node_alignment.align(get_nodenet(nodenet_uid), nodespace)
     return result
 
 
 def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
+    nodenet = get_nodenet(nodenet_uid)
     for key, value in values.items():
-        nodenets[nodenet_uid].get_node(node_uid).set_parameter(key, value)
-    nodenets[nodenet_uid].is_active = resume_nodenet
-    nodenets[nodenet_uid].user_prompt = None
+        nodenet.get_node(node_uid).set_parameter(key, value)
+    nodenet.is_active = resume_nodenet
+    nodenet.user_prompt = None
 
 
 def get_available_recipes():
@@ -1140,14 +1256,30 @@ def get_available_recipes():
             recipes[name] = {
                 'name': name,
                 'parameters': data['parameters'],
-                'docstring': data['docstring']
+                'docstring': data['docstring'],
+                'category': data['category']
             }
     return recipes
 
 
+def get_available_operations():
+    """ Returns a dict of available user-operations """
+    operations = {}
+    for name, data in custom_operations.items():
+        if not name.startswith('_'):
+            operations[name] = {
+                'name': name,
+                'parameters': data['parameters'],
+                'docstring': data['docstring'],
+                'category': data['category'],
+                'selection': data['selectioninfo']
+            }
+    return operations
+
+
 def run_recipe(nodenet_uid, name, parameters):
     """ Calls the given recipe with the provided parameters, and returns the output, if any """
-    netapi = nodenets[nodenet_uid].netapi
+    netapi = get_nodenet(nodenet_uid).netapi
     params = {}
     for key in parameters:
         if parameters[key] != '':
@@ -1155,6 +1287,7 @@ def run_recipe(nodenet_uid, name, parameters):
     if name in custom_recipes:
         func = custom_recipes[name]['function']
         if cfg['micropsi2'].get('profile_runner'):
+            import cProfile
             profiler = cProfile.Profile()
             profiler.enable()
         result = {'reload': True}
@@ -1163,6 +1296,8 @@ def run_recipe(nodenet_uid, name, parameters):
             result.update(ret)
         if cfg['micropsi2'].get('profile_runner'):
             profiler.disable()
+            import pstats
+            import io
             s = io.StringIO()
             sortby = 'cumtime'
             ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
@@ -1173,13 +1308,109 @@ def run_recipe(nodenet_uid, name, parameters):
         return False, "Script not found"
 
 
+def run_operation(nodenet_uid, name, parameters, selection_uids):
+    """ Calls the given operation on the selection"""
+    netapi = get_nodenet(nodenet_uid).netapi
+    params = {}
+    for key in parameters:
+        if parameters[key] != '':
+            params[key] = parameters[key]
+    if name in custom_operations:
+        func = custom_operations[name]['function']
+        result = {}
+        ret = func(netapi, selection_uids, **params)
+        if ret:
+            result.update(ret)
+        return True, result
+    else:
+        return False, "Operation not found"
+
+
 def get_agent_dashboard(nodenet_uid):
     from .emoexpression import calc_emoexpression_parameters
-    net = nodenets[nodenet_uid]
+    net = get_nodenet(nodenet_uid)
     with net.netlock:
         data = net.get_dashboard()
         data['face'] = calc_emoexpression_parameters(net)
         return data
+
+
+def run_netapi_command(nodenet_uid, command):
+    get_nodenet(nodenet_uid)
+    shell = netapi_consoles[nodenet_uid]
+    return shell.push(command)
+
+
+def get_netapi_autocomplete_data(nodenet_uid, name=None):
+    import inspect
+    nodenet = get_nodenet(nodenet_uid)
+    if nodenet is None or nodenet_uid not in netapi_consoles:
+        return {}
+    nodetypes = get_available_node_types(nodenet_uid)
+
+    shell = netapi_consoles[nodenet_uid]
+    res, locs = shell.push("[k for k in locals() if not k.startswith('_')]")
+    locs = eval(locs)
+
+    def parsemembers(members):
+        data = {}
+        for name, thing in members:
+            if name.startswith('_'):
+                continue
+            if inspect.isroutine(thing):
+                argspec = inspect.getargspec(thing)
+                arguments = argspec.args[1:]
+                defaults = argspec.defaults or []
+                params = []
+                diff = len(arguments) - len(defaults)
+                for i, arg in enumerate(arguments):
+                    if i >= diff:
+                        params.append({
+                            'name': arg,
+                            'default': defaults[i - diff]
+                        })
+                    else:
+                        params.append({'name': arg})
+
+                data[name] = params
+            else:
+                data[name] = None
+        return data
+
+    data = {
+        'types': {},
+        'autocomplete_options': {}
+    }
+
+    for n in locs:
+        if name is None or n == name:
+            res, typedescript = shell.push(n)
+            if 'netapi' in typedescript:
+                data['types'][n] = 'netapi'
+            else:
+                # get type of thing.
+                match = re.search('^<([A-Za-z]+) ', typedescript)
+                if match:
+                    typename = match.group(1)
+                    if typename in ['Nodespace', 'Node', 'Gate', 'Slot']:
+                        data['types'][n] = typename
+                    elif typename in nodetypes['nodetypes'] or typename in nodetypes['native_modules']:
+                        data['types'][n] = 'Node'
+
+    for t in set(data['types'].values()):
+        if t == 'netapi':
+            netapi = nodenet.netapi
+            methods = inspect.getmembers(netapi, inspect.ismethod)
+            data['autocomplete_options']['netapi'] = parsemembers(methods)
+        elif t == 'Nodespace':
+            from micropsi_core.nodenet.nodespace import Nodespace
+            data['autocomplete_options']['Nodespace'] = parsemembers(inspect.getmembers(Nodespace))
+        elif t in ['Node', 'Gate', 'Slot']:
+            from micropsi_core.nodenet import node
+            cls = getattr(node, t)
+            data['autocomplete_options'][t] = parsemembers(inspect.getmembers(cls))
+
+    return data
 
 
 # --- end of API
@@ -1198,7 +1429,7 @@ def crawl_definition_files(path, type="definition"):
     """
 
     result = {}
-    tools.mkdir(path)
+    os.makedirs(path, exist_ok=True)
 
     for user_directory_name, user_directory_names, file_names in os.walk(path):
         for definition_file_name in file_names:
@@ -1231,18 +1462,22 @@ def parse_definition(json, filename=None):
             result['world_type'] = json['world_type']
         if "settings" in json:
             result['settings'] = json['settings']
+        if "config" in json:
+            result['config'] = json['config']
+        if 'use_modulators' in json:
+            result['use_modulators'] = json['use_modulators']
         return Bunch(**result)
 
 
 # Set up the MicroPsi runtime
 def load_definitions():
     global nodenet_data, world_data
-    nodenet_data = crawl_definition_files(path=os.path.join(RESOURCE_PATH, NODENET_DIRECTORY), type="nodenet")
-    world_data = crawl_definition_files(path=os.path.join(RESOURCE_PATH, WORLD_DIRECTORY), type="world")
+    nodenet_data = crawl_definition_files(path=os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY), type="nodenet")
+    world_data = crawl_definition_files(path=os.path.join(PERSISTENCY_PATH, WORLD_DIRECTORY), type="world")
     if not world_data:
         # create a default world for convenience.
         uid = tools.generate_uid()
-        filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid + '.json')
+        filename = os.path.join(PERSISTENCY_PATH, WORLD_DIRECTORY, uid + '.json')
         world_data[uid] = Bunch(uid=uid, name="default", version=1, filename=filename)
         with open(filename, 'w+') as fp:
             fp.write(json.dumps(world_data[uid], sort_keys=True, indent=4))
@@ -1267,41 +1502,80 @@ def init_worlds(world_data):
     return worlds
 
 
-def load_user_files(do_reload=False):
-    # see if we have additional nodetypes defined by the user.
-    import sys
+def load_user_files(path, reload_nodefunctions=False, errors=[]):
+    global native_modules, custom_recipes
+    for f in os.listdir(path):
+        if not f.startswith('.') and f != '__pycache__':
+            abspath = os.path.join(path, f)
+            err = None
+            if os.path.isdir(abspath):
+                errors.extend(load_user_files(path=abspath, reload_nodefunctions=reload_nodefunctions, errors=[]))
+            elif f == 'nodetypes.json':
+                err = parse_native_module_file(abspath)
+            elif f == 'recipes.py':
+                err = parse_recipe_or_operations_file(abspath, reload_nodefunctions)
+            elif f == 'nodefunctions.py' and reload_nodefunctions:
+                err = reload_nodefunctions_file(abspath)
+            elif f == 'operations.py':
+                err = parse_recipe_or_operations_file(abspath, reload_nodefunctions)
+            if err:
+                errors.append(err)
+    return errors
+
+
+def parse_native_module_file(path):
     global native_modules
-    native_modules = {}
-    custom_nodetype_file = os.path.join(RESOURCE_PATH, 'nodetypes.json')
-    if os.path.isfile(custom_nodetype_file):
+    with open(path) as fp:
+        category = os.path.relpath(os.path.dirname(path), start=RESOURCE_PATH)
         try:
-            with open(custom_nodetype_file) as fp:
-                native_modules = json.load(fp)
+            modules = json.load(fp)
         except ValueError:
-            logging.getLogger('system').warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
+            return "Nodetype data in %s/nodetypes.json not well-formed." % category
+        for key in modules:
+            modules[key]['path'] = os.path.join(os.path.dirname(path), 'nodefunctions.py')
+            modules[key]['category'] = category
+            if key in native_modules:
+                logging.getLogger("system").warning("Native module names must be unique. %s is not." % key)
+            native_modules[key] = modules[key]
 
-    sys.path.append(RESOURCE_PATH)
-    parse_recipe_file()
-    return native_modules
 
-
-def parse_recipe_file():
-    custom_recipe_file = os.path.join(RESOURCE_PATH, 'recipes.py')
-    if not os.path.isfile(custom_recipe_file):
-        return
-
-    import importlib.machinery
-    import inspect
+def parse_recipe_or_operations_file(path, reload=False, category_overwrite=False):
     global custom_recipes
+    import importlib
+    import inspect
 
-    loader = importlib.machinery.SourceFileLoader("recipes", custom_recipe_file)
-    recipes = loader.load_module()
-    # import recipes
-    custom_recipes = {}
+    category = category_overwrite or os.path.relpath(os.path.dirname(path), start=RESOURCE_PATH)
+    if category == '.':
+        category == ''  # relapth in rootfolder
+    relpath = os.path.relpath(path, start=RESOURCE_PATH)
+    name = os.path.basename(path)[:-3]
+
+    mode = 'recipes' if os.path.basename(path).startswith('recipes') else 'operations'
+
+    try:
+        loader = importlib.machinery.SourceFileLoader(name, path)
+        recipes = loader.load_module()
+        # recipes = __import__(pyname, fromlist=['recipes'])
+        # importlib.reload(sys.modules[pyname])
+    except SyntaxError as e:
+        return "%s in %s file %s, line %d" % (e.__class__.__name__, mode, relpath, e.lineno)
+
+    for name, module in inspect.getmembers(recipes, inspect.ismodule):
+        if hasattr(module, '__file__') and module.__file__.startswith(RESOURCE_PATH):
+            module = importlib.reload(module)
+
     all_functions = inspect.getmembers(recipes, inspect.isfunction)
     for name, func in all_functions:
+        filename = os.path.realpath(func.__code__.co_filename)
+        if filename != os.path.realpath(path) and os.path.basename(filename) == os.path.basename(path):
+            # import from another file of the same mode. ignore, to avoid
+            # false duplicate-function-name alerts
+            continue
         argspec = inspect.getargspec(func)
-        arguments = argspec.args[1:]
+        if mode == 'recipes':
+            arguments = argspec.args[1:]
+        elif mode == 'operations':
+            arguments = argspec.args[2:]
         defaults = argspec.defaults or []
         params = []
         diff = len(arguments) - len(defaults)
@@ -1314,60 +1588,124 @@ def parse_recipe_file():
                 'name': arg,
                 'default': default
             })
-        custom_recipes[name] = {
+        if mode == 'recipes' and name in custom_recipes and id(func) != id(custom_recipes[name]['function']):
+            logging.getLogger("system").warning("Recipe function names must be unique. %s is not." % name)
+        elif mode == 'operations' and name in custom_operations and id(func) != id(custom_operations[name]['function']):
+            logging.getLogger("system").warning("Operations function names must be unique. %s is not." % name)
+        data = {
             'name': name,
             'parameters': params,
             'function': func,
-            'docstring': inspect.getdoc(func)
+            'docstring': inspect.getdoc(func),
+            'category': category,
+            'path': path
         }
+
+        if mode == 'recipes':
+            custom_recipes[name] = data
+        elif mode == 'operations':
+            if hasattr(func, 'selectioninfo'):
+                data['selectioninfo'] = func.selectioninfo
+                custom_operations[name] = data
+
+
+def reload_nodefunctions_file(path):
+    import importlib
+    import inspect
+
+    try:
+        loader = importlib.machinery.SourceFileLoader("nodefunctions", path)
+        nodefuncs = loader.load_module()
+        for name, module in inspect.getmembers(nodefuncs, inspect.ismodule):
+            if hasattr(module, '__file__') and module.__file__.startswith(RESOURCE_PATH):
+                loader = importlib.machinery.SourceFileLoader(name, module.__file__)
+                loader.load_module()
+    except SyntaxError as e:
+        relpath = os.path.relpath(path, start=RESOURCE_PATH)
+        return "%s in nodefunction file %s, line %d" % (e.__class__.__name__, relpath, e.lineno)
 
 
 def reload_native_modules():
     # stop nodenets, save state
+    global native_modules, custom_recipes, custom_operations
+    native_modules = {}
+    custom_recipes = {}
+    custom_operations = {}
     runners = {}
+    errors = []
+    # load builtins:
+    from micropsi_core.nodenet.native_modules import nodetypes
+    native_modules.update(nodetypes)
+    operationspath = os.path.abspath('micropsi_core/nodenet/operations/')
+    for file in os.listdir(operationspath):
+        import micropsi_core.nodenet.operations
+        if file != '__init__.py' and not file.startswith('.') and os.path.isfile(os.path.join(operationspath, file)):
+            err = parse_recipe_or_operations_file(os.path.join(operationspath, file), category_overwrite=file[:-3])
+            if err:
+                errors.append(err)
+
     for uid in nodenets:
         if nodenets[uid].is_active:
             runners[uid] = True
             nodenets[uid].is_active = False
-    load_user_files(True)
-    import importlib
-    import inspect
-    custom_nodefunctions_file = os.path.join(RESOURCE_PATH, 'nodefunctions.py')
-    if os.path.isfile(custom_nodefunctions_file):
-        loader = importlib.machinery.SourceFileLoader("nodefunctions", custom_nodefunctions_file)
-        nodefuncs = loader.load_module()
-        for key, obj in inspect.getmembers(nodefuncs):
-            if inspect.ismodule(obj):
-                if obj.__file__.startswith(RESOURCE_PATH):
-                    loader = importlib.machinery.SourceFileLoader(key, obj.__file__)
-                    loader.load_module()
+    errors.extend(load_user_files(RESOURCE_PATH, reload_nodefunctions=True, errors=[]))
     for nodenet_uid in nodenets:
         nodenets[nodenet_uid].reload_native_modules(filter_native_modules(nodenets[nodenet_uid].engine))
     # restart previously active nodenets
     for uid in runners:
         nodenets[uid].is_active = True
-    return True
+
+    if len(errors) == 0:
+        return True, []
+    else:
+        return False, errors
 
 
-load_definitions()
-init_worlds(world_data)
-load_user_files()
+def initialize(persistency_path=None, resource_path=None):
+    global PERSISTENCY_PATH, RESOURCE_PATH, configs, logger, runner
 
-# initialize runners
-# Initialize the threads for the continuous simulation of nodenets and worlds
-if 'runner_timestep' not in configs:
-    configs['runner_timestep'] = 200
-    configs.save_configs()
-if 'runner_factor' not in configs:
-    configs['runner_factor'] = 2
-    configs.save_configs()
+    if persistency_path is None:
+        persistency_path = cfg['paths']['data_directory']
 
-set_runner_properties(configs['runner_timestep'], configs['runner_factor'])
+    if resource_path is None:
+        resource_path = persistency_path
 
-runner['running'] = True
-runner['runner'] = MicropsiRunner()
+    PERSISTENCY_PATH = persistency_path
+    RESOURCE_PATH = resource_path
 
-add_signal_handler(kill_runners)
+    sys.path.append(resource_path)
 
-signal.signal(signal.SIGINT, signal_handler)
-signal.signal(signal.SIGTERM, signal_handler)
+    configs = config.ConfigurationManager(cfg['paths']['server_settings_path'])
+
+    if logger is None:
+        logger = MicropsiLogger({
+            'system': cfg['logging']['level_system'],
+            'world': cfg['logging']['level_world']
+        }, cfg['logging'].get('logfile'))
+
+    load_definitions()
+    init_worlds(world_data)
+    result, errors = reload_native_modules()
+    for e in errors:
+        logging.getLogger("system").error(e)
+
+    # initialize runners
+    # Initialize the threads for the continuous calculation of nodenets and worlds
+    if 'runner_timestep' not in configs:
+        configs['runner_timestep'] = 200
+        configs.save_configs()
+    if 'runner_factor' not in configs:
+        configs['runner_factor'] = 2
+        configs.save_configs()
+
+    set_runner_properties(configs['runner_timestep'], configs['runner_factor'])
+
+    runner['running'] = True
+    if runner.get('runner') is None:
+        runner['runner'] = MicropsiRunner()
+
+    if kill_runners not in signal_handler_registry:
+        add_signal_handler(kill_runners)
+
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)

@@ -65,10 +65,24 @@ class World(object):
     def is_active(self, is_active):
         self.data['is_active'] = is_active
 
+    @staticmethod
+    def get_config_options():
+        """ Returns a list of configuration-options for this world.
+        Expected format:
+        [{
+            'name': 'param1',
+            'description': 'this is just an example',
+            'options': ['value1', 'value2'],
+            'default': 'value1'
+        }]
+        description, options and default are optional settings
+        """
+        return []
+
     supported_worldadapters = ['Default']
 
-    def __init__(self, filename, world_type="", name="", owner="", uid=None, engine=None, version=WORLD_VERSION):
-        """Create a new MicroPsi simulation environment.
+    def __init__(self, filename, world_type="", name="", owner="", uid=None, engine=None, version=WORLD_VERSION, config={}):
+        """Create a new MicroPsi world environment.
 
         Arguments:
             filename: the path and filename of the world data
@@ -84,7 +98,8 @@ class World(object):
             "version": WORLD_VERSION,  # used to check compatibility of the world data
             "objects": {},
             "agents": {},
-            "current_step": 0
+            "current_step": 0,
+            "config": config
         }
 
         folder = self.__module__.split('.')
@@ -105,7 +120,7 @@ class World(object):
         self.agents = {}
         self.objects = {}
 
-        #self.the_image = None
+        # self.the_image = None
 
         self.load()
 
@@ -172,7 +187,7 @@ class World(object):
                 del self.agents[uid]
 
     def get_world_view(self, step):
-        """ returns a list of world objects, and the current step of the simulation """
+        """ returns a list of world objects, and the current step of the calculation """
         return {
             'objects': self.get_world_objects(),
             'agents': self.data.get('agents', {}),
@@ -219,10 +234,10 @@ class World(object):
                     objects[uid] = obj
         return objects
 
-    def register_nodenet(self, worldadapter, nodenet):
+    def register_nodenet(self, worldadapter, nodenet_uid, nodenet_name=None):
         """Attempts to register a nodenet at this world.
 
-        Returns True, nodenet_uid if successful,
+        Returns True, spawned_agent_instance if successful,
         Returns False, error_message if not successful
 
         The methods checks if an existing worldadapterish object without a bound nodenet exists, and if not,
@@ -232,41 +247,40 @@ class World(object):
         We don't do it the other way around, because the soulless agent body may have been loaded as part of the
         world definition itself.
         """
-        if nodenet.uid in self.agents:
-            if self.agents[nodenet.uid].__class__.__name__ == worldadapter:
-                return True, nodenet.uid
+        if nodenet_uid in self.agents:
+            if self.agents[nodenet_uid].__class__.__name__ == worldadapter:
+                return True, self.agents[nodenet_uid]
             else:
                 return False, "Nodenet agent already exists in this world, but has the wrong type"
-        return self.spawn_agent(worldadapter, nodenet, name=nodenet.name)
+        return self.spawn_agent(worldadapter, nodenet_uid, nodenet_name=nodenet_name)
 
-    def unregister_nodenet(self, nodenet):
+    def unregister_nodenet(self, nodenet_uid):
         """Removes the connection between a nodenet and its incarnation in this world; may remove the corresponding
         agent object
         """
-        if nodenet.uid in self.agents:
+        if nodenet_uid in self.agents:
             # stop corresponding nodenet
-            micropsi_core.runtime.stop_nodenetrunner(nodenet.uid)
+            micropsi_core.runtime.stop_nodenetrunner(nodenet_uid)
+            del self.agents[nodenet_uid]
+        if nodenet_uid in self.data['agents']:
+            del self.data['agents'][nodenet_uid]
 
-            # remove agent
-            nodenet.worldadapter_instance = None
-            del self.agents[nodenet.uid]
-        if nodenet.uid in self.data['agents']:
-            del self.data['agents'][nodenet.uid]
-
-    def spawn_agent(self, worldadapter_name, nodenet, **options):
+    def spawn_agent(self, worldadapter_name, nodenet_uid, **options):
         """Creates an agent object,
 
-        Returns True, nodenet_uid if successful,
+        Returns True, spawned_agent_instance if successful,
         Returns False, error_message if not successful
         """
         if worldadapter_name in self.supported_worldadapters:
-            self.agents[nodenet.uid] = self.supported_worldadapters[worldadapter_name](self, uid=nodenet.uid, **options)
-            nodenet.worldadapter_instance = self.agents[nodenet.uid]
-            return True, nodenet.uid
+            self.agents[nodenet_uid] = self.supported_worldadapters[worldadapter_name](
+                self,
+                uid=nodenet_uid,
+                name=options.get('nodenet_name', worldadapter_name),
+                **options)
+            return True, self.agents[nodenet_uid]
         else:
             self.logger.error("World %s does not support Worldadapter %s" % (self.name, worldadapter_name))
             return False, "World %s does not support Worldadapter %s" % (self.name, worldadapter_name)
-
 
     def set_object_properties(self, uid, position=None, orientation=None, name=None, parameters=None):
         """set attributes of the world object 'uid'; only supplied attributes will be changed.
@@ -307,6 +321,15 @@ class World(object):
             return True
         return False
 
+    def set_user_data(self, data):
+        """ Sets some data from the user. Implement this in your worldclass to allow
+        the user to set certain properties of this world"""
+        pass
+
+    def __del__(self):
+        """Empty destructor"""
+        pass
+
 
 # imports of individual world types:
 try:
@@ -327,3 +350,12 @@ except ImportError as e:
         pass
     else:
         sys.stdout.write("Could not import minecraft world.\nError: %s \n\n" % e.msg)
+
+try:
+    from micropsi_core.world.timeseries import timeseries
+except ImportError as e:
+    if e.msg == "No module named 'numpy'":
+        # ignore silently
+        pass
+    else:
+        sys.stdout.write("Could not import timeseries world.\nError: %s \n\n" % e.msg)

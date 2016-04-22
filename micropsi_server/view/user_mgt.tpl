@@ -1,4 +1,4 @@
-%include menu.tpl version = version, permissions = permissions, user_id = user_id
+%include("menu.tpl", version=version, permissions=permissions, user_id=user_id)
 
 <div class="row-fluid">
     <p>
@@ -61,4 +61,4 @@
     </div>
 </div>
 
-%rebase boilerplate title = "Manage Users"
+%rebase("boilerplate.tpl", title="Manage Users")

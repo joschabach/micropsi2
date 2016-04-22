@@ -1,4 +1,4 @@
-%include menu.tpl
+%include("menu.tpl")
 <div class="row-fluid" xmlns="http://www.w3.org/1999/html">
     <div class="span3">
         <div class="well well-small">
@@ -16,4 +16,4 @@
 </div>
 
 
-%rebase boilerplate title = "{{title}}"
+%rebase("boilerplate.tpl", title = "{{title}}")

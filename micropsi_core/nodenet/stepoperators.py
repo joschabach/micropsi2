@@ -88,6 +88,26 @@ class DoernerianEmotionalModulators(StepOperator):
 
     """
 
+    writeable_modulators = [
+        'base_sum_importance_of_intentions',
+        'base_sum_urgency_of_intentions',
+        'base_competence_for_intention',
+        'base_importance_of_intention',
+        'base_urgency_of_intention',
+        'base_number_of_active_motives',
+        'base_number_of_expected_events',
+        'base_number_of_unexpected_events',
+        'base_urge_change',
+        'base_age_influence_on_competence',
+        'base_porret_decay_factor']
+    readable_modulators = [
+        'emo_pleasure',
+        'emo_activation',
+        'emo_securing_rate',
+        'emo_resolution',
+        'emo_selection_threshold',
+        'emo_competence']
+
     @property
     def priority(self):
         return 1000
@@ -168,7 +188,7 @@ class DoernerianEmotionalModulators(StepOperator):
         nodenet.set_modulator("base_number_of_expected_events", 0)
         nodenet.set_modulator("base_number_of_unexpected_events", 0)
         nodenet.set_modulator("base_urge_change", 0)
-        nodenet.set_modulator("base_porret_decay_factor", 1)
+        # nodenet.set_modulator("base_porret_decay_factor", 1)
 
         # setting emotional parameters
         nodenet.set_modulator("emo_pleasure", emo_pleasure)

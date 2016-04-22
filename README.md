@@ -7,7 +7,7 @@ For more information visit [micropsi.com](http://www.micropsi.com), for instance
 
 Prerequisites
 -----
-* Python3
+* Python3 (tested with 3.4.3 and 3.5.1)
 * On Windows, we recommend downloading and installing [WinPython 3.4.3.7](http://winpython.github.io/)
 
 

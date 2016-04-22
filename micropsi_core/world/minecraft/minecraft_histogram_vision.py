@@ -6,32 +6,6 @@ from .minecraft_projection_mixin import MinecraftProjectionMixin
 
 class MinecraftHistogramVision(MinecraftGraphLocomotion, MinecraftProjectionMixin):
 
-    supported_datasources = MinecraftGraphLocomotion.supported_datasources + [
-        'fov_x',    # fovea sensors receive their input from the fovea actors
-        'fov_y',
-        'fov_hist__-01',  # these names must be the most commonly observed block types
-        'fov_hist__000',
-        'fov_hist__001',
-        'fov_hist__002',
-        'fov_hist__003',
-        'fov_hist__004',
-        'fov_hist__009',
-        'fov_hist__012',
-        'fov_hist__017',
-        'fov_hist__018',
-        'fov_hist__020',
-        'fov_hist__026',
-        'fov_hist__031',
-        'fov_hist__064',
-        'fov_hist__106',
-    ]
-
-    supported_datatargets = MinecraftGraphLocomotion.supported_datatargets + [
-        'orientation',
-        'fov_x',
-        'fov_y'
-    ]
-
     # specs for vision /fovea
     # focal length larger 0 means zoom in, smaller 0 means zoom out
     # ( small values of focal length distort the image if things are close )
@@ -56,13 +30,40 @@ class MinecraftHistogramVision(MinecraftGraphLocomotion, MinecraftProjectionMixi
 
     def __init__(self, world, uid=None, **data):
         super().__init__(world, uid, **data)
+        self.datasources.update({
+            'fov_x': 0,    # fovea sensors receive their input from the fovea actors
+            'fov_y': 0,
+            'fov_hist__-01': 0,  # these names must be the most commonly observed block types
+            'fov_hist__000': 0,
+            'fov_hist__001': 0,
+            'fov_hist__002': 0,
+            'fov_hist__003': 0,
+            'fov_hist__004': 0,
+            'fov_hist__009': 0,
+            'fov_hist__012': 0,
+            'fov_hist__017': 0,
+            'fov_hist__018': 0,
+            'fov_hist__020': 0,
+            'fov_hist__026': 0,
+            'fov_hist__031': 0,
+            'fov_hist__064': 0,
+            'fov_hist__106': 0,
+        })
+
+        targets = {
+            'orientation': 0,
+            'fov_x': 0,
+            'fov_y': 0
+        }
+
+        self.datatargets.update(targets)
+        self.datatarget_feedback.update(targets)
 
         # add datasources for fovea
         for i in range(self.num_fov):
             for j in range(self.num_fov):
                 name = "fov__%02d_%02d" % (i, j)
                 self.datasources[name] = 0.
-                MinecraftHistogramVision.supported_datasources.append(name)
 
         self.simulated_vision = False
         if 'simulate_vision' in cfg['minecraft']:
@@ -83,7 +84,7 @@ class MinecraftHistogramVision(MinecraftGraphLocomotion, MinecraftProjectionMixi
             self.record_file = open(cfg['minecraft']['record_vision'], 'a')
 
     def update_data_sources_and_targets(self):
-        """called on every world simulation step to advance the life of the agent"""
+        """called on every world calculation step to advance the life of the agent"""
 
         if self.waiting_for_spock:
             super().update_data_sources_and_targets()

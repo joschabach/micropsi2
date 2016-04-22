@@ -8,6 +8,8 @@
  * Nodenet/native module data structure changed
  * Faster sensors for theano
  * Configurable worlds
+ * New timeseries world
+ * Netapi console if serving for localhost only
 
 
 0.7-alpha5 (2016-02-04)

@@ -109,6 +109,7 @@ nodespace_property_defaults = {
     'activation_display': 'redgreen'
 }
 
+
 currentWorldadapter = null;
 
 var currentSheaf = "default";
@@ -3108,11 +3109,13 @@ function get_datasource_options(worldadapter, value){
         }
         html += '</optgroup>';
     }
-    html += '<optgroup label="Nodenet Globals">';
-    for(var i in globalDataSources){
-        html += '<option value="'+globalDataSources[i]+'"'+ ((value && value==globalDataSources[i]) ? ' selected="selected"':'') +'>'+globalDataSources[i]+'</option>';
+    if(globalDataSources.length){
+        html += '<optgroup label="Nodenet Globals">';
+        for(var i in globalDataSources){
+            html += '<option value="'+globalDataSources[i]+'"'+ ((value && value==globalDataSources[i]) ? ' selected="selected"':'') +'>'+globalDataSources[i]+'</option>';
+        }
+        html += '</optgroup>';
     }
-    html += '</optgroup>';
     return html;
 }
 
@@ -3129,11 +3132,13 @@ function get_datatarget_options(worldadapter, value){
         }
         html += '</optgroup>';
     }
-    html += '<optgroup label="Nodenet Globals">';
-    for(var i in globalDataTargets){
-        html += '<option value="'+globalDataTargets[i]+'"'+ ((value && value==globalDataTargets[i]) ? ' selected="selected"':'') +'>'+globalDataTargets[i]+'</option>';
+    if(globalDataTargets.length){
+        html += '<optgroup label="Nodenet Globals">';
+        for(var i in globalDataTargets){
+            html += '<option value="'+globalDataTargets[i]+'"'+ ((value && value==globalDataTargets[i]) ? ' selected="selected"':'') +'>'+globalDataTargets[i]+'</option>';
+        }
+        html += '</optgroup>';
     }
-    html += '</optgroup>';
     return html;
 }
 

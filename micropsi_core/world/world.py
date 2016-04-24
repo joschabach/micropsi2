@@ -65,6 +65,10 @@ class World(object):
     def is_active(self, is_active):
         self.data['is_active'] = is_active
 
+    @property
+    def config(self):
+        return self.data['config']
+
     @staticmethod
     def get_config_options():
         """ Returns a list of configuration-options for this world.

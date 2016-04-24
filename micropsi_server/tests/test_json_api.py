@@ -812,7 +812,7 @@ def test_clone_nodes(app, test_nodenet, node):
     })
     assert_success(response)
     node = list(response.json_body['data'].values())[0]
-    assert node['name'] == 'N1_copy'
+    assert node['name'] == 'N1'
     assert node['position'] == [33, 33, 33]
     assert node['links']['gen'][0]['target_node_uid'] == node['uid']
 

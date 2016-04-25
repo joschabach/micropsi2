@@ -115,7 +115,7 @@ class TimeSeries(World):
                 idxs = np.arange(self.len_ts)
                 self.permutation = np.random.permutation(idxs)
             t = self.permutation[t]
-        return self.timeseries[:, t]
+        return self.timeseries[t, :]
 
     @staticmethod
     def get_config_options():

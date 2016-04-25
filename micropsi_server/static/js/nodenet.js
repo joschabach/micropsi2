@@ -275,7 +275,7 @@ function setCurrentNodenet(uid, nodespace, changed){
             currentNodenet = uid;
             currentNodeSpace = data.rootnodespace;
             currentWorldadapter = data.worldadapter;
-            nodespaceProperties = data.nodespace_ui_properties;
+            nodespaceProperties = data.nodespace_ui_properties || {};
             for(var key in data.nodespaces){
                 if(!(key in nodespaceProperties)){
                     nodespaceProperties[key] = {};

@@ -65,6 +65,10 @@ class World(object):
     def is_active(self, is_active):
         self.data['is_active'] = is_active
 
+    @property
+    def config(self):
+        return self.data['config']
+
     @staticmethod
     def get_config_options():
         """ Returns a list of configuration-options for this world.
@@ -321,6 +325,11 @@ class World(object):
             return True
         return False
 
+    def set_user_data(self, data):
+        """ Sets some data from the user. Implement this in your worldclass to allow
+        the user to set certain properties of this world"""
+        pass
+
     def __del__(self):
         """Empty destructor"""
         pass
@@ -349,4 +358,8 @@ except ImportError as e:
 try:
     from micropsi_core.world.timeseries import timeseries
 except ImportError as e:
-    sys.stdout.write("Could not import timeseries world.\nError: %s \n\n" % e.msg)
+    if e.msg == "No module named 'numpy'":
+        # ignore silently
+        pass
+    else:
+        sys.stdout.write("Could not import timeseries world.\nError: %s \n\n" % e.msg)

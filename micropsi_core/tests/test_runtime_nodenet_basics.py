@@ -134,9 +134,9 @@ def test_clone_nodes_nolinks(fixed_nodenet):
     success, result = micropsi.clone_nodes(fixed_nodenet, ['n0001', 'n0002'], 'none', offset=[10, 20, 2])
     assert success
     for n in result.values():
-        if n['name'] == 'A1_copy':
+        if n['name'] == 'A1':
             a1_copy = n
-        elif n['name'] == 'A2_copy':
+        elif n['name'] == 'A2':
             a2_copy = n
     assert nodenet.is_node(a1_copy['uid'])
     assert a1_copy['uid'] != 'n0001'
@@ -146,7 +146,7 @@ def test_clone_nodes_nolinks(fixed_nodenet):
     assert a1_copy['position'][1] == nodenet.get_node('n0001').position[1] + 20
     assert a1_copy['position'][2] == nodenet.get_node('n0001').position[2] + 2
     assert nodenet.is_node(a2_copy['uid'])
-    assert a2_copy['name'] == nodenet.get_node('n0002').name + '_copy'
+    assert a2_copy['name'] == nodenet.get_node('n0002').name
     assert a2_copy['uid'] != 'n0002'
     assert len(result.keys()) == 2
     assert a1_copy['links'] == {}
@@ -161,9 +161,9 @@ def test_clone_nodes_all_links(fixed_nodenet):
     # as a followupdnode to A1_copy to render incoming links
     assert len(result.keys()) == 3
     for n in result.values():
-        if n['name'] == 'A1_copy':
+        if n['name'] == 'A1':
             a1_copy = n
-        elif n['name'] == 'A2_copy':
+        elif n['name'] == 'A2':
             a2_copy = n
 
     # assert the link between a1-copy and a2-copy exists
@@ -185,9 +185,9 @@ def test_clone_nodes_internal_links(fixed_nodenet):
     assert success
     assert len(result.keys()) == 2
     for n in result.values():
-        if n['name'] == 'A1_copy':
+        if n['name'] == 'A1':
             a1_copy = n
-        elif n['name'] == 'A2_copy':
+        elif n['name'] == 'A2':
             a2_copy = n
 
     # assert the link between a1-copy and a2-copy exists
@@ -213,9 +213,9 @@ def test_clone_nodes_to_new_nodespace(fixed_nodenet):
     assert success
     assert len(result.keys()) == 2
     for n in result.values():
-        if n['name'] == 'A1_copy':
+        if n['name'] == 'A1':
             a1_copy = n
-        elif n['name'] == 'A2_copy':
+        elif n['name'] == 'A2':
             a2_copy = n
 
     a1_copy = nodenet.get_node(a1_copy['uid'])

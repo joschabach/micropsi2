@@ -8,8 +8,8 @@ from micropsi_core.world.island import png
 
 
 class Island(World):
+    """ A simple Doerner Island-World"""
 
-    """ mandatory: list of world adapters that are supported"""
     supported_worldadapters = ['Braitenberg', 'Survivor', 'StructuredObjects']
 
     groundmap = {
@@ -21,7 +21,7 @@ class Island(World):
     assets = {
         'background': "island/psi_1.png",
         'template': 'island/island.tpl',
-        'js': "island/island.js",
+        'paperjs': "island/island.js",
         'x': 2048,
         'y': 2048,
         'icons': {

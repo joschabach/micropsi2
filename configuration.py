@@ -24,7 +24,7 @@ except OSError:
     warnings.warn('Can not read config from inifile %s' % filename)
     raise RuntimeError('Can not read config from inifile %s' % filename)
 
-config['micropsi2']['version'] = "0.8-alpha6-dev"
+config['micropsi2']['version'] = "0.9-alpha7-dev"
 config['micropsi2']['apptitle'] = "MicroPsi"
 
 homedir = config['micropsi2']['data_directory'].startswith('~')

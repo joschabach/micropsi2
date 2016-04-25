@@ -49,6 +49,9 @@
                                 %end
                             %end
                         </select>
+                        % for type in worldtypes:
+                            <div class="hint small world_docstring world_docstring_{{type}}" style="display:none; white-space: pre-wrap;">{{worldtypes[type].__doc__.strip()}}</div>
+                        %end
                     </div>
                 </div>
 
@@ -102,5 +105,7 @@ $('#world_type').on('change', function(event){
     var val = $(event.target).val();
     $('.world_config').hide();
     $('.world_config_'+val).show();
+    $('.world_docstring').hide();
+    $('.world_docstring_'+val).show();
 })
 </script>

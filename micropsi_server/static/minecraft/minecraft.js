@@ -88,7 +88,7 @@ function setCurrentWorld(uid) {
         world_uid: currentWorld
     }, success = function (data) {
         refreshWorldView();
-        $('#world').parent().html('<iframe src="https://blockworld.micropsi-industries.com/" id="world" width="100%" height="100%"></iframe>');
+        $('#world').parent().html('<iframe src="http://blockworld.micropsi-industries.com/" id="world" width="100%" height="100%"></iframe>');
     }, error = function (data) {
         $.cookie('selected_world', '', {
             expires: -1,

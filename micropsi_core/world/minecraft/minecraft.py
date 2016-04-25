@@ -18,8 +18,10 @@ from micropsi_core.world.minecraft.minecraft_histogram_vision import MinecraftHi
 
 class Minecraft(World):
     """
-    mandatory: list of world adapters that are supported
+    A minecraft world.
+    Connects to a minecraft server and serves as a bridge between agent and server. See config.ini for configuration
     """
+
     supported_worldadapters = [
         'MinecraftWorldAdapter',
         'MinecraftBraitenberg',
@@ -30,7 +32,7 @@ class Minecraft(World):
 
     assets = {
         'template': 'minecraft/minecraft.tpl',
-        'js': 'minecraft/minecraft.js',
+        'paperjs': 'minecraft/minecraft.js',
         'x': 256,
         'y': 256,
     }
@@ -136,7 +138,8 @@ class Minecraft(World):
 
 
 class Minecraft2D(Minecraft):
-    """ mandatory: list of world adapters that are supported"""
+    """ A Minecraft world that offers a 2d visualization of the agent's perspective"""
+
     supported_worldadapters = [
         'MinecraftWorldAdapter',
         'MinecraftGraphLocomotion'
@@ -144,7 +147,7 @@ class Minecraft2D(Minecraft):
 
     assets = {
         'template': 'minecraft/minecraft.tpl',
-        'js': 'minecraft/minecraft2d.js',
+        'paperjs': 'minecraft/minecraft2d.js',
     }
 
     def step(self):

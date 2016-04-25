@@ -886,6 +886,12 @@ def merge_nodenet_rpc(nodenet_uid, nodenet_data):
 
 
 # World
+
+@rpc("step_nodenets_in_world")
+def step_nodenets_in_world(world_uid, nodenet_uid=None, steps=1):
+    return runtime.step_nodenets_in_world(world_uid, nodenet_uid=nodenet_uid, steps=steps)
+
+
 @rpc("get_available_worlds")
 def get_available_worlds(user_id=None):
     data = {}
@@ -967,8 +973,13 @@ def get_world_view(world_uid, step):
 
 
 @rpc("set_world_properties", permission_required="manage worlds")
-def set_world_data(world_uid, world_name=None, owner=None):
+def set_world_properties(world_uid, world_name=None, owner=None):
     return runtime.set_world_properties(world_uid, world_name, owner)
+
+
+@rpc("set_world_data")
+def set_world_data(world_uid, data):
+    return runtime.set_world_data(world_uid, data)
 
 
 @rpc("revert_world", permission_required="manage worlds")

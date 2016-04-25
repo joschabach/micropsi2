@@ -158,6 +158,14 @@ def set_world_properties(world_uid, world_name=None, owner=None):
     return True
 
 
+def set_world_data(world_uid, data):
+    """ Sets some data for the world. Whatever the world supports"""
+    if world_uid not in micropsi_core.runtime.worlds:
+        raise KeyError("World not found")
+    micropsi_core.runtime.worlds[world_uid].set_user_data(data)
+    return True
+
+
 def revert_world(world_uid):
     """Reverts the world to the last saved state."""
     data = micropsi_core.runtime.world_data[world_uid]

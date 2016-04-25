@@ -335,7 +335,7 @@ def load_nodenet(nodenet_uid):
                         logging.getLogger("system").warn("World %s for nodenet %s not found" % (data.world, data.uid))
 
                 if world_uid:
-                    result, worldadapter_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet_uid)
+                    result, worldadapter_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet_uid, nodenet_name=data['name'])
                     if not result:
                         logging.getLogger('system').warn(worldadapter_instance)
                         worldadapter_instance = None
@@ -548,7 +548,7 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
         assert worldadapter in worlds[world_uid].supported_worldadapters
         nodenet.world = world_uid
         nodenet.worldadapter = worldadapter
-        result, wa_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet.uid)
+        result, wa_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet.uid, nodenet_name=nodenet.name)
         if result:
             nodenet.worldadapter_instance = wa_instance
     if nodenet_name:
@@ -637,6 +637,25 @@ def step_nodenet(nodenet_uid):
     if nodenet.world and nodenet.current_step % configs['runner_factor'] == 0:
         worlds[nodenet.world].step()
     return nodenet.current_step
+
+
+def step_nodenets_in_world(world_uid, nodenet_uid=None, steps=1):
+    """ Advances all nodenets registered in the given world
+    (or, only the given nodenet) by the given number of steps"""
+    nodenet = None
+    if nodenet_uid is not None:
+        nodenet = get_nodenet(nodenet_uid)
+    if nodenet and nodenet.world == world_uid:
+        for i in range(steps):
+            nodenet.timed_step()
+            nodenet.update_monitors()
+    else:
+        for i in range(steps):
+            for uid in worlds[world_uid].agents:
+                nodenet = get_nodenet(uid)
+                nodenet.timed_step()
+                nodenet.update_monitors()
+    return True
 
 
 def revert_nodenet(nodenet_uid, also_revert_world=False):
@@ -838,7 +857,7 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
 
     for _, n in copynodes.items():
         target_nodespace = nodespace if nodespace is not None else n.parent_nodespace
-        uid = nodenet.create_node(n.type, target_nodespace, [n.position[0] + offset[0], n.position[1] + offset[1], n.position[2] + offset[2]], name=n.name + '_copy', uid=None, parameters=n.clone_parameters().copy(), gate_parameters=n.get_gate_parameters())
+        uid = nodenet.create_node(n.type, target_nodespace, [n.position[0] + offset[0], n.position[1] + offset[1], n.position[2] + offset[2]], name=n.name, uid=None, parameters=n.clone_parameters().copy(), gate_parameters=n.get_gate_parameters())
         if uid:
             uidmap[n.uid] = uid
         else:

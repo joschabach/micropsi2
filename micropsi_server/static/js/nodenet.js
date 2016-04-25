@@ -104,7 +104,11 @@ if (nodenetcookie && nodenetcookie.indexOf('/') > 0){
 nodespaceProperties = {};
 
 // compatibility
-renderlinks_default = $.cookie('renderlinks') || 'always';
+nodespace_property_defaults = {
+    'renderlinks': ($.cookie('renderlinks') || 'always'),
+    'activation_display': 'redgreen'
+}
+
 
 currentWorldadapter = null;
 
@@ -268,19 +272,19 @@ function setCurrentNodenet(uid, nodespace, changed){
             toggleButtons(true);
 
             var nodenetChanged = changed || (uid != currentNodenet);
-
             currentNodenet = uid;
             currentNodeSpace = data.rootnodespace;
+            currentWorldadapter = data.worldadapter;
             nodespaceProperties = data.nodespace_ui_properties;
             for(var key in data.nodespaces){
                 if(!(key in nodespaceProperties)){
                     nodespaceProperties[key] = {};
                 }
                 if(!nodespaceProperties[key].renderlinks){
-                    nodespaceProperties[key].renderlinks = renderlinks_default;
+                    nodespaceProperties[key].renderlinks = nodespace_property_defaults.renderlinks;
                 }
                 if(!nodespaceProperties[key].activation_display){
-                    nodespaceProperties[key].activation_display = 'redgreen';
+                    nodespaceProperties[key].activation_display = nodespace_property_defaults.activation_display;
                 }
             }
             if(nodenetChanged){
@@ -373,7 +377,7 @@ function setNodespaceData(data, changed){
     nodenetscope.activate();
     if (data && !jQuery.isEmptyObject(data)){
         currentSimulationStep = data.current_step || 0;
-        currentWorldadapter = data.worldadapter;
+
         nodenetRunning = data.is_active;
 
         if(!('selectionBox' in nodeLayer)){
@@ -617,8 +621,11 @@ function refreshNodespace(nodespace, step, callback){
     params = {
         nodenet_uid: currentNodenet,
         nodespaces: [nodespace],
+        include_links: true
     };
-    params.include_links = nodespaceProperties[nodespace].renderlinks == 'always';
+    if(nodespaceProperties[nodespace] && nodespaceProperties[nodespace].renderlinks != 'always'){
+        params.include_links = false;
+    }
     api.call('get_nodes', params , success=function(data){
         var changed = nodespace != currentNodeSpace;
         if(changed){
@@ -3102,11 +3109,13 @@ function get_datasource_options(worldadapter, value){
         }
         html += '</optgroup>';
     }
-    html += '<optgroup label="Nodenet Globals">';
-    for(var i in globalDataSources){
-        html += '<option value="'+globalDataSources[i]+'"'+ ((value && value==globalDataSources[i]) ? ' selected="selected"':'') +'>'+globalDataSources[i]+'</option>';
+    if(globalDataSources.length){
+        html += '<optgroup label="Nodenet Globals">';
+        for(var i in globalDataSources){
+            html += '<option value="'+globalDataSources[i]+'"'+ ((value && value==globalDataSources[i]) ? ' selected="selected"':'') +'>'+globalDataSources[i]+'</option>';
+        }
+        html += '</optgroup>';
     }
-    html += '</optgroup>';
     return html;
 }
 
@@ -3123,11 +3132,13 @@ function get_datatarget_options(worldadapter, value){
         }
         html += '</optgroup>';
     }
-    html += '<optgroup label="Nodenet Globals">';
-    for(var i in globalDataTargets){
-        html += '<option value="'+globalDataTargets[i]+'"'+ ((value && value==globalDataTargets[i]) ? ' selected="selected"':'') +'>'+globalDataTargets[i]+'</option>';
+    if(globalDataTargets.length){
+        html += '<optgroup label="Nodenet Globals">';
+        for(var i in globalDataTargets){
+            html += '<option value="'+globalDataTargets[i]+'"'+ ((value && value==globalDataTargets[i]) ? ' selected="selected"':'') +'>'+globalDataTargets[i]+'</option>';
+        }
+        html += '</optgroup>';
     }
-    html += '</optgroup>';
     return html;
 }
 
@@ -3160,6 +3171,9 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
     }
     api.call(method, params,
         success=function(uid){
+            if(type == 'Nodespace'){
+                nodespaceProperties[uid] = nodespace_property_defaults
+            }
             addNode(new Node(uid, x, y, currentNodeSpace, name || '', type, null, null, parameters));
             view.draw();
             selectNode(uid);

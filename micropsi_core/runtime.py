@@ -335,7 +335,7 @@ def load_nodenet(nodenet_uid):
                         logging.getLogger("system").warn("World %s for nodenet %s not found" % (data.world, data.uid))
 
                 if world_uid:
-                    result, worldadapter_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet_uid)
+                    result, worldadapter_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet_uid, nodenet_name=data['name'])
                     if not result:
                         logging.getLogger('system').warn(worldadapter_instance)
                         worldadapter_instance = None
@@ -548,7 +548,7 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
         assert worldadapter in worlds[world_uid].supported_worldadapters
         nodenet.world = world_uid
         nodenet.worldadapter = worldadapter
-        result, wa_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet.uid)
+        result, wa_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet.uid, nodenet_name=nodenet.name)
         if result:
             nodenet.worldadapter_instance = wa_instance
     if nodenet_name:
@@ -857,7 +857,7 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
 
     for _, n in copynodes.items():
         target_nodespace = nodespace if nodespace is not None else n.parent_nodespace
-        uid = nodenet.create_node(n.type, target_nodespace, [n.position[0] + offset[0], n.position[1] + offset[1], n.position[2] + offset[2]], name=n.name + '_copy', uid=None, parameters=n.clone_parameters().copy(), gate_parameters=n.get_gate_parameters())
+        uid = nodenet.create_node(n.type, target_nodespace, [n.position[0] + offset[0], n.position[1] + offset[1], n.position[2] + offset[2]], name=n.name, uid=None, parameters=n.clone_parameters().copy(), gate_parameters=n.get_gate_parameters())
         if uid:
             uidmap[n.uid] = uid
         else:

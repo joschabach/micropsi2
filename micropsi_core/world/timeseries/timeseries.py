@@ -91,16 +91,16 @@ class TimeSeries(World):
 
         if dummydata:
             self.logger.warn("! Using dummy data")
-            n_ids = self.timeseries.shape[0]
+            n_ids = self.timeseries.shape[1]
             self.timeseries = np.tile(np.random.rand(n_ids,1),(1,10))
 
-        self.len_ts = self.timeseries.shape[1]
+        self.len_ts = self.timeseries.shape[0]
 
     # todo: option to use only a subset of the data (e.g. for training/test)
 
     def step(self):
         now = datetime.utcnow().timestamp() * 1000
-        if now - self.realtime_per_entry > self.last_realtime_step:
+        if self.realtime_per_entry == 0 or now - self.realtime_per_entry > self.last_realtime_step:
             self.current_step += 1
             for uid in self.agents:
                 with self.agents[uid].datasource_lock:

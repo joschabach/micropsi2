@@ -13,6 +13,7 @@ from abc import ABCMeta, abstractmethod
 import micropsi_core.tools
 from .netapi import NetAPI
 from . import monitor
+from . import recorder
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
@@ -155,6 +156,7 @@ class Nodenet(metaclass=ABCMeta):
 
         self.owner = owner
         self._monitors = {}
+        self._recorders = {}
         self._nodespace_ui_properties = {}
 
         self.netlock = Lock()
@@ -626,9 +628,14 @@ class Nodenet(metaclass=ABCMeta):
     def get_monitor(self, uid):
         return self._monitors.get(uid)
 
-    def update_monitors(self):
+    def get_recorder(self, uid):
+        return self._recorders.get(uid)
+
+    def update_monitors_and_recorders(self):
         for uid in self._monitors:
             self._monitors[uid].step(self.current_step)
+        for uid in self._recorders:
+            self._recorders[uid].step(self.current_step)
 
     def construct_monitors_dict(self):
         data = {}
@@ -636,8 +643,25 @@ class Nodenet(metaclass=ABCMeta):
             data[monitor_uid] = self._monitors[monitor_uid].get_data()
         return data
 
+    def construct_recorders_dict(self):
+        data = {}
+        for uid in self._recorders:
+            data[uid] = self._recorders[uid].get_data()
+        return data
+
     def remove_monitor(self, monitor_uid):
         del self._monitors[monitor_uid]
+
+    def add_activation_recorder(self, group_definition, name, interval=1):
+        """ Adds an activation recorder to a group of nodes."""
+        raise NotImplementedError("Recorders are not implemented in the this engine")
+
+    def add_linkweight_recorder(self, from_group_definition, to_group_definition, name, interval=1):
+        """ Adds a linkweight recorder to links between to groups."""
+        raise NotImplementedError("Recorders are not implemented in the this engine")
+
+    def remove_recorder(self, recorder_uid):
+        del self._recorders[recorder_uid]
 
     def get_dashboard(self):
         data = self.dashboard_values.copy()

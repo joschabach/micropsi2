@@ -1526,3 +1526,99 @@ def test_run_operation(app, test_nodenet, node):
         'selection_uids': [None]
     })
     assert response.json_body['status'] == 'success'
+
+
+@pytest.mark.engine("theano_engine")
+def test_add_activation_recorder(app, test_nodenet, resourcepath):
+    from micropsi_core import runtime
+    app.set_auth()
+    nodenet = runtime.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    nodespace = netapi.get_nodespace(None)
+    for i in range(3):
+        netapi.create_node('Register', None, "testnode_%d" % i)
+    response = app.post_json('/rpc/add_activation_recorder', {
+        'nodenet_uid': test_nodenet,
+        'group_definition': {'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'},
+        'name': "recorder",
+        'interval': 2
+    })
+    assert_success(response)
+    recorder_uid = response.json_body['data']
+    runtime.step_nodenet(test_nodenet)
+    runtime.step_nodenet(test_nodenet)
+    assert netapi.get_recorder(recorder_uid).name == 'recorder'
+    assert 'activations' in netapi.get_recorder(recorder_uid).values
+
+
+@pytest.mark.engine("theano_engine")
+def test_add_linkweight_recorder(app, test_nodenet, resourcepath):
+    from micropsi_core import runtime
+    app.set_auth()
+    nodenet = runtime.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    nodespace = netapi.get_nodespace(None)
+    layer1 = []
+    layer2 = []
+    for i in range(3):
+        layer1.append(netapi.create_node('Register', None, "l1_%d" % i))
+        layer2.append(netapi.create_node('Register', None, "l2_%d" % i))
+    for i in range(3):
+        for j in range(3):
+            netapi.link(layer1[i], 'gen', layer2[j], 'gen', weight=0.89)
+
+    response = app.post_json('/rpc/add_linkweight_recorder', {
+        'nodenet_uid': test_nodenet,
+        'from_group_definition': {'nodespace_uid': nodespace.uid, 'node_name_prefix': 'l1'},
+        'to_group_definition': {'nodespace_uid': nodespace.uid, 'node_name_prefix': 'l2'},
+        'name': "recorder",
+        'interval': 2
+    })
+    assert_success(response)
+    recorder_uid = response.json_body['data']
+    runtime.step_nodenet(test_nodenet)
+    runtime.step_nodenet(test_nodenet)
+    assert netapi.get_recorder(recorder_uid).name == 'recorder'
+    assert 'linkweights' in netapi.get_recorder(recorder_uid).values
+
+
+@pytest.mark.engine("theano_engine")
+def test_clear_recorder(app, test_nodenet, resourcepath):
+    from micropsi_core import runtime
+    app.set_auth()
+    nodenet = runtime.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    nodespace = netapi.get_nodespace(None)
+    for i in range(3):
+        netapi.create_node('Register', None, "testnode_%d" % i)
+    recorder = netapi.add_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder")
+    for i in range(3):
+        runtime.step_nodenet(test_nodenet)
+
+    response = app.post_json('/rpc/clear_recorder', {
+        'nodenet_uid': test_nodenet,
+        'recorder_uid': recorder.uid,
+    })
+    assert_success(response)
+    assert recorder.values == {}
+
+
+@pytest.mark.engine("theano_engine")
+def test_remove_recorder(app, test_nodenet, resourcepath):
+    from micropsi_core import runtime
+    app.set_auth()
+    nodenet = runtime.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    nodespace = netapi.get_nodespace(None)
+    for i in range(3):
+        netapi.create_node('Register', None, "testnode_%d" % i)
+    recorder = netapi.add_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder")
+    for i in range(3):
+        runtime.step_nodenet(test_nodenet)
+
+    response = app.post_json('/rpc/remove_recorder', {
+        'nodenet_uid': test_nodenet,
+        'recorder_uid': recorder.uid,
+    })
+    assert_success(response)
+    assert netapi.get_recorder(recorder.uid) is None

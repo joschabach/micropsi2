@@ -563,6 +563,22 @@ class NetAPI(object):
         """Removes the monitor with the given uid"""
         return self.__nodenet.remove_monitor(uid)
 
+    def add_activation_recorder(self, group_definition, name, interval=1):
+        """ Adds an activation recorder to a group of nodes."""
+        return self.__nodenet.add_activation_recorder(group_definition, name, interval)
+
+    def add_linkweight_recorder(self, from_group_definition, to_group_definition, name, interval=1):
+        """ Adds a linkweight recorder to links between to groups."""
+        return self.__nodenet.add_linkweight_recorder(from_group_definition, to_group_definition, name, interval)
+
+    def get_recorder(self, uid):
+        """Returns the recorder with the given uid"""
+        return self.__nodenet.get_recorder(uid)
+
+    def remove_recorder(self, uid):
+        """Removes the recorder with the given uid"""
+        return self.__nodenet.remove_recorder(uid)
+
     def set_dashboard_value(self, name, value):
         """Allows the netapi to set values for the statistics and dashboard"""
         self.__nodenet.dashboard_values[name] = value

@@ -115,3 +115,33 @@ def get_monitor_data(nodenet_uid, step=0, monitor_from=0, monitor_count=-1):
     else:
         data['monitors'] = micropsi_core.runtime.export_monitor_data(nodenet_uid, None, monitor_from=monitor_from, monitor_count=monitor_count)
         return data
+
+
+def add_activation_recorder(nodenet_uid, group_definition, name, interval=1):
+    """ Adds an activation recorder to a group of nodes."""
+    nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
+    rec = nodenet.add_activation_recorder(group_definition, name, interval)
+    return True, rec.uid
+
+
+def add_linkweight_recorder(nodenet_uid, from_group_definition, to_group_definition, name, interval=1):
+    """ Adds a linkweight recorder to links between to groups."""
+    nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
+    rec = nodenet.add_linkweight_recorder(from_group_definition, to_group_definition, name, interval)
+    return True, rec.uid
+
+
+def remove_recorder(nodenet_uid, recorder_uid):
+    """Deletes a recorder."""
+    micropsi_core.runtime.get_nodenet(nodenet_uid).remove_recorder(recorder_uid)
+    return True
+
+
+def clear_recorder(nodenet_uid, recorder_uid):
+    """Leaves the recorder intact, but deletes the current list of stored values."""
+    micropsi_core.runtime.get_nodenet(nodenet_uid).get_recorder(recorder_uid).clear()
+    return True
+
+
+def get_recorder_data(nodenet_uid):
+    return True, get_nodenet(nodenet_uid).construct_recorder_dict()

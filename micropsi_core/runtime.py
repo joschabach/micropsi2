@@ -166,7 +166,7 @@ class MicropsiRunner(threading.Thread):
                             nodenet.timed_step()
                             if self.profiler:
                                 self.profiler.disable()
-                            nodenet.update_monitors()
+                            nodenet.update_monitors_and_recorders()
                         except:
                             if self.profiler:
                                 self.profiler.disable()
@@ -633,7 +633,7 @@ def step_nodenet(nodenet_uid):
     """
     nodenet = get_nodenet(nodenet_uid)
     nodenet.timed_step()
-    nodenet.update_monitors()
+    nodenet.update_monitors_and_recorders()
     if nodenet.world and nodenet.current_step % configs['runner_factor'] == 0:
         worlds[nodenet.world].step()
     return nodenet.current_step
@@ -648,13 +648,13 @@ def step_nodenets_in_world(world_uid, nodenet_uid=None, steps=1):
     if nodenet and nodenet.world == world_uid:
         for i in range(steps):
             nodenet.timed_step()
-            nodenet.update_monitors()
+            nodenet.update_monitors_and_recorders()
     else:
         for i in range(steps):
             for uid in worlds[world_uid].agents:
                 nodenet = get_nodenet(uid)
                 nodenet.timed_step()
-                nodenet.update_monitors()
+                nodenet.update_monitors_and_recorders()
     return True
 
 

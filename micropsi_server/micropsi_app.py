@@ -1233,6 +1233,34 @@ def get_emoexpression_parameters(nodenet_uid):
     nodenet = runtime.get_nodenet(nodenet_uid)
     return True, emoexpression.calc_emoexpression_parameters(nodenet)
 
+
+# --------- recorder --------
+
+
+@rpc("add_activation_recorder")
+def add_activation_recorder(nodenet_uid, group_definition, name, interval=1):
+    """ Adds an activation recorder to a group of nodes."""
+    return runtime.add_activation_recorder(nodenet_uid, group_definition, name, interval)
+
+
+@rpc("add_linkweight_recorder")
+def add_linkweight_recorder(nodenet_uid, from_group_definition, to_group_definition, name, interval=1):
+    """ Adds a linkweight recorder to links between to groups."""
+    return runtime.add_linkweight_recorder(nodenet_uid, from_group_definition, to_group_definition, name, interval)
+
+
+@rpc("remove_recorder")
+def remove_recorder(nodenet_uid, recorder_uid):
+    """Deletes a recorder."""
+    return runtime.remove_recorder(nodenet_uid, recorder_uid)
+
+
+@rpc("clear_recorder")
+def clear_recorder(nodenet_uid, recorder_uid):
+    """Leaves the recorder intact, but deletes the current list of stored values."""
+    return runtime.clear_recorder(nodenet_uid, recorder_uid)
+
+
 # --------- logging --------
 
 

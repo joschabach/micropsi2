@@ -74,7 +74,8 @@ class Recorder(metaclass=ABCMeta):
         pass  # no cover
 
     def save(self, filename=None):
-        np.savez(filename if filename is not None else self.filename, **self.values)
+        values = self.values
+        np.savez(filename if filename is not None else self.filename, **values)
 
     def load(self, filename=None):
         data = np.load(filename if filename is not None else self.filename)
@@ -84,6 +85,7 @@ class Recorder(metaclass=ABCMeta):
 
     def clear(self):
         self.values = {}
+        self.current_index = -1
 
     def import_file(self, filename):
         self.load(filename)

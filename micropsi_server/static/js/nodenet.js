@@ -3830,16 +3830,6 @@ function handleEditNodespace(event){
     }
 }
 
-
-function setMonitorData(uid){
-    api.call('export_monitor_data', params={
-        'nodenet_uid': currentNodenet,
-        'monitor_uid': uid
-    }, function(data){
-        monitors[uid] = data;
-    })
-}
-
 function removeMonitor(node, target, type){
     monitor = getMonitor(node, target, type);
     api.call('remove_monitor', {

@@ -4,8 +4,9 @@
 Nodenet definition
 """
 
-
+import os
 import logging
+
 from datetime import datetime
 from threading import Lock
 from abc import ABCMeta, abstractmethod
@@ -661,6 +662,9 @@ class Nodenet(metaclass=ABCMeta):
         raise NotImplementedError("Recorders are not implemented in the this engine")
 
     def remove_recorder(self, recorder_uid):
+        filename = self._recorders[recorder_uid].filename
+        if os.path.isfile(filename):
+            os.remove(filename)
         del self._recorders[recorder_uid]
 
     def get_dashboard(self):

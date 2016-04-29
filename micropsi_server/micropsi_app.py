@@ -555,12 +555,12 @@ def export_nodenet(nodenet_uid):
     return runtime.export_nodenet(nodenet_uid)
 
 
-@micropsi_app.route("/monitor/export/<nodenet_uid>-<monitor_uid>")
-def export_monitor(nodenet_uid, monitor_uid):
-    data = runtime.export_monitor_data(nodenet_uid, monitor_uid)
-    response.set_header('Content-type', 'application/json')
-    response.set_header('Content-Disposition', 'attachment; filename="monitor_%s.json"' % data['name'])
-    return json.dumps(data['values'], sort_keys=True, indent=2)
+# @micropsi_app.route("/monitor/export/<nodenet_uid>-<monitor_uid>")
+# def export_monitor(nodenet_uid, monitor_uid):
+#     data = runtime.export_monitor_data(nodenet_uid, monitor_uid)
+#     response.set_header('Content-type', 'application/json')
+#     response.set_header('Content-Disposition', 'attachment; filename="monitor_%s.json"' % data['name'])
+#     return json.dumps(data['values'], sort_keys=True, indent=2)
 
 
 @micropsi_app.route("/nodenet/edit")
@@ -747,8 +747,8 @@ def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadap
 
 
 @rpc("get_calculation_state")
-def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
-    return runtime.get_calculation_state(nodenet_uid, nodenet=nodenet, nodenet_diff=nodenet_diff, world=world, monitors=monitors, dashboard=dashboard)
+def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None, recorders=None):
+    return runtime.get_calculation_state(nodenet_uid, nodenet=nodenet, nodenet_diff=nodenet_diff, world=world, monitors=monitors, dashboard=dashboard, recorders=recorders)
 
 
 @rpc("get_nodenet_changes")
@@ -1053,11 +1053,6 @@ def clear_monitor(nodenet_uid, monitor_uid):
         return dict(status='error', msg='unknown nodenet or monitor')
 
 
-@rpc("export_monitor_data")
-def export_monitor_data(nodenet_uid, monitor_uid=None):
-    return True, runtime.export_monitor_data(nodenet_uid, monitor_uid)
-
-
 @rpc("get_monitor_data")
 def get_monitor_data(nodenet_uid, step=0, monitor_from=0, monitor_count=-1):
     return True, runtime.get_monitor_data(nodenet_uid, step, from_step=monitor_from, count=monitor_count)
@@ -1280,8 +1275,8 @@ def get_logger_messages(logger=[], after=0):
 
 
 @rpc("get_monitoring_info")
-def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor_count=-1):
-    data = runtime.get_monitoring_info(nodenet_uid, logger, after, monitor_from, monitor_count)
+def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor_count=-1, with_recorders=False):
+    data = runtime.get_monitoring_info(nodenet_uid, logger, after, monitor_from, monitor_count, with_recorders=with_recorders)
     return True, data
 
 

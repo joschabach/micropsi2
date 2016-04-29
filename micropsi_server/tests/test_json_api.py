@@ -602,10 +602,10 @@ def test_import_world(app, test_world):
 ##
 ###################################################
 
-def test_export_monitor_data_all(app, test_nodenet):
-    response = app.get_json('/rpc/export_monitor_data(nodenet_uid="%s")' % test_nodenet)
+def test_get_monitor_data_all(app, test_nodenet):
+    response = app.get_json('/rpc/get_monitor_data(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
-    assert response.json_body['data'] == {}
+    assert response.json_body['data']['monitors'] == {}
 
 
 def test_add_gate_monitor(app, test_nodenet, node):
@@ -617,15 +617,14 @@ def test_add_gate_monitor(app, test_nodenet, node):
     })
     assert_success(response)
     uid = response.json_body['data']
-    response = app.post_json('/rpc/export_monitor_data', params={
-        'nodenet_uid': test_nodenet,
-        'monitor_uid': uid
+    response = app.post_json('/rpc/get_monitor_data', params={
+        'nodenet_uid': test_nodenet
     })
-    assert response.json_body['data']['node_uid'] == node
-    assert response.json_body['data']['target'] == 'sub'
-    assert response.json_body['data']['type'] == 'gate'
-    assert response.json_body['data']['sheaf'] == 'default'
-    assert response.json_body['data']['values'] == {}
+    assert response.json_body['data']['monitors'][uid]['node_uid'] == node
+    assert response.json_body['data']['monitors'][uid]['target'] == 'sub'
+    assert response.json_body['data']['monitors'][uid]['type'] == 'gate'
+    assert response.json_body['data']['monitors'][uid]['sheaf'] == 'default'
+    assert response.json_body['data']['monitors'][uid]['values'] == {}
 
 
 @pytest.mark.engine("dict_engine")
@@ -638,16 +637,15 @@ def test_add_slot_monitor(app, test_nodenet, node):
     })
     assert_success(response)
     uid = response.json_body['data']
-    response = app.post_json('/rpc/export_monitor_data', params={
-        'nodenet_uid': test_nodenet,
-        'monitor_uid': uid
+    response = app.post_json('/rpc/get_monitor_data', params={
+        'nodenet_uid': test_nodenet
     })
-    assert response.json_body['data']['name'] == 'Foobar'
-    assert response.json_body['data']['node_uid'] == node
-    assert response.json_body['data']['target'] == 'gen'
-    assert response.json_body['data']['type'] == 'slot'
-    assert response.json_body['data']['sheaf'] == 'default'
-    assert response.json_body['data']['values'] == {}
+    assert response.json_body['data']['monitors'][uid]['name'] == 'Foobar'
+    assert response.json_body['data']['monitors'][uid]['node_uid'] == node
+    assert response.json_body['data']['monitors'][uid]['target'] == 'gen'
+    assert response.json_body['data']['monitors'][uid]['type'] == 'slot'
+    assert response.json_body['data']['monitors'][uid]['sheaf'] == 'default'
+    assert response.json_body['data']['monitors'][uid]['values'] == {}
 
 
 def test_add_link_monitor(app, test_nodenet, node):
@@ -662,16 +660,15 @@ def test_add_link_monitor(app, test_nodenet, node):
     })
     assert_success(response)
     uid = response.json_body['data']
-    response = app.post_json('/rpc/export_monitor_data', params={
-        'nodenet_uid': test_nodenet,
-        'monitor_uid': uid
+    response = app.post_json('/rpc/get_monitor_data', params={
+        'nodenet_uid': test_nodenet
     })
-    assert response.json_body['data']['name'] == 'LinkWeight'
-    assert response.json_body['data']['source_node_uid'] == node
-    assert response.json_body['data']['gate_type'] == 'gen'
-    assert response.json_body['data']['target_node_uid'] == node
-    assert response.json_body['data']['slot_type'] == 'gen'
-    assert response.json_body['data']['property'] == 'weight'
+    assert response.json_body['data']['monitors'][uid]['name'] == 'LinkWeight'
+    assert response.json_body['data']['monitors'][uid]['source_node_uid'] == node
+    assert response.json_body['data']['monitors'][uid]['gate_type'] == 'gen'
+    assert response.json_body['data']['monitors'][uid]['target_node_uid'] == node
+    assert response.json_body['data']['monitors'][uid]['slot_type'] == 'gen'
+    assert response.json_body['data']['monitors'][uid]['property'] == 'weight'
 
 
 def test_add_custom_monitor(app, test_nodenet):
@@ -682,11 +679,10 @@ def test_add_custom_monitor(app, test_nodenet):
     })
     assert_success(response)
     uid = response.json_body['data']
-    response = app.post_json('/rpc/export_monitor_data', params={
-        'nodenet_uid': test_nodenet,
-        'monitor_uid': uid
+    response = app.post_json('/rpc/get_monitor_data', params={
+        'nodenet_uid': test_nodenet
     })
-    assert response.json_body['data']['name'] == 'nodecount'
+    assert response.json_body['data']['monitors'][uid]['name'] == 'nodecount'
 
 
 def test_add_group_monitor_by_name(app, test_nodenet):
@@ -709,12 +705,11 @@ def test_add_group_monitor_by_name(app, test_nodenet):
         'gate': 'gen'
     })
     mon_uid = response.json_body['data']
-    response = app.post_json('/rpc/export_monitor_data', params={
-        'nodenet_uid': test_nodenet,
-        'monitor_uid': mon_uid
+    response = app.post_json('/rpc/get_monitor_data', params={
+        'nodenet_uid': test_nodenet
     })
-    assert response.json_body['data']['name'] == 'testmonitor'
-    assert response.json_body['data']['node_uids'] == uids
+    assert response.json_body['data']['monitors'][mon_uid]['name'] == 'testmonitor'
+    assert response.json_body['data']['monitors'][mon_uid]['node_uids'] == uids
 
 
 def test_add_group_monitor_by_ids(app, test_nodenet):
@@ -737,12 +732,11 @@ def test_add_group_monitor_by_ids(app, test_nodenet):
         'gate': 'gen'
     })
     mon_uid = response.json_body['data']
-    response = app.post_json('/rpc/export_monitor_data', params={
-        'nodenet_uid': test_nodenet,
-        'monitor_uid': mon_uid
+    response = app.post_json('/rpc/get_monitor_data', params={
+        'nodenet_uid': test_nodenet
     })
-    assert response.json_body['data']['name'] == 'testmonitor'
-    assert response.json_body['data']['node_uids'] == uids
+    assert response.json_body['data']['monitors'][mon_uid]['name'] == 'testmonitor'
+    assert response.json_body['data']['monitors'][mon_uid]['node_uids'] == uids
 
 
 def test_remove_monitor(app, test_nodenet, node):
@@ -757,10 +751,10 @@ def test_remove_monitor(app, test_nodenet, node):
         'monitor_uid': uid
     })
     assert_success(response)
-    response = app.post_json('/rpc/export_monitor_data', params={
+    response = app.post_json('/rpc/get_monitor_data', params={
         'nodenet_uid': test_nodenet
     })
-    assert uid not in response.json_body['data']
+    assert uid not in response.json_body['data']['monitors']
 
 
 def test_clear_monitor(app, test_nodenet, node):
@@ -775,23 +769,6 @@ def test_clear_monitor(app, test_nodenet, node):
         'monitor_uid': uid
     })
     assert_success(response)
-
-
-def test_get_monitor_data(app, test_nodenet, node):
-    response = app.post_json('/rpc/add_gate_monitor', params={
-        'nodenet_uid': test_nodenet,
-        'node_uid': node,
-        'gate': 'sub'
-    })
-    uid = response.json_body['data']
-    response = app.post_json('/rpc/get_monitor_data', params={
-        'nodenet_uid': test_nodenet,
-        'step': 0,
-        'monitor_from': 3,
-        'monitor_count': 20
-    })
-    assert_success(response)
-    assert uid in response.json_body['data']['monitors']
 
 
 ###################################################
@@ -1395,8 +1372,8 @@ def test_nodenet_data_structure(app, test_nodenet, resourcepath, node):
     data = response_2.json_body['data']
 
     # Monitors
-    response = app.get_json('/rpc/export_monitor_data(nodenet_uid="%s", monitor_uid="%s")' % (test_nodenet, monitor_uid))
-    monitor_data = response.json_body['data']
+    response = app.get_json('/rpc/get_monitor_data(nodenet_uid="%s")' % test_nodenet)
+    monitor_data = response.json_body['data']['monitors'][monitor_uid]
 
     assert data['monitors']['monitors'][monitor_uid]['name'] == 'Testmonitor'
     assert data['monitors']['monitors'][monitor_uid]['node_uid'] == node

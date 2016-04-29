@@ -69,40 +69,7 @@ def clear_monitor(nodenet_uid, monitor_uid):
     return True
 
 
-def export_monitor_data(nodenet_uid, monitor_uid=None, monitor_from=0, monitor_count=-1):
-    """Returns a string with all currently stored monitor data for the given nodenet."""
-    nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
-    if monitor_from == 0 and monitor_count > 0:
-        monitor_count = min(nodenet.current_step + 1, monitor_count)
-        monitor_from = max(0, nodenet.current_step + 1 - monitor_count)
-    if monitor_from > 0:
-        if monitor_count < 1:
-            monitor_count = (nodenet.current_step + 1 - monitor_from)
-        elif monitor_from + monitor_count > nodenet.current_step:
-            monitor_from = max(nodenet.current_step + 1 - monitor_count, 0)
-    if monitor_uid is not None:
-        data = nodenet.construct_monitors_dict()[monitor_uid]
-        if monitor_from > 0 or monitor_count > 0:
-            values = {}
-            i = monitor_from
-            while i < monitor_count + monitor_from:
-                values[i] = data['values'].get(i)
-                i += 1
-            data['values'] = values
-    else:
-        data = nodenet.construct_monitors_dict()
-        if monitor_from > 0 or monitor_count > 0:
-            for uid in data:
-                values = {}
-                i = monitor_from
-                while i < monitor_count + monitor_from:
-                    values[i] = data[uid]['values'].get(i)
-                    i += 1
-                data[uid]['values'] = values
-    return data
-
-
-def get_monitor_data(nodenet_uid, step=0, monitor_from=0, monitor_count=-1):
+def get_monitor_data(nodenet_uid, step=0, from_step=0, count=-1, with_recorders=False):
     """Returns monitor and nodenet data for drawing monitor plots for the current step,
     if the current step is newer than the supplied calculation step."""
     nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
@@ -113,7 +80,34 @@ def get_monitor_data(nodenet_uid, step=0, monitor_from=0, monitor_count=-1):
     if step > data['current_step']:
         return data
     else:
-        data['monitors'] = micropsi_core.runtime.export_monitor_data(nodenet_uid, None, monitor_from=monitor_from, monitor_count=monitor_count)
+        monitor_data = {}
+        if from_step == 0 and count > 0:
+            count = min(nodenet.current_step + 1, count)
+            from_step = max(0, nodenet.current_step + 1 - count)
+        if from_step > 0:
+            if count < 1:
+                count = (nodenet.current_step + 1 - from_step)
+            elif from_step + count > nodenet.current_step:
+                from_step = max(nodenet.current_step + 1 - count, 0)
+        monitor_data = nodenet.construct_monitors_dict()
+        if from_step > 0 or count > 0:
+            for uid in monitor_data:
+                values = {}
+                i = from_step
+                while i < count + from_step:
+                    values[i] = monitor_data[uid]['values'].get(i)
+                    i += 1
+                monitor_data[uid]['values'] = values
+        data['monitors'] = monitor_data
+        if with_recorders:
+            # recorder_data = {}
+            # for uid in nodenet.construct_recorders_dict():
+            #     rec = nodenet.get_recorder(uid)
+            #     recorder_data[uid] = rec.get_data()
+            #     values = rec.values.tolist()
+            #     recorder_data[uid]['values'] = values[from_step + rec.first_step : from_step + count + rec.first_step]
+            # data['recorders'] = recorder_data
+            data['recorders'] = nodenet.construct_recorders_dict()
         return data
 
 

@@ -30,11 +30,11 @@ def test_activation_recorder(test_nodenet, resourcepath):
     filename = os.path.join(resourcepath, 'recorder.npz')
     recorder.save(filename=filename)
     assert os.path.isfile(filename)
-    assert recorder.values['activations'][1].tolist() == [1, 1, 0, 0, 0, 0, 0, 0, 0, 0]
+    assert recorder.values['activations'][1].tolist() == [1, 1, 1, 1, 0, 0, 0, 0, 0, 0]
     micropsi.save_nodenet(test_nodenet)
     micropsi.revert_nodenet(test_nodenet)
     recorder = netapi.get_recorder(recorder.uid)
-    assert recorder.values['activations'][1].tolist() == [1, 1, 0, 0, 0, 0, 0, 0, 0, 0]
+    assert recorder.values['activations'][1].tolist() == [1, 1, 1, 1, 0, 0, 0, 0, 0, 0]
 
 
 @pytest.mark.engine("theano_engine")
@@ -96,3 +96,20 @@ def test_remove_recorder(test_nodenet, resourcepath):
         micropsi.step_nodenet(test_nodenet)
     netapi.remove_recorder(recorder.uid)
     assert netapi.get_recorder(recorder.uid) is None
+
+
+@pytest.mark.engine("theano_engine")
+def test_grow_recorder_values(test_nodenet, resourcepath):
+    from micropsi_core.nodenet.recorder import Recorder
+    nodenet = micropsi.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    nodespace = netapi.get_nodespace(None)
+    for i in range(5):
+        netapi.create_node('Register', None, "testnode_%d" % i)
+    Recorder.initial_size = 5
+    recorder = netapi.add_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder")
+    micropsi.step_nodenet(test_nodenet)
+    assert len(recorder.values['activations']) == 5
+    for i in range(20):
+        micropsi.step_nodenet(test_nodenet)
+    assert len(recorder.values['activations'] == 25)

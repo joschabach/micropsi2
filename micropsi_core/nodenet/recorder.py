@@ -35,6 +35,7 @@ class Recorder(metaclass=ABCMeta):
         self.first_step = nodenet.current_step + 1
         self.shapes = {}
         self.values = {}
+        self.current_index = 0
         if os.path.isfile(self.filename):
             self.load()
 
@@ -44,6 +45,7 @@ class Recorder(metaclass=ABCMeta):
             "name": self.name,
             "interval": self.interval,
             "filename": self.filename,
+            "current_index": self.current_index,
             "first_step": self.first_step,
             "classname": self.__class__.__name__
         }
@@ -56,11 +58,14 @@ class Recorder(metaclass=ABCMeta):
                 if key not in self.values:
                     self.values[key] = np.zeros(shape=self.shapes[key], dtype=self._nodenet.numpyfloatX)
                 if step - self.first_step >= len(self.values[key]):
-                    self.shapes[key][0] += self.initial_size
+                    newshapes = list(self.shapes[key])
+                    newshapes[0] += self.initial_size
+                    self.shapes[key] = tuple(newshapes)
                     new_values = np.zeros(shape=self.shapes[key], dtype=self._nodenet.numpyfloatX)
-                    new_values[0:len(self.values[key])] = self.values
-                    self.values = new_values
-                self.values[key][step - self.first_step] = values[key]
+                    new_values[0:len(self.values[key])] = self.values[key]
+                    self.values[key] = new_values
+                self.values[key][self.current_index] = values[key]
+            self.current_index += 1
 
     @abstractmethod
     def get_values(self):

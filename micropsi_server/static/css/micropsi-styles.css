@@ -632,6 +632,10 @@ p.clear {
   font-size: 0.9em;
 }
 
+table th {
+  text-align: left;
+}
+
 #console_input {
   border-top: 0px none;
   border-left: 0px none;

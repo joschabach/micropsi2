@@ -56,9 +56,9 @@ $(function(){
         if(!target.hasClass('active')){
             var layout = target.attr('data');
             if(layout == 'vertical'){
-                $('.layout_field').addClass('span6');
+                $('.layout_field').addClass('span4');
             } else if(layout == 'horizontal'){
-                $('.layout_field').removeClass('span6');
+                $('.layout_field').removeClass('span4');
             }
             refreshMonitors();
             $('.layoutbtn').removeClass('active');
@@ -131,7 +131,8 @@ $(function(){
         var params = {
             logger: poll,
             after: last_logger_call,
-            monitor_count: viewProperties.xvalues
+            monitor_count: viewProperties.xvalues,
+            with_recorders: true
         }
         if(fixed_position){
             params['monitor_from'] = Math.max(fixed_position - (viewProperties.xvalues / 2), 1);
@@ -139,10 +140,62 @@ $(function(){
         return params;
     }
 
+    function setRecorderData(data){
+        var table = $('#recorder_table');
+        var html = '';
+        for(var uid in data){
+            var rec = data[uid];
+            html += '<tr><th colspan="3">'+rec.name+'</th></tr>';
+            html += '<tr><td>&nbsp;</td><td colspan="2">';
+            html += '<button data-action="export" data-uid="'+rec.uid+'">Export</button> ';
+            html += '<button data-action="clear" data-uid="'+rec.uid+'">Clear</button> ';
+            html += '<button data-action="delete" data-uid="'+rec.uid+'">Delete</button> ';
+            html += '</td></tr>'
+            html += '<tr><td>&nbsp;</td><td>Type:</td><td>'+rec.classname+'</td></tr>';
+            html += '<tr><td>&nbsp;</td><td>Entries:</td><td>'+(rec.current_index + 1)+'</td></tr>';
+            html += '<tr><td>&nbsp;</td><td>Interval:</td><td>'+rec.interval+'</td></tr>';
+            if(rec.group_config){
+                html += '<tr><td>&nbsp;</td><td>Group:</td><td>'+rec.group_config.group_name+'</td></tr>';
+            }
+            if(rec.from_group_config){
+                html += '<tr><td>&nbsp;</td><td>Groups:</td><td>From: '+rec.from_group_config.group_name+'<br/>To: '+rec.to_group_config.group_name+'</td></tr>';
+            }
+            html += '<tr><td>&nbsp;</td><td colspan="2">';
+
+            html += '</td></tr>';
+        }
+        table.html(html);
+        $('button', table).on('click', recorderAction);
+    }
+
+    function recorderAction(event){
+        var btn = $(event.target);
+        var uid = btn.attr("data-uid");
+        var method_name = null;
+        switch(btn.attr('data-action')){
+            case 'export':
+                // return self.location.href.replace('/recorder/export/'+currentNodenet+'/'+)
+                method_name = 'export_recorder'; break;
+            case 'clear':
+                method_name = 'clear_recorder'; break;
+            case 'delete':
+                method_name = 'remove_recorder'; break;
+        }
+        if(method_name){
+            api.call(method_name, {nodenet_uid: currentNodenet, recorder_uid: uid}, function(data){
+                api.defaultSuccessCallback(data);
+                refreshRecorders();
+            });
+        }
+    }
+
     function setData(data){
         currentSimulationStep = data.current_step;
         setMonitorData(data);
         setLoggingData(data);
+        if (data.recorders){
+            setRecorderData(data.recorders);
+        }
     }
 
     register_stepping_function('monitors', getPollParams, setData);
@@ -153,6 +206,10 @@ $(function(){
             params.nodenet_uid = newNodenet || currentNodenet;
             api.call('get_monitoring_info', params, setData);
         }
+    }
+
+    function refreshRecorders(){
+        api.call('get_recorders', {'nodenet_uid': currentNodenet}, setRecorderData);
     }
 
     function setMonitorData(data){

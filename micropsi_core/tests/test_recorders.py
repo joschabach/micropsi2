@@ -22,11 +22,12 @@ def test_activation_recorder(test_nodenet, resourcepath):
     netapi.link(source, 'gen', nodes[0], 'gen')
     source.activation = 1
     recorder = netapi.add_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder", interval=2)
-    assert recorder.first_step == 11
     assert recorder.name == 'recorder'
     assert recorder.interval == 2
     for i in range(5):
         micropsi.step_nodenet(test_nodenet)
+    assert recorder.first_step == 12
+    assert recorder.current_index == 1
     filename = os.path.join(resourcepath, 'recorder.npz')
     recorder.save(filename=filename)
     assert os.path.isfile(filename)

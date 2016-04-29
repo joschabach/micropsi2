@@ -1622,3 +1622,28 @@ def test_remove_recorder(app, test_nodenet, resourcepath):
     })
     assert_success(response)
     assert netapi.get_recorder(recorder.uid) is None
+
+
+@pytest.mark.engine("theano_engine")
+def test_get_recorders(app, test_nodenet):
+    from micropsi_core import runtime
+    nodenet = runtime.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    nodespace = netapi.get_nodespace(None)
+    for i in range(3):
+        netapi.create_node('Register', None, "testnode_%d" % i)
+    runtime.step_nodenet(test_nodenet)
+    recorder = netapi.add_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder", interval=3)
+    runtime.step_nodenet(test_nodenet)
+    runtime.step_nodenet(test_nodenet)
+    response = app.post_json('/rpc/get_recorders', {
+        'nodenet_uid': test_nodenet
+    })
+    data = response.json_body['data'][recorder.uid]
+    assert data["uid"] == recorder.uid
+    assert data["name"] == 'recorder'
+    assert data["interval"] == 3
+    assert data["filename"] == recorder.filename
+    assert data["current_index"] == 0
+    assert data["first_step"] == 3
+    assert data["classname"] == 'ActivationRecorder'

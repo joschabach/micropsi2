@@ -1059,8 +1059,8 @@ def export_monitor_data(nodenet_uid, monitor_uid=None):
 
 
 @rpc("get_monitor_data")
-def get_monitor_data(nodenet_uid, step, monitor_from=0, monitor_count=-1):
-    return True, runtime.get_monitor_data(nodenet_uid, step, monitor_from, monitor_count)
+def get_monitor_data(nodenet_uid, step=0, monitor_from=0, monitor_count=-1):
+    return True, runtime.get_monitor_data(nodenet_uid, step, from_step=monitor_from, count=monitor_count)
 
 
 # Nodenet
@@ -1260,6 +1260,10 @@ def clear_recorder(nodenet_uid, recorder_uid):
     """Leaves the recorder intact, but deletes the current list of stored values."""
     return runtime.clear_recorder(nodenet_uid, recorder_uid)
 
+
+@rpc("get_recorders")
+def get_recorders(nodenet_uid):
+    return runtime.get_recorder_data(nodenet_uid)
 
 # --------- logging --------
 

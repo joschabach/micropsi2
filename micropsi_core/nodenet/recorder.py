@@ -26,16 +26,16 @@ class Recorder(metaclass=ABCMeta):
 
     initial_size = 10000
 
-    def __init__(self, nodenet, name="", uid="", interval=1):
+    def __init__(self, nodenet, name="", uid="", interval=1, first_step=0, current_index=-1):
         self._nodenet = nodenet
         self.name = name
         self.uid = uid or tools.generate_uid()
         self.interval = interval
         self.filename = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, '%s_recorder_%s.npz' % (self._nodenet.uid, self.uid))
-        self.first_step = nodenet.current_step + 1
+        self.first_step = first_step
+        self.current_index = current_index
         self.shapes = {}
         self.values = {}
-        self.current_index = 0
         if os.path.isfile(self.filename):
             self.load()
 
@@ -53,10 +53,13 @@ class Recorder(metaclass=ABCMeta):
 
     def step(self, step):
         if step % self.interval == 0:
+            self.current_index += 1
             values = self.get_values()
             for key in values:
                 if key not in self.values:
+                    self.first_step = step
                     self.values[key] = np.zeros(shape=self.shapes[key], dtype=self._nodenet.numpyfloatX)
+                    self.values[key][:] = np.NAN
                 if step - self.first_step >= len(self.values[key]):
                     newshapes = list(self.shapes[key])
                     newshapes[0] += self.initial_size
@@ -65,7 +68,6 @@ class Recorder(metaclass=ABCMeta):
                     new_values[0:len(self.values[key])] = self.values[key]
                     self.values[key] = new_values
                 self.values[key][self.current_index] = values[key]
-            self.current_index += 1
 
     @abstractmethod
     def get_values(self):
@@ -90,8 +92,8 @@ class Recorder(metaclass=ABCMeta):
 class ActivationRecorder(Recorder):
     """ An activation recorder to record activaitons of nodegroups"""
 
-    def __init__(self, nodenet, group_config={}, name="", uid="", interval=1, **_):
-        super().__init__(nodenet, name, uid, interval)
+    def __init__(self, nodenet, group_config={}, name="", uid="", interval=1, first_step=0, current_index=-1, **_):
+        super().__init__(nodenet, name, uid, interval, first_step=first_step, current_index=current_index)
         if 'group_name' not in group_config:
             group_config['group_name'] = name
         self.group_config = group_config
@@ -120,8 +122,8 @@ class ActivationRecorder(Recorder):
 class LinkweightRecorder(Recorder):
     """ An activation recorder to biases and the linkweights of two nodegroups"""
 
-    def __init__(self, nodenet, from_group_config={}, to_group_config={}, name="", uid="", interval=1, **_):
-        super().__init__(nodenet, name, uid, interval)
+    def __init__(self, nodenet, from_group_config={}, to_group_config={}, name="", uid="", interval=1, first_step=0, current_index=-1, **_):
+        super().__init__(nodenet, name, uid, interval, first_step=first_step, current_index=current_index)
 
         if 'group_name' not in from_group_config:
             from_group_config['group_name'] = "%s_from" % name

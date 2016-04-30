@@ -72,3 +72,11 @@ class iiwa(ArrayWorldAdapter):
             tval = self.datatarget_values[i] * math.pi
             vrep.simxSetJointTargetPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
         vrep.simxPauseCommunication(self.world.clientID, False)
+
+        res, joint_ids, something, data, se = vrep.simxGetObjectGroupData(self.world.clientID, vrep.sim_object_joint_type, 15, vrep.simx_opmode_blocking)
+        self.datatarget_feedback_values = [0] * len(self.available_datatargets)
+        for i, joint_handle in enumerate(self.world.joints):
+            tval = self.datatarget_values[i]
+            rval = data[i*2] / math.pi
+            if abs(rval) - abs(tval) < .0001:
+                self.datatarget_feedback_values[i] = 1

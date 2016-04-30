@@ -111,7 +111,7 @@ class iiwa(ArrayWorldAdapter):
         res, resolution, image = vrep.simxGetVisionSensorImage(self.world.clientID, self.world.observer_handle, 0, vrep.simx_opmode_buffer)
         rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (self.world.vision_resolution[0]*self.world.vision_resolution[1], 3)).astype(np.float32)
         rgb_image /= 255.
-        y_image = np.asarray([.2126 * px[0] + .7152 * px[1] + .0722 * px[2] for px in rgb_image])[::-1]   # todo: npyify and make faster
+        y_image = np.asarray([.2126 * px[0] + .7152 * px[1] + .0722 * px[2] for px in rgb_image]).astype(np.float32)[::-1]   # todo: npyify and make faster
 
         self.datasource_values = y_image
 

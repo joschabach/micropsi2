@@ -1,6 +1,7 @@
 import math
-import os
+import time
 import logging
+import numpy as np
 from micropsi_core.world.iiwasim import vrep
 from micropsi_core.world.iiwasim import vrepConst
 from micropsi_core.world.world import World
@@ -53,7 +54,13 @@ class iiwasim(World):
             if res != 0 and res != 1:
                 self.handle_res(res)
             else:
+                time.sleep(1)
+                res, resolution, image = vrep.simxGetVisionSensorImage(self.clientID, self.observer_handle, 0, vrep.simx_opmode_buffer)
                 self.vision_resolution = resolution
+                if len(resolution) != 2:
+                    raise Exception("Could not determine vision resolution after 1 second wait time.")
+                else:
+                    self.logger.info("Vision resolution is %s" % str(self.vision_resolution))
 
     def handle_res(self, res):
         if res != vrep.simx_return_ok:
@@ -71,6 +78,10 @@ class iiwa(ArrayWorldAdapter):
 
         for i in range(len(self.world.joints)):
             self.available_datatargets.append("joint_%s" % str(i+1))
+
+        for y in range(self.world.vision_resolution[1]):
+            for x in range(self.world.vision_resolution[0]):
+                self.available_datasources.append("px_%d_%d" % (x, y))
 
     def get_available_datasources(self):
         return self.available_datasources
@@ -98,4 +109,8 @@ class iiwa(ArrayWorldAdapter):
             return
 
         res, resolution, image = vrep.simxGetVisionSensorImage(self.world.clientID, self.world.observer_handle, 0, vrep.simx_opmode_buffer)
-        print(len(image))
+        rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (self.world.vision_resolution[0]*self.world.vision_resolution[1], 3)).astype(np.float32)
+        rgb_image /= 255.
+        y_image = [.2126 * px[0] + .7152 * px[1] + .0722 * px[2] for px in rgb_image]   # todo: npyify and make faster
+
+        self.datasource_values = y_image

@@ -44,9 +44,21 @@ class iiwasim(World):
         if len(self.joints) != 7:
             raise Exception("Could not get handles for all 7 joints of the LBR_iiwa_7_R800.")
 
+        res, self.observer_handle = vrep.simxGetObjectHandle(self.clientID, "Observer", vrep.simx_opmode_blocking)
+        self.handle_res(res)
+        if self.observer_handle == 0:
+            self.logger.warn("Could not get handle for Observer vision sensor, vision will not be available.")
+        else:
+            res, resolution, image = vrep.simxGetVisionSensorImage(self.clientID, self.observer_handle, 0, vrep.simx_opmode_streaming) # _split+4000)
+            if res != 0 and res != 1:
+                self.handle_res(res)
+            else:
+                self.vision_resolution = resolution
+
     def handle_res(self, res):
         if res != vrep.simx_return_ok:
-            self.logger.warn("v-rep call returned error code %d" % res)
+            error = vrep.simxGetLastErrors(self.clientID, vrep.simx_opmode_blocking)
+            self.logger.warn("v-rep call returned error code %d, error: %s" % (res, error))
 
 
 class iiwa(ArrayWorldAdapter):
@@ -80,3 +92,10 @@ class iiwa(ArrayWorldAdapter):
             rval = data[i*2] / math.pi
             if abs(rval) - abs(tval) < .0001:
                 self.datatarget_feedback_values[i] = 1
+
+        # if no observer present, don't query vision data
+        if self.world.observer_handle == 0:
+            return
+
+        res, resolution, image = vrep.simxGetVisionSensorImage(self.world.clientID, self.world.observer_handle, 0, vrep.simx_opmode_buffer)
+        print(len(image))

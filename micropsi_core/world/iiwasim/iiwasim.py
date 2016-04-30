@@ -69,6 +69,6 @@ class iiwa(ArrayWorldAdapter):
     def update_data_sources_and_targets(self):
         vrep.simxPauseCommunication(self.world.clientID, True)
         for i, joint_handle in enumerate(self.world.joints):
-            tval = self.datatarget_values[i]
+            tval = self.datatarget_values[i] * math.pi
             vrep.simxSetJointTargetPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
         vrep.simxPauseCommunication(self.world.clientID, False)

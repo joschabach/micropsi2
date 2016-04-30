@@ -78,6 +78,10 @@ class iiwa(ArrayWorldAdapter):
 
         for i in range(len(self.world.joints)):
             self.available_datatargets.append("joint_%s" % str(i+1))
+            self.available_datasources.append("joint_force_%s" % str(i+1))
+
+        self.image_offset = len(self.world.joints)
+        self.image_length = self.world.vision_resolution[0] * self.world.vision_resolution[1]
 
         for y in range(self.world.vision_resolution[1]):
             for x in range(self.world.vision_resolution[0]):
@@ -98,11 +102,14 @@ class iiwa(ArrayWorldAdapter):
 
         res, joint_ids, something, data, se = vrep.simxGetObjectGroupData(self.world.clientID, vrep.sim_object_joint_type, 15, vrep.simx_opmode_blocking)
         self.datatarget_feedback_values = [0] * len(self.available_datatargets)
+        self.datasource_values = [0] * (self.image_offset + self.image_length)
         for i, joint_handle in enumerate(self.world.joints):
             tval = self.datatarget_values[i]
             rval = data[i*2] / math.pi
             if abs(rval) - abs(tval) < .0001:
                 self.datatarget_feedback_values[i] = 1
+            force = data[i*2 + 1]
+            self.datasource_values[i] = force
 
         # if no observer present, don't query vision data
         if self.world.observer_handle == 0:
@@ -113,7 +120,7 @@ class iiwa(ArrayWorldAdapter):
         rgb_image /= 255.
         y_image = np.asarray([.2126 * px[0] + .7152 * px[1] + .0722 * px[2] for px in rgb_image]).astype(np.float32)[::-1]   # todo: npyify and make faster
 
-        self.datasource_values = y_image
+        self.datasource_values[self.image_offset:len(self.datasource_values)-1] = y_image
 
         # images for debug purposes, should later be used in the world's GUI
         # maybe use matplotlib instead of PIL?

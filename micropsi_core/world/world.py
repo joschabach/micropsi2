@@ -363,3 +363,9 @@ except ImportError as e:
         pass
     else:
         sys.stdout.write("Could not import timeseries world.\nError: %s \n\n" % e.msg)
+
+
+try:
+    from micropsi_core.world.iiwasim import iiwasim
+except ImportError as e:
+    sys.stdout.write("Could not import iiwasim world.\nError: %s \n\n" % e.msg)

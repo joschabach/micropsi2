@@ -70,7 +70,7 @@ class iiwa(ArrayWorldAdapter):
         self.available_datasources = []
 
         for i in range(len(self.world.joints)):
-            self.available_datatargets.append("joint_%d" % i)
+            self.available_datatargets.append("joint_%s" % str(i+1))
 
     def get_available_datasources(self):
         return self.available_datasources

@@ -37,7 +37,7 @@ class iiwasim(World):
 
         res, self.iiwa_handle = vrep.simxGetObjectHandle(self.clientID, "LBR_iiwa_7_R800", vrep.simx_opmode_blocking)
         self.handle_res(res)
-        if self.iiwa_handle == 0:
+        if self.iiwa_handle < 1:
             raise Exception("There seems to be no robot with the name LBR_iiwa_7_R800 in the v-rep simulation.")
 
         res, self.joints = vrep.simxGetObjects(self.clientID, vrep.sim_object_joint_type, vrep.simx_opmode_blocking)
@@ -45,9 +45,21 @@ class iiwasim(World):
         if len(self.joints) != 7:
             raise Exception("Could not get handles for all 7 joints of the LBR_iiwa_7_R800.")
 
+        res, self.ball_handle = vrep.simxGetObjectHandle(self.clientID, "Ball", vrep.simx_opmode_blocking)
+        self.handle_res(res)
+        if self.ball_handle < 1:
+            self.logger.warn("Could not get handle for Ball object, reward values will not be available.")
+        else:
+            res, _ = vrep.simxGetObjectPosition(self.clientID, self.ball_handle, -1, vrep.simx_opmode_streaming)
+            if res != 0 and res != 1:
+                self.handle_res(res)
+            res, _ = vrep.simxGetObjectPosition(self.clientID, self.joints[6], -1, vrep.simx_opmode_streaming)
+            if res != 0 and res != 1:
+                self.handle_res(res)
+
         res, self.observer_handle = vrep.simxGetObjectHandle(self.clientID, "Observer", vrep.simx_opmode_blocking)
         self.handle_res(res)
-        if self.observer_handle == 0:
+        if self.observer_handle < 1:
             self.logger.warn("Could not get handle for Observer vision sensor, vision will not be available.")
         else:
             res, resolution, image = vrep.simxGetVisionSensorImage(self.clientID, self.observer_handle, 0, vrep.simx_opmode_streaming) # _split+4000)
@@ -76,11 +88,24 @@ class iiwa(ArrayWorldAdapter):
         self.available_datatargets = []
         self.available_datasources = []
 
-        for i in range(len(self.world.joints)):
-            self.available_datatargets.append("joint_%s" % str(i+1))
-            self.available_datasources.append("joint_force_%s" % str(i+1))
+        self.available_datasources.append("reward")
+        self.available_datatargets.append("reset")
 
-        self.image_offset = len(self.world.joints)
+        for i in range(len(self.world.joints)):
+            self.available_datatargets.append("joint_%s" % str(i + 1))
+
+        for i in range(len(self.world.joints)):
+            self.available_datasources.append("joint_angle_%s" % str(i + 1))
+
+        for i in range(len(self.world.joints)):
+            self.available_datasources.append("joint_force_%s" % str(i + 1))
+
+        self.reset_offset = 0
+        self.joint_offset = 1
+        self.reward_offset = 0
+        self.joint_angle_offset = 1
+        self.joint_force_offset = self.joint_angle_offset + len(self.world.joints)
+        self.image_offset = self.joint_force_offset + len(self.world.joints)
         self.image_length = self.world.vision_resolution[0] * self.world.vision_resolution[1]
 
         for y in range(self.world.vision_resolution[1]):
@@ -94,23 +119,43 @@ class iiwa(ArrayWorldAdapter):
         return self.available_datatargets
 
     def update_data_sources_and_targets(self):
+
+        if self.datatarget_values[self.reset_offset] > 0.9:
+            vrep.simxStopSimulation(self.world.clientID, vrep.simx_opmode_oneshot)
+            time.sleep(1)
+            vrep.simxStartSimulation(self.world.clientID, vrep.simx_opmode_oneshot)
+            return
+
+        # send joint target values
         vrep.simxPauseCommunication(self.world.clientID, True)
         for i, joint_handle in enumerate(self.world.joints):
-            tval = self.datatarget_values[i] * math.pi
+            tval = self.datatarget_values[self.joint_offset + i] * math.pi
             vrep.simxSetJointTargetPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
         vrep.simxPauseCommunication(self.world.clientID, False)
 
-        res, joint_ids, something, data, se = vrep.simxGetObjectGroupData(self.world.clientID, vrep.sim_object_joint_type, 15, vrep.simx_opmode_blocking)
+        # get data and feedback
         self.datatarget_feedback_values = [0] * len(self.available_datatargets)
-        self.datasource_values = [0] * (self.image_offset + self.image_length)
-        for i, joint_handle in enumerate(self.world.joints):
-            tval = self.datatarget_values[i]
-            rval = data[i*2] / math.pi
-            if abs(rval) - abs(tval) < .0001:
-                self.datatarget_feedback_values[i] = 1
-            force = data[i*2 + 1]
-            self.datasource_values[i] = force
+        self.datasource_values = [0] * len(self.available_datasources)
 
+        # read reward value
+        if self.world.ball_handle > 0:
+            res, ball_pos = vrep.simxGetObjectPosition(self.world.clientID, self.world.ball_handle, -1, vrep.simx_opmode_buffer)
+            res, joint_pos = vrep.simxGetObjectPosition(self.world.clientID, self.world.joints[6], -1, vrep.simx_opmode_streaming)
+            dist = np.linalg.norm(np.array(ball_pos) - np.array(joint_pos))
+            self.datasource_values[self.reset_offset] = -dist
+
+        # read joint angle and force values
+        res, joint_ids, something, data, se = vrep.simxGetObjectGroupData(self.world.clientID, vrep.sim_object_joint_type, 15, vrep.simx_opmode_blocking)
+        for i, joint_handle in enumerate(self.world.joints):
+            target_angle = self.datatarget_values[self.joint_offset + i]
+            angle = data[i*2] / math.pi
+            force = data[i*2 + 1]
+            if abs(angle) - abs(target_angle) < .0001:
+                self.datatarget_feedback_values[self.joint_offset + i] = 1
+            self.datasource_values[self.joint_angle_offset + i] = angle
+            self.datasource_values[self.joint_force_offset + i] = force
+
+        # read vision data
         # if no observer present, don't query vision data
         if self.world.observer_handle == 0:
             return

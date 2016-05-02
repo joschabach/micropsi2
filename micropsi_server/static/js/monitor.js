@@ -44,6 +44,79 @@ $(function(){
     var showStepInLog = true;
     var logs_to_add = [];
 
+    var rec_modal = $('#recorder_modal');
+    var rec_type_dd = $('#recorder_type_input');
+    rec_type_dd.on('change', function(event){
+        var type = rec_type_dd.val();
+        $('fieldset.recorder_specific').hide();
+        $('fieldset.'+type).show();
+    })
+    $('.add_recorder').on('click', function(event){
+        event.preventDefault();
+        api.call('get_nodespace_list', {nodenet_uid: currentNodenet}, function(data){
+            var html = '';
+            for(uid in data){
+                html += '<option value="'+uid+'">'+data[uid].name+'</option>';
+            }
+            $('.recorder_nodespace_dropdown').html(html);
+            rec_type_dd.trigger('change');
+            rec_modal.modal('show');
+        });
+    })
+    $('.btn-primary', rec_modal).on('click', function(event){
+        var params = {
+            nodenet_uid: currentNodenet,
+            interval: parseInt($('#recorder_interval').val()),
+            name: $('#recorder_name').val(),
+        };
+        var type = $('#recorder_type_input').val();
+        var method = null;
+        if(type == 'activation_recorder'){
+            method = 'add_activation_recorder';
+            params['group_definition'] = {
+                'nodespace_uid': $('#recorder_nodespace_uid').val(),
+                'gatetype': $('#recorder_gate').val(),
+            }
+            var ids = $('#recorder_node_uids').val();
+            if(ids){
+                ids = ids.split(',')
+                for(var i in ids){
+                    ids[i] = ids[i].trim();
+                }
+                params.group_definition['node_uids'] = ids;
+            } else{
+                params.group_definition['node_name_prefix'] = $('#recorder_node_name_prefix').val();
+            }
+        } else if(type == 'linkweight_recorder') {
+            method = "add_linkweight_recorder";
+            params['from_group_definition'] = {
+                'nodespace_uid': $('#recorder_from_nodespace_uid').val(),
+                'gatetype': $('#recorder_from_gate').val(),
+            }
+            var ids = $('#recorder_from_node_uids');
+            if(ids.val()){
+                params.from_group_definition['node_uids'] = ids.split(',')
+            } else{
+                params.from_group_definition['node_name_prefix'] = $('#recorder_from_node_name_prefix').val();
+            }
+            params['to_group_definition'] = {
+                'nodespace_uid': $('#recorder_to_nodespace_uid').val(),
+                'gatetype': $('#recorder_to_gate').val(),
+            }
+            var ids = $('#recorder_to_node_uids');
+            if(ids.val()){
+                params.to_group_definition['node_uids'] = ids.split(',')
+            } else{
+                params.to_group_definition['node_name_prefix'] = $('#recorder_to_node_name_prefix').val();
+            }
+        }
+        api.call(method, params, function(){
+            rec_modal.modal('hide');
+            api.defaultSuccessCallback();
+            refreshRecorders();
+        });
+    })
+
     init();
 
     if(!$('#nodenet_editor').length && currentNodenet){

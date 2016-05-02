@@ -119,8 +119,129 @@
                     <table id="recorder_table" class="table-striped table-condensed">
                     </table>
                 </div>
+                <div class="section">
+                    <p class="monitor_list">
+                        <button class="add_recorder btn btn-small">Add recorder</button>
+                    </p>
+                </div>
             </div>
             <p style="clear:both">&nbsp;</p>
         </div>
+    </div>
+</div>
+
+<div class="modal hide" id="recorder_modal">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">×</button>
+        <h3 class="title">Add Recorder</h3>
+    </div>
+    <div class="modal-body">
+        <form class="form-horizontal">
+            <fieldset>
+            <div class="control-group">
+                <label class="control-label" for="recorder_type_input">Type:</label>
+                <div class="controls">
+                    <select id="recorder_type_input">
+                        <option value="activation_recorder">Activation recorder</option>
+                        <option value="linkweight_recorder">Linkweight recorder</option>
+                    </select>
+                </div>
+            </div>
+            </fieldset>
+            <fieldset class="activation_recorder recorder_specific">
+                <legend>Nodes</legend>
+                <div class="control-group">
+                    <label class="control-label" for="recorder_nodespace_uid">Nodespace</label>
+                    <div class="controls">
+                    <select class="recorder_nodespace_dropdown" id="recorder_nodespace_uid"></select>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="recorder_node_uids">Node uids</label>
+                    <div class="controls">
+                        <input type="text" id="recorder_node_uids"/>
+                    </div>
+                    <label class="control-label" for="recorder_node_name_prefix">or name prefix</label>
+                    <div class="controls">
+                        <input type="text" id="recorder_node_name_prefix"/>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="recorder_gate">Gate</label>
+                    <div class="controls">
+                        <input type="text" id="recorder_gate" value="gen"/>
+                    </div>
+                </div>
+            </fieldset>
+            <fieldset class="linkweight_recorder recorder_specific">
+                <legend>From nodes</legend>
+                <div class="control-group">
+                    <label class="control-label" for="recorder_from_nodespace_uid">Nodespace</label>
+                    <div class="controls">
+                    <select class="recorder_nodespace_dropdown" id="recorder_from_nodespace_uid"></select>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="recorder_from_node_uids">Node uids</label>
+                    <div class="controls">
+                        <input type="text" id="recorder_from_node_uids"/>
+                    </div>
+                    <label class="control-label" for="recorder_from_node_name_prefix">or name prefix</label>
+                    <div class="controls">
+                        <input type="text" id="recorder_from_node_name_prefix"/>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="recorder_from_gate">Gate</label>
+                    <div class="controls">
+                        <input type="text" id="recorder_from_gate" value="gen"/>
+                    </div>
+                </div>
+            </fieldset>
+            <fieldset class="linkweight_recorder recorder_specific">
+                <legend>To nodes</legend>
+                <div class="control-group">
+                    <label class="control-label" for="recorder_to_nodespace_uid">Nodespace</label>
+                    <div class="controls">
+                    <select class="recorder_nodespace_dropdown" id="recorder_to_nodespace_uid"></select>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="recorder_to_node_uids">Node uids</label>
+                    <div class="controls">
+                        <input type="text" id="recorder_to_node_uids"/>
+                    </div>
+                    <label class="control-label" for="recorder_to_node_name_prefix">or name prefix</label>
+                    <div class="controls">
+                        <input type="text" id="recorder_to_node_name_prefix"/>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="recorder_to_slot">Slot</label>
+                    <div class="controls">
+                        <input type="text" id="recorder_to_slot" value="gen"/>
+                    </div>
+                </div>
+            </fieldset>
+            <fieldset>
+                <legend>Recorder</legend>
+                <div class="control-group activation_recorder">
+                    <label class="control-label" for="recorder_interval">Interval</label>
+                    <div class="controls">
+                        <input type="text" id="recorder_interval" value="1"/>
+                    </div>
+                </div>
+                <div class="control-group activation_recorder">
+                    <label class="control-label" for="recorder_name">Name</label>
+                    <div class="controls">
+                        <input type="text" id="recorder_name" value=""/>
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button class="btn" data-dismiss="modal">Close</button>
+        <button class="btn btn-primary">Add Recorder</button>
     </div>
 </div>

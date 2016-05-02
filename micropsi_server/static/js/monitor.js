@@ -147,9 +147,9 @@ $(function(){
             var rec = data[uid];
             html += '<tr><th colspan="3">'+rec.name+'</th></tr>';
             html += '<tr><td>&nbsp;</td><td colspan="2">';
-            html += '<button data-action="export" data-uid="'+rec.uid+'">Export</button> ';
-            html += '<button data-action="clear" data-uid="'+rec.uid+'">Clear</button> ';
-            html += '<button data-action="delete" data-uid="'+rec.uid+'">Delete</button> ';
+            html += '<button data-action="export" data-uid="'+rec.uid+'" class="btn btn-small">Export</button> ';
+            html += '<button data-action="clear" data-uid="'+rec.uid+'" class="btn btn-small">Clear</button> ';
+            html += '<button data-action="delete" data-uid="'+rec.uid+'" class="btn btn-small">Delete</button> ';
             html += '</td></tr>'
             html += '<tr><td>&nbsp;</td><td>Type:</td><td>'+rec.classname+'</td></tr>';
             html += '<tr><td>&nbsp;</td><td>Entries:</td><td>'+(rec.current_index + 1)+'</td></tr>';
@@ -581,5 +581,4 @@ $(function(){
                 .attr("d", line);
         }
     }
-
 });

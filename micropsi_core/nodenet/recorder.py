@@ -152,7 +152,7 @@ class LinkweightRecorder(Recorder):
         if not to_group_config.get('node_uids', []):
             self._nodenet.group_nodes_by_names(**to_group_config)
         else:
-            self.nodenet.group_nodes_by_ids(**to_group_config)
+            self._nodenet.group_nodes_by_ids(**to_group_config)
 
         weights = self._nodenet.get_link_weights(self.from_nodespace, self.from_name, self.to_nodespace, self.to_name)
         from_uids = self._nodenet.get_node_uids(self.from_nodespace, self.from_name)

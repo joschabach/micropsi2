@@ -139,3 +139,7 @@ def clear_recorder(nodenet_uid, recorder_uid):
 
 def get_recorder_data(nodenet_uid):
     return True, micropsi_core.runtime.get_nodenet(nodenet_uid).construct_recorders_dict()
+
+
+def get_recorder(nodenet_uid, recorder_uid):
+    return micropsi_core.runtime.get_nodenet(nodenet_uid).get_recorder(recorder_uid)

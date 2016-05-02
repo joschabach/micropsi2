@@ -563,6 +563,13 @@ def export_nodenet(nodenet_uid):
 #     return json.dumps(data['values'], sort_keys=True, indent=2)
 
 
+@micropsi_app.route("/recorder/export/<nodenet_uid>-<recorder_uid>")
+def export_monitor(nodenet_uid, recorder_uid):
+    recorder = runtime.get_recorder(nodenet_uid, recorder_uid)
+    recorder.save()
+    return static_file(os.path.basename(recorder.filename), root=os.path.dirname(recorder.filename), download='recorder_%s.npz' % recorder.name)
+
+
 @micropsi_app.route("/nodenet/edit")
 def edit_nodenet():
     user_id, permissions, token = get_request_data()

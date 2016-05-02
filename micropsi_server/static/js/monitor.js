@@ -174,8 +174,7 @@ $(function(){
         var method_name = null;
         switch(btn.attr('data-action')){
             case 'export':
-                // return self.location.href.replace('/recorder/export/'+currentNodenet+'/'+)
-                method_name = 'export_recorder'; break;
+                return window.location.replace('/recorder/export/'+currentNodenet+'-'+uid);
             case 'clear':
                 method_name = 'clear_recorder'; break;
             case 'delete':

@@ -4,7 +4,7 @@
     <div class="sectionbar">
         <form class="navbar-form">
             <div class="pull-right">
-                <button data="vertical" class="layoutbtn btn active">◫</button>
+                <button data="vertical" class="layoutbtn btn">◫</button>
                 <button data="horizontal" class="layoutbtn btn" style="-webkit-transform: rotate(-90deg);
                         -moz-transform: rotate(-90deg);
                         -ms-transform: rotate(-90deg);
@@ -34,7 +34,7 @@
 
     <div id="monitor" class="section-margin frontend_section collapse in">
         <div class="section multiple">
-            <div class="monitor_field layout_field span4">
+            <div class="monitor_field layout_field">
                 <h4>Monitors</h4>
                 <div class="contentbox section">
                     <div id="graph"></div>
@@ -59,7 +59,7 @@
                     </div>
                 </div>
             </div>
-            <div class="logger_field layout_field span4">
+            <div class="logger_field layout_field">
                 <h4>Logs</h4>
                 <div class="contentbox section">
                     <div id="logs"></div>
@@ -113,18 +113,20 @@
                     </div>
                 </div>
             </div>
-            <div class="recorder_field layout_field span4">
-                <h4>Recorders</h4>
-                <div class="contentbox section">
-                    <table id="recorder_table" class="table-striped table-condensed">
-                    </table>
+            % if theano_available:
+                <div class="recorder_field layout_field">
+                    <h4>Recorders</h4>
+                    <div class="contentbox section">
+                        <table id="recorder_table" class="table-striped table-condensed">
+                        </table>
+                    </div>
+                    <div class="section">
+                        <p class="monitor_list">
+                            <button class="add_recorder btn btn-small">Add recorder</button>
+                        </p>
+                    </div>
                 </div>
-                <div class="section">
-                    <p class="monitor_list">
-                        <button class="add_recorder btn btn-small">Add recorder</button>
-                    </p>
-                </div>
-            </div>
+            % end
             <p style="clear:both">&nbsp;</p>
         </div>
     </div>

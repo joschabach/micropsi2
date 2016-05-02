@@ -44,6 +44,14 @@ bottle.debug(cfg['micropsi2'].get('debug', False))  # devV
 bottle.TEMPLATE_PATH.insert(0, os.path.join(APP_PATH, 'view', ''))
 bottle.TEMPLATE_PATH.insert(1, os.path.join(APP_PATH, 'static', ''))
 
+theano_available = True
+try:
+    import theano
+except ImportError:
+    theano_available = False
+
+bottle.BaseTemplate.defaults['theano_available'] = theano_available
+
 # runtime = micropsi_core.runtime.MicroPsiRuntime()
 usermanager = usermanagement.UserManager()
 
@@ -568,18 +576,12 @@ def edit_nodenet():
     # nodenet_id = request.params.get('id', None)
     title = 'Edit Nodenet' if id is not None else 'New Nodenet'
 
-    theano_available = True
-    try:
-        import theano
-    except ImportError:
-        theano_available = False
-
     return template("nodenet_form.tpl", title=title,
         # nodenet_uid=nodenet_uid,
         nodenets=runtime.get_available_nodenets(),
         templates=runtime.get_available_nodenets(),
         worlds=runtime.get_available_worlds(),
-        version=VERSION, user_id=user_id, permissions=permissions, theano_available=theano_available)
+        version=VERSION, user_id=user_id, permissions=permissions)
 
 
 @micropsi_app.route("/nodenet/edit", method="POST")

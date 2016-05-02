@@ -123,21 +123,28 @@ $(function(){
         refreshMonitors();
     }
 
+    var splitviewclass = 'span6';
+    if(theano_available){
+        splitviewclass = 'span4'
+    }
+
+    var count_sections = $('.layout_field').length;
     $('.layoutbtn').on('click', function(event){
         event.preventDefault();
         var target = $(event.target);
         if(!target.hasClass('active')){
             var layout = target.attr('data');
             if(layout == 'vertical'){
-                $('.layout_field').addClass('span4');
+                $('.layout_field').addClass(splitviewclass);
             } else if(layout == 'horizontal'){
-                $('.layout_field').removeClass('span4');
+                $('.layout_field').removeClass(splitviewclass);
             }
             refreshMonitors();
             $('.layoutbtn').removeClass('active');
             target.addClass('active');
         }
     })
+    $('.layoutbtn[data="vertical"]').trigger('click');
 
     $('#monitor_x_axis').on('change', function(){
         viewProperties.xvalues = parseInt($('#monitor_x_axis').val());

@@ -3020,7 +3020,8 @@ function selectOperation(name){
             '</div>';
         }
         $('fieldset', modal).html(html);
-        var run = function(){
+        var run = function(event){
+            event.preventDefault();
             data = $('form', modal).serializeArray();
             parameters = {};
             for(var i=0; i < data.length; i++){
@@ -3048,6 +3049,7 @@ function runOperation(name, params){
         'parameters': params || {},
         'selection_uids': selection_uids}, function(data){
             refreshNodespace();
+            $(document).trigger('runner_stepped')
             if(!$.isEmptyObject(data)){
                 html = '';
                 if(data.content_type && data.content_type.indexOf("image") > -1){

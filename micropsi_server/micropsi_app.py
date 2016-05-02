@@ -555,14 +555,6 @@ def export_nodenet(nodenet_uid):
     return runtime.export_nodenet(nodenet_uid)
 
 
-# @micropsi_app.route("/monitor/export/<nodenet_uid>-<monitor_uid>")
-# def export_monitor(nodenet_uid, monitor_uid):
-#     data = runtime.export_monitor_data(nodenet_uid, monitor_uid)
-#     response.set_header('Content-type', 'application/json')
-#     response.set_header('Content-Disposition', 'attachment; filename="monitor_%s.json"' % data['name'])
-#     return json.dumps(data['values'], sort_keys=True, indent=2)
-
-
 @micropsi_app.route("/recorder/export/<nodenet_uid>-<recorder_uid>")
 def export_monitor(nodenet_uid, recorder_uid):
     recorder = runtime.get_recorder(nodenet_uid, recorder_uid)

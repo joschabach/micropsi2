@@ -318,8 +318,7 @@ $(function(){
                 html += ' checked="checked"';
             }
             html += ' /> <label for="'+mon.uid+'" style="display:inline;color:'+mon.color+'"><strong>' + mon.name + '</strong></label>';
-            html += ' <a href="#" class="delete_monitor monitor_action" title="delete monitor" data="'+mon.uid+'"><i class="icon-trash"></i></a>';
-            html += ' <a href="/monitor/export/'+currentNodenet+'-'+mon.uid+'" class="monitor_action" title="export monitor"><i class="icon-download-alt"></i></a></li>';
+            html += ' <a href="#" class="delete_monitor monitor_action" title="delete monitor" data="'+mon.uid+'"><i class="icon-trash"></i></a></li>';
             monitor_list_items.push(mon.uid);
         }
         list.html(html);

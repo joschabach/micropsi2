@@ -142,10 +142,14 @@ class iiwa(ArrayWorldAdapter):
             res, ball_pos = vrep.simxGetObjectPosition(self.world.clientID, self.world.ball_handle, -1, vrep.simx_opmode_buffer)
             res, joint_pos = vrep.simxGetObjectPosition(self.world.clientID, self.world.joints[6], -1, vrep.simx_opmode_streaming)
             dist = np.linalg.norm(np.array(ball_pos) - np.array(joint_pos))
-            self.datasource_values[self.reset_offset] = -dist
+            self.datasource_values[self.reward_offset] = -dist
 
         # read joint angle and force values
         res, joint_ids, something, data, se = vrep.simxGetObjectGroupData(self.world.clientID, vrep.sim_object_joint_type, 15, vrep.simx_opmode_blocking)
+        if len(data) != 14:
+            self.world.logger.warn("Could not get robot state values, skipping update")
+            return
+
         for i, joint_handle in enumerate(self.world.joints):
             target_angle = self.datatarget_values[self.joint_offset + i]
             angle = data[i*2] / math.pi

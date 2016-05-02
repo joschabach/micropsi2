@@ -75,13 +75,17 @@ class Recorder(metaclass=ABCMeta):
 
     def save(self, filename=None):
         values = self.values
+        if values == {}:
+            values['uid'] = self.uid  # empty files cannot be loaded
         np.savez(filename if filename is not None else self.filename, **values)
+
 
     def load(self, filename=None):
         data = np.load(filename if filename is not None else self.filename)
         for key in data:
-            self.values[key] = data[key]
-            self.shapes[key] = data[key].shape
+            if key != 'uid':
+                self.values[key] = data[key]
+                self.shapes[key] = data[key].shape
 
     def clear(self):
         self.values = {}

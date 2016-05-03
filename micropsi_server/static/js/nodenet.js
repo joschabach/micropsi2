@@ -2823,6 +2823,8 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
              '<li><a href="#">Rename node</a></li>' +
              '<li><a href="#">Delete node</a></li>' +
              '<li data-copy-nodes><a href="#">Copy node</a></li>';
+
+    html += getOperationsDropdownHTML([node.type], 1);
     menu.html(html);
     openContextMenu(menu_id, event);
 }

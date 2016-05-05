@@ -2,8 +2,13 @@ import math
 import time
 import logging
 import numpy as np
+import matplotlib
+matplotlib.use('agg')
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
+
+from io import BytesIO
+import base64
 
 from micropsi_core.world.vrep_world import vrep
 from micropsi_core.world.vrep_world import vrepConst
@@ -18,6 +23,11 @@ class vrep_world(World):
         - simExtRemoteApiStart(19999) has to have been run
         - the simulation must have been started
     """
+
+    assets = {
+        'template': 'vrep/vrep.tpl',
+        'js': "vrep/vrep.js",
+    }
 
     supported_worldadapters = ['iiwa']
 
@@ -79,6 +89,22 @@ class vrep_world(World):
         if res != vrep.simx_return_ok:
             error = vrep.simxGetLastErrors(self.clientID, vrep.simx_opmode_blocking)
             self.logger.warn("v-rep call returned error code %d, error: %s" % (res, error))
+
+    def get_world_view(self, step):
+        plots = {}
+        for uid in self.agents:
+            image = self.agents[uid].image
+            if image:
+                bio = BytesIO()
+                image.figure.savefig(bio, format="png")
+                plots[uid] = base64.encodebytes(bio.getvalue()).decode("utf-8")
+
+        return {
+            'objects': self.get_world_objects(),
+            'agents': self.data.get('agents', {}),
+            'current_step': self.current_step,
+            'plots': plots
+        }
 
 
 class iiwa(ArrayWorldAdapter):
@@ -181,12 +207,11 @@ class iiwa(ArrayWorldAdapter):
             return
 
         res, resolution, image = vrep.simxGetVisionSensorImage(self.world.clientID, self.world.observer_handle, 0, vrep.simx_opmode_buffer)
-        rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (self.world.vision_resolution[0]*self.world.vision_resolution[1], 3)).astype(np.float32)
+        rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (self.world.vision_resolution[0] * self.world.vision_resolution[1], 3)).astype(np.float32)
         rgb_image /= 255.
-        y_image = np.asarray([.2126 * px[0] + .7152 * px[1] + .0722 * px[2] for px in rgb_image]).astype(np.float32).reshape((self.world.vision_resolution[0],self.world.vision_resolution[1]))[::-1,:]   # todo: npyify and make faster
-
+        y_image = np.asarray([.2126 * px[0] + .7152 * px[1] + .0722 * px[2] for px in rgb_image]).astype(np.float32).reshape((self.world.vision_resolution[0], self.world.vision_resolution[1]))[::-1,:]   # todo: npyify and make faster
         self.datasource_values[self.image_offset:len(self.datasource_values)-1] = y_image.flatten()
 
         self.image.set_data(y_image)
 
-        plt.savefig("/tmp/out.png")
+        return self.image

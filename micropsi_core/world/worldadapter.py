@@ -37,6 +37,8 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
         self.datatarget_feedback = {}
         self.datasource_lock = Lock()
         WorldObject.__init__(self, world, category='agents', uid=uid, **data)
+        if data.get('name'):
+            self.data['name'] = data['name']
 
     def initialize_worldobject(self, data):
         for key in self.datasources:

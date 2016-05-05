@@ -2,6 +2,9 @@ import math
 import time
 import logging
 import numpy as np
+import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
+
 from micropsi_core.world.iiwasim import vrep
 from micropsi_core.world.iiwasim import vrepConst
 from micropsi_core.world.world import World
@@ -116,6 +119,9 @@ class iiwa(ArrayWorldAdapter):
             for x in range(self.world.vision_resolution[0]):
                 self.available_datasources.append("px_%d_%d" % (x, y))
 
+        self.image = plt.imshow(np.zeros(shape=(self.world.vision_resolution[0],self.world.vision_resolution[1])), cmap="bone")
+        self.image.norm.vmin = 0
+        self.image.norm.vmax = 1
         self.current_angle_target_values = np.zeros_like(self.world.joints)
 
     def get_available_datasources(self):
@@ -179,15 +185,10 @@ class iiwa(ArrayWorldAdapter):
         res, resolution, image = vrep.simxGetVisionSensorImage(self.world.clientID, self.world.observer_handle, 0, vrep.simx_opmode_buffer)
         rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (self.world.vision_resolution[0]*self.world.vision_resolution[1], 3)).astype(np.float32)
         rgb_image /= 255.
-        y_image = np.asarray([.2126 * px[0] + .7152 * px[1] + .0722 * px[2] for px in rgb_image]).astype(np.float32)[::-1]   # todo: npyify and make faster
+        y_image = np.asarray([.2126 * px[0] + .7152 * px[1] + .0722 * px[2] for px in rgb_image]).astype(np.float32).reshape((self.world.vision_resolution[0],self.world.vision_resolution[1]))[::-1,:]   # todo: npyify and make faster
 
-        self.datasource_values[self.image_offset:len(self.datasource_values)-1] = y_image
+        self.datasource_values[self.image_offset:len(self.datasource_values)-1] = y_image.flatten()
 
-        # images for debug purposes, should later be used in the world's GUI
-        # maybe use matplotlib instead of PIL?
+        self.image.set_data(y_image)
 
-        #from PIL import Image
-        #img = Image.new('L', self.world.vision_resolution)
-        #y_image *= 255
-        #img.putdata(y_image.astype(np.uint8))
-        #img.save('/tmp/test.png', 'PNG') #, transparency=0)
+        plt.savefig("/tmp/out.png")

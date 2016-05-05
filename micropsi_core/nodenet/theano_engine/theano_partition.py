@@ -413,11 +413,12 @@ class TheanoPartition():
         countdown_sur = T.switch(cd_reset_cond, self.g_wait, T.maximum(countdown - 1, -1))
 
         pipe_sur_cond = T.eq(por_linked, 0) + T.gt(slots[:, 4], 0)                  # not por-linked or por > 0
+        pipe_sur_cond *= slots[:, 6]                                                # and sub > 0
         pipe_sur_cond = T.gt(pipe_sur_cond, 0)
 
         pipe_sur = slots[:, 7]                                                      # start with sur
         pipe_sur = pipe_sur + T.gt(slots[:, 3], 0.2)                                # add gen-loop 1
-        pipe_sur = pipe_sur + (slots[:, 9] * slots[:, 6])                           # add exp * sub
+        pipe_sur = pipe_sur + slots[:, 9]                                           # add exp
                                                                                     # drop to zero if < expectation
         pipe_sur = T.switch(T.lt(pipe_sur, self.g_expect) * T.gt(pipe_sur, 0), 0, pipe_sur)
                                                                                     # check if we're in timeout

@@ -366,6 +366,6 @@ except ImportError as e:
 
 
 try:
-    from micropsi_core.world.iiwasim import iiwasim
+    from micropsi_core.world.vrep_world import vrep_world
 except ImportError as e:
-    sys.stdout.write("Could not import iiwasim world.\nError: %s \n\n" % e.msg)
+    sys.stdout.write("Could not import vrep world.\nError: %s \n\n" % e.msg)

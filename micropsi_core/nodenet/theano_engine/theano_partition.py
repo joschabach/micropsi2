@@ -364,7 +364,7 @@ class TheanoPartition():
         #
 
         ### gen plumbing
-        pipe_gen_sur_exp = slots[:, 11] + slots[:, 13]                              # sum of sur and exp as default
+        pipe_gen_sur_exp = (slots[:, 11] + slots[:, 13]) * slots[:, 10]             # sum of sur and exp as default
                                                                                     # drop to 0 if < expectation
         pipe_gen_sur_exp = T.switch(T.lt(pipe_gen_sur_exp, self.g_expect) * T.gt(pipe_gen_sur_exp, 0), 0, pipe_gen_sur_exp)
 

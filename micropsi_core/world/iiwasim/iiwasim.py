@@ -2,6 +2,9 @@ import math
 import time
 import logging
 import numpy as np
+import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
+
 from micropsi_core.world.iiwasim import vrep
 from micropsi_core.world.iiwasim import vrepConst
 from micropsi_core.world.world import World
@@ -116,6 +119,9 @@ class iiwa(ArrayWorldAdapter):
             for x in range(self.world.vision_resolution[0]):
                 self.available_datasources.append("px_%d_%d" % (x, y))
 
+        self.image = plt.imshow(np.zeros(shape=(self.world.vision_resolution[0],self.world.vision_resolution[1])), cmap="bone")
+        self.image.norm.vmin = 0
+        self.image.norm.vmax = 1
         self.current_angle_target_values = np.zeros_like(self.world.joints)
 
     def get_available_datasources(self):
@@ -183,11 +189,6 @@ class iiwa(ArrayWorldAdapter):
 
         self.datasource_values[self.image_offset:len(self.datasource_values)-1] = y_image
 
-        # images for debug purposes, should later be used in the world's GUI
-        # maybe use matplotlib instead of PIL?
+        self.image.set_data(np.array(y_image).reshape((self.world.vision_resolution[0],self.world.vision_resolution[1])))
 
-        #from PIL import Image
-        #img = Image.new('L', self.world.vision_resolution)
-        #y_image *= 255
-        #img.putdata(y_image.astype(np.uint8))
-        #img.save('/tmp/test.png', 'PNG') #, transparency=0)
+        # plt.savefig("/tmp/out.png")

@@ -23,8 +23,8 @@ class iiwasim(World):
     def __init__(self, filename, world_type="iiwasim", name="", owner="", engine=None, uid=None, version=1, config={}):
         World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
 
-        vrep.simxFinish(-1) # just in case, close all opened connections
-        self.clientID = vrep.simxStart('127.0.0.1', 19999, True, True, 5000, 5) # Connect to V-REP
+        vrep.simxFinish(-1)  # just in case, close all opened connections
+        self.clientID = vrep.simxStart('127.0.0.1', 19999, True, 0, 5000, 5)  # Connect to V-REP
         if self.clientID == -1:
             raise Exception("Could not connect to v-rep.")
 

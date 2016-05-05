@@ -89,7 +89,9 @@ class iiwa(ArrayWorldAdapter):
         self.available_datasources = []
 
         self.available_datasources.append("reward")
-        self.available_datatargets.append("reset")
+
+        self.available_datatargets.append("restart")
+        self.available_datatargets.append("execute")
 
         for i in range(len(self.world.joints)):
             self.available_datatargets.append("joint_%s" % str(i + 1))
@@ -100,8 +102,10 @@ class iiwa(ArrayWorldAdapter):
         for i in range(len(self.world.joints)):
             self.available_datasources.append("joint_force_%s" % str(i + 1))
 
-        self.reset_offset = 0
-        self.joint_offset = 1
+        self.restart_offset = 0
+        self.execute_offset = 1
+        self.joint_offset = 2
+
         self.reward_offset = 0
         self.joint_angle_offset = 1
         self.joint_force_offset = self.joint_angle_offset + len(self.world.joints)
@@ -112,6 +116,8 @@ class iiwa(ArrayWorldAdapter):
             for x in range(self.world.vision_resolution[0]):
                 self.available_datasources.append("px_%d_%d" % (x, y))
 
+        self.current_angle_target_values = np.zeros_like(self.world.joints)
+
     def get_available_datasources(self):
         return self.available_datasources
 
@@ -120,23 +126,29 @@ class iiwa(ArrayWorldAdapter):
 
     def update_data_sources_and_targets(self):
 
-        if self.datatarget_values[self.reset_offset] > 0.9:
+        self.datatarget_feedback_values = [0] * len(self.available_datatargets)
+        self.datasource_values = [0] * len(self.available_datasources)
+
+        restart = self.datatarget_values[self.restart_offset] > 0.9
+        execute = self.datatarget_values[self.execute_offset] > 0.9
+
+        # simulation restart
+        if restart:
             vrep.simxStopSimulation(self.world.clientID, vrep.simx_opmode_oneshot)
             time.sleep(1)
             vrep.simxStartSimulation(self.world.clientID, vrep.simx_opmode_oneshot)
             return
 
-        # send joint target values
-        vrep.simxPauseCommunication(self.world.clientID, True)
-        for i, joint_handle in enumerate(self.world.joints):
-            tval = self.datatarget_values[self.joint_offset + i] * math.pi
-            vrep.simxSetJointTargetPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
-        vrep.simxPauseCommunication(self.world.clientID, False)
+        # execute movement, send new target angles
+        if execute:
+            self.current_angle_target_values = np.array(self.datatarget_values[self.joint_offset:self.joint_offset+len(self.world.joints)])
+            vrep.simxPauseCommunication(self.world.clientID, True)
+            for i, joint_handle in enumerate(self.world.joints):
+                tval = self.current_angle_target_values[i] * math.pi
+                vrep.simxSetJointTargetPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
+            vrep.simxPauseCommunication(self.world.clientID, False)
 
         # get data and feedback
-        self.datatarget_feedback_values = [0] * len(self.available_datatargets)
-        self.datasource_values = [0] * len(self.available_datasources)
-
         # read reward value
         if self.world.ball_handle > 0:
             res, ball_pos = vrep.simxGetObjectPosition(self.world.clientID, self.world.ball_handle, -1, vrep.simx_opmode_buffer)
@@ -154,7 +166,7 @@ class iiwa(ArrayWorldAdapter):
             target_angle = self.datatarget_values[self.joint_offset + i]
             angle = data[i*2] / math.pi
             force = data[i*2 + 1]
-            if abs(angle) - abs(target_angle) < .0001:
+            if abs(angle) - abs(target_angle) < .001 and execute:
                 self.datatarget_feedback_values[self.joint_offset + i] = 1
             self.datasource_values[self.joint_angle_offset + i] = angle
             self.datasource_values[self.joint_force_offset + i] = force

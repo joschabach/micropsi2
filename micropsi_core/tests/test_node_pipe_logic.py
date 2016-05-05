@@ -81,6 +81,7 @@ def test_node_pipe_logic_classifier_two_partial(fixed_nodenet):
     netapi.link(n_a, "sur", n_head, "sur", 0.5)
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
     netapi.link(n_b, "sur", n_head, "sur", 0.5)
+    netapi.link(source, "gen", n_head, "sub", 1)
 
     netapi.link(source, "gen", n_a, "sur")
 
@@ -105,6 +106,7 @@ def test_node_pipe_logic_classifier_two_partially_failing(fixed_nodenet):
     netapi.link(n_a, "sur", n_head, "sur", 0.5)
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
     netapi.link(n_b, "sur", n_head, "sur", 0.5)
+    netapi.link(source, "gen", n_head, "sub", 1)
 
     netapi.link(source, "gen", n_a, "sur", -1)
 
@@ -156,6 +158,7 @@ def test_node_pipe_logic_classifier_three_partial(fixed_nodenet):
     netapi.link_with_reciprocal(n_head, n_c, "subsur")
     netapi.link(n_c, "sur", n_head, "sur", 1/3)
 
+    netapi.link(source, "gen", n_head, "sub", 1)
     netapi.link(source, "gen", n_a, "sur")
 
     for i in range(3):
@@ -193,6 +196,7 @@ def test_node_pipe_logic_classifier_three_partially_failing(fixed_nodenet):
     netapi.link_with_reciprocal(n_head, n_c, "subsur")
     netapi.link(n_c, "sur", n_head, "sur", 1/3)
 
+    netapi.link(source, "gen", n_head, "sub", 1)
     netapi.link(source, "gen", n_a, "sur", -1)
 
     for i in range(3):
@@ -561,44 +565,44 @@ def test_node_pipe_logic_timeout_fail(fixed_nodenet):
 #    assert schema.get_gate("gen").activation == 1
 
 
-def test_node_pipe_logic_search_sub(fixed_nodenet):
-    # check if sub-searches work
-    net, netapi, source = prepare(fixed_nodenet)
-    n_a = netapi.create_node("Pipe", None, "A")
-    n_b = netapi.create_node("Pipe", None, "B")
-    netapi.link_with_reciprocal(n_a, n_b, "subsur")
-
-    sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(fixed_nodenet)
-    netapi.link(source, "gen", sub_act, "gen")
-
-    netapi.link(source, "gen", n_a, "sub")
-
-    net.step()
-    net.step()
-    net.step()
-
-    assert round(n_a.get_gate("sub").activation, 2) == 1
-    assert round(n_b.get_gate("sub").activation, 2) == 1
-
-
-def test_node_pipe_logic_search_sur(fixed_nodenet):
-    # check if sur-searches work
-    net, netapi, source = prepare(fixed_nodenet)
-    n_a = netapi.create_node("Pipe", None, "A")
-    n_b = netapi.create_node("Pipe", None, "B")
-    netapi.link_with_reciprocal(n_a, n_b, "subsur")
-
-    sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(fixed_nodenet)
-    netapi.link(source, "gen", sur_act, "gen")
-
-    netapi.link(source, "gen", n_b, "sur")
-
-    net.step()
-    net.step()
-    net.step()
-
-    assert n_b.get_gate("sur").activation > 0
-    assert n_a.get_gate("sur").activation > 0
+#def test_node_pipe_logic_search_sub(fixed_nodenet):
+#    # check if sub-searches work
+#    net, netapi, source = prepare(fixed_nodenet)
+#    n_a = netapi.create_node("Pipe", None, "A")
+#    n_b = netapi.create_node("Pipe", None, "B")
+#    netapi.link_with_reciprocal(n_a, n_b, "subsur")
+#
+#    sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(fixed_nodenet)
+#    netapi.link(source, "gen", sub_act, "gen")
+#
+#    netapi.link(source, "gen", n_a, "sub")
+#
+#    net.step()
+#    net.step()
+#    net.step()
+#
+#    assert round(n_a.get_gate("sub").activation, 2) == 1
+#    assert round(n_b.get_gate("sub").activation, 2) == 1
+#
+#
+#def test_node_pipe_logic_search_sur(fixed_nodenet):
+#    # check if sur-searches work
+#    net, netapi, source = prepare(fixed_nodenet)
+#    n_a = netapi.create_node("Pipe", None, "A")
+#    n_b = netapi.create_node("Pipe", None, "B")
+#    netapi.link_with_reciprocal(n_a, n_b, "subsur")
+#
+#    sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(fixed_nodenet)
+#    netapi.link(source, "gen", sur_act, "gen")
+#
+#    netapi.link(source, "gen", n_b, "sur")
+#
+#    net.step()
+#    net.step()
+#    net.step()
+#
+#    assert n_b.get_gate("sur").activation > 0
+#    assert n_a.get_gate("sur").activation > 0
 
 
 def test_node_pipe_logic_search_por(fixed_nodenet):

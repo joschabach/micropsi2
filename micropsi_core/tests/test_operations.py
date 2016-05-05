@@ -26,9 +26,14 @@ delete_nodes.selectioninfo = {
 
 def test_autoalign_operation(test_nodenet):
     ops = runtime.get_available_operations()
-    assert ops['autoalign']['selection']['nodetypes'] == []
-    assert ops['autoalign']['selection']['mincount'] == 1
-    assert ops['autoalign']['selection']['maxcount'] == -1
+    for selectioninfo in ops['autoalign']['selection']:
+        if selectioninfo['nodetypes'] == ['Nodespace']:
+            assert selectioninfo['mincount'] == 1
+            assert selectioninfo['maxcount'] == -1
+        else:
+            assert selectioninfo['mincount'] == 2
+            assert selectioninfo['maxcount'] == -1
+            assert selectioninfo['nodetypes'] == []
     assert ops['autoalign']['category'] == 'layout'
     assert ops['autoalign']['parameters'] == []
 

@@ -2743,10 +2743,12 @@ function getOperationsDropdownHTML(nodetypes, count){
     applicable_operations = {};
     for(var key in available_operations){
         var conditions = available_operations[key].selection;
-        if((conditions.nodetypes.length == 0 || $(nodetypes).not(conditions.nodetypes).get().length == 0) &&
-           (count >= conditions.mincount) &&
-           (conditions.maxcount < 0 || count <= conditions.maxcount)){
-                applicable_operations[key] = available_operations[key]
+        for(var i in conditions){
+            if((conditions[i].nodetypes.length == 0 || $(nodetypes).not(conditions[i].nodetypes).get().length == 0) &&
+               (count >= conditions[i].mincount) &&
+               (conditions[i].maxcount < 0 || count <= conditions[i].maxcount)){
+                    applicable_operations[key] = available_operations[key];
+            }
         }
     }
 
@@ -2823,6 +2825,8 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
              '<li><a href="#">Rename node</a></li>' +
              '<li><a href="#">Delete node</a></li>' +
              '<li data-copy-nodes><a href="#">Copy node</a></li>';
+
+    html += getOperationsDropdownHTML([node.type], 1);
     menu.html(html);
     openContextMenu(menu_id, event);
 }

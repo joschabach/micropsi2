@@ -10,13 +10,13 @@ import matplotlib.pyplot as plt
 from io import BytesIO
 import base64
 
-from micropsi_core.world.vrep_world import vrep
-from micropsi_core.world.vrep_world import vrepConst
+from micropsi_core.world.vrep import vrep
+from micropsi_core.world.vrep import vrepConst
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import ArrayWorldAdapter
 
 
-class vrep_world(World):
+class VREPWorld(World):
     """ A vrep robot simulator environment
         In V-REP, the following setup has to be performed:
         - An LBR_iiwa_7_R800 has to have been added to the scene
@@ -31,7 +31,7 @@ class vrep_world(World):
 
     supported_worldadapters = ['iiwa']
 
-    def __init__(self, filename, world_type="vrep_world", name="", owner="", engine=None, uid=None, version=1, config={}):
+    def __init__(self, filename, world_type="VREPWorld", name="", owner="", engine=None, uid=None, version=1, config={}):
         World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
 
         vrep.simxFinish(-1)  # just in case, close all opened connections

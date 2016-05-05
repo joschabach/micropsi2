@@ -181,9 +181,10 @@ def revert_world(world_uid):
 
 def save_world(world_uid):
     """Stores the world state on the server."""
-    with open(os.path.join(micropsi_core.runtime.PERSISTENCY_PATH, micropsi_core.runtime.WORLD_DIRECTORY,
-                           world_uid) + '.json', 'w+') as fp:
-        fp.write(json.dumps(micropsi_core.runtime.worlds[world_uid].data, sort_keys=True, indent=4))
+    data = micropsi_core.runtime.worlds[world_uid].data
+    filename = os.path.join(micropsi_core.runtime.PERSISTENCY_PATH, micropsi_core.runtime.WORLD_DIRECTORY, world_uid)
+    with open(filename + '.json', 'w+') as fp:
+        fp.write(json.dumps(data, sort_keys=True, indent=4))
     return True
 
 

@@ -197,11 +197,10 @@ class Robot(ArrayWorldAdapter):
             self.current_angle_target_values = np.array(self.datatarget_values[self.joint_offset:self.joint_offset+len(self.world.joints)])
             vrep.simxPauseCommunication(self.world.clientID, True)
             for i, joint_handle in enumerate(self.world.joints):
+                tval = self.current_angle_target_values[i] * math.pi
                 if self.world.control_type == "force/torque":
-                    tval = self.current_angle_target_values[i] * math.pi
                     vrep.simxSetJointTargetPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
                 elif self.world.control_type == "angles":
-                    tval = self.current_angle_target_values[i] * 180
                     vrep.simxSetJointPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
             vrep.simxPauseCommunication(self.world.clientID, False)
 
@@ -225,7 +224,7 @@ class Robot(ArrayWorldAdapter):
                 if abs(angle) - abs(target_angle) < .001 and execute:
                     self.datatarget_feedback_values[self.joint_offset + i] = 1
             elif self.world.control_type == "angles":
-                angle = data[i * 2] / 180
+                angle = data[i * 2] / math.pi
             self.datasource_values[self.joint_angle_offset + i] = angle
             self.datasource_values[self.joint_force_offset + i] = force
 

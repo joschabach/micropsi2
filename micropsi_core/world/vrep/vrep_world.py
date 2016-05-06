@@ -231,7 +231,7 @@ class Robot(ArrayWorldAdapter):
 
         # read vision data
         # if no observer present, don't query vision data
-        if self.world.observer_handle == 0:
+        if self.world.vision_type != "grayscale":
             return
 
         res, resolution, image = vrep.simxGetVisionSensorImage(self.world.clientID, self.world.observer_handle, 0, vrep.simx_opmode_buffer)

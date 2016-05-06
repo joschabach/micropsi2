@@ -130,7 +130,6 @@ class VREPWorld(World):
 class Robot(ArrayWorldAdapter):
 
     def __init__(self, world, uid=None, **data):
-        super().__init__(world, uid, **data)
 
         self.available_datatargets = []
         self.available_datasources = []
@@ -140,14 +139,16 @@ class Robot(ArrayWorldAdapter):
         self.available_datatargets.append("restart")
         self.available_datatargets.append("execute")
 
-        for i in range(len(self.world.joints)):
+        for i in range(len(world.joints)):
             self.available_datatargets.append("joint_%s" % str(i + 1))
 
-        for i in range(len(self.world.joints)):
+        for i in range(len(world.joints)):
             self.available_datasources.append("joint_angle_%s" % str(i + 1))
 
-        for i in range(len(self.world.joints)):
+        for i in range(len(world.joints)):
             self.available_datasources.append("joint_force_%s" % str(i + 1))
+
+        super().__init__(world, uid, **data)
 
         self.current_angle_target_values = np.zeros_like(self.world.joints)
 

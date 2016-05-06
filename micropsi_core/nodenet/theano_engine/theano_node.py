@@ -31,6 +31,8 @@ class TheanoNode(Node):
 
         Node.__init__(self, strtype, nodenet.get_nodetype(strtype))
 
+        self.is_fat = self._nodetype.is_fat
+
         if strtype in nodenet.native_modules or strtype == "Comment":
             self.slot_activation_snapshot = {}
             self._state = {}

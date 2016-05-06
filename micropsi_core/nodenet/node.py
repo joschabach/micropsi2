@@ -619,7 +619,7 @@ class Nodetype(object):
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None,
-                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category=''):
+                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', is_fat=False, fat_config=None):
         """Initializes or creates a nodetype.
 
         Arguments:
@@ -634,9 +634,10 @@ class Nodetype(object):
         self._nodefunction_definition = None
         self._nodefunction_name = None
 
+        self.is_fat = is_fat
         self.name = name
-        self.slottypes = slottypes or {}
-        self.gatetypes = gatetypes or {}
+        self.slottypes = slottypes or []
+        self.gatetypes = gatetypes or []
 
         self.path = path
         self.category = category
@@ -664,3 +665,64 @@ class Nodetype(object):
             self.nodefunction_name = nodefunction_name
         else:
             self.nodefunction = None
+
+        if self.is_fat:
+            self.fat_config = fat_config
+
+    def get_number_of_gates(self):
+        if self.is_fat:
+            num = 0
+            for k in self.gatetypes:
+                num += self.fat_config.get(k, 1)
+            return num
+        else:
+            return len(self.gatetypes)
+
+    def get_number_of_slots(self):
+        if self.is_fat:
+            num = 0
+            for k in self.gatetypes:
+                num += self.fat_config.get(k, 1)
+            return num
+        else:
+            return len(self.slottypes)
+
+    def get_numerical_gate_type(self, type):
+        if self.is_fat:
+            num = -1
+            for i, gate in enumerate(self.gatetypes):
+                num += i * self.fat_config.get(gate, 1)
+                if gate == type:
+                    return num
+        else:
+            return self.gatetypes.index(type)
+
+    def get_string_gate_type(self, type):
+        if self.is_fat:
+            num = -1
+            for i, gate in enumerate(self.gatetypes):
+                if num <= type:
+                    return gate
+                num += i * self.fat_config.get(gate, 1)
+        else:
+            return self.gatetypes[type]
+
+    def get_numerical_slot_type(self, type):
+        if self.is_fat:
+            num = -1
+            for i, gate in enumerate(self.gatetypes):
+                num += i * self.fat_config.get(gate, 1)
+                if gate == type:
+                    return num
+        else:
+            return self.slottypes.index(type)
+
+    def get_string_slot_type(self, type):
+        if self.is_fat:
+            num = -1
+            for i, slot in enumerate(self.slottypes):
+                if num <= type:
+                    return slot
+                num += i * self.fat_config.get(slot, 1)
+        else:
+            return self.slottypes[type]

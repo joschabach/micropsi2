@@ -1899,8 +1899,14 @@ class TheanoPartition():
             gate_parameters = {}
             gate_activations = {}
             links = {}
-            for gate in self.nodenet.get_nodetype(strtype).gatetypes:
-                numericalgate = get_numerical_gate_type(gate, self.nodenet.get_nodetype(strtype))
+
+            if nodetype.is_fat:
+                gates = nodetype.fat_config['groupgates']
+            else:
+                gates = nodetype.gatetypes
+
+            for gate in gates:
+                numericalgate = get_numerical_gate_type(gate, nodetype)
                 element = self.allocated_node_offsets[id] + numericalgate
                 gate_functions[gate] = get_string_gatefunction_type(g_function_selector[element])
 
@@ -1993,7 +1999,8 @@ class TheanoPartition():
                                 "activation": float(a[self.allocated_node_offsets[id] + GEN])}},
                     "activation": float(a[self.allocated_node_offsets[id] + GEN]),
                     "gate_activations": gate_activations,
-                    "gate_functions": gate_functions}
+                    "gate_functions": gate_functions,
+                    "is_fat": nodetype.is_fat}
             if complete:
                 data['index'] = id
             if include_links:

@@ -491,6 +491,15 @@ class TheanoNodenet(Nodenet):
         for nodespace in nodespaces_to_merge:
             self.merge_nodespace_data(nodespace, nodenet_data['nodespaces'], uidmap, keep_uids)
 
+        # make sure rootpartition has enough NoN, NoE
+        if native_module_instances_only:
+            non = noe = 0
+            for uid in nodenet_data.get('nodes', {}):
+                non += 1
+                noe += get_elements_per_type(get_numerical_node_type(nodenet_data['nodes'][uid]['type'], self.native_modules), self.native_modules)
+            if non > self.rootpartition.NoN or noe > self.rootpartition.NoE:
+                self.rootpartition.announce_nodes(non, math.ceil(noe / non))
+
         # merge in nodes
         for uid in nodenet_data.get('nodes', {}):
             data = nodenet_data['nodes'][uid]

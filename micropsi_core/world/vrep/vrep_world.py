@@ -119,7 +119,7 @@ class VREPWorld(World):
             {'name': 'control_type',
              'description': 'The type of input sent to the robot',
              'default': 'force/torque',
-             'options': ["force/torque", "angles"]},
+             'options': ["force/torque", "angles", "movements"]},
             {'name': 'vision_type',
              'description': 'Type of vision information to receive',
              'default': 'none',
@@ -203,6 +203,9 @@ class Robot(ArrayWorldAdapter):
                     vrep.simxSetJointTargetPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
                 elif self.world.control_type == "angles":
                     vrep.simxSetJointPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
+                elif self.world.control_type == "movements":
+                    tval += self.datasource_values[self.joint_angle_offset + i]
+                    vrep.simxSetJointPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
             vrep.simxPauseCommunication(self.world.clientID, False)
 
         # get data and feedback
@@ -225,6 +228,8 @@ class Robot(ArrayWorldAdapter):
                 if abs(angle) - abs(target_angle) < .001 and execute:
                     self.datatarget_feedback_values[self.joint_offset + i] = 1
             elif self.world.control_type == "angles":
+                angle = data[i * 2] / math.pi
+            elif self.world.control_type == "movements":
                 angle = data[i * 2] / math.pi
             self.datasource_values[self.joint_angle_offset + i] = angle
             self.datasource_values[self.joint_force_offset + i] = force

@@ -668,61 +668,32 @@ class Nodetype(object):
 
         if self.is_fat:
             self.fat_config = fat_config
+            self.gatetypes = []
+            self.slottypes = []
+            self.gatetypes = [i for i in (['sub', 'sur'] + gatetypes) if i not in self.gatetypes]
+            self.slottypes = [i for i in (['sub', 'sur'] + slottypes) if i not in self.slottypes]
+            gates = []
+            slots = []
+            fat_config['groupgates'] = []
+            fat_config['groupslots'] = []
+            for g in self.gatetypes:
+                group = ["%s:%d" % (g, i) for i in range(fat_config['gates'].get(g, 1))]
+                fat_config['groupgates'].append(group[0])
+                gates.extend(group)
+            for s in self.slottypes:
+                group = ["%s:%d" % (s, i) for i in range(fat_config['slots'].get(s, 1))]
+                fat_config['groupslots'].append(group[0])
+                slots.extend(group)
+            self.gatetypes = gates
+            self.slottypes = slots
 
-    def get_number_of_gates(self):
-        if self.is_fat:
-            num = 0
-            for k in self.gatetypes:
-                num += self.fat_config.get(k, 1)
-            return num
-        else:
-            return len(self.gatetypes)
+            self.gate_defaults = {}
+            for g in self.fat_config['groupgates']:
+                self.gate_defaults[g] = Nodetype.GATE_DEFAULTS.copy()
 
-    def get_number_of_slots(self):
-        if self.is_fat:
-            num = 0
-            for k in self.gatetypes:
-                num += self.fat_config.get(k, 1)
-            return num
-        else:
-            return len(self.slottypes)
-
-    def get_numerical_gate_type(self, type):
-        if self.is_fat:
-            num = -1
-            for i, gate in enumerate(self.gatetypes):
-                num += i * self.fat_config.get(gate, 1)
-                if gate == type:
-                    return num
-        else:
-            return self.gatetypes.index(type)
-
-    def get_string_gate_type(self, type):
-        if self.is_fat:
-            num = -1
-            for i, gate in enumerate(self.gatetypes):
-                if num <= type:
-                    return gate
-                num += i * self.fat_config.get(gate, 1)
-        else:
-            return self.gatetypes[type]
-
-    def get_numerical_slot_type(self, type):
-        if self.is_fat:
-            num = -1
-            for i, gate in enumerate(self.gatetypes):
-                num += i * self.fat_config.get(gate, 1)
-                if gate == type:
-                    return num
-        else:
-            return self.slottypes.index(type)
-
-    def get_string_slot_type(self, type):
-        if self.is_fat:
-            num = -1
-            for i, slot in enumerate(self.slottypes):
-                if num <= type:
-                    return slot
-                num += i * self.fat_config.get(slot, 1)
-        else:
-            return self.slottypes[type]
+            if gate_defaults is not None:
+                for g in gate_defaults:
+                    for key in gate_defaults[g]:
+                        if g not in self.gate_defaults:
+                            raise Exception("Invalid gate default value for nodetype %s: Gate %s not found" % (name, g))
+                        self.gate_defaults[g][key] = gate_defaults[g][key]

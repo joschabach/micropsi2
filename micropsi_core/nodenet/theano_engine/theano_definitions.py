@@ -47,7 +47,7 @@ NFPG_LSTM_GFG = 10
 
 def get_numerical_gate_type(type, nodetype=None):
     if nodetype is not None and type in nodetype.gatetypes:
-        return nodetype.get_numerical_gate_type(type)
+        return nodetype.gatetypes.index(type)
     elif type == "gen":
         return GEN
     elif type == "por":
@@ -74,7 +74,7 @@ def get_numerical_gate_type(type, nodetype=None):
 
 def get_string_gate_type(type, nodetype=None):
     if nodetype is not None and len(nodetype.gatetypes) > 0:
-        return nodetype.get_string_gate_type(type)
+        return nodetype.gatetypes[type]
     elif type == GEN:
         return "gen"
     elif type == POR:
@@ -101,7 +101,7 @@ def get_string_gate_type(type, nodetype=None):
 
 def get_numerical_slot_type(type, nodetype=None):
     if nodetype is not None and type in nodetype.slottypes:
-        return nodetype.get_numerical_slot_type(type)
+        return nodetype.slottypes.index(type)
     elif type == "gen":
         return GEN
     elif type == "por":
@@ -128,7 +128,7 @@ def get_numerical_slot_type(type, nodetype=None):
 
 def get_string_slot_type(type, nodetype=None):
     if nodetype is not None and len(nodetype.slottypes) > 0:
-        return nodetype.get_string_slot_type(type)
+        return nodetype.slottypes[type]
     elif type == GEN:
         return "gen"
     elif type == POR:
@@ -258,7 +258,7 @@ def get_elements_per_type(type, nativemodules=None):
         return 0
     elif nativemodules is not None and get_string_node_type(type, nativemodules) in nativemodules:
         native_module_definition = nativemodules[get_string_node_type(type, nativemodules)]
-        return max(native_module_definition.get_number_of_gates(), native_module_definition.get_number_of_slots())
+        return max(len(native_module_definition.gatetypes), len(native_module_definition.slottypes))
     else:
         raise ValueError("Supplied type is not a valid node type: "+str(type))
 
@@ -284,7 +284,7 @@ def get_gates_per_type(type, nativemodules=None):
         return 0
     elif nativemodules is not None and get_string_node_type(type, nativemodules) in nativemodules:
         native_module_definition = nativemodules[get_string_node_type(type, nativemodules)]
-        return native_module_definition.get_number_of_gates()
+        return len(native_module_definition.gatetypes)
     else:
         raise ValueError("Supplied type is not a valid node type: "+str(type))
 
@@ -309,8 +309,8 @@ def get_slots_per_type(type, nativemodules=None):
     elif type == COMMENT:
         return 0
     elif nativemodules is not None and get_string_node_type(type, nativemodules) in nativemodules:
-        native_module = nativemodules[get_string_node_type(type, nativemodules)]
-        return native_module.get_number_of_slots()
+        native_module_definition = nativemodules[get_string_node_type(type, nativemodules)]
+        return len(native_module_definition.slottypes)
     else:
         raise ValueError("Supplied type is not a valid node type: "+str(type))
 

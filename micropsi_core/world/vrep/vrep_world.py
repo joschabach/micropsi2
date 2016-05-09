@@ -180,6 +180,8 @@ class Robot(ArrayWorldAdapter):
 
     def update_data_sources_and_targets(self):
 
+        old_datasource_values = np.array(self.datasource_values)
+
         self.datatarget_feedback_values = [0] * len(self.available_datatargets)
         self.datasource_values = [0] * len(self.available_datasources)
 
@@ -204,7 +206,7 @@ class Robot(ArrayWorldAdapter):
                 elif self.world.control_type == "angles":
                     vrep.simxSetJointPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
                 elif self.world.control_type == "movements":
-                    tval += self.datasource_values[self.joint_angle_offset + i]
+                    tval += (old_datasource_values[self.joint_angle_offset + i]) * math.pi
                     vrep.simxSetJointPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
             vrep.simxPauseCommunication(self.world.clientID, False)
 

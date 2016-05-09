@@ -54,3 +54,52 @@ def test_entity_positions_as_tuples(test_nodenet):
     nodespace.position = (13, 23, 42)
     assert node.position == [23, 42, 0]
     assert nodespace.position == [13, 23, 42]
+
+
+@pytest.mark.engine("theano_engine")
+def test_fat_native_modules(test_nodenet, resourcepath):
+    import os
+    import numpy as np
+    with open(os.path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
+        fp.write("""
+    {"PhatNM": {
+        "name": "PhatNM",
+        "slottypes": ["gen", "A_in", "B_in"],
+        "gatetypes": ["gen", "A_out", "B_out"],
+        "nodefunction_name": "phatNM",
+        "is_fat": 1,
+        "symbol": "F",
+        "fat_config": {
+            "gates": {
+                "A_out": 768,
+                "B_out": 13
+            },
+            "slots": {
+                "A_in": 1024,
+                "B_in": 62
+            }
+        }
+    }}""")
+    with open(os.path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
+        fp.write("""
+def phatNM(netapi, node, **_):
+    pass""")
+
+    micropsi.reload_native_modules()
+    netapi = micropsi.nodenets[test_nodenet].netapi
+    node = netapi.create_node("PhatNM", None, "phatty")
+    node.take_slot_activation_snapshot()
+    data = node.get_activation_array()
+    assert len(data) == 1024 + 62 + 3  # fat_slots + gen/sub/sur
+    new_activation = np.random.rand(768 + 13 + 3)  # fat gates + gen/sub/sur
+    node.set_activation_array(new_activation)
+    target = netapi.create_node("Register", None, "Target")
+    for g in node.get_gate_types():
+        netapi.link(node, g, target, 'gen')
+    micropsi.step_nodenet(test_nodenet)
+    assert target.activation > 0
+    node.save_data(new_activation)
+    assert np.all(node.load_data() == new_activation)
+    micropsi.save_nodenet(test_nodenet)
+    micropsi.revert_nodenet(test_nodenet)
+    assert np.all(node.load_data() == new_activation)

@@ -1090,6 +1090,12 @@ class TheanoNodenet(Nodenet):
         # check which instances need to be recreated because of gate/slot changes and keep their .data
         instances_to_recreate = {}
         instances_to_delete = {}
+
+        # create the new nodetypes
+        self.native_modules = {}
+        for type, data in native_modules.items():
+            self.native_modules[type] = Nodetype(nodenet=self, **native_modules[type])
+
         for partition in self.partitions.values():
             for uid, instance in partition.native_module_instances.items():
                 if instance.type not in native_modules:
@@ -1100,9 +1106,9 @@ class TheanoNodenet(Nodenet):
 
                 numeric_id = node_from_id(uid)
                 number_of_elements = len(np.where(partition.allocated_elements_to_nodes == numeric_id)[0])
-                new_numer_of_elements = max(len(native_modules[instance.type].get('slottypes', [])), len(native_modules[instance.type].get('gatetypes', [])))
+                new_numer_of_elements = max(len(self.native_modules[instance.type].slottypes), len(self.native_modules[instance.type].gatetypes))
                 if number_of_elements != new_numer_of_elements:
-                    self.logger.warn("Number of elements changed for node type %s from %d to %d, recreating instance %s" %
+                    self.logger.warning("Number of elements changed for node type %s from %d to %d, recreating instance %s" %
                                     (instance.type, number_of_elements, new_numer_of_elements, uid))
                     instances_to_recreate[uid] = instance.get_data(complete=True, include_links=False)
 
@@ -1111,11 +1117,6 @@ class TheanoNodenet(Nodenet):
                 self.delete_node(uid)
             for uid in instances_to_recreate.keys():
                 self.delete_node(uid)
-
-            # update the node functions of all Nodetypes
-            self.native_modules = {}
-            for type, data in native_modules.items():
-                self.native_modules[type] = Nodetype(nodenet=self, **native_modules[type])
 
             # update the living instances that have the same slot/gate numbers
             new_instances = {}

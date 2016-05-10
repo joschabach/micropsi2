@@ -619,7 +619,7 @@ class Nodetype(object):
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None,
-                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', is_fat=False, fat_config=None):
+                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', fat_config=None):
         """Initializes or creates a nodetype.
 
         Arguments:
@@ -634,7 +634,7 @@ class Nodetype(object):
         self._nodefunction_definition = None
         self._nodefunction_name = None
 
-        self.is_fat = is_fat
+        self.is_fat = fat_config is not None
         self.name = name
         self.slottypes = slottypes or []
         self.gatetypes = gatetypes or []
@@ -643,17 +643,6 @@ class Nodetype(object):
         self.category = category
 
         self.logger = nodenet.logger
-
-        self.gate_defaults = {}
-        for g in self.gatetypes:
-            self.gate_defaults[g] = Nodetype.GATE_DEFAULTS.copy()
-
-        if gate_defaults is not None:
-            for g in gate_defaults:
-                for key in gate_defaults[g]:
-                    if g not in self.gate_defaults:
-                        raise Exception("Invalid gate default value for nodetype %s: Gate %s not found" % (name, g))
-                    self.gate_defaults[g][key] = gate_defaults[g][key]
 
         self.parameters = parameters or {}
         self.parameter_values = parameter_values or {}
@@ -667,33 +656,27 @@ class Nodetype(object):
             self.nodefunction = None
 
         if self.is_fat:
+            self.slotgroups = slottypes
+            self.gategroups = gatetypes
             self.fat_config = fat_config
-            self.gatetypes = []
-            self.slottypes = []
-            self.gatetypes = [i for i in (['sub', 'sur'] + gatetypes) if i not in self.gatetypes]
-            self.slottypes = [i for i in (['sub', 'sur'] + slottypes) if i not in self.slottypes]
             gates = []
             slots = []
-            fat_config['groupgates'] = []
-            fat_config['groupslots'] = []
             for g in self.gatetypes:
-                group = ["%s:%d" % (g, i) for i in range(fat_config['gates'].get(g, 1))]
-                fat_config['groupgates'].append(group[0])
+                group = ["%s%d" % (g, i) for i in range(fat_config['gates'].get(g, 1))]
                 gates.extend(group)
             for s in self.slottypes:
-                group = ["%s:%d" % (s, i) for i in range(fat_config['slots'].get(s, 1))]
-                fat_config['groupslots'].append(group[0])
+                group = ["%s%d" % (s, i) for i in range(fat_config['slots'].get(s, 1))]
                 slots.extend(group)
             self.gatetypes = gates
             self.slottypes = slots
 
-            self.gate_defaults = {}
-            for g in self.fat_config['groupgates']:
-                self.gate_defaults[g] = Nodetype.GATE_DEFAULTS.copy()
+        self.gate_defaults = {}
+        for g in self.gatetypes:
+            self.gate_defaults[g] = Nodetype.GATE_DEFAULTS.copy()
 
-            if gate_defaults is not None:
-                for g in gate_defaults:
-                    for key in gate_defaults[g]:
-                        if g not in self.gate_defaults:
-                            raise Exception("Invalid gate default value for nodetype %s: Gate %s not found" % (name, g))
-                        self.gate_defaults[g][key] = gate_defaults[g][key]
+        if gate_defaults is not None:
+            for g in gate_defaults:
+                for key in gate_defaults[g]:
+                    if g not in self.gate_defaults:
+                        raise Exception("Invalid gate default value for nodetype %s: Gate %s not found" % (name, g))
+                    self.gate_defaults[g][key] = gate_defaults[g][key]

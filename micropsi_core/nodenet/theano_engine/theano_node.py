@@ -144,10 +144,8 @@ class TheanoNode(Node):
         g_theta = self._partition.g_theta.get_value(borrow=True)
 
         gatemap = {}
-        if self.is_fat:
-            gate_types = self.nodetype.fat_config['groupgates']
-        else:
-            gate_types = self.nodetype.gate_defaults.keys()
+        gate_types = self.nodetype.gate_defaults.keys()
+
         if gate_type is not None:
             if gate_type in gate_types:
                 gate_types = [gate_type]
@@ -417,21 +415,21 @@ class TheanoNode(Node):
             else:
                 raise
 
-    def get_activation_array(self):
+    def get_slot_activation_array(self):
         return self.slot_fat_snapshot
 
-    def set_activation_array(self, new_activations):
+    def set_gate_activation_array(self, new_activations):
         start = self._partition.allocated_node_offsets[node_from_id(self.uid)]
         end = start + len(self._nodetype.gatetypes)
         a_array = self._partition.a.get_value(borrow=True)
         a_array[start:end] = new_activations
         self._partition.a.set_value(a_array, borrow=True)
 
-    def get_gate_links(self):
-        pass
-
-    def get_slot_links(self):
-        pass
+    def get_gate_activation_array(self):
+        start = self._partition.allocated_node_offsets[node_from_id(self.uid)]
+        end = start + len(self._nodetype.gatetypes)
+        a_array = self._partition.a.get_value(borrow=True)
+        return a_array[start:end]
 
     def save_data(self, data):
         np.savez(self.datafile, data=data)

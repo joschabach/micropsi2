@@ -1889,7 +1889,9 @@ class TheanoPartition():
             node_ids = np.intersect1d(node_ids, ids)
 
         nodes = {}
+        fatnodes = []
         followupuids = set()
+
         for id in node_ids:
             uid = node_to_id(id, self.pid)
             strtype = get_string_node_type(self.allocated_nodes[id], self.nodenet.native_modules)
@@ -1898,10 +1900,10 @@ class TheanoPartition():
             gate_functions = {}
             gate_parameters = {}
             gate_activations = {}
-            links = {}
 
             if nodetype.is_fat:
-                gates = nodetype.fat_config['groupgates']
+                gates = ["%s0" % g for g in nodetype.gategroups]
+                fatnodes.append(uid)
             else:
                 gates = nodetype.gatetypes
 
@@ -2021,6 +2023,8 @@ class TheanoPartition():
                 source_nodetype = self.nodenet.get_nodetype(get_string_node_type(source_type, self.nodenet.native_modules))
                 source_gate_numerical = gate_index - self.allocated_node_offsets[source_id]
                 source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
+                if source_uid in fatnodes:
+                    source_gate_type = source_gate_type.rstrip('0123456789') + '0'
 
                 slot_index = slots[index]
                 target_id = self.allocated_elements_to_nodes[slot_index]
@@ -2029,13 +2033,19 @@ class TheanoPartition():
                 target_nodetype = self.nodenet.get_nodetype(get_string_node_type(target_type, self.nodenet.native_modules))
                 target_slot_numerical = slot_index - self.allocated_node_offsets[target_id]
                 target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
+                if target_uid in fatnodes:
+                    target_slot_type = target_slot_type.rstrip('0123456789') + '0'
                 linkdict = {"weight": float(w[slot_index, gate_index]),
                             "certainty": 1,
                             "target_slot_name": target_slot_type,
                             "target_node_uid": target_uid}
                 if source_gate_type not in nodes[source_uid]["links"]:
                     nodes[source_uid]["links"][source_gate_type] = []
-                nodes[source_uid]["links"][source_gate_type].append(linkdict)
+                if source_uid in fatnodes:
+                    if linkdict not in nodes[source_uid]['links'][source_gate_type]:
+                        nodes[source_uid]["links"][source_gate_type].append(linkdict)
+                else:
+                    nodes[source_uid]["links"][source_gate_type].append(linkdict)
                 followupuids.add(target_uid)
 
             # outgoing cross-partition links
@@ -2056,6 +2066,8 @@ class TheanoPartition():
                         source_nodetype = self.nodenet.get_nodetype(get_string_node_type(source_type, self.nodenet.native_modules))
                         source_gate_numerical = from_elements[gate_index] - self.allocated_node_offsets[source_id]
                         source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
+                        if source_uid in fatnodes:
+                            source_gate_type = source_gate_type.rstrip('0123456789') + '0'
 
                         slot_index = slots[index]
                         target_id = to_partition.allocated_elements_to_nodes[to_elements[slot_index]]
@@ -2064,6 +2076,8 @@ class TheanoPartition():
                         target_nodetype = to_partition.nodenet.get_nodetype(get_string_node_type(target_type, to_partition.nodenet.native_modules))
                         target_slot_numerical = to_elements[slot_index] - to_partition.allocated_node_offsets[target_id]
                         target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
+                        if target_uid in fatnodes:
+                            target_slot_type = target_slot_type.rstrip('0123456789') + '0'
                         linkdict = {"weight": float(w[slot_index, gate_index]),
                                     "certainty": 1,
                                     "target_slot_name": target_slot_type,

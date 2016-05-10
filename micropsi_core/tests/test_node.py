@@ -64,10 +64,9 @@ def test_fat_native_modules(test_nodenet, resourcepath):
         fp.write("""
     {"PhatNM": {
         "name": "PhatNM",
-        "slottypes": ["gen", "A_in", "B_in"],
-        "gatetypes": ["gen", "A_out", "B_out"],
+        "slottypes": ["gen", "sub", "sur", "A_in", "B_in"],
+        "gatetypes": ["gen", "sub", "sur", "A_out", "B_out"],
         "nodefunction_name": "phatNM",
-        "is_fat": 1,
         "symbol": "F",
         "fat_config": {
             "gates": {
@@ -89,17 +88,45 @@ def phatNM(netapi, node, **_):
     netapi = micropsi.nodenets[test_nodenet].netapi
     node = netapi.create_node("PhatNM", None, "phatty")
     node.take_slot_activation_snapshot()
-    data = node.get_activation_array()
+
+    # test get_slot_activation
+    data = node.get_slot_activation_array()
     assert len(data) == 1024 + 62 + 3  # fat_slots + gen/sub/sur
     new_activation = np.random.rand(768 + 13 + 3)  # fat gates + gen/sub/sur
-    node.set_activation_array(new_activation)
+
+    # test set_gate_activation
+    node.set_gate_activation_array(new_activation)
     target = netapi.create_node("Register", None, "Target")
     for g in node.get_gate_types():
         netapi.link(node, g, target, 'gen')
     micropsi.step_nodenet(test_nodenet)
     assert target.activation > 0
+
+    # test saving/loading data
     node.save_data(new_activation)
     assert np.all(node.load_data() == new_activation)
+
+    # test persistency
     micropsi.save_nodenet(test_nodenet)
     micropsi.revert_nodenet(test_nodenet)
+    netapi = micropsi.nodenets[test_nodenet].netapi
+    node = netapi.get_node(node.uid)
+    target = netapi.get_node(target.uid)
     assert np.all(node.load_data() == new_activation)
+
+    # test setting gate details, get_gate_activation
+    node.set_gatefunction_name("A_out0", "sigmoid")
+    micropsi.step_nodenet(test_nodenet)
+    act = node.get_gate_activation_array()
+    assert act[3] == 0.5
+    assert np.all(act[4:] == 0)
+
+    # test delivery to frontend
+    netapi.link(target, 'gen', node, 'A_in580')
+    data = micropsi.nodenets[test_nodenet].get_nodes()
+    nodedata = data['nodes'][node.uid]
+    assert len(nodedata['gate_activations'].keys()) == 5
+    assert 'gen0' in nodedata['gate_activations']
+    assert len(nodedata['links']['A_out0']) == 1  # all to same node
+    assert 'A_out1' not in nodedata['links']
+    assert data['nodes'][target.uid]['links']['gen'][0]['target_slot_name'] == 'A_in0'

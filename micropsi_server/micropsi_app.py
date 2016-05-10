@@ -745,7 +745,12 @@ def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=No
 
 @rpc("get_nodenet_changes")
 def get_nodenet_changes(nodenet_uid, nodespaces=[], since_step=0):
-    return runtime.get_nodenet_changes(nodenet_uid, nodespaces=nodespaces, since_step=since_step)
+    data = runtime.get_nodenet_activation_data(nodenet_uid, nodespaces=nodespaces, last_call_step=since_step)
+    if data['has_changes']:
+        data['changes'] = runtime.get_nodespace_changes(nodenet_uid, nodespaces=nodespaces, since_step=since_step)
+    else:
+        data['changes'] = {}
+    return True, data
 
 
 @rpc("generate_uid")
@@ -764,6 +769,7 @@ def create_auth_token(user, password, remember=True):
             return False, "User name and password do not match"
         else:
             return False, "User unknown"
+
 
 @rpc("invalidate_auth_token")
 def invalidate_auth_token(token):

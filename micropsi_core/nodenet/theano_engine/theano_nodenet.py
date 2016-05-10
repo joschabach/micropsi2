@@ -1092,9 +1092,9 @@ class TheanoNodenet(Nodenet):
         instances_to_delete = {}
 
         # create the new nodetypes
-        self.native_modules = {}
+        new_native_modules = {}
         for type, data in native_modules.items():
-            self.native_modules[type] = Nodetype(nodenet=self, **native_modules[type])
+            new_native_modules[type] = Nodetype(nodenet=self, **native_modules[type])
 
         for partition in self.partitions.values():
             for uid, instance in partition.native_module_instances.items():
@@ -1106,7 +1106,7 @@ class TheanoNodenet(Nodenet):
 
                 numeric_id = node_from_id(uid)
                 number_of_elements = len(np.where(partition.allocated_elements_to_nodes == numeric_id)[0])
-                new_numer_of_elements = max(len(self.native_modules[instance.type].slottypes), len(self.native_modules[instance.type].gatetypes))
+                new_numer_of_elements = max(len(new_native_modules[instance.type].slottypes), len(new_native_modules[instance.type].gatetypes))
                 if number_of_elements != new_numer_of_elements:
                     self.logger.warning("Number of elements changed for node type %s from %d to %d, recreating instance %s" %
                                     (instance.type, number_of_elements, new_numer_of_elements, uid))
@@ -1117,6 +1117,8 @@ class TheanoNodenet(Nodenet):
                 self.delete_node(uid)
             for uid in instances_to_recreate.keys():
                 self.delete_node(uid)
+
+            self.native_modules = new_native_modules
 
             # update the living instances that have the same slot/gate numbers
             new_instances = {}
@@ -1136,22 +1138,22 @@ class TheanoNodenet(Nodenet):
                 new_instances[id] = new_native_module_instance
             partition.native_module_instances = new_instances
 
-            # recreate the deleted ones. Gate configurations and links will not be transferred.
-            for uid, data in instances_to_recreate.items():
-                new_uid = self.create_node(
-                    data['type'],
-                    data['parent_nodespace'],
-                    data['position'],
-                    name=data['name'],
-                    uid=uid,
-                    parameters=data['parameters'])
-
             # update native modules numeric types, as these may have been set with a different native module
             # node types list
             native_module_ids = np.where(partition.allocated_nodes > MAX_STD_NODETYPE)[0]
             for id in native_module_ids:
                 instance = self.get_node(node_to_id(id, partition.pid))
                 partition.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
+
+        # recreate the deleted ones. Gate configurations and links will not be transferred.
+        for uid, data in instances_to_recreate.items():
+            new_uid = self.create_node(
+                data['type'],
+                data['parent_nodespace'],
+                data['position'],
+                name=data['name'],
+                uid=uid,
+                parameters=data['parameters'])
 
     def get_nodespace_data(self, nodespace_uid, include_links=True):
         partition = self.get_partition(nodespace_uid)

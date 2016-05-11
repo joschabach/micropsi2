@@ -641,7 +641,8 @@ class Nodetype(object):
 
         self.path = path
         self.category = category
-
+        self.shape = shape
+        self.symbol = symbol
         self.logger = nodenet.logger
 
         self.parameters = parameters or {}
@@ -656,8 +657,8 @@ class Nodetype(object):
             self.nodefunction = None
 
         if self.is_fat:
-            self.slotgroups = slottypes
             self.gategroups = gatetypes
+            self.slotgroups = slottypes
             self.fat_config = fat_config
             gates = []
             slots = []
@@ -680,3 +681,25 @@ class Nodetype(object):
                     if g not in self.gate_defaults:
                         raise Exception("Invalid gate default value for nodetype %s: Gate %s not found" % (name, g))
                     self.gate_defaults[g][key] = gate_defaults[g][key]
+
+    def get_data(self):
+        data = {
+            'name': self.name,
+            'parameters': self.parameters,
+            'parameter_values': self.parameter_values,
+            'parameter_defaults': self.parameter_defaults,
+            'gate_defaults': self.gate_defaults,
+            'symbol': self.symbol,
+            'shape': self.shape,
+            'nodefunction_definition': self.nodefunction_definition,
+            'nodefunction_name': self.nodefunction_name,
+            'path': self.path,
+            'category': self.category
+        }
+        if self.is_fat:
+            data['gatetypes'] = ["%s0" % g for g in self.gategroups]
+            data['slottypes'] = ["%s0" % g for g in self.slotgroups]
+        else:
+            data['gatetypes'] = self.gatetypes
+            data['slottypes'] = self.slottypes
+        return data

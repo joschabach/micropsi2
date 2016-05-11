@@ -166,7 +166,11 @@ class DictNodenet(Nodenet):
             uid (optional): unique handle of the agent; if none is given, it will be generated
         """
 
-        super(DictNodenet, self).__init__(name, worldadapter, world, owner, uid, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance)
+        super().__init__(name, worldadapter, world, owner, uid, native_modules=native_modules, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance)
+
+        self.nodetypes = {}
+        for type, data in STANDARD_NODETYPES.items():
+            self.nodetypes[type] = Nodetype(nodenet=self, **data)
 
         self.stepoperators = [DictPropagate(), DictCalculate()]
         if self.use_modulators:
@@ -178,14 +182,6 @@ class DictNodenet(Nodenet):
 
         self._nodes = {}
         self._nodespaces = {}
-
-        self._nodetypes = {}
-        for type, data in STANDARD_NODETYPES.items():
-            self._nodetypes[type] = Nodetype(nodenet=self, **data)
-
-        self._native_modules = {}
-        for type, data in native_modules.items():
-            self._native_modules[type] = Nodetype(nodenet=self, **data)
 
         self.nodegroups = {}
 
@@ -286,9 +282,10 @@ class DictNodenet(Nodenet):
     def reload_native_modules(self, native_modules):
         """ reloads the native-module definition, and their nodefunctions
         and afterwards reinstantiates the nodenet."""
-        self._native_modules = {}
+        self.native_modules = {}
         for key in native_modules:
-            self._native_modules[key] = Nodetype(nodenet=self, **native_modules[key])
+            if native_modules[key].get('engine', self.engine) == self.engine:
+                self.native_modules[key] = Nodetype(nodenet=self, **native_modules[key])
         saved = self.export_json()
         self.clear()
         self.merge_data(saved, keep_uids=True)
@@ -371,10 +368,10 @@ class DictNodenet(Nodenet):
 
     def get_nodetype(self, type):
         """ Returns the nodetpype instance for the given nodetype or native_module or None if not found"""
-        if type in self._nodetypes:
-            return self._nodetypes[type]
+        if type in self.nodetypes:
+            return self.nodetypes[type]
         else:
-            return self._native_modules[type]
+            return self.native_modules[type]
 
     def get_nodespace_data(self, nodespace_uid, include_links):
         data = {
@@ -479,7 +476,7 @@ class DictNodenet(Nodenet):
                 newuid = uid
             data['uid'] = newuid
             uidmap[uid] = newuid
-            if data['type'] not in self._nodetypes and data['type'] not in self._native_modules:
+            if data['type'] not in self.nodetypes and data['type'] not in self.native_modules:
                 self.logger.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
                 data['parameters'] = {
                     'comment': 'There was a %s node here' % data['type']

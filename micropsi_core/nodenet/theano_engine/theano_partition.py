@@ -1870,7 +1870,7 @@ class TheanoPartition():
         return node_ids, nodespace_ids
 
     def get_node_data(self, ids=None, nodespace_ids=None, complete=False, include_links=True, include_followupnodes=True):
-
+        import re
         a = self.a.get_value(borrow=True)
         g_threshold_array = self.g_threshold.get_value(borrow=True)
         g_amplification_array = self.g_amplification.get_value(borrow=True)

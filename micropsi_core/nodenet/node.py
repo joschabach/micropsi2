@@ -619,7 +619,7 @@ class Nodetype(object):
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None,
-                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', fat_config=None):
+                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', dimensionality=None):
         """Initializes or creates a nodetype.
 
         Arguments:
@@ -634,7 +634,9 @@ class Nodetype(object):
         self._nodefunction_definition = None
         self._nodefunction_name = None
 
-        self.is_fat = fat_config is not None
+        self.dimensionality = dimensionality
+        self.is_highdimensional = dimensionality is not None
+
         self.name = name
         self.slottypes = slottypes or []
         self.gatetypes = gatetypes or []
@@ -656,18 +658,24 @@ class Nodetype(object):
         else:
             self.nodefunction = None
 
-        if self.is_fat:
-            self.gategroups = gatetypes
-            self.slotgroups = slottypes
-            self.fat_config = fat_config
+        if self.is_highdimensional:
+            self.gategroups = [("%s0" % g) if dimensionality['gates'].get(g, 1) > 1 else g for g in gatetypes ]
+            self.slotgroups = [("%s0" % s) if dimensionality['slots'].get(s, 1) > 1 else s for s in slottypes ]
+            self.dimensionality = dimensionality
             gates = []
             slots = []
             for g in self.gatetypes:
-                group = ["%s%d" % (g, i) for i in range(fat_config['gates'].get(g, 1))]
-                gates.extend(group)
+                if dimensionality['gates'].get(g, 1)  > 1:
+                    group = ["%s%d" % (g, i) for i in range(dimensionality['gates'][g])]
+                    gates.extend(group)
+                else:
+                    gates.append(g)
             for s in self.slottypes:
-                group = ["%s%d" % (s, i) for i in range(fat_config['slots'].get(s, 1))]
-                slots.extend(group)
+                if dimensionality['slots'].get(s, 1)  > 1:
+                    group = ["%s%d" % (s, i) for i in range(dimensionality['slots'][s])]
+                    slots.extend(group)
+                else:
+                    slots.append(s)
             self.gatetypes = gates
             self.slottypes = slots
 
@@ -694,11 +702,13 @@ class Nodetype(object):
             'nodefunction_definition': self.nodefunction_definition,
             'nodefunction_name': self.nodefunction_name,
             'path': self.path,
-            'category': self.category
+            'category': self.category,
+            'is_highdimensional': self.is_highdimensional
         }
-        if self.is_fat:
-            data['gatetypes'] = ["%s0" % g for g in self.gategroups]
-            data['slottypes'] = ["%s0" % g for g in self.slotgroups]
+        if self.is_highdimensional:
+            data['gatetypes'] = self.gategroups
+            data['slottypes'] = self.slotgroups
+            data['dimensionality'] = self.dimensionality
         else:
             data['gatetypes'] = self.gatetypes
             data['slottypes'] = self.slottypes

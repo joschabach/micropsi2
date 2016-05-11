@@ -68,7 +68,7 @@ def test_fat_native_modules(test_nodenet, resourcepath):
         "gatetypes": ["gen", "sub", "sur", "A_out", "B_out"],
         "nodefunction_name": "phatNM",
         "symbol": "F",
-        "fat_config": {
+        "dimensionality": {
             "gates": {
                 "A_out": 768,
                 "B_out": 13
@@ -123,10 +123,15 @@ def phatNM(netapi, node, **_):
 
     # test delivery to frontend
     netapi.link(target, 'gen', node, 'A_in580')
+    pipe = netapi.create_node("Pipe", None, "pipe")
+    netapi.link_with_reciprocal(pipe, node, 'subsur')
     data = micropsi.nodenets[test_nodenet].get_nodes()
     nodedata = data['nodes'][node.uid]
     assert len(nodedata['gate_activations'].keys()) == 5
-    assert 'gen0' in nodedata['gate_activations']
+    assert 'gen' in nodedata['gate_activations']
     assert len(nodedata['links']['A_out0']) == 1  # all to same node
     assert 'A_out1' not in nodedata['links']
     assert data['nodes'][target.uid]['links']['gen'][0]['target_slot_name'] == 'A_in0'
+    assert nodedata['links']['sur'][0]['target_node_uid'] == pipe.uid
+    assert nodedata['links']['sur'][0]['target_slot_name'] == 'sur'
+    assert data['nodes'][pipe.uid]['links']['sub'][0]['target_slot_name'] == 'sub'

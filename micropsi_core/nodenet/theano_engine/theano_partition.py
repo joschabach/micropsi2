@@ -1870,7 +1870,6 @@ class TheanoPartition():
         return node_ids, nodespace_ids
 
     def get_node_data(self, ids=None, nodespace_ids=None, complete=False, include_links=True, include_followupnodes=True):
-        import re
         a = self.a.get_value(borrow=True)
         g_threshold_array = self.g_threshold.get_value(borrow=True)
         g_amplification_array = self.g_amplification.get_value(borrow=True)
@@ -1889,7 +1888,7 @@ class TheanoPartition():
             node_ids = np.intersect1d(node_ids, ids)
 
         nodes = {}
-        fatnodes = []
+        highdim_nodes = []
         followupuids = set()
 
         for id in node_ids:
@@ -1901,9 +1900,9 @@ class TheanoPartition():
             gate_parameters = {}
             gate_activations = {}
 
-            if nodetype.is_fat:
-                gates = ["%s0" % g for g in nodetype.gategroups]
-                fatnodes.append(uid)
+            if nodetype.is_highdimensional:
+                gates = nodetype.gategroups
+                highdim_nodes.append(uid)
             else:
                 gates = nodetype.gatetypes
 
@@ -2002,7 +2001,7 @@ class TheanoPartition():
                     "activation": float(a[self.allocated_node_offsets[id] + GEN]),
                     "gate_activations": gate_activations,
                     "gate_functions": gate_functions,
-                    "is_fat": nodetype.is_fat}
+                    "is_highdimensional": nodetype.is_highdimensional}
             if complete:
                 data['index'] = id
             if include_links:
@@ -2023,8 +2022,10 @@ class TheanoPartition():
                 source_nodetype = self.nodenet.get_nodetype(get_string_node_type(source_type, self.nodenet.native_modules))
                 source_gate_numerical = gate_index - self.allocated_node_offsets[source_id]
                 source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
-                if source_uid in fatnodes:
-                    source_gate_type = source_gate_type.rstrip('0123456789') + '0'
+                if source_uid in highdim_nodes:
+                    source_gate_type = source_gate_type.rstrip('0123456789')
+                    if source_gate_type in source_nodetype.dimensionality['gates']:
+                        source_gate_type = source_gate_type + '0'
 
                 slot_index = slots[index]
                 target_id = self.allocated_elements_to_nodes[slot_index]
@@ -2033,15 +2034,17 @@ class TheanoPartition():
                 target_nodetype = self.nodenet.get_nodetype(get_string_node_type(target_type, self.nodenet.native_modules))
                 target_slot_numerical = slot_index - self.allocated_node_offsets[target_id]
                 target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
-                if target_uid in fatnodes:
-                    target_slot_type = target_slot_type.rstrip('0123456789') + '0'
+                if target_uid in highdim_nodes:
+                    target_slot_type = target_slot_type.rstrip('0123456789')
+                    if target_slot_type in target_nodetype.dimensionality['slots']:
+                        target_slot_type = target_slot_type + '0'
                 linkdict = {"weight": float(w[slot_index, gate_index]),
                             "certainty": 1,
                             "target_slot_name": target_slot_type,
                             "target_node_uid": target_uid}
                 if source_gate_type not in nodes[source_uid]["links"]:
                     nodes[source_uid]["links"][source_gate_type] = []
-                if source_uid in fatnodes:
+                if source_uid in highdim_nodes:
                     if linkdict not in nodes[source_uid]['links'][source_gate_type]:
                         nodes[source_uid]["links"][source_gate_type].append(linkdict)
                 else:
@@ -2066,8 +2069,10 @@ class TheanoPartition():
                         source_nodetype = self.nodenet.get_nodetype(get_string_node_type(source_type, self.nodenet.native_modules))
                         source_gate_numerical = from_elements[gate_index] - self.allocated_node_offsets[source_id]
                         source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
-                        if source_uid in fatnodes:
-                            source_gate_type = source_gate_type.rstrip('0123456789') + '0'
+                        if source_uid in highdim_nodes:
+                            source_gate_type = source_gate_type.rstrip('0123456789')
+                            if source_gate_type in source_nodetype.dimensionality['gates']:
+                                source_gate_type = source_gate_type + '0'
 
                         slot_index = slots[index]
                         target_id = to_partition.allocated_elements_to_nodes[to_elements[slot_index]]
@@ -2076,8 +2081,10 @@ class TheanoPartition():
                         target_nodetype = to_partition.nodenet.get_nodetype(get_string_node_type(target_type, to_partition.nodenet.native_modules))
                         target_slot_numerical = to_elements[slot_index] - to_partition.allocated_node_offsets[target_id]
                         target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
-                        if target_uid in fatnodes:
-                            target_slot_type = target_slot_type.rstrip('0123456789') + '0'
+                        if target_uid in highdim_nodes:
+                            target_slot_type = target_slot_type.rstrip('0123456789')
+                            if target_slot_type in target_nodetype.dimensionality['slots']:
+                                target_slot_type = target_slot_type + '0'
                         linkdict = {"weight": float(w[slot_index, gate_index]),
                                     "certainty": 1,
                                     "target_slot_name": target_slot_type,

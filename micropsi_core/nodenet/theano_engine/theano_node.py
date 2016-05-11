@@ -34,7 +34,7 @@ class TheanoNode(Node):
 
         Node.__init__(self, strtype, nodenet.get_nodetype(strtype))
 
-        self.is_fat = self._nodetype.is_fat
+        self.is_highdimensional = self._nodetype.is_highdimensional
 
         self.datafile = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, '%s_node_%s.npz' % (self._nodenet.uid, self.uid))
 
@@ -47,7 +47,7 @@ class TheanoNode(Node):
             else:
                 self.parameters = {}
 
-            if self.is_fat:
+            if self.is_highdimensional:
                 self.slot_fat_snapshot = None
 
     @property
@@ -187,7 +187,7 @@ class TheanoNode(Node):
         for slottype in self.nodetype.slottypes:
             self.slot_activation_snapshot[slottype] =  \
                 a_array[self._partition.allocated_node_offsets[self._id] + get_numerical_slot_type(slottype, self.nodetype)]
-        if self.is_fat:
+        if self.is_highdimensional:
             start = self._partition.allocated_node_offsets[self._id]
             end = start + len(self._nodetype.slottypes)
             self.slot_fat_snapshot = a_array[start:end]

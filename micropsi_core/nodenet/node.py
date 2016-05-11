@@ -659,8 +659,8 @@ class Nodetype(object):
             self.nodefunction = None
 
         if self.is_highdimensional:
-            self.gategroups = [("%s0" % g) if dimensionality['gates'].get(g, 1) > 1 else g for g in gatetypes ]
-            self.slotgroups = [("%s0" % s) if dimensionality['slots'].get(s, 1) > 1 else s for s in slottypes ]
+            self.gategroups = [("%s0" % g) if dimensionality['gates'].get(g, 1) > 1 else g for g in gatetypes]
+            self.slotgroups = [("%s0" % s) if dimensionality['slots'].get(s, 1) > 1 else s for s in slottypes]
             self.dimensionality = dimensionality
             gates = []
             slots = []

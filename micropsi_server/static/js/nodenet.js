@@ -742,7 +742,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
                     parameters[key] = this.gate_parameters[gatetype][key];
                 }
             }
-            var highdim = (is_highdim && gatetype.substr(gatetype, gatetype.length - 1) in nodetypes[type].dimensionality.gates);
+            var highdim = is_highdim && gatetype in nodetypes[type].dimensionality.gates;
             this.gates[gatetype] = new Gate(gatetype, i, sheaves, parameters, this.gatefunctions[gatetype], highdim);
         }
         this.slotIndexes = Object.keys(this.slots);

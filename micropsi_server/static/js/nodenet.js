@@ -4139,6 +4139,11 @@ function showGateForm(node, gate){
                 el.removeAttr('disabled');
         }
     });
+    if(gate.is_highdim){
+        $('.highdim', form).text("This is a high-dimensional gate with " + nodetypes[node.type].dimensionality.gates[gate.name] + " dimensions").show();
+    } else {
+        $('.highdim', form).hide();
+    }
     $('#gate_gatefunction').val(gate.gatefunction);
     form.attr('data-node', node.uid);
     form.attr('data-gate', gate.name);

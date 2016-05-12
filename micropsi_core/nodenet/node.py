@@ -634,8 +634,12 @@ class Nodetype(object):
         self._nodefunction_definition = None
         self._nodefunction_name = None
 
-        self.dimensionality = dimensionality
+        self.dimensionality = None
         self.is_highdimensional = dimensionality is not None
+        if nodenet.engine == "dict_engine" and self.is_highdimensional:
+            nodenet.logger.warning("Dict engine does not support high dimensional native_modules")
+            self.is_highdimensional = False
+            self.dimensionality = None
 
         self.name = name
         self.slottypes = slottypes or []

@@ -50,7 +50,7 @@
                 <div class="control-group">
                     <label class="control-label" for="nn_modulators">Emotional Modulators</label>
                     <div class="controls">
-                        <input class="input-xlarge" id="nn_modulators" name="nn_modulators" type="checkbox" checked="checked" />
+                        <input class="input-xlarge" id="nn_modulators" name="nn_modulators" type="checkbox" />
                         <!-- <span class="help-inline">Deselect if this nodenet does not use the emotional model of the PSI Theory</span> -->
                     </div>
                 </div>

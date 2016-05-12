@@ -22,6 +22,7 @@ h3 {
 .monitor_list input {display:inline;}
 .monitor_list label {display:inline;}
 .monitor_list li {padding: 2px 0;}
+#monitor input[type="checkbox"] {margin: 0;}
 
 #graph, #logs {
   overflow: auto;

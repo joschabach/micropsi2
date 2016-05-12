@@ -19,6 +19,7 @@ $(function(){
     var cookieval = $.cookie('selected_nodenet');
     if (cookieval && cookieval.indexOf('/')){
         currentNodenet = cookieval.split('/')[0];
+        $('form#export_recorders').attr('action', '/recorder/export/' + currentNodenet);
     }
 
     var capturedLoggers = {
@@ -168,6 +169,7 @@ $(function(){
         currentNodenet = newNodenet;
         init();
         refreshMonitors();
+        $('form#export_recorders').attr('action', '/recorder/export/' + currentNodenet);
     });
     $(document).on('nodenet_loaded', function(data, newNodenet){
         currentNodenet = newNodenet;
@@ -225,7 +227,7 @@ $(function(){
         var html = '';
         for(var uid in data){
             var rec = data[uid];
-            html += '<tr><th colspan="3">'+rec.name+'</th></tr>';
+            html += '<tr><th colspan="3"><input type="checkbox" name="recorder_uids[]" value="'+uid+'" /> '+rec.name +'</th></tr>';
             html += '<tr><td>&nbsp;</td><td colspan="2">';
             html += '<button data-action="export" data-uid="'+rec.uid+'" class="btn btn-small">Export</button> ';
             html += '<button data-action="clear" data-uid="'+rec.uid+'" class="btn btn-small">Clear</button> ';
@@ -249,12 +251,21 @@ $(function(){
     }
 
     function recorderAction(event){
+        event.preventDefault();
         var btn = $(event.target);
         var uid = btn.attr("data-uid");
         var method_name = null;
         switch(btn.attr('data-action')){
             case 'export':
                 return window.location.replace('/recorder/export/'+currentNodenet+'-'+uid);
+            case 'export_selected_recorders':
+                var table = $('#recorder_table');
+                var uids = [];
+                $('input[type=checkbox]', table).each(function(idx, el){
+                    if(el.checked) uids.push(el.value);
+                })
+                $.post('/recorder/export/'+currentNodenet, {'recorder_uids': uids});
+                break;
             case 'clear':
                 method_name = 'clear_recorder'; break;
             case 'delete':

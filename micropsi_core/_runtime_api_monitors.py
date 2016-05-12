@@ -143,3 +143,17 @@ def get_recorder_data(nodenet_uid):
 
 def get_recorder(nodenet_uid, recorder_uid):
     return micropsi_core.runtime.get_nodenet(nodenet_uid).get_recorder(recorder_uid)
+
+
+def export_recorders(nodenet_uid, recorder_uids):
+    """ Returns a bytestream containing an npz export for the given recorders"""
+    import numpy as np
+    from io import BytesIO
+    nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
+    data = {}
+    stream = BytesIO()
+    for uid in recorder_uids:
+        recorder = nodenet.get_recorder(uid)
+        data[recorder.name] = recorder.values
+    np.savez(stream, **data)
+    return stream.getvalue()

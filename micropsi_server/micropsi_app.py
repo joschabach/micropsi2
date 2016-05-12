@@ -564,10 +564,24 @@ def export_nodenet(nodenet_uid):
 
 
 @micropsi_app.route("/recorder/export/<nodenet_uid>-<recorder_uid>")
-def export_monitor(nodenet_uid, recorder_uid):
+def export_recorder(nodenet_uid, recorder_uid):
+    data = runtime.export_recorders(nodenet_uid, [recorder_uid])
     recorder = runtime.get_recorder(nodenet_uid, recorder_uid)
-    recorder.save()
-    return static_file(os.path.basename(recorder.filename), root=os.path.dirname(recorder.filename), download='recorder_%s.npz' % recorder.name)
+    response.set_header('Content-type', 'application/octet-stream')
+    response.set_header('Content-Disposition', 'attachment; filename="recorder_%s.npz"' % recorder.name)
+    return data
+
+
+@micropsi_app.route("/recorder/export/<nodenet_uid>", method="POST")
+def export_recorders(nodenet_uid):
+    uids = []
+    for param in request.params.allitems():
+        if param[0] == 'recorder_uids[]':
+            uids.append(param[1])
+    data = runtime.export_recorders(nodenet_uid, uids)
+    response.set_header('Content-type', 'application/octet-stream')
+    response.set_header('Content-Disposition', 'attachment; filename="recorders_%s.npz"' % nodenet_uid)
+    return data
 
 
 @micropsi_app.route("/nodenet/edit")

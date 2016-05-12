@@ -116,15 +116,18 @@
             % if theano_available:
                 <div class="recorder_field layout_field">
                     <h4>Recorders</h4>
-                    <div class="contentbox section">
-                        <table id="recorder_table" class="table-striped table-condensed">
-                        </table>
-                    </div>
-                    <div class="section">
-                        <p class="monitor_list">
-                            <button class="add_recorder btn btn-small">Add recorder</button>
-                        </p>
-                    </div>
+                    <form id="export_recorders" method="post">
+                        <div class="contentbox section">
+                            <table id="recorder_table" class="table-striped table-condensed">
+                            </table>
+                        </div>
+                        <div class="section">
+                            <p class="monitor_list">
+                                <button data-action="add_recorder" class="add_recorder btn btn-small">Add recorder</button>
+                                <button data-action="export_selected_recorders" type="submit" class="export_recorders btn btn-small">Export selected recorders</button>
+                            </p>
+                        </div>
+                    </form>
                 </div>
             % end
             <p style="clear:both">&nbsp;</p>

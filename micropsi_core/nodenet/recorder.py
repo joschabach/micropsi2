@@ -79,7 +79,6 @@ class Recorder(metaclass=ABCMeta):
             values['uid'] = self.uid  # empty files cannot be loaded
         np.savez(filename if filename is not None else self.filename, **values)
 
-
     def load(self, filename=None):
         data = np.load(filename if filename is not None else self.filename)
         for key in data:

@@ -696,7 +696,6 @@ class Nodetype(object):
             'parameters': self.parameters,
             'parameter_values': self.parameter_values,
             'parameter_defaults': self.parameter_defaults,
-            'gate_defaults': self.gate_defaults,
             'symbol': self.symbol,
             'shape': self.shape,
             'nodefunction_definition': self.nodefunction_definition,
@@ -712,8 +711,12 @@ class Nodetype(object):
                 'gates': dict(("%s0" % g, self.dimensionality['gates'][g]) for g in self.dimensionality['gates']),
                 'slots': dict(("%s0" % s, self.dimensionality['slots'][s]) for s in self.dimensionality['slots']),
             }
+            data['gate_defaults'] = {}
+            for g in self.gategroups:
+                data['gate_defaults'][g] = self.gate_defaults[g]
         else:
             data['gatetypes'] = self.gatetypes
             data['slottypes'] = self.slottypes
             data['dimensionality'] = {}
+            data['gate_defaults'] = self.gate_defaults
         return data

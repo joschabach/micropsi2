@@ -135,3 +135,13 @@ def phatNM(netapi, node, **_):
     assert nodedata['links']['sur'][0]['target_node_uid'] == pipe.uid
     assert nodedata['links']['sur'][0]['target_slot_name'] == 'sur'
     assert data['nodes'][pipe.uid]['links']['sub'][0]['target_slot_name'] == 'sub'
+
+    # test get nodetypes
+    result = micropsi.get_available_native_module_types(test_nodenet)['PhatNM']
+    assert result['dimensionality']['gates']['A_out0'] == 768
+    assert result['dimensionality']['gates']['B_out0'] == 13
+    assert result['dimensionality']['slots']['A_in0'] == 1024
+    assert result['dimensionality']['slots']['B_in0'] == 62
+    assert result['gatetypes'] == ['gen', 'sub', 'sur', 'A_out0', 'B_out0']
+    assert set(result['gate_defaults'].keys()) == set(result['gatetypes'])
+    assert result['is_highdimensional']

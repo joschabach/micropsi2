@@ -147,13 +147,14 @@
                 <label class="control-label" for="recorder_type_input">Type:</label>
                 <div class="controls">
                     <select id="recorder_type_input">
-                        <option value="activation_recorder">Activation recorder</option>
+                        <option value="gate_activation_recorder">Gate Activation recorder</option>
+                        <option value="node_activation_recorder">Node Activation recorder</option>
                         <option value="linkweight_recorder">Linkweight recorder</option>
                     </select>
                 </div>
             </div>
             </fieldset>
-            <fieldset class="activation_recorder recorder_specific">
+            <fieldset class="node_activation_recorder gate_activation_recorder recorder_specific">
                 <legend>Nodes</legend>
                 <div class="control-group">
                     <label class="control-label" for="recorder_nodespace_uid">Nodespace</label>
@@ -171,7 +172,7 @@
                         <input type="text" id="recorder_node_name_prefix"/>
                     </div>
                 </div>
-                <div class="control-group">
+                <div class="control-group gate_activation_recorder recorder_specific">
                     <label class="control-label" for="recorder_gate">Gate</label>
                     <div class="controls">
                         <input type="text" id="recorder_gate" value="gen"/>

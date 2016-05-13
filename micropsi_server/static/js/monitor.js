@@ -49,8 +49,8 @@ $(function(){
     var rec_type_dd = $('#recorder_type_input');
     rec_type_dd.on('change', function(event){
         var type = rec_type_dd.val();
-        $('fieldset.recorder_specific').hide();
-        $('fieldset.'+type).show();
+        $('.recorder_specific').hide();
+        $('.'+type).show();
     })
     $('.add_recorder').on('click', function(event){
         event.preventDefault();
@@ -72,11 +72,26 @@ $(function(){
         };
         var type = $('#recorder_type_input').val();
         var method = null;
-        if(type == 'activation_recorder'){
-            method = 'add_activation_recorder';
+        if(type == 'gate_activation_recorder'){
+            method = 'add_gate_activation_recorder';
             params['group_definition'] = {
                 'nodespace_uid': $('#recorder_nodespace_uid').val(),
                 'gatetype': $('#recorder_gate').val(),
+            }
+            var ids = $('#recorder_node_uids').val();
+            if(ids){
+                ids = ids.split(',')
+                for(var i in ids){
+                    ids[i] = ids[i].trim();
+                }
+                params.group_definition['node_uids'] = ids;
+            } else{
+                params.group_definition['node_name_prefix'] = $('#recorder_node_name_prefix').val();
+            }
+        } else if(type == 'node_activation_recorder'){
+            method = 'add_node_activation_recorder';
+            params['group_definition'] = {
+                'nodespace_uid': $('#recorder_nodespace_uid').val(),
             }
             var ids = $('#recorder_node_uids').val();
             if(ids){

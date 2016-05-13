@@ -45,3 +45,24 @@ class TheanoNetAPI(NetAPI):
             w_update *= (1 - porretdecay)
             w[rows, cols] = w_update
             partition.w.set_value(w, borrow=True)
+
+    def add_gate_activation_recorder(self, group_definition, name, interval=1):
+        """ Adds an activation recorder to a group of nodes."""
+        return self.__nodenet.add_gate_activation_recorder(group_definition, name, interval)
+
+    def add_node_activation_recorder(self, group_definition, name, interval=1):
+        """ Adds an activation recorder to a group of nodes."""
+        return self.__nodenet.add_node_activation_recorder(group_definition, name, interval)
+
+    def add_linkweight_recorder(self, from_group_definition, to_group_definition, name, interval=1):
+        """ Adds a linkweight recorder to links between to groups."""
+        return self.__nodenet.add_linkweight_recorder(from_group_definition, to_group_definition, name, interval)
+
+    def get_recorder(self, uid):
+        """Returns the recorder with the given uid"""
+        return self.__nodenet.get_recorder(uid)
+
+    def remove_recorder(self, uid):
+        """Removes the recorder with the given uid"""
+        return self.__nodenet.remove_recorder(uid)
+

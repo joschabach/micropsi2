@@ -1247,10 +1247,16 @@ def get_emoexpression_parameters(nodenet_uid):
 # --------- recorder --------
 
 
-@rpc("add_activation_recorder")
-def add_activation_recorder(nodenet_uid, group_definition, name, interval=1):
+@rpc("add_gate_activation_recorder")
+def add_gate_activation_recorder(nodenet_uid, group_definition, name, interval=1):
     """ Adds an activation recorder to a group of nodes."""
-    return runtime.add_activation_recorder(nodenet_uid, group_definition, name, interval)
+    return runtime.add_gate_activation_recorder(nodenet_uid, group_definition, name, interval)
+
+
+@rpc("add_node_activation_recorder")
+def add_node_activation_recorder(nodenet_uid, group_definition, name, interval=1):
+    """ Adds an activation recorder to a group of nodes."""
+    return runtime.add_node_activation_recorder(nodenet_uid, group_definition, name, interval)
 
 
 @rpc("add_linkweight_recorder")

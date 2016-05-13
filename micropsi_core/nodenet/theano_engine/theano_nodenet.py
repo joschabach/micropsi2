@@ -1621,9 +1621,15 @@ class TheanoNodenet(Nodenet):
                 result['nodespaces_dirty'][uid] = self.get_nodespace(uid).get_data()
         return result
 
-    def add_activation_recorder(self, group_definition, name, interval=1):
+    def add_gate_activation_recorder(self, group_definition, name, interval=1):
         """ Adds an activation recorder to a group of nodes."""
-        rec = recorder.ActivationRecorder(self, group_definition, name, interval=interval)
+        rec = recorder.GateActivationRecorder(self, group_definition, name, interval=interval)
+        self._recorders[rec.uid] = rec
+        return rec
+
+    def add_node_activation_recorder(self, group_definition, name, interval=1):
+        """ Adds an activation recorder to a group of nodes."""
+        rec = recorder.NodeActivationRecorder(self, group_definition, name, interval=interval)
         self._recorders[rec.uid] = rec
         return rec
 

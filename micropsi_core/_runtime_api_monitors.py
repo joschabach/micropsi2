@@ -100,21 +100,21 @@ def get_monitor_data(nodenet_uid, step=0, from_step=0, count=-1, with_recorders=
                 monitor_data[uid]['values'] = values
         data['monitors'] = monitor_data
         if with_recorders:
-            # recorder_data = {}
-            # for uid in nodenet.construct_recorders_dict():
-            #     rec = nodenet.get_recorder(uid)
-            #     recorder_data[uid] = rec.get_data()
-            #     values = rec.values.tolist()
-            #     recorder_data[uid]['values'] = values[from_step + rec.first_step : from_step + count + rec.first_step]
-            # data['recorders'] = recorder_data
             data['recorders'] = nodenet.construct_recorders_dict()
         return data
 
 
-def add_activation_recorder(nodenet_uid, group_definition, name, interval=1):
+def add_gate_activation_recorder(nodenet_uid, group_definition, name, interval=1):
     """ Adds an activation recorder to a group of nodes."""
     nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
-    rec = nodenet.add_activation_recorder(group_definition, name, interval)
+    rec = nodenet.add_gate_activation_recorder(group_definition, name, interval)
+    return True, rec.uid
+
+
+def add_node_activation_recorder(nodenet_uid, group_definition, name, interval=1):
+    """ Adds an activation recorder to a group of nodes."""
+    nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
+    rec = nodenet.add_node_activation_recorder(group_definition, name, interval)
     return True, rec.uid
 
 

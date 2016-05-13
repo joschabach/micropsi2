@@ -21,7 +21,7 @@ def test_activation_recorder(test_nodenet, resourcepath):
     netapi.link(source, 'gen', source, 'gen')
     netapi.link(source, 'gen', nodes[0], 'gen')
     source.activation = 1
-    recorder = netapi.add_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder", interval=2)
+    recorder = netapi.add_gate_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder", interval=2)
     assert recorder.name == 'recorder'
     assert recorder.interval == 2
     for i in range(5):
@@ -36,6 +36,31 @@ def test_activation_recorder(test_nodenet, resourcepath):
     micropsi.revert_nodenet(test_nodenet)
     recorder = netapi.get_recorder(recorder.uid)
     assert recorder.values['activations'][1].tolist() == [1, 1, 1, 1, 0, 0, 0, 0, 0, 0]
+
+
+@pytest.mark.engine("theano_engine")
+def test_nodeactivation_recorder(test_nodenet, resourcepath):
+    import numpy as np
+    nodenet = micropsi.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    nodes = []
+    source = netapi.create_node("Register", None, 'source')
+    source.activation = 1
+    for i in range(10):
+        node = netapi.create_node('Pipe', None, "testnode_%d" % i)
+        netapi.link(source, 'gen', node, 'sub')
+        nodes.append(node)
+
+    recorder = netapi.add_node_activation_recorder(group_definition={'nodespace_uid': None, 'node_name_prefix': 'testnode'}, name="recorder")
+
+    gatecount = len(nodes[0].get_gate_types())
+    micropsi.step_nodenet(test_nodenet)
+    values = recorder.values['activations'][0]
+
+    assert values.shape == (gatecount, 10)
+    assert np.all(values[5] == 1)
+    assert np.all(values[3] == 1)
+    assert np.all(values[0] == 0)
 
 
 @pytest.mark.engine("theano_engine")
@@ -77,7 +102,7 @@ def test_clear_recorder(test_nodenet, resourcepath):
     nodespace = netapi.get_nodespace(None)
     for i in range(5):
         netapi.create_node('Register', None, "testnode_%d" % i)
-    recorder = netapi.add_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder")
+    recorder = netapi.add_gate_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder")
     for i in range(3):
         micropsi.step_nodenet(test_nodenet)
     assert len(recorder.values['activations'].tolist()[3]) == 5
@@ -92,7 +117,7 @@ def test_remove_recorder(test_nodenet, resourcepath):
     nodespace = netapi.get_nodespace(None)
     for i in range(5):
         netapi.create_node('Register', None, "testnode_%d" % i)
-    recorder = netapi.add_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder")
+    recorder = netapi.add_gate_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder")
     for i in range(3):
         micropsi.step_nodenet(test_nodenet)
     netapi.remove_recorder(recorder.uid)
@@ -108,7 +133,7 @@ def test_grow_recorder_values(test_nodenet, resourcepath):
     for i in range(5):
         netapi.create_node('Register', None, "testnode_%d" % i)
     Recorder.initial_size = 5
-    recorder = netapi.add_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder")
+    recorder = netapi.add_gate_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder")
     micropsi.step_nodenet(test_nodenet)
     assert len(recorder.values['activations']) == 5
     for i in range(20):

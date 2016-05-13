@@ -94,7 +94,7 @@ class Recorder(metaclass=ABCMeta):
         self.load(filename)
 
 
-class ActivationRecorder(Recorder):
+class GateActivationRecorder(Recorder):
     """ An activation recorder to record activaitons of nodegroups"""
 
     def __init__(self, nodenet, group_config={}, name="", uid="", interval=1, first_step=0, current_index=-1, **_):
@@ -122,6 +122,43 @@ class ActivationRecorder(Recorder):
 
     def get_values(self):
         return {'activations': self._nodenet.get_activations(self.nodespace, self.group_name)}
+
+
+class NodeActivationRecorder(Recorder):
+    """ An activation recorder to record activaitons of nodegroups"""
+
+    def __init__(self, nodenet, group_config={}, name="", uid="", interval=1, first_step=0, current_index=-1, **_):
+        super().__init__(nodenet, name, uid, interval, first_step=first_step, current_index=current_index)
+
+        self.group_config = group_config
+        self.nodespace = group_config['nodespace_uid']
+        self.base_group_name = group_config.pop('group_name', name)
+
+        if not group_config.get('node_uids', []):
+            nodes = self._nodenet.netapi.get_nodes(nodespace=self.nodespace, node_name_prefix=group_config['node_name_prefix'], sortby=group_config.get('sortby', 'id'))
+        else:
+            nodes = [self._nodenet.get_node(uid) for uid in node_uids]
+
+        assert len(set([n.type for n in nodes])) == 1  # assert we have a homogenous group
+        self.gatetypes = nodes[0].get_gate_types()
+        self.groupnames = []
+        for g in self.gatetypes:
+            group_config['gatetype'] = g
+            group_config['group_name'] = self.base_group_name + '_%s' % g
+            self.groupnames.append(group_config['group_name'])
+            self._nodenet.group_nodes_by_names(**group_config)
+
+        self.shapes = {'activations': (self.initial_size, len(self.gatetypes), len(nodes))}
+
+    def get_data(self):
+        data = super().get_data()
+        data.update({
+            "group_config": self.group_config,
+        })
+        return data
+
+    def get_values(self):
+        return {'activations': [self._nodenet.get_activations(self.nodespace, groupname) for groupname in self.groupnames]}
 
 
 class LinkweightRecorder(Recorder):

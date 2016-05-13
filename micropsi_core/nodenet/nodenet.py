@@ -653,7 +653,11 @@ class Nodenet(metaclass=ABCMeta):
     def remove_monitor(self, monitor_uid):
         del self._monitors[monitor_uid]
 
-    def add_activation_recorder(self, group_definition, name, interval=1):
+    def add_gate_activation_recorder(self, group_definition, name, interval=1):
+        """ Adds an activation recorder to a group of nodes."""
+        raise NotImplementedError("Recorders are not implemented in the this engine")
+
+    def add_node_activation_recorder(self, group_definition, name, interval=1):
         """ Adds an activation recorder to a group of nodes."""
         raise NotImplementedError("Recorders are not implemented in the this engine")
 

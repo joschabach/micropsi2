@@ -619,7 +619,7 @@ class Nodetype(object):
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None,
-                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', dimensionality=None):
+                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', dimensionality={}):
         """Initializes or creates a nodetype.
 
         Arguments:
@@ -634,12 +634,12 @@ class Nodetype(object):
         self._nodefunction_definition = None
         self._nodefunction_name = None
 
-        self.dimensionality = None
-        self.is_highdimensional = dimensionality is not None
+        self.dimensionality = {}
+        self.is_highdimensional = bool(dimensionality)
         if nodenet.engine == "dict_engine" and self.is_highdimensional:
             nodenet.logger.warning("Dict engine does not support high dimensional native_modules")
             self.is_highdimensional = False
-            self.dimensionality = None
+            self.dimensionality = {}
 
         self.name = name
         self.slottypes = slottypes or []
@@ -693,6 +693,12 @@ class Nodetype(object):
                     if g not in self.gate_defaults:
                         raise Exception("Invalid gate default value for nodetype %s: Gate %s not found" % (name, g))
                     self.gate_defaults[g][key] = gate_defaults[g][key]
+
+    def get_gate_dimensionality(self, gate):
+        return self.dimensionality.get('gates', {}).get(gate, 1)
+
+    def get_slot_dimensionality(self, slot):
+        return self.dimensionality.get('slots', {}).get(slot, 1)
 
     def get_data(self):
         data = {

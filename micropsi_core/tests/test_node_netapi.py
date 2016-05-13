@@ -1150,3 +1150,48 @@ def test_nodespace_properties(test_nodenet):
     netapi.set_nodespace_properties(None, {'foo': 'bar'})
     data = netapi.get_nodespace_properties()
     assert data[rootns.uid] == {'foo': 'bar'}
+
+
+@pytest.mark.engine("theano_engine")
+def test_group_highdim_elements(test_nodenet, resourcepath):
+    import numpy as np
+    import os
+    with open(os.path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
+        fp.write("""
+    {"PhatNM": {
+        "name": "PhatNM",
+        "slottypes": ["gen", "sub", "sur", "inbound"],
+        "gatetypes": ["gen", "sub", "sur", "outbound"],
+        "nodefunction_name": "phatNM",
+        "symbol": "F",
+        "dimensionality": {
+            "gates": {
+                "outbound": 2
+            },
+            "slots": {
+                "inbound": 10
+            }
+        }
+    }}""")
+    with open(os.path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
+        fp.write("""
+def phatNM(netapi, node, **_):
+    pass""")
+
+    micropsi.reload_native_modules()
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    node = netapi.create_node("PhatNM", None, 'fatnode')
+    registers = []
+    for i in range(10):
+        registers.append(netapi.create_node("Register", None, 'reg%d' % i))
+    netapi.group_nodes_by_names(None, node_name_prefix='reg', gate='gen')
+    netapi.group_highdimensional_slots(node.uid, slot='inbound', group_name='fat_in')
+    netapi.set_link_weights(None, 'reg', None, 'fat_in', np.eye(10))
+    for i, r in enumerate(registers):
+        links = r.get_gate('gen').get_links()
+        assert len(links) == 1
+        assert links[0].target_node.uid == node.uid
+        assert links[0].target_slot.type == 'inbound%d' % i
+    netapi.group_highdimensional_gates(node.uid, 'outbound', group_name='fat_out')
+    assert np.all(netapi.get_activations(None, 'fat_out') == np.zeros(2))

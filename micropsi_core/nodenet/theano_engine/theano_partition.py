@@ -1731,6 +1731,22 @@ class TheanoPartition():
         gate = get_numerical_gate_type(gatetype)
         self.nodegroups[nodespace_uid][group_name] = self.allocated_node_offsets[ids] + gate
 
+    def group_highdimensional_elements(self, node_uid, gate=None, slot=None, group_name=None):
+        node_id = node_from_id(node_uid)
+        nodespace_id = self.allocated_node_parents[node_id]
+        nodespace_uid = nodespace_to_id(nodespace_id, self.pid)
+        strnodetype = get_string_node_type(self.allocated_nodes[node_id], self.nodenet.native_modules)
+        nodetype = self.nodenet.get_nodetype(strnodetype)
+        if gate:
+            element = get_numerical_gate_type("%s0" % gate, nodetype)
+            dimensionality = nodetype.get_gate_dimensionality(gate)
+        elif slot:
+            element = get_numerical_slot_type("%s0" % slot, nodetype)
+            dimensionality = nodetype.get_slot_dimensionality(slot)
+        start = self.allocated_node_offsets[node_id] + element
+        stop = start + dimensionality
+        self.nodegroups[nodespace_uid][group_name] = range(start, stop)
+
     def ungroup_nodes(self, nodespace_uid, group):
         if nodespace_uid in self.nodegroups and group in self.nodegroups[nodespace_uid]:
             del self.nodegroups[nodespace_uid][group]

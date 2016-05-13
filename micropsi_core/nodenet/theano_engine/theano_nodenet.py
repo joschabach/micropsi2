@@ -1476,6 +1476,10 @@ class TheanoNodenet(Nodenet):
 
         partition.group_nodes_by_ids(nodespace_uid, ids, group_name, gatetype)
 
+    def group_highdimensional_elements(self, node_uid, gate=None, slot=None, group_name=None):
+        partition = self.get_partition(node_uid)
+        partition.group_highdimensional_elements(node_uid, gate=gate, slot=slot, group_name=group_name)
+
     def ungroup_nodes(self, nodespace_uid, group):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid

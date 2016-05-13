@@ -137,16 +137,16 @@ class NodeActivationRecorder(Recorder):
         if not group_config.get('node_uids', []):
             nodes = self._nodenet.netapi.get_nodes(nodespace=self.nodespace, node_name_prefix=group_config['node_name_prefix'], sortby=group_config.get('sortby', 'id'))
         else:
-            nodes = [self._nodenet.get_node(uid) for uid in node_uids]
+            nodes = [self._nodenet.get_node(uid) for uid in group_config['node_uids']]
 
-        assert len(set([n.type for n in nodes])) == 1  # assert we have a homogenous group
+        node_uids = [n.uid for n in nodes]
+        assert len(set([n.type for n in nodes])) == 1  # assert we have a homogeneous group
         self.gatetypes = nodes[0].get_gate_types()
         self.groupnames = []
         for g in self.gatetypes:
-            group_config['gatetype'] = g
-            group_config['group_name'] = self.base_group_name + '_%s' % g
-            self.groupnames.append(group_config['group_name'])
-            self._nodenet.group_nodes_by_names(**group_config)
+            group_name = self.base_group_name + '_%s' % g
+            self.groupnames.append(group_name)
+            self._nodenet.group_nodes_by_ids(self.nodespace, node_uids, gatetype=g, group_name=group_name, sortby=group_config.get('sortby', 'id'))
 
         self.shapes = {'activations': (self.initial_size, len(self.gatetypes), len(nodes))}
 

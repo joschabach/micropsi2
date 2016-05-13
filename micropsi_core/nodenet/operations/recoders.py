@@ -6,7 +6,7 @@ try:
     import numpy as np
 
     @selectioninfo(mincount=2)
-    def add_activation_recorder(netapi, selection, gate='gen', interval=1, name='activation_recoder'):
+    def add_gate_activation_recorder(netapi, selection, gate='gen', interval=1, name='gate_activation_recoder'):
         """Adds an activation recorder to the selected nodes"""
         firstnode = netapi.get_node(selection[0])
         nodespace = netapi.get_nodespace(firstnode.parent_nodespace)
@@ -14,7 +14,19 @@ try:
             'nodespace_uid': nodespace.uid,
             'node_uids': selection,
             'gatetype': gate}
-        netapi.add_activation_recorder(group_config, name=name, interval=int(interval))
+        recorder = netapi.add_gate_activation_recorder(group_config, name=name, interval=int(interval))
+        return {'uid': recorder.uid}
+
+    @selectioninfo(mincount=2)
+    def add_node_activation_recorder(netapi, selection, interval=1, name='node_activation_recoder'):
+        """Adds an activation recorder to the selected nodes"""
+        firstnode = netapi.get_node(selection[0])
+        nodespace = netapi.get_nodespace(firstnode.parent_nodespace)
+        group_config = {
+            'nodespace_uid': nodespace.uid,
+            'node_uids': selection}
+        recorder = netapi.add_node_activation_recorder(group_config, name=name, interval=int(interval))
+        return {'uid': recorder.uid}
 
     @selectioninfo(mincount=2)
     def add_linkweight_recorder(netapi, selection, direction='down', from_gate='gen', to_slot='gen', interval=1, name='linkweight_recoder'):
@@ -42,7 +54,8 @@ try:
             'nodespace_uid': nodespace.uid,
             'node_uids': [n.uid for n in grouplist[1]],
             'gatetype': to_slot}
-        netapi.add_linkweight_recorder(from_group_config, to_group_config, name=name, interval=int(interval))
+        recorder = netapi.add_linkweight_recorder(from_group_config, to_group_config, name=name, interval=int(interval))
+        return {'uid': recorder.uid}
 
 
 except ImportError:

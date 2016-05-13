@@ -1506,7 +1506,7 @@ def test_run_operation(app, test_nodenet, node):
 
 
 @pytest.mark.engine("theano_engine")
-def test_add_activation_recorder(app, test_nodenet, resourcepath):
+def test_add_gate_activation_recorder(app, test_nodenet, resourcepath):
     from micropsi_core import runtime
     app.set_auth()
     nodenet = runtime.nodenets[test_nodenet]
@@ -1514,7 +1514,7 @@ def test_add_activation_recorder(app, test_nodenet, resourcepath):
     nodespace = netapi.get_nodespace(None)
     for i in range(3):
         netapi.create_node('Register', None, "testnode_%d" % i)
-    response = app.post_json('/rpc/add_activation_recorder', {
+    response = app.post_json('/rpc/add_gate_activation_recorder', {
         'nodenet_uid': test_nodenet,
         'group_definition': {'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'},
         'name': "recorder",
@@ -1526,6 +1526,29 @@ def test_add_activation_recorder(app, test_nodenet, resourcepath):
     runtime.step_nodenet(test_nodenet)
     assert netapi.get_recorder(recorder_uid).name == 'recorder'
     assert 'activations' in netapi.get_recorder(recorder_uid).values
+
+
+@pytest.mark.engine("theano_engine")
+def test_add_node_activation_recorder(app, test_nodenet, resourcepath):
+    from micropsi_core import runtime
+    app.set_auth()
+    nodenet = runtime.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    nodespace = netapi.get_nodespace(None)
+    for i in range(3):
+        netapi.create_node('Pipe', None, "testnode_%d" % i)
+    response = app.post_json('/rpc/add_node_activation_recorder', {
+        'nodenet_uid': test_nodenet,
+        'group_definition': {'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'},
+        'name': "recorder",
+        'interval': 2
+    })
+    assert_success(response)
+    recorder_uid = response.json_body['data']
+    runtime.step_nodenet(test_nodenet)
+    runtime.step_nodenet(test_nodenet)
+    assert netapi.get_recorder(recorder_uid).name == 'recorder'
+    assert netapi.get_recorder(recorder_uid).values['activations'][0].shape == (7, 3)
 
 
 @pytest.mark.engine("theano_engine")
@@ -1568,7 +1591,7 @@ def test_clear_recorder(app, test_nodenet, resourcepath):
     nodespace = netapi.get_nodespace(None)
     for i in range(3):
         netapi.create_node('Register', None, "testnode_%d" % i)
-    recorder = netapi.add_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder")
+    recorder = netapi.add_gate_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder")
     for i in range(3):
         runtime.step_nodenet(test_nodenet)
 
@@ -1589,7 +1612,7 @@ def test_remove_recorder(app, test_nodenet, resourcepath):
     nodespace = netapi.get_nodespace(None)
     for i in range(3):
         netapi.create_node('Register', None, "testnode_%d" % i)
-    recorder = netapi.add_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder")
+    recorder = netapi.add_gate_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder")
     for i in range(3):
         runtime.step_nodenet(test_nodenet)
 
@@ -1610,7 +1633,7 @@ def test_get_recorders(app, test_nodenet):
     for i in range(3):
         netapi.create_node('Register', None, "testnode_%d" % i)
     runtime.step_nodenet(test_nodenet)
-    recorder = netapi.add_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder", interval=3)
+    recorder = netapi.add_gate_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder", interval=3)
     runtime.step_nodenet(test_nodenet)
     runtime.step_nodenet(test_nodenet)
     response = app.post_json('/rpc/get_recorders', {
@@ -1623,4 +1646,4 @@ def test_get_recorders(app, test_nodenet):
     assert data["filename"] == recorder.filename
     assert data["current_index"] == 0
     assert data["first_step"] == 3
-    assert data["classname"] == 'ActivationRecorder'
+    assert data["classname"] == 'GateActivationRecorder'

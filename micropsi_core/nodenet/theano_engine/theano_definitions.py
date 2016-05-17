@@ -24,9 +24,11 @@ GFG = 4
 GATE_FUNCTION_IDENTITY = 0
 GATE_FUNCTION_ABSOLUTE = 1
 GATE_FUNCTION_SIGMOID = 2
-GATE_FUNCTION_TANH = 3
-GATE_FUNCTION_RECT = 4
+#GATE_FUNCTION_TANH = 3
+GATE_FUNCTION_RELU = 4
 GATE_FUNCTION_DIST = 5
+GATE_FUNCTION_ELU = 6
+
 
 NFPG_PIPE_NON = 0
 NFPG_PIPE_GEN = 1
@@ -208,12 +210,12 @@ def get_numerical_gatefunction_type(type):
         return GATE_FUNCTION_ABSOLUTE
     elif type == "sigmoid":
         return GATE_FUNCTION_SIGMOID
-    elif type == "tanh":
-        return GATE_FUNCTION_TANH
-    elif type == "rect":
-        return GATE_FUNCTION_RECT
+    elif type == "relu":
+        return GATE_FUNCTION_RELU
     elif type == "one_over_x":
         return GATE_FUNCTION_DIST
+    elif type == "elu":
+        return GATE_FUNCTION_ELU
     else:
         raise ValueError("Supplied gatefunction type is not a valid type: "+str(type))
 
@@ -225,12 +227,12 @@ def get_string_gatefunction_type(type):
         return "absolute"
     elif type == GATE_FUNCTION_SIGMOID:
         return "sigmoid"
-    elif type == GATE_FUNCTION_TANH:
-        return "tanh"
-    elif type == GATE_FUNCTION_RECT:
-        return "rect"
+    elif type == GATE_FUNCTION_RELU:
+        return "relu"
     elif type == GATE_FUNCTION_DIST:
         return "one_over_x"
+    elif type == GATE_FUNCTION_ELU:
+        return "elu"
     else:
         raise ValueError("Supplied gatefunction type is not a valid type: "+str(type))
 

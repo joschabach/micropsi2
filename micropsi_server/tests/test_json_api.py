@@ -1489,10 +1489,41 @@ def test_get_state_diff(app, test_nodenet, node):
     assert [node2] == list(data['changes']['nodes_dirty'].keys())
 
 
+def test_get_nodenet_diff(app, test_nodenet, node):
+    from micropsi_core import runtime
+    nodenet = runtime.nodenets[test_nodenet]
+    runtime.step_nodenet(test_nodenet)
+    response = app.post_json('/rpc/get_nodenet_changes', params={
+        'nodenet_uid': test_nodenet,
+        'nodespaces': [None],
+        'since_step': 0
+    })
+    data = response.json_body['data']
+    assert 'activations' in data
+    assert 'changes' in data
+    assert node in data['changes']['nodes_dirty']
+    node2 = nodenet.create_node("Register", None, [10, 10], name="node2")
+    runtime.step_nodenet(test_nodenet)
+    response = app.post_json('/rpc/get_nodenet_changes', params={
+        'nodenet_uid': test_nodenet,
+        'nodespaces': [None],
+        'since_step': 1
+    })
+    data = response.json_body['data']
+    assert [node2] == list(data['changes']['nodes_dirty'].keys())
+
+
 def test_get_operations(app, test_nodenet):
     response = app.get_json('/rpc/get_available_operations()')
     data = response.json_body['data']
-    assert data['autoalign']['selection']['nodetypes'] == []
+    for selectioninfo in data['autoalign']['selection']:
+        if selectioninfo['nodetypes'] == ['Nodespace']:
+            assert selectioninfo['mincount'] == 1
+            assert selectioninfo['maxcount'] == -1
+        else:
+            assert selectioninfo['mincount'] == 2
+            assert selectioninfo['maxcount'] == -1
+            assert selectioninfo['nodetypes'] == []
 
 
 def test_run_operation(app, test_nodenet, node):

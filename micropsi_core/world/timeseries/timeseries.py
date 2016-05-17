@@ -91,16 +91,16 @@ class TimeSeries(World):
 
         if dummydata:
             self.logger.warn("! Using dummy data")
-            n_ids = self.timeseries.shape[0]
+            n_ids = self.timeseries.shape[1]
             self.timeseries = np.tile(np.random.rand(n_ids,1),(1,10))
 
-        self.len_ts = self.timeseries.shape[1]
+        self.len_ts = self.timeseries.shape[0]
 
     # todo: option to use only a subset of the data (e.g. for training/test)
 
     def step(self):
         now = datetime.utcnow().timestamp() * 1000
-        if now - self.realtime_per_entry > self.last_realtime_step:
+        if self.realtime_per_entry == 0 or now - self.realtime_per_entry > self.last_realtime_step:
             self.current_step += 1
             for uid in self.agents:
                 with self.agents[uid].datasource_lock:
@@ -115,7 +115,7 @@ class TimeSeries(World):
                 idxs = np.arange(self.len_ts)
                 self.permutation = np.random.permutation(idxs)
             t = self.permutation[t]
-        return self.timeseries[:, t]
+        return self.timeseries[t, :]
 
     @staticmethod
     def get_config_options():
@@ -183,7 +183,7 @@ class TimeSeriesRunner(ArrayWorldAdapter):
         super().__init__(world, uid, **data)
 
         self.available_datatargets = []
-        self.available_datasources = ["update"]
+        self.available_datasources = []
 
         for idx, ID in enumerate(self.world.ids):
             self.available_datasources.append(str(ID))

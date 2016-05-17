@@ -248,8 +248,9 @@ class DictNodenet(Nodenet):
 
     def save(self, filename):
         # dict_engine saves everything to json, just dump the json export
+        data = json.dumps(self.export_json(), sort_keys=True, indent=4)
         with open(filename, 'w+') as fp:
-            fp.write(json.dumps(self.export_json(), sort_keys=True, indent=4))
+            fp.write(data)
         if os.path.getsize(filename) < 100:
             # kind of hacky, but we don't really know what was going on
             raise RuntimeError("Error writing nodenet file")

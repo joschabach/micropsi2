@@ -91,24 +91,14 @@ class TheanoPartition():
             self.__has_gatefunction_sigmoid = value
 
     @property
-    def has_gatefunction_tanh(self):
-        return self.__has_gatefunction_tanh
+    def has_gatefunction_relu(self):
+        return self.__has_gatefunction_relu
 
-    @has_gatefunction_tanh.setter
-    def has_gatefunction_tanh(self, value):
-        if value != self.__has_gatefunction_tanh:
+    @has_gatefunction_relu.setter
+    def has_gatefunction_relu(self, value):
+        if value != self.__has_gatefunction_relu:
             self.__has_new_usages = True
-            self.__has_gatefunction_tanh = value
-
-    @property
-    def has_gatefunction_rect(self):
-        return self.__has_gatefunction_rect
-
-    @has_gatefunction_rect.setter
-    def has_gatefunction_rect(self, value):
-        if value != self.__has_gatefunction_rect:
-            self.__has_new_usages = True
-            self.__has_gatefunction_rect = value
+            self.__has_gatefunction_relu = value
 
     @property
     def has_gatefunction_one_over_x(self):
@@ -119,6 +109,16 @@ class TheanoPartition():
         if value != self.__has_gatefunction_one_over_x:
             self.__has_new_usages = True
             self.__has_gatefunction_one_over_x = value
+
+    @property
+    def has_gatefunction_elu(self):
+        return self.__has_gatefunction_elu
+
+    @has_gatefunction_elu.setter
+    def has_gatefunction_elu(self, value):
+        if value != self.__has_gatefunction_elu:
+            self.__has_new_usages = True
+            self.__has_gatefunction_elu = value
 
     def __init__(self, nodenet, pid, sparse=True, initial_number_of_nodes=2000, average_elements_per_node_assumption=5, initial_number_of_nodespaces=10):
 
@@ -315,8 +315,9 @@ class TheanoPartition():
         self.__has_gatefunction_absolute = False
         self.__has_gatefunction_sigmoid = False
         self.__has_gatefunction_tanh = False
-        self.__has_gatefunction_rect = False
         self.__has_gatefunction_one_over_x = False
+        self.__has_gatefunction_elu = False
+        self.__has_gatefunction_relu = False
         self.por_ret_dirty = True
 
         self.last_allocated_node = 0
@@ -363,7 +364,7 @@ class TheanoPartition():
         #
 
         ### gen plumbing
-        pipe_gen_sur_exp = slots[:, 11] + slots[:, 13]                              # sum of sur and exp as default
+        pipe_gen_sur_exp = (slots[:, 11] + slots[:, 13]) * slots[:, 10]             # sum of sur and exp as default
                                                                                     # drop to 0 if < expectation
         pipe_gen_sur_exp = T.switch(T.lt(pipe_gen_sur_exp, self.g_expect) * T.gt(pipe_gen_sur_exp, 0), 0, pipe_gen_sur_exp)
 
@@ -412,11 +413,12 @@ class TheanoPartition():
         countdown_sur = T.switch(cd_reset_cond, self.g_wait, T.maximum(countdown - 1, -1))
 
         pipe_sur_cond = T.eq(por_linked, 0) + T.gt(slots[:, 4], 0)                  # not por-linked or por > 0
+        pipe_sur_cond *= slots[:, 6]                                                # and sub > 0
         pipe_sur_cond = T.gt(pipe_sur_cond, 0)
 
         pipe_sur = slots[:, 7]                                                      # start with sur
         pipe_sur = pipe_sur + T.gt(slots[:, 3], 0.2)                                # add gen-loop 1
-        pipe_sur = pipe_sur + (slots[:, 9] * slots[:, 6])                           # add exp * sub
+        pipe_sur = pipe_sur + slots[:, 9]                                           # add exp
                                                                                     # drop to zero if < expectation
         pipe_sur = T.switch(T.lt(pipe_sur, self.g_expect) * T.gt(pipe_sur, 0), 0, pipe_sur)
                                                                                     # check if we're in timeout
@@ -537,13 +539,18 @@ class TheanoPartition():
             gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_ABSOLUTE), abs(gate_function_output), gate_function_output)
         # apply GATE_FUNCTION_SIGMOID to masked gates
         if self.has_gatefunction_sigmoid:
-            gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_SIGMOID), N.sigmoid(gate_function_output + self.g_theta), gate_function_output)
-        # apply GATE_FUNCTION_TANH to masked gates
-        if self.has_gatefunction_tanh:
-            gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_TANH), T.tanh(gate_function_output + self.g_theta), gate_function_output)
-        # apply GATE_FUNCTION_RECT to masked gates
-        if self.has_gatefunction_rect:
-            gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_RECT), T.switch(gate_function_output + self.g_theta > 0, gate_function_output - self.g_theta, 0), gate_function_output)
+            x = gate_function_output + self.g_theta
+            gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_SIGMOID), N.sigmoid(x), gate_function_output)
+        # apply GATE_FUNCTION_ELU to masked gates
+        if self.has_gatefunction_elu:
+            x = gate_function_output + self.g_theta
+            gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_ELU), T.switch(gate_function_output > 0., x, T.exp(x) - 1.), gate_function_output)
+        # apply GATE_FUNCTION_RELU to masked gates
+        if self.has_gatefunction_relu:
+            x = gate_function_output + self.g_theta
+            gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_RELU), T.maximum(x, 0.), gate_function_output)
+            # wait for theano 0.7.1 for this to work
+            #gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_RELU), T.nnet.relu(x), gate_function_output)
         # apply GATE_FUNCTION_DIST to masked gates
         if self.has_gatefunction_one_over_x:
             gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_DIST), T.switch(T.neq(0, gate_function_output), 1 / gate_function_output, 0), gate_function_output)
@@ -987,9 +994,9 @@ class TheanoPartition():
             self.has_sampling_activators = np.sum(self.allocated_nodespaces_sampling_activators) > 0
             self.has_gatefunction_absolute = GATE_FUNCTION_ABSOLUTE in g_function_selector
             self.has_gatefunction_sigmoid = GATE_FUNCTION_SIGMOID in g_function_selector
-            self.has_gatefunction_tanh = GATE_FUNCTION_TANH in g_function_selector
-            self.has_gatefunction_rect = GATE_FUNCTION_RECT in g_function_selector
+            self.has_gatefunction_relu = GATE_FUNCTION_RELU in g_function_selector
             self.has_gatefunction_one_over_x = GATE_FUNCTION_DIST in g_function_selector
+            self.has_gatefunction_elu = GATE_FUNCTION_ELU in g_function_selector
         else:
             self.logger.warn("no g_function_selector in file, falling back to defaults")
 
@@ -1613,10 +1620,10 @@ class TheanoPartition():
             self.has_gatefunction_absolute = True
         elif g_function_selector[elementindex] == GATE_FUNCTION_SIGMOID:
             self.has_gatefunction_sigmoid = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_TANH:
-            self.has_gatefunction_tanh = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_RECT:
-            self.has_gatefunction_rect = True
+        elif g_function_selector[elementindex] == GATE_FUNCTION_RELU:
+            self.has_gatefunction_relu = True
+        elif g_function_selector[elementindex] == GATE_FUNCTION_ELU:
+            self.has_gatefunction_elu = True
         elif g_function_selector[elementindex] == GATE_FUNCTION_DIST:
             self.has_gatefunction_one_over_x = True
 

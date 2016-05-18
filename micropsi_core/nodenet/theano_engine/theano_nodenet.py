@@ -1611,9 +1611,7 @@ class TheanoNodenet(Nodenet):
                     result['nodespaces_deleted'].extend(self.deleted_items[i].get('nodespaces_deleted', []))
                     result['nodes_deleted'].extend(self.deleted_items[i].get('nodes_deleted', []))
             changed_nodes, changed_nodespaces = partition.get_nodespace_changes(nodespace.uid, since_step)
-            for uid in changed_nodes:
-                uid = node_to_id(uid, partition.pid)
-                result['nodes_dirty'][uid] = self.get_node(uid).get_data(include_links=True)
+            result['nodes_dirty'].update(partition.get_node_data(ids=changed_nodes, include_links=True, include_followupnodes=False)[0])
             for uid in changed_nodespaces:
                 uid = nodespace_to_id(uid, partition.pid)
                 result['nodespaces_dirty'][uid] = self.get_nodespace(uid).get_data()

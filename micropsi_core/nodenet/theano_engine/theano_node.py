@@ -415,17 +415,17 @@ class TheanoNode(Node):
             else:
                 raise
 
-    def get_slot_activation_array(self):
+    def get_slot_activations(self):
         return self.slot_fat_snapshot
 
-    def set_gate_activation_array(self, new_activations):
+    def set_gate_activations(self, new_activations):
         start = self._partition.allocated_node_offsets[node_from_id(self.uid)]
         end = start + len(self._nodetype.gatetypes)
         a_array = self._partition.a.get_value(borrow=True)
         a_array[start:end] = new_activations
         self._partition.a.set_value(a_array, borrow=True)
 
-    def get_gate_activation_array(self):
+    def get_gate_activations(self):
         start = self._partition.allocated_node_offsets[node_from_id(self.uid)]
         end = start + len(self._nodetype.gatetypes)
         a_array = self._partition.a.get_value(borrow=True)

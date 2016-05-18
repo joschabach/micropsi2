@@ -195,7 +195,7 @@ class Robot(ArrayWorldAdapter):
             vrep.simxStopSimulation(self.world.clientID, vrep.simx_opmode_oneshot)
             time.sleep(1)
             vrep.simxStartSimulation(self.world.clientID, vrep.simx_opmode_oneshot)
-            return
+            execute = False
 
         # execute movement, send new target angles
         if execute:

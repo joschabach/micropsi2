@@ -201,7 +201,7 @@ class Robot(ArrayWorldAdapter):
                 self.datatarget_values[self.joint_offset + i] = 0.5
                 self.current_angle_target_values[i] = 0.5
                 tval = self.current_angle_target_values[i] * math.pi
-                vrep.simxSetJointTargetPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
+                vrep.simxSetJointPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
             vrep.simxPauseCommunication(self.world.clientID, False)
 
             self.fetch_sensor_and_feedback_values_from_simulation()

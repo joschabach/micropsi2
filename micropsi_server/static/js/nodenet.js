@@ -401,7 +401,7 @@ function setNodespaceData(data, changed){
         }
         var links_data = {}
         for(uid in data.nodes){
-            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions);
+            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions, data.nodes[uid].is_highdimensional);
             if(uid in nodes){
                 if(nodeRedrawNeeded(item)) {
                     nodes[uid].update(item);
@@ -489,7 +489,7 @@ function setNodespaceDiffData(data, changed){
             links_data = {}
             for(var uid in data.changes.nodes_dirty){
                 var nodedata = data.changes.nodes_dirty[uid];
-                item = new Node(uid, nodedata['position'][0], nodedata['position'][1], nodedata.parent_nodespace, nodedata.name, nodedata.type, nodedata.sheaves, nodedata.state, nodedata.parameters, nodedata.gate_activations, nodedata.gate_parameters, nodedata.gate_functions);
+                item = new Node(uid, nodedata['position'][0], nodedata['position'][1], nodedata.parent_nodespace, nodedata.name, nodedata.type, nodedata.sheaves, nodedata.state, nodedata.parameters, nodedata.gate_activations, nodedata.gate_parameters, nodedata.gate_functions, data.nodes[uid].is_highdimensional);
                 if(uid in nodes){
                     for (var gateName in nodes[uid].gates) {
                         for (linkUid in nodes[uid].gates[gateName].outgoing) {
@@ -692,7 +692,7 @@ function updateModulators(data){
 
 
 // data structure for net entities
-function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, gate_activations, gate_parameters, gatefunctions) {
+function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, gate_activations, gate_parameters, gatefunctions, is_highdim) {
 	this.uid = uid;
 	this.x = x;
 	this.y = y;
@@ -715,6 +715,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
     this.gate_parameters = gate_parameters || {};
     this.gate_activations = gate_activations || {};
     this.gatefunctions = gatefunctions || {};
+    this.is_highdim = is_highdim;
 	if(type == "Nodespace") {
         this.symbol = "NS";
     } else {
@@ -741,7 +742,8 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
                     parameters[key] = this.gate_parameters[gatetype][key];
                 }
             }
-            this.gates[gatetype] = new Gate(gatetype, i, sheaves, parameters, this.gatefunctions[gatetype]);
+            var highdim = is_highdim && gatetype in nodetypes[type].dimensionality.gates;
+            this.gates[gatetype] = new Gate(gatetype, i, sheaves, parameters, this.gatefunctions[gatetype], highdim);
         }
         this.slotIndexes = Object.keys(this.slots);
         this.gateIndexes = Object.keys(this.gates);
@@ -788,11 +790,12 @@ function Slot(name) {
 }
 
 // source for links, part of a net entity
-function Gate(name, index, sheaves, parameters, gatefunction) {
+function Gate(name, index, sheaves, parameters, gatefunction, is_highdim) {
 	this.name = name;
     this.index = index;
 	this.outgoing = {};
 	this.sheaves = sheaves;
+    this.is_highdim = is_highdim;
     this.gatefunction = gatefunction || 'identity';
     if(parameters){
         this.parameters = parameters;
@@ -3641,6 +3644,9 @@ function handleEditGate(event){
         node = nodes[form.attr('data-node')];
         gate = node.gates[form.attr('data-gate')];
     }
+    if(gate.is_highdim) {
+        return false;
+    }
     var data = form.serializeArray();
     var params = {};
     var old_params = gate.parameters;
@@ -4109,15 +4115,27 @@ function showGateForm(node, gate){
     $('.gate_nodetype', form).html('<strong>'+ node.type +'</strong>');
     $('.gate_gatetype', form).html('<strong>'+ gate.name +'</strong>');
     $.each($('input, select, textarea', form), function(index, el){
-        el.value = '';
-        if(el.name in gate.parameters){
-            el.value = gate.parameters[el.name];
-        } else if(el.name == 'activation'){
-            el.value = gate.sheaves[currentSheaf].activation || '0';
-        } else if(nodetypes[node.type].gate_defaults && el.name in nodetypes[node.type].gate_defaults[gate.name]){
-            el.value = nodetypes[node.type].gate_defaults[gate.name][el.name];
+        el = $(el);
+        el.val('');
+        if(el.attr('name') in gate.parameters){
+            el.val(gate.parameters[el.attr('name')]);
+        } else if(el.attr('name') == 'activation'){
+            el.val(gate.sheaves[currentSheaf].activation || '0');
+        } else if(nodetypes[node.type].gate_defaults && el.attr('name') in nodetypes[node.type].gate_defaults[gate.name]){
+            el.val(nodetypes[node.type].gate_defaults[gate.name][el.attr('name')]);
+        }
+        if(gate.is_highdim){
+            el.attr('disabled', 'disabled');
+        } else {
+            if(el.attr('name') != 'activation')
+                el.removeAttr('disabled');
         }
     });
+    if(gate.is_highdim){
+        $('.highdim', form).text("This is a high-dimensional gate with " + nodetypes[node.type].dimensionality.gates[gate.name] + " dimensions").show();
+    } else {
+        $('.highdim', form).hide();
+    }
     $('#gate_gatefunction').val(gate.gatefunction);
     form.attr('data-node', node.uid);
     form.attr('data-gate', gate.name);

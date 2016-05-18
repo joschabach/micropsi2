@@ -15,6 +15,7 @@ import micropsi_core.tools
 from .netapi import NetAPI
 from . import monitor
 from . import recorder
+from .node import Nodetype
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
@@ -139,7 +140,7 @@ class Nodenet(metaclass=ABCMeta):
         """
         self._worldadapter_instance = _worldadapter_instance
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, use_modulators=True, worldadapter_instance=None):
+    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None):
         """
         Constructor for the abstract base class, must be called by implementations
         """
@@ -172,6 +173,11 @@ class Nodenet(metaclass=ABCMeta):
         self.deleted_items = {}
         self.stepping_rate = []
         self.dashboard_values = {}
+
+        self.native_modules = {}
+        for type, data in native_modules.items():
+            if data.get('engine', self.engine) == self.engine:
+                self.native_modules[type] = Nodetype(nodenet=self, **data)
 
         self._modulators = {}
         if use_modulators:
@@ -453,6 +459,15 @@ class Nodenet(metaclass=ABCMeta):
         Returns the standard node types supported by this nodenet
         """
         pass  # pragma: no cover
+
+    def get_native_module_definitions(self):
+        """
+        Returns the native modules supported by this nodenet
+        """
+        data = {}
+        for key in self.native_modules:
+            data[key] = self.native_modules[key].get_data()
+        return data
 
     @abstractmethod
     def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id', group_name=None):

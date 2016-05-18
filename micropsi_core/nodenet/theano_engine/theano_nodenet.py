@@ -194,7 +194,11 @@ class TheanoNodenet(Nodenet):
         # map of data targets to string node IDs
         self.actuatormap = {}
 
-        super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance)
+        super().__init__(name, worldadapter, world, owner, uid, native_modules=native_modules, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance)
+
+        self.nodetypes = {}
+        for type, data in STANDARD_NODETYPES.items():
+             self.nodetypes[type] = Nodetype(nodenet=self, **data)
 
         precision = settings['theano']['precision']
         if precision == "32":
@@ -269,14 +273,10 @@ class TheanoNodenet(Nodenet):
         self.stepoperators = []
         self.initialize_stepoperators()
 
-        self._nodetypes = {}
-        for type, data in STANDARD_NODETYPES.items():
-            self._nodetypes[type] = Nodetype(nodenet=self, **data)
-
-        self.native_module_definitions = native_modules
-        self.native_modules = {}
-        for type, data in self.native_module_definitions.items():
-            self.native_modules[type] = Nodetype(nodenet=self, **data)
+        self.native_module_definitions = {}
+        for key in native_modules:
+            if native_modules[key].get('engine', self.engine) == self.engine:
+                self.native_module_definitions[key] = native_modules[key]
 
         self.create_nodespace(None, None, "Root", nodespace_to_id(1, rootpartition.pid))
 
@@ -366,7 +366,7 @@ class TheanoNodenet(Nodenet):
             metadata['names'] = self.names
             metadata['actuatormap'] = self.actuatormap
             metadata['sensormap'] = self.sensormap
-            metadata['nodes'] = self.construct_native_modules_and_comments_dict()
+            metadata['nodes'] = self.constructnative_modules_and_comments_dict()
             metadata['monitors'] = self.construct_monitors_dict()
             metadata['modulators'] = self.construct_modulators_dict()
             metadata['partition_parents'] = self.inverted_partitionmap
@@ -511,6 +511,15 @@ class TheanoNodenet(Nodenet):
         for nodespace in nodespaces_to_merge:
             self.merge_nodespace_data(nodespace, nodenet_data['nodespaces'], uidmap, keep_uids)
 
+        # make sure rootpartition has enough NoN, NoE
+        if native_module_instances_only:
+            non = noe = 0
+            for uid in nodenet_data.get('nodes', {}):
+                non += 1
+                noe += get_elements_per_type(get_numerical_node_type(nodenet_data['nodes'][uid]['type'], self.native_modules), self.native_modules)
+            if non > self.rootpartition.NoN or noe > self.rootpartition.NoE:
+                self.rootpartition.announce_nodes(non, math.ceil(noe / non))
+
         # merge in nodes
         for uid in nodenet_data.get('nodes', {}):
             data = nodenet_data['nodes'][uid]
@@ -519,7 +528,7 @@ class TheanoNodenet(Nodenet):
             if not keep_uids:
                 parent_uid = uidmap[data['parent_nodespace']]
                 id_to_pass = None
-            if data['type'] not in self._nodetypes and data['type'] not in self.native_modules:
+            if data['type'] not in self.nodetypes and data['type'] not in self.native_modules:
                 self.logger.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
                 data['parameters'] = {
                     'comment': 'There was a %s node here' % data['type']
@@ -1096,11 +1105,19 @@ class TheanoNodenet(Nodenet):
 
     def reload_native_modules(self, native_modules):
 
-        self.native_module_definitions = native_modules
 
         # check which instances need to be recreated because of gate/slot changes and keep their .data
         instances_to_recreate = {}
         instances_to_delete = {}
+
+        # create the new nodetypes
+        self.native_module_definitions = {}
+        newnative_modules = {}
+        for type, data in native_modules.items():
+            if data.get('engine', self.engine) == self.engine:
+                newnative_modules[type] = Nodetype(nodenet=self, **data)
+                self.native_module_definitions[type] = data
+
         for partition in self.partitions.values():
             for uid, instance in partition.native_module_instances.items():
                 if instance.type not in native_modules:
@@ -1111,9 +1128,9 @@ class TheanoNodenet(Nodenet):
 
                 numeric_id = node_from_id(uid)
                 number_of_elements = len(np.where(partition.allocated_elements_to_nodes == numeric_id)[0])
-                new_numer_of_elements = max(len(native_modules[instance.type].get('slottypes', [])), len(native_modules[instance.type].get('gatetypes', [])))
+                new_numer_of_elements = max(len(newnative_modules[instance.type].slottypes), len(newnative_modules[instance.type].gatetypes))
                 if number_of_elements != new_numer_of_elements:
-                    self.logger.warn("Number of elements changed for node type %s from %d to %d, recreating instance %s" %
+                    self.logger.warning("Number of elements changed for node type %s from %d to %d, recreating instance %s" %
                                     (instance.type, number_of_elements, new_numer_of_elements, uid))
                     instances_to_recreate[uid] = instance.get_data(complete=True, include_links=False)
 
@@ -1123,10 +1140,7 @@ class TheanoNodenet(Nodenet):
             for uid in instances_to_recreate.keys():
                 self.delete_node(uid)
 
-            # update the node functions of all Nodetypes
-            self.native_modules = {}
-            for type, data in native_modules.items():
-                self.native_modules[type] = Nodetype(nodenet=self, **native_modules[type])
+            self.native_modules = newnative_modules
 
             # update the living instances that have the same slot/gate numbers
             new_instances = {}
@@ -1146,22 +1160,22 @@ class TheanoNodenet(Nodenet):
                 new_instances[id] = new_native_module_instance
             partition.native_module_instances = new_instances
 
-            # recreate the deleted ones. Gate configurations and links will not be transferred.
-            for uid, data in instances_to_recreate.items():
-                new_uid = self.create_node(
-                    data['type'],
-                    data['parent_nodespace'],
-                    data['position'],
-                    name=data['name'],
-                    uid=uid,
-                    parameters=data['parameters'])
-
             # update native modules numeric types, as these may have been set with a different native module
             # node types list
             native_module_ids = np.where(partition.allocated_nodes > MAX_STD_NODETYPE)[0]
             for id in native_module_ids:
                 instance = self.get_node(node_to_id(id, partition.pid))
                 partition.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
+
+        # recreate the deleted ones. Gate configurations and links will not be transferred.
+        for uid, data in instances_to_recreate.items():
+            new_uid = self.create_node(
+                data['type'],
+                data['parent_nodespace'],
+                data['position'],
+                name=data['name'],
+                uid=uid,
+                parameters=data['parameters'])
 
     def get_nodespace_data(self, nodespace_uid, include_links=True):
         partition = self.get_partition(nodespace_uid)
@@ -1213,8 +1227,8 @@ class TheanoNodenet(Nodenet):
         return activations
 
     def get_nodetype(self, type):
-        if type in self._nodetypes:
-            return self._nodetypes[type]
+        if type in self.nodetypes:
+            return self.nodetypes[type]
         else:
             return self.native_modules.get(type)
 
@@ -1289,7 +1303,7 @@ class TheanoNodenet(Nodenet):
 
         return data
 
-    def construct_native_modules_and_comments_dict(self):
+    def constructnative_modules_and_comments_dict(self):
         data = {}
         i = 0
         for partition in self.partitions.values():
@@ -1482,6 +1496,10 @@ class TheanoNodenet(Nodenet):
 
         partition.group_nodes_by_ids(nodespace_uid, ids, group_name, gatetype)
 
+    def group_highdimensional_elements(self, node_uid, gate=None, slot=None, group_name=None):
+        partition = self.get_partition(node_uid)
+        partition.group_highdimensional_elements(node_uid, gate=gate, slot=slot, group_name=group_name)
+
     def ungroup_nodes(self, nodespace_uid, group):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
@@ -1613,9 +1631,7 @@ class TheanoNodenet(Nodenet):
                     result['nodespaces_deleted'].extend(self.deleted_items[i].get('nodespaces_deleted', []))
                     result['nodes_deleted'].extend(self.deleted_items[i].get('nodes_deleted', []))
             changed_nodes, changed_nodespaces = partition.get_nodespace_changes(nodespace.uid, since_step)
-            for uid in changed_nodes:
-                uid = node_to_id(uid, partition.pid)
-                result['nodes_dirty'][uid] = self.get_node(uid).get_data(include_links=True)
+            result['nodes_dirty'].update(partition.get_node_data(ids=changed_nodes, include_links=True, include_followupnodes=False)[0])
             for uid in changed_nodespaces:
                 uid = nodespace_to_id(uid, partition.pid)
                 result['nodespaces_dirty'][uid] = self.get_nodespace(uid).get_data()

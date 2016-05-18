@@ -172,7 +172,7 @@ class Robot(ArrayWorldAdapter):
             self.image.norm.vmin = 0
             self.image.norm.vmax = 1
 
-        self.update_data_sources_and_targets()
+        self.fetch_sensor_and_feedback_values_from_simulation()
 
     def get_available_datasources(self):
         return self.available_datasources
@@ -195,7 +195,8 @@ class Robot(ArrayWorldAdapter):
             vrep.simxStopSimulation(self.world.clientID, vrep.simx_opmode_oneshot)
             time.sleep(1)
             vrep.simxStartSimulation(self.world.clientID, vrep.simx_opmode_oneshot)
-            execute = False
+            self.fetch_sensor_and_feedback_values_from_simulation()
+            return
 
         # execute movement, send new target angles
         if execute:
@@ -212,31 +213,8 @@ class Robot(ArrayWorldAdapter):
                     vrep.simxSetJointPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
             vrep.simxPauseCommunication(self.world.clientID, False)
 
-        # get data and feedback
-        # read distance value
-        if self.world.ball_handle > 0:
-            res, ball_pos = vrep.simxGetObjectPosition(self.world.clientID, self.world.ball_handle, -1, vrep.simx_opmode_buffer)
-            res, joint_pos = vrep.simxGetObjectPosition(self.world.clientID, self.world.joints[len(self.world.joints)-1], -1, vrep.simx_opmode_streaming)
-            dist = np.linalg.norm(np.array(ball_pos) - np.array(joint_pos))
-            self.datasource_values[self.distance_offset] = dist
-
         # read joint angle and force values
-        res, joint_ids, something, data, se = vrep.simxGetObjectGroupData(self.world.clientID, vrep.sim_object_joint_type, 15, vrep.simx_opmode_blocking)
-        for i, joint_handle in enumerate(self.world.joints):
-            target_angle = self.datatarget_values[self.joint_offset + i]
-            angle = 0
-            force = 0
-            if self.world.control_type == "force/torque":
-                angle = data[i*2] / math.pi
-                force = data[i*2 + 1]
-                if abs(angle) - abs(target_angle) < .001 and execute:
-                    self.datatarget_feedback_values[self.joint_offset + i] = 1
-            elif self.world.control_type == "angles":
-                angle = data[i * 2] / math.pi
-            elif self.world.control_type == "movements":
-                angle = data[i * 2] / math.pi
-            self.datasource_values[self.joint_angle_offset + i] = angle
-            self.datasource_values[self.joint_force_offset + i] = force
+        self.fetch_sensor_and_feedback_values_from_simulation(True)
 
         # read vision data
         # if no observer present, don't query vision data
@@ -252,3 +230,30 @@ class Robot(ArrayWorldAdapter):
         self.image.set_data(y_image)
 
         return self.image
+
+    def fetch_sensor_and_feedback_values_from_simulation(self, include_feedback=False):
+
+        # get data and feedback
+        # read distance value
+        if self.world.ball_handle > 0:
+            res, ball_pos = vrep.simxGetObjectPosition(self.world.clientID, self.world.ball_handle, -1, vrep.simx_opmode_buffer)
+            res, joint_pos = vrep.simxGetObjectPosition(self.world.clientID, self.world.joints[len(self.world.joints)-1], -1, vrep.simx_opmode_streaming)
+            dist = np.linalg.norm(np.array(ball_pos) - np.array(joint_pos))
+            self.datasource_values[self.distance_offset] = dist
+
+        res, joint_ids, something, data, se = vrep.simxGetObjectGroupData(self.world.clientID, vrep.sim_object_joint_type, 15, vrep.simx_opmode_blocking)
+        for i, joint_handle in enumerate(self.world.joints):
+            target_angle = self.datatarget_values[self.joint_offset + i]
+            angle = 0
+            force = 0
+            if self.world.control_type == "force/torque":
+                angle = data[i*2] / math.pi
+                force = data[i*2 + 1]
+                if abs(angle) - abs(target_angle) < .001 and include_feedback:
+                    self.datatarget_feedback_values[self.joint_offset + i] = 1
+            elif self.world.control_type == "angles":
+                angle = data[i * 2] / math.pi
+            elif self.world.control_type == "movements":
+                angle = data[i * 2] / math.pi
+            self.datasource_values[self.joint_angle_offset + i] = angle
+            self.datasource_values[self.joint_force_offset + i] = force

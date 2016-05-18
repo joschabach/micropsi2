@@ -86,6 +86,10 @@ class VREPWorld(World):
                     else:
                         self.logger.info("Vision resolution is %s" % str(self.vision_resolution))
 
+        from micropsi_core.runtime import add_signal_handler
+        add_signal_handler(self.kill_vrep_connection)
+
+
     def handle_res(self, res):
         if res != vrep.simx_return_ok:
             error = vrep.simxGetLastErrors(self.clientID, vrep.simx_opmode_blocking)
@@ -109,6 +113,13 @@ class VREPWorld(World):
             }
         else:
             return None
+
+    def kill_vrep_connection(self, *args):
+        vrep.simxFinish(-1)
+
+    def __del__(self):
+        self.kill_vrep_connection()
+
 
     @staticmethod
     def get_config_options():

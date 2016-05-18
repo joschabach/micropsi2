@@ -126,7 +126,8 @@ class VREPWorld(World):
         return [
             {'name': 'robot_name',
              'description': 'The name of the robot object in V-REP',
-             'default': 'LBR_iiwa_7_R800'},
+             'default': 'LBR_iiwa_7_R800',
+             'options': ["LBR_iiwa_7_R800", "MTB_Robot"]},
             {'name': 'control_type',
              'description': 'The type of input sent to the robot',
              'default': 'force/torque',

@@ -619,7 +619,7 @@ class Nodetype(object):
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None,
-                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category=''):
+                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', dimensionality={}):
         """Initializes or creates a nodetype.
 
         Arguments:
@@ -634,14 +634,54 @@ class Nodetype(object):
         self._nodefunction_definition = None
         self._nodefunction_name = None
 
+        self.dimensionality = {}
+        self.is_highdimensional = bool(dimensionality)
+        if nodenet.engine == "dict_engine" and self.is_highdimensional:
+            nodenet.logger.warning("Dict engine does not support high dimensional native_modules")
+            self.is_highdimensional = False
+            self.dimensionality = {}
+
         self.name = name
-        self.slottypes = slottypes or {}
-        self.gatetypes = gatetypes or {}
+        self.slottypes = slottypes or []
+        self.gatetypes = gatetypes or []
 
         self.path = path
         self.category = category
-
+        self.shape = shape
+        self.symbol = symbol
         self.logger = nodenet.logger
+
+        self.parameters = parameters or {}
+        self.parameter_values = parameter_values or {}
+        self.parameter_defaults = parameter_defaults or {}
+
+        if nodefunction_definition:
+            self.nodefunction_definition = nodefunction_definition
+        elif nodefunction_name:
+            self.nodefunction_name = nodefunction_name
+        else:
+            self.nodefunction = None
+
+        if self.is_highdimensional:
+            self.gategroups = [("%s0" % g) if dimensionality['gates'].get(g, 1) > 1 else g for g in gatetypes ]
+            self.slotgroups = [("%s0" % s) if dimensionality['slots'].get(s, 1) > 1 else s for s in slottypes ]
+            self.dimensionality = dimensionality
+            gates = []
+            slots = []
+            for g in self.gatetypes:
+                if dimensionality['gates'].get(g, 1)  > 1:
+                    group = ["%s%d" % (g, i) for i in range(dimensionality['gates'][g])]
+                    gates.extend(group)
+                else:
+                    gates.append(g)
+            for s in self.slottypes:
+                if dimensionality['slots'].get(s, 1)  > 1:
+                    group = ["%s%d" % (s, i) for i in range(dimensionality['slots'][s])]
+                    slots.extend(group)
+                else:
+                    slots.append(s)
+            self.gatetypes = gates
+            self.slottypes = slots
 
         self.gate_defaults = {}
         for g in self.gatetypes:
@@ -654,13 +694,39 @@ class Nodetype(object):
                         raise Exception("Invalid gate default value for nodetype %s: Gate %s not found" % (name, g))
                     self.gate_defaults[g][key] = gate_defaults[g][key]
 
-        self.parameters = parameters or {}
-        self.parameter_values = parameter_values or {}
-        self.parameter_defaults = parameter_defaults or {}
+    def get_gate_dimensionality(self, gate):
+        return self.dimensionality.get('gates', {}).get(gate, 1)
 
-        if nodefunction_definition:
-            self.nodefunction_definition = nodefunction_definition
-        elif nodefunction_name:
-            self.nodefunction_name = nodefunction_name
+    def get_slot_dimensionality(self, slot):
+        return self.dimensionality.get('slots', {}).get(slot, 1)
+
+    def get_data(self):
+        data = {
+            'name': self.name,
+            'parameters': self.parameters,
+            'parameter_values': self.parameter_values,
+            'parameter_defaults': self.parameter_defaults,
+            'symbol': self.symbol,
+            'shape': self.shape,
+            'nodefunction_definition': self.nodefunction_definition,
+            'nodefunction_name': self.nodefunction_name,
+            'path': self.path,
+            'category': self.category,
+            'is_highdimensional': self.is_highdimensional
+        }
+        if self.is_highdimensional:
+            data['gatetypes'] = self.gategroups
+            data['slottypes'] = self.slotgroups
+            data['dimensionality'] = {
+                'gates': dict(("%s0" % g, self.dimensionality['gates'][g]) for g in self.dimensionality['gates']),
+                'slots': dict(("%s0" % s, self.dimensionality['slots'][s]) for s in self.dimensionality['slots']),
+            }
+            data['gate_defaults'] = {}
+            for g in self.gategroups:
+                data['gate_defaults'][g] = self.gate_defaults[g]
         else:
-            self.nodefunction = None
+            data['gatetypes'] = self.gatetypes
+            data['slottypes'] = self.slottypes
+            data['dimensionality'] = {}
+            data['gate_defaults'] = self.gate_defaults
+        return data

@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 
+import os
+import numpy as np
+
+from micropsi_core.runtime import PERSISTENCY_PATH, NODENET_DIRECTORY
 from micropsi_core.nodenet.node import Node, Gate, Slot
 from micropsi_core.nodenet.theano_engine.theano_link import TheanoLink
 from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
 from micropsi_core.nodenet.theano_engine.theano_definitions import *
-import numpy as np
 
 
 class TheanoNode(Node):
@@ -31,6 +34,10 @@ class TheanoNode(Node):
 
         Node.__init__(self, strtype, nodenet.get_nodetype(strtype))
 
+        self.is_highdimensional = self._nodetype.is_highdimensional
+
+        self.datafile = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, '%s_node_%s.npz' % (self._nodenet.uid, self.uid))
+
         if strtype in nodenet.native_modules or strtype == "Comment":
             self.slot_activation_snapshot = {}
             self._state = {}
@@ -39,6 +46,9 @@ class TheanoNode(Node):
                 self.parameters = parameters.copy()
             else:
                 self.parameters = {}
+
+            if self.is_highdimensional:
+                self.slot_fat_snapshot = None
 
     @property
     def uid(self):
@@ -135,6 +145,7 @@ class TheanoNode(Node):
 
         gatemap = {}
         gate_types = self.nodetype.gate_defaults.keys()
+
         if gate_type is not None:
             if gate_type in gate_types:
                 gate_types = [gate_type]
@@ -176,6 +187,10 @@ class TheanoNode(Node):
         for slottype in self.nodetype.slottypes:
             self.slot_activation_snapshot[slottype] =  \
                 a_array[self._partition.allocated_node_offsets[self._id] + get_numerical_slot_type(slottype, self.nodetype)]
+        if self.is_highdimensional:
+            start = self._partition.allocated_node_offsets[self._id]
+            end = start + len(self._nodetype.slottypes)
+            self.slot_fat_snapshot = a_array[start:end]
 
     def get_slot(self, type):
         if type not in self.__slotcache:
@@ -399,6 +414,29 @@ class TheanoNode(Node):
                 self.logger.warn("No nodefunction found for nodetype %s. Node function definition is: %s" % (self.nodetype.name, self.nodetype.nodefunction_definition))
             else:
                 raise
+
+    def get_slot_activations(self):
+        return self.slot_fat_snapshot
+
+    def set_gate_activations(self, new_activations):
+        start = self._partition.allocated_node_offsets[node_from_id(self.uid)]
+        end = start + len(self._nodetype.gatetypes)
+        a_array = self._partition.a.get_value(borrow=True)
+        a_array[start:end] = new_activations
+        self._partition.a.set_value(a_array, borrow=True)
+
+    def get_gate_activations(self):
+        start = self._partition.allocated_node_offsets[node_from_id(self.uid)]
+        end = start + len(self._nodetype.gatetypes)
+        a_array = self._partition.a.get_value(borrow=True)
+        return a_array[start:end]
+
+    def save_data(self, data):
+        np.savez(self.datafile, data=data)
+
+    def load_data(self):
+        if os.path.isfile(self.datafile):
+            return np.load(self.datafile)['data']
 
 
 class TheanoGate(Gate):

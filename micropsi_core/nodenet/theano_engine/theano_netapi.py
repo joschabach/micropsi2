@@ -45,3 +45,9 @@ class TheanoNetAPI(NetAPI):
             w_update *= (1 - porretdecay)
             w[rows, cols] = w_update
             partition.w.set_value(w, borrow=True)
+
+    def group_node_gates(self, node_uid, gate_prefix, group_name=None):
+        self.__nodenet.group_highdimensional_elements(node_uid, gate=gate_prefix, group_name=group_name)
+
+    def group_node_slots(self, node_uid, slot_prefix, group_name=None):
+        self.__nodenet.group_highdimensional_elements(node_uid, slot=slot_prefix, group_name=group_name)

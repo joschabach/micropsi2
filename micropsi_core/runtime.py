@@ -353,7 +353,7 @@ def load_nodenet(nodenet_uid):
                     'world': world_uid,
                     'owner': data.owner,
                     'uid': data.uid,
-                    'native_modules': filter_native_modules(engine),
+                    'native_modules': native_modules,
                     'use_modulators': data.get('use_modulators', True)  # getter for compatibility
                 }
                 if engine == 'dict_engine':
@@ -389,7 +389,7 @@ def get_nodenet_metadata(nodenet_uid):
     data.update({
         'nodetypes': nodenet.get_standard_nodetype_definitions(),
         'nodespaces': nodenet.construct_nodespaces_dict(None, transitive=True),
-        'native_modules': filter_native_modules(nodenet.engine),
+        'native_modules': nodenet.get_native_module_definitions(),
         'monitors': nodenet.construct_monitors_dict(),
         'rootnodespace': nodenet.get_nodespace(None).uid
     })
@@ -1104,14 +1104,14 @@ def get_available_node_types(nodenet_uid):
     nodenet = get_nodenet(nodenet_uid)
     return {
         'nodetypes': nodenet.get_standard_nodetype_definitions(),
-        'native_modules': filter_native_modules(nodenet.engine)
+        'native_modules': nodenet.get_native_module_definitions()
     }
 
 
 def get_available_native_module_types(nodenet_uid):
     """Returns a list of native modules.
     If an nodenet uid is supplied, filter for node types defined within this nodenet."""
-    return filter_native_modules(get_nodenet(nodenet_uid).engine)
+    return get_nodenet(nodenet_uid).get_native_module_definitions()
 
 
 def set_node_parameters(nodenet_uid, node_uid, parameters):
@@ -1415,13 +1415,6 @@ def get_netapi_autocomplete_data(nodenet_uid, name=None):
 
 # --- end of API
 
-def filter_native_modules(engine=None):
-    data = {}
-    for key in native_modules:
-        if native_modules[key].get('engine') is None or engine is None or engine == native_modules[key]['engine']:
-            data[key] = native_modules[key].copy()
-    return data
-
 
 def crawl_definition_files(path, type="definition"):
     """Traverse the directories below the given path for JSON definitions of nodenets and worlds,
@@ -1650,7 +1643,7 @@ def reload_native_modules():
             nodenets[uid].is_active = False
     errors.extend(load_user_files(RESOURCE_PATH, reload_nodefunctions=True, errors=[]))
     for nodenet_uid in nodenets:
-        nodenets[nodenet_uid].reload_native_modules(filter_native_modules(nodenets[nodenet_uid].engine))
+        nodenets[nodenet_uid].reload_native_modules(native_modules)
     # restart previously active nodenets
     for uid in runners:
         nodenets[uid].is_active = True

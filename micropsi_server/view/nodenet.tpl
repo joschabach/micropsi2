@@ -151,6 +151,7 @@
 
             <form class="form-horizontal hide" id="edit_gate_form">
                 <h4>Gate <span class="gate_gatetype"></span></h4>
+                <p class="highdim"></p>
                 <table>
                     <tr>
                         <td><label for="gate_activation">Activation</label></td>

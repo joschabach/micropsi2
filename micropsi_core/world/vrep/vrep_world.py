@@ -10,8 +10,7 @@ from io import BytesIO
 import base64
 import random
 
-from micropsi_core.world.vrep import vrep
-from micropsi_core.world.vrep import vrepConst
+import vrep
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import ArrayWorldAdapter
 

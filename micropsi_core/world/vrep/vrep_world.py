@@ -172,6 +172,8 @@ class Robot(ArrayWorldAdapter):
             self.image.norm.vmin = 0
             self.image.norm.vmax = 1
 
+        self.update_data_sources_and_targets()
+
     def get_available_datasources(self):
         return self.available_datasources
 

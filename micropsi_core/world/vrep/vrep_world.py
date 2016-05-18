@@ -59,7 +59,7 @@ class VREPWorld(World):
         res, self.ball_handle = vrep.simxGetObjectHandle(self.clientID, "Ball", vrep.simx_opmode_blocking)
         self.handle_res(res)
         if self.ball_handle < 1:
-            self.logger.warn("Could not get handle for Ball object, reward values will not be available.")
+            self.logger.warn("Could not get handle for Ball object, distance values will not be available.")
         else:
             res, _ = vrep.simxGetObjectPosition(self.clientID, self.ball_handle, -1, vrep.simx_opmode_streaming)
             if res != 0 and res != 1:
@@ -134,7 +134,7 @@ class Robot(ArrayWorldAdapter):
         self.available_datatargets = []
         self.available_datasources = []
 
-        self.available_datasources.append("reward")
+        self.available_datasources.append("distance")
 
         self.available_datatargets.append("restart")
         self.available_datatargets.append("execute")
@@ -156,7 +156,7 @@ class Robot(ArrayWorldAdapter):
         self.execute_offset = 1
         self.joint_offset = 2
 
-        self.reward_offset = 0
+        self.distance_offset = 0
         self.joint_angle_offset = 1
         self.joint_force_offset = self.joint_angle_offset + len(self.world.joints)
 
@@ -211,12 +211,12 @@ class Robot(ArrayWorldAdapter):
             vrep.simxPauseCommunication(self.world.clientID, False)
 
         # get data and feedback
-        # read reward value
+        # read distance value
         if self.world.ball_handle > 0:
             res, ball_pos = vrep.simxGetObjectPosition(self.world.clientID, self.world.ball_handle, -1, vrep.simx_opmode_buffer)
             res, joint_pos = vrep.simxGetObjectPosition(self.world.clientID, self.world.joints[len(self.world.joints)-1], -1, vrep.simx_opmode_streaming)
             dist = np.linalg.norm(np.array(ball_pos) - np.array(joint_pos))
-            self.datasource_values[self.reward_offset] = -dist
+            self.datasource_values[self.distance_offset] = dist
 
         # read joint angle and force values
         res, joint_ids, something, data, se = vrep.simxGetObjectGroupData(self.world.clientID, vrep.sim_object_joint_type, 15, vrep.simx_opmode_blocking)

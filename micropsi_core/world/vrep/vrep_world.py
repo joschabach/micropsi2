@@ -194,7 +194,11 @@ class Robot(ArrayWorldAdapter):
         if restart:
             vrep.simxStopSimulation(self.world.clientID, vrep.simx_opmode_oneshot)
             time.sleep(1)
+            for i, joint_handle in enumerate(self.world.joints):
+                tval = 0.5 * math.pi
+                vrep.simxSetJointTargetPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
             vrep.simxStartSimulation(self.world.clientID, vrep.simx_opmode_oneshot)
+
             self.fetch_sensor_and_feedback_values_from_simulation()
             return
 

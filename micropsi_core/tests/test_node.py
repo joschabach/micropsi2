@@ -90,7 +90,7 @@ def phatNM(netapi, node, **_):
     node.take_slot_activation_snapshot()
 
     # test get_slot_activation
-    data = node.get_slot_activation_array()
+    data = node.get_slot_activations()
     assert len(data) == 1024 + 62 + 3  # fat_slots + gen/sub/sur
     new_activation = np.random.rand(768 + 13 + 3)  # fat gates + gen/sub/sur
 
@@ -117,7 +117,7 @@ def phatNM(netapi, node, **_):
     # test setting gate details, get_gate_activation
     node.set_gatefunction_name("A_out0", "sigmoid")
     micropsi.step_nodenet(test_nodenet)
-    act = node.get_gate_activation_array()
+    act = node.get_gate_activations()
     assert act[3] == 0.5
     assert np.all(act[4:] == 0)
 

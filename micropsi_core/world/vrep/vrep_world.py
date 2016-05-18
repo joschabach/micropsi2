@@ -263,6 +263,11 @@ class Robot(ArrayWorldAdapter):
             self.datasource_values[self.distance_offset] = dist
 
         res, joint_ids, something, data, se = vrep.simxGetObjectGroupData(self.world.clientID, vrep.sim_object_joint_type, 15, vrep.simx_opmode_blocking)
+
+        if len(data) == 0:
+            self.world.logger.warning("No data from vrep received")
+            return
+
         for i, joint_handle in enumerate(self.world.joints):
             target_angle = self.datatarget_values[self.joint_offset + i]
             angle = 0

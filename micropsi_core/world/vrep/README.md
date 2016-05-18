@@ -9,6 +9,7 @@ To create a V-REP world in the toolkit, please:
 - get the vrep.py and vrepConst.py files from the V-REP folder, in programming/remoteApiBindings/python/python, and add them to your virtualenv
 - get the dylib/dll/so file for your platform from the V-REP folder, the file should be in programming/remoteApiBindings/lib/lib, and put it next to vrep.py
 - make sure your firewalls aren't blocking local connections to port 19999
+ 
 
     portNumber = 19999
     status, info, serverVersion, clientVersion, clientIp=simExtRemoteApiStatus(portNumber)

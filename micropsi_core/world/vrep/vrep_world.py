@@ -35,10 +35,17 @@ class VREPWorld(World):
         self.vision_type = config['vision_type']
         self.control_type = config['control_type']
 
+        self.joints = []
+        self.vision_resolution = []
+
+        self.iiwa_handle = -1
+        self.ball_handle = -1
+
         vrep.simxFinish(-1)  # just in case, close all opened connections
         self.clientID = vrep.simxStart('127.0.0.1', 19999, True, 0, 5000, 5)  # Connect to V-REP
         if self.clientID == -1:
-            raise Exception("Could not connect to v-rep.")
+            self.logger.critical("Could not connect to v-rep")
+            return
 
         self.logger.info("Connected to local V-REP at port 19999")
 
@@ -50,7 +57,7 @@ class VREPWorld(World):
         res, self.iiwa_handle = vrep.simxGetObjectHandle(self.clientID, self.robot_name, vrep.simx_opmode_blocking)
         self.handle_res(res)
         if self.iiwa_handle < 1:
-            raise Exception("There seems to be no robot with the name %s in the v-rep simulation." % self.robot_name)
+            self.logger.critical("There seems to be no robot with the name %s in the v-rep simulation." % self.robot_name)
 
         res, self.joints = vrep.simxGetObjects(self.clientID, vrep.sim_object_joint_type, vrep.simx_opmode_blocking)
         self.handle_res(res)
@@ -82,13 +89,12 @@ class VREPWorld(World):
                     res, resolution, image = vrep.simxGetVisionSensorImage(self.clientID, self.observer_handle, 0, vrep.simx_opmode_buffer)
                     self.vision_resolution = resolution
                     if len(resolution) != 2:
-                        raise Exception("Could not determine vision resolution after 1 second wait time.")
+                        self.logger.error("Could not determine vision resolution after 1 second wait time.")
                     else:
                         self.logger.info("Vision resolution is %s" % str(self.vision_resolution))
 
         from micropsi_core.runtime import add_signal_handler
         add_signal_handler(self.kill_vrep_connection)
-
 
     def handle_res(self, res):
         if res != vrep.simx_return_ok:

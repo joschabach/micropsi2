@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 
 from io import BytesIO
 import base64
+import random
 
 from micropsi_core.world.vrep import vrep
 from micropsi_core.world.vrep import vrepConst
@@ -198,8 +199,8 @@ class Robot(ArrayWorldAdapter):
 
             vrep.simxPauseCommunication(self.world.clientID, True)
             for i, joint_handle in enumerate(self.world.joints):
-                self.datatarget_values[self.joint_offset + i] = 0.5
-                self.current_angle_target_values[i] = 0.5
+                self.datatarget_values[self.joint_offset + i] = random.uniform(0.2, 0.8)
+                self.current_angle_target_values[i] = self.datatarget_values[self.joint_offset + i]
                 tval = self.current_angle_target_values[i] * math.pi
                 vrep.simxSetJointPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
             vrep.simxPauseCommunication(self.world.clientID, False)

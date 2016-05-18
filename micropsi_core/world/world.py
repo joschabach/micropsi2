@@ -95,7 +95,7 @@ class World(object):
             uid (optional): unique handle of the world; if none is given, it will be generated
         """
 
-        self.logger = logging.getLogger('world_logger')
+        self.logger = logging.getLogger('world')
 
         # persistent data
         self.data = {

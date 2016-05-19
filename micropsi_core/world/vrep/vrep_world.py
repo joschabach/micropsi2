@@ -150,6 +150,8 @@ class Robot(ArrayWorldAdapter):
 
         super().__init__(world, uid, **data)
 
+        self.last_restart = 0
+
         self.current_angle_target_values = np.zeros_like(self.world.joints)
 
         self.restart_offset = 0
@@ -187,7 +189,7 @@ class Robot(ArrayWorldAdapter):
         self.datatarget_feedback_values = [0] * len(self.available_datatargets)
         self.datasource_values = [0] * len(self.available_datasources)
 
-        restart = self.datatarget_values[self.restart_offset] > 0.9
+        restart = self.datatarget_values[self.restart_offset] > 0.9 and self.world.current_step - self.last_restart >= 5
         execute = self.datatarget_values[self.execute_offset] > 0.9
 
         # simulation restart
@@ -205,6 +207,7 @@ class Robot(ArrayWorldAdapter):
             vrep.simxPauseCommunication(self.world.clientID, False)
 
             self.fetch_sensor_and_feedback_values_from_simulation()
+            self.last_restart = self.world.current_step
             return
 
         # execute movement, send new target angles

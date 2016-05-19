@@ -18,7 +18,7 @@ try:
         return {'uid': recorder.uid}
 
     @selectioninfo(mincount=2)
-    def add_node_activation_recorder(netapi, selection, interval=1, name='node_activation_recoder'):
+    def add_node_activation_recorder(netapi, selection, interval=1, name='node_activation_recorder'):
         """Adds an activation recorder to the selected nodes"""
         firstnode = netapi.get_node(selection[0])
         nodespace = netapi.get_nodespace(firstnode.parent_nodespace)
@@ -29,7 +29,7 @@ try:
         return {'uid': recorder.uid}
 
     @selectioninfo(mincount=2)
-    def add_linkweight_recorder(netapi, selection, direction='down', from_gate='gen', to_slot='gen', interval=1, name='linkweight_recoder'):
+    def add_linkweight_recorder(netapi, selection, direction='down', from_gate='gen', to_slot='gen', interval=1, name='linkweight_recorder'):
         """ Attempts to detect two layers of nodes (y-coordinate) and adds a linkweight-monitor"""
         nodes = [netapi.get_node(uid) for uid in selection]
         nodespace = netapi.get_nodespace(nodes[0].parent_nodespace)

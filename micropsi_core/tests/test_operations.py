@@ -69,7 +69,7 @@ def test_add_gate_activation_recorder_operation(test_nodenet):
     res, data = runtime.run_operation(test_nodenet, 'add_gate_activation_recorder', {
         'gate': 'gen',
         'interval': 1,
-        'name': 'gate_activation_recoder',
+        'name': 'gate_activation_recorder',
     }, [n.uid for n in nodes])
     runtime.step_nodenet(test_nodenet)
     runtime.get_recorder(test_nodenet, data['uid']).values['activations'].shape == (3)
@@ -84,7 +84,7 @@ def test_add_node_activation_recorder_operation(test_nodenet):
         nodes.append(netapi.create_node("Pipe", None, "node%d" % i))
     res, data = runtime.run_operation(test_nodenet, 'add_node_activation_recorder', {
         'interval': 1,
-        'name': 'node_activation_recoder',
+        'name': 'node_activation_recorder',
     }, [n.uid for n in nodes])
     runtime.step_nodenet(test_nodenet)
     runtime.get_recorder(test_nodenet, data['uid']).values['activations'].shape == (7, 3)
@@ -112,7 +112,7 @@ def test_add_linkweight_recorder_operation(test_nodenet):
         'from_gate': 'gen',
         'to_slot': 'gen',
         'interval': 1,
-        'name': 'linkweight_recoder'
+        'name': 'linkweight_recorder'
     }, [n.uid for n in nodes1] + [n.uid for n in nodes2])
     runtime.step_nodenet(test_nodenet)
     runtime.get_recorder(test_nodenet, data['uid']).values['linkweights'].shape == (3, 3)

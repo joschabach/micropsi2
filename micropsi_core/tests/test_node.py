@@ -95,7 +95,7 @@ def phatNM(netapi, node, **_):
     new_activation = np.random.rand(768 + 13 + 3)  # fat gates + gen/sub/sur
 
     # test set_gate_activation
-    node.set_gate_activation_array(new_activation)
+    node.set_gate_activations(new_activation)
     target = netapi.create_node("Register", None, "Target")
     for g in node.get_gate_types():
         netapi.link(node, g, target, 'gen')

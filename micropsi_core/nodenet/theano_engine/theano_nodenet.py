@@ -1240,36 +1240,40 @@ class TheanoNodenet(Nodenet):
                 nspartition = self.get_partition(nodespace_uid)
                 if nspartition != partition:
                     continue
-                parent = nodespace_from_id(nodespace_uid)
-                node_ids = np.where(partition.allocated_node_parents == parent)[0]
-            else:
-                node_ids = np.nonzero(partition.allocated_nodes)[0]
+
             w_matrix = partition.w.get_value(borrow=True)
-            for node_id in node_ids:
+            link_to_indices, link_from_indices = np.nonzero(w_matrix)
 
-                source_type = partition.allocated_nodes[node_id]
-                for gate_type in range(get_gates_per_type(source_type, self.native_modules)):
-                    gatecolumn = w_matrix[:, partition.allocated_node_offsets[node_id] + gate_type]
-                    links_indices = np.nonzero(gatecolumn)[0]
-                    for index in links_indices:
-                        target_id = partition.allocated_elements_to_nodes[index]
-                        target_type = partition.allocated_nodes[target_id]
-                        target_slot_numerical = index - partition.allocated_node_offsets[target_id]
-                        target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
-                        source_gate_type = get_string_gate_type(gate_type, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
-                        if partition.sparse:               # sparse matrices return matrices of dimension (1,1) as values
-                            weight = float(gatecolumn[index].data)
-                        else:
-                            weight = gatecolumn[index].item()
+            for i, link_from_index in enumerate(link_from_indices):
+                link_to_index = link_to_indices[i]
 
-                        data.append({
-                            "weight": weight,
-                            "certainty": 1,
-                            "target_slot_name": target_slot_type,
-                            "target_node_uid": node_to_id(target_id, partition.pid),
-                            "source_gate_name": source_gate_type,
-                            "source_node_uid": node_to_id(node_id, partition.pid)
-                        })
+                source_id = partition.allocated_elements_to_nodes[link_from_index]
+                source_type = partition.allocated_nodes[source_id]
+
+                if nodespace_uid is not None:
+                    nid = nodespace_from_id(nodespace_uid)
+                    if partition.allocated_node_parents[source_id] != nid:
+                        continue
+
+                target_id = partition.allocated_elements_to_nodes[link_to_index]
+                target_type = partition.allocated_nodes[target_id]
+
+                target_slot_numerical = link_to_index - partition.allocated_node_offsets[target_id]
+                target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
+
+                source_gate_numerical = link_from_index - partition.allocated_node_offsets[source_id]
+                source_gate_type = get_string_gate_type(source_gate_numerical, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
+
+                weight = w_matrix[link_to_index, link_from_index].item()
+
+                data.append({
+                    "weight": weight,
+                    "certainty": 1,
+                    "target_slot_name": target_slot_type,
+                    "target_node_uid": node_to_id(target_id, partition.pid),
+                    "source_gate_name": source_gate_type,
+                    "source_node_uid": node_to_id(source_id, partition.pid)
+                })
 
             # find links going out to other partitions
             for partition_to_spid, to_partition in self.partitions.items():

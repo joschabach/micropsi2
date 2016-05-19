@@ -95,7 +95,7 @@ class World(object):
             uid (optional): unique handle of the world; if none is given, it will be generated
         """
 
-        self.logger = logging.getLogger('world_logger')
+        self.logger = logging.getLogger('world')
 
         # persistent data
         self.data = {
@@ -363,3 +363,9 @@ except ImportError as e:
         pass
     else:
         sys.stdout.write("Could not import timeseries world.\nError: %s \n\n" % e.msg)
+
+
+try:
+    from micropsi_core.world.vrep import vrep_world
+except ImportError as e:
+    sys.stdout.write("Could not import vrep world.\nError: %s \n\n" % e.msg)

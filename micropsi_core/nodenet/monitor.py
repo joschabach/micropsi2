@@ -4,6 +4,7 @@
 Monitor definition
 """
 
+import math
 import random
 import micropsi_core.tools
 from abc import ABCMeta, abstractmethod
@@ -104,11 +105,15 @@ class NodeMonitor(Monitor):
         return data
 
     def getvalue(self):
+        value = None
         if self.nodenet.is_node(self.node_uid):
             if self.type == 'gate' and self.target in self.nodenet.get_node(self.node_uid).get_gate_types():
-                return self.nodenet.get_node(self.node_uid).get_gate(self.target).activations[self.sheaf]
+                value = self.nodenet.get_node(self.node_uid).get_gate(self.target).activations[self.sheaf]
             if self.type == 'slot' and self.target in self.nodenet.get_node(self.node_uid).get_slot_types():
-                return self.nodenet.get_node(self.node_uid).get_slot(self.target).activations[self.sheaf]
+                value = self.nodenet.get_node(self.node_uid).get_slot(self.target).activations[self.sheaf]
+
+        if value is not None and not math.isnan(value):
+            return value
         else:
             return None
 

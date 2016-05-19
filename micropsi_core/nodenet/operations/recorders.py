@@ -6,7 +6,7 @@ try:
     import numpy as np
 
     @selectioninfo(mincount=2)
-    def add_gate_activation_recorder(netapi, selection, gate='gen', interval=1, name='gate_activation_recoder'):
+    def add_gate_activation_recorder(netapi, selection, gate='gen', interval=1, name='gate_activation_recorder'):
         """Adds an activation recorder to the selected nodes"""
         firstnode = netapi.get_node(selection[0])
         nodespace = netapi.get_nodespace(firstnode.parent_nodespace)

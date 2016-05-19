@@ -42,7 +42,7 @@ class VREPWorld(World):
         self.ball_handle = -1
 
         vrep.simxFinish(-1)  # just in case, close all opened connections
-        self.clientID = vrep.simxStart('127.0.0.1', 19999, True, 0, 5000, 5)  # Connect to V-REP
+        self.clientID = vrep.simxStart(config['vrep_host'], config['vrep_port'], True, 0, 5000, 5)  # Connect to V-REP
         if self.clientID == -1:
             self.logger.critical("Could not connect to v-rep")
             return
@@ -132,6 +132,10 @@ class VREPWorld(World):
     @staticmethod
     def get_config_options():
         return [
+            {'name': 'vrep_host',
+             'default': '127.0.0.1'},
+            {'name': 'vrep_port',
+             'default': 19999},
             {'name': 'robot_name',
              'description': 'The name of the robot object in V-REP',
              'default': 'LBR_iiwa_7_R800',

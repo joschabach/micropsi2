@@ -30,6 +30,6 @@ test-agents:
 	bin/py.test --agents
 
 vrep:
-	bin/pip install -e git+https://github.com/micropsi-industries/vrep-interface.git#egg=vrep-interface-dev
+	bin/pip install -e git+git@github.com:micropsi-industries/vrep-interface.git#egg=vrep-interface-dev
 
 .PHONY: run

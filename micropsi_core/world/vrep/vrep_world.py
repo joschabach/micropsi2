@@ -35,10 +35,17 @@ class VREPWorld(World):
         self.vision_type = config['vision_type']
         self.control_type = config['control_type']
 
+        self.joints = []
+        self.vision_resolution = []
+
+        self.iiwa_handle = -1
+        self.ball_handle = -1
+
         vrep.simxFinish(-1)  # just in case, close all opened connections
         self.clientID = vrep.simxStart('127.0.0.1', 19999, True, 0, 5000, 5)  # Connect to V-REP
         if self.clientID == -1:
-            raise Exception("Could not connect to v-rep.")
+            self.logger.critical("Could not connect to v-rep")
+            return
 
         self.logger.info("Connected to local V-REP at port 19999")
 
@@ -50,7 +57,7 @@ class VREPWorld(World):
         res, self.iiwa_handle = vrep.simxGetObjectHandle(self.clientID, self.robot_name, vrep.simx_opmode_blocking)
         self.handle_res(res)
         if self.iiwa_handle < 1:
-            raise Exception("There seems to be no robot with the name %s in the v-rep simulation." % self.robot_name)
+            self.logger.critical("There seems to be no robot with the name %s in the v-rep simulation." % self.robot_name)
 
         res, self.joints = vrep.simxGetObjects(self.clientID, vrep.sim_object_joint_type, vrep.simx_opmode_blocking)
         self.handle_res(res)
@@ -82,9 +89,12 @@ class VREPWorld(World):
                     res, resolution, image = vrep.simxGetVisionSensorImage(self.clientID, self.observer_handle, 0, vrep.simx_opmode_buffer)
                     self.vision_resolution = resolution
                     if len(resolution) != 2:
-                        raise Exception("Could not determine vision resolution after 1 second wait time.")
+                        self.logger.error("Could not determine vision resolution after 1 second wait time.")
                     else:
                         self.logger.info("Vision resolution is %s" % str(self.vision_resolution))
+
+        from micropsi_core.runtime import add_signal_handler
+        add_signal_handler(self.kill_vrep_connection)
 
     def handle_res(self, res):
         if res != vrep.simx_return_ok:
@@ -110,12 +120,22 @@ class VREPWorld(World):
         else:
             return None
 
+    def kill_vrep_connection(self, *args):
+        try:
+            vrep.simxFinish(-1)
+        except:
+            pass
+
+    def __del__(self):
+        self.kill_vrep_connection()
+
     @staticmethod
     def get_config_options():
         return [
             {'name': 'robot_name',
              'description': 'The name of the robot object in V-REP',
-             'default': 'LBR_iiwa_7_R800'},
+             'default': 'LBR_iiwa_7_R800',
+             'options': ["LBR_iiwa_7_R800", "MTB_Robot"]},
             {'name': 'control_type',
              'description': 'The type of input sent to the robot',
              'default': 'force/torque',
@@ -254,6 +274,11 @@ class Robot(ArrayWorldAdapter):
             self.datasource_values[self.distance_offset] = dist
 
         res, joint_ids, something, data, se = vrep.simxGetObjectGroupData(self.world.clientID, vrep.sim_object_joint_type, 15, vrep.simx_opmode_blocking)
+
+        if len(data) == 0:
+            self.world.logger.warning("No data from vrep received")
+            return
+
         for i, joint_handle in enumerate(self.world.joints):
             target_angle = self.datatarget_values[self.joint_offset + i]
             angle = 0

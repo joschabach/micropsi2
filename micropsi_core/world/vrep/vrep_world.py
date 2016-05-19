@@ -121,11 +121,13 @@ class VREPWorld(World):
             return None
 
     def kill_vrep_connection(self, *args):
-        vrep.simxFinish(-1)
+        try:
+            vrep.simxFinish(-1)
+        except:
+            pass
 
     def __del__(self):
         self.kill_vrep_connection()
-
 
     @staticmethod
     def get_config_options():

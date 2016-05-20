@@ -34,9 +34,11 @@ class VREPWorld(World):
         self.robot_name = config['robot_name']
         self.vision_type = config['vision_type']
         self.control_type = config['control_type']
+        self.collision_name = config.get('collision_name', '')
 
         self.joints = []
         self.vision_resolution = []
+        self.collision_handle = None
 
         self.iiwa_handle = -1
         self.ball_handle = -1
@@ -62,6 +64,12 @@ class VREPWorld(World):
         res, self.joints = vrep.simxGetObjects(self.clientID, vrep.sim_object_joint_type, vrep.simx_opmode_blocking)
         self.handle_res(res)
         self.logger.info("Found robot with %d joints" % len(self.joints))
+
+        if self.collision_name:
+            res, self.collision_handle = vrep.simxGetCollisionHandle(self.clientID, self.collision_name, vrep.simx_opmode_blocking)
+            self.handle_res(res)
+            if not self.collision_handle:
+                self.logger.warning("Collision handle %s not found, not tracking collisions" % self.collision_name)
 
         res, self.ball_handle = vrep.simxGetObjectHandle(self.clientID, "Ball", vrep.simx_opmode_blocking)
         self.handle_res(res)
@@ -138,6 +146,9 @@ class VREPWorld(World):
              'description': 'The name of the robot object in V-REP',
              'default': 'LBR_iiwa_7_R800',
              'options': ["LBR_iiwa_7_R800", "MTB_Robot"]},
+            {'name': 'collision_name',
+             'default': 'Collision',
+             'description': 'The name of the robot\'s collision handle'},
             {'name': 'control_type',
              'description': 'The type of input sent to the robot',
              'default': 'force/torque',
@@ -157,6 +168,7 @@ class Robot(ArrayWorldAdapter):
         self.available_datasources = []
 
         self.available_datasources.append("distance")
+        self.available_datasources.append("collision")
 
         self.available_datatargets.append("restart")
         self.available_datatargets.append("execute")
@@ -181,7 +193,8 @@ class Robot(ArrayWorldAdapter):
         self.joint_offset = 2
 
         self.distance_offset = 0
-        self.joint_angle_offset = 1
+        self.collision_offset = 1
+        self.joint_angle_offset = 2
         self.joint_force_offset = self.joint_angle_offset + len(self.world.joints)
 
         if self.world.vision_type == "grayscale":
@@ -280,6 +293,10 @@ class Robot(ArrayWorldAdapter):
         if len(data) == 0:
             self.world.logger.warning("No data from vrep received")
             return
+
+        if self.world.collision_handle is not None:
+            res, collision_state = vrep.simxReadCollision(self.world.clientID, self.world.collision_handle, vrep.simx_opmode_streaming)
+            self.datasource_values[self.collision_offset] = collision_state or 0
 
         for i, joint_handle in enumerate(self.world.joints):
             target_angle = self.datatarget_values[self.joint_offset + i]

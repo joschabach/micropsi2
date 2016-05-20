@@ -71,20 +71,23 @@ class Recorder(metaclass=ABCMeta):
 
     @abstractmethod
     def get_values(self):
-        pass  # no cover
+        pass  # pragma: no cover
 
     def save(self, filename=None):
-        values = self.values
-        if values == {}:
-            values['uid'] = self.uid  # empty files cannot be loaded
-        np.savez(filename if filename is not None else self.filename, **values)
+        data = {}
+        for key in self.values:
+            data["%s_%s" % (self.name, key)] = self.values[key]
+            data['%s_meta' % self.name] = [self.first_step, self.interval]
+        np.savez(filename if filename is not None else self.filename, **data)
 
     def load(self, filename=None):
         data = np.load(filename if filename is not None else self.filename)
         for key in data:
-            if key != 'uid':
+            if key.endswith('_meta'):
+                self.first_step = data[key][0]
+                self.interval = data[key][1]
+            else:
                 self.values[key] = data[key]
-                self.shapes[key] = data[key].shape
 
     def clear(self):
         self.values = {}

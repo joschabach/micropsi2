@@ -89,8 +89,8 @@ class Recorder(metaclass=ABCMeta):
         data = np.load(filename if filename is not None else self.filename)
         for key in data:
             if key.endswith('_meta'):
-                self.first_step = data[key][0]
-                self.interval = data[key][1]
+                self.first_step = int(data[key][0])
+                self.interval = int(data[key][1])
             else:
                 self.values[key] = data[key]
 

@@ -606,6 +606,8 @@ class TheanoPartition():
 
     def __calculate_native_modules(self):
         for uid, instance in self.native_module_instances.items():
+            for gate_type in instance.get_gate_types():
+                instance.get_gate(gate_type).activation = 0
             instance.node_function()
 
     def __calculate_g_factors(self):

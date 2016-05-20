@@ -597,6 +597,7 @@ class TheanoPartition():
             self.__rebuild_shifted()
         if self.has_directional_activators or self.__has_sampling_activators:
             self.__calculate_g_factors()
+        self.__clean_native_module_gates()
         self.calculate_nodes()
         self.__calculate_native_modules()
 
@@ -604,10 +605,13 @@ class TheanoPartition():
         for uid, instance in self.native_module_instances.items():
             instance.take_slot_activation_snapshot()
 
-    def __calculate_native_modules(self):
+    def __clean_native_module_gates(self):
         for uid, instance in self.native_module_instances.items():
             for gate_type in instance.get_gate_types():
                 instance.get_gate(gate_type).activation = 0
+
+    def __calculate_native_modules(self):
+        for uid, instance in self.native_module_instances.items():
             instance.node_function()
 
     def __calculate_g_factors(self):

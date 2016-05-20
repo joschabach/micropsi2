@@ -63,6 +63,16 @@ $(function(){
             rec_type_dd.trigger('change');
             rec_modal.modal('show');
         });
+    });
+    $('#export_recorders').on('submit', function(event){
+        var something_selected = false;
+        $('input[type=checkbox]', this).each(function(idx, el){
+            if (el.checked){something_selected = true;}
+        })
+        if (!something_selected){
+            dialogs.notification("No recorders selected");
+            event.preventDefault();
+        }
     })
     $('.btn-primary', rec_modal).on('click', function(event){
         var params = {
@@ -273,14 +283,6 @@ $(function(){
         switch(btn.attr('data-action')){
             case 'export':
                 return window.location.replace('/recorder/export/'+currentNodenet+'-'+uid);
-            case 'export_selected_recorders':
-                var table = $('#recorder_table');
-                var uids = [];
-                $('input[type=checkbox]', table).each(function(idx, el){
-                    if(el.checked) uids.push(el.value);
-                })
-                $.post('/recorder/export/'+currentNodenet, {'recorder_uids': uids});
-                break;
             case 'clear':
                 method_name = 'clear_recorder'; break;
             case 'delete':

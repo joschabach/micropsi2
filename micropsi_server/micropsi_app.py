@@ -47,6 +47,7 @@ bottle.TEMPLATE_PATH.insert(1, os.path.join(APP_PATH, 'static', ''))
 theano_available = True
 try:
     import theano
+    import numpy as np
 except ImportError:
     theano_available = False
 
@@ -54,6 +55,21 @@ bottle.BaseTemplate.defaults['theano_available'] = theano_available
 
 # runtime = micropsi_core.runtime.MicroPsiRuntime()
 usermanager = usermanagement.UserManager()
+
+
+class MicropsiEncoder(json.JSONEncoder):
+    import math
+    def default(self, obj):
+        if theano_available:
+            if isinstance(obj, np.integer):
+                return int(obj)
+            elif isinstance(obj, np.floating):
+                return float(obj)
+            elif isinstance(obj, np.ndarray):
+                return obj.tolist()
+            elif math.isnan(obj):
+                return None
+        return super(MyEncoder, self).default(obj)
 
 
 def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
@@ -126,7 +142,7 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                     return json.dumps({
                         'status': 'success' if state else 'error',
                         'data': data
-                    })
+                    }, cls=MicropsiEncoder)
                 except Exception as err:
                     response.status = 500
                     import traceback

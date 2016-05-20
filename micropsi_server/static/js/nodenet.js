@@ -489,7 +489,7 @@ function setNodespaceDiffData(data, changed){
             links_data = {}
             for(var uid in data.changes.nodes_dirty){
                 var nodedata = data.changes.nodes_dirty[uid];
-                item = new Node(uid, nodedata['position'][0], nodedata['position'][1], nodedata.parent_nodespace, nodedata.name, nodedata.type, nodedata.sheaves, nodedata.state, nodedata.parameters, nodedata.gate_activations, nodedata.gate_parameters, nodedata.gate_functions, data.nodes[uid].is_highdimensional);
+                item = new Node(uid, nodedata['position'][0], nodedata['position'][1], nodedata.parent_nodespace, nodedata.name, nodedata.type, nodedata.sheaves, nodedata.state, nodedata.parameters, nodedata.gate_activations, nodedata.gate_parameters, nodedata.gate_functions, nodedata.is_highdimensional);
                 if(uid in nodes){
                     for (var gateName in nodes[uid].gates) {
                         for (linkUid in nodes[uid].gates[gateName].outgoing) {

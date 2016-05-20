@@ -139,3 +139,28 @@ def test_grow_recorder_values(test_nodenet, resourcepath):
     for i in range(20):
         micropsi.step_nodenet(test_nodenet)
     assert len(recorder.values['activations'] == 25)
+
+
+@pytest.mark.engine("theano_engine")
+def test_export_recorders(test_nodenet):
+    from micropsi_core.nodenet.recorder import Recorder
+    import numpy as np
+    from io import BytesIO
+    nodenet = micropsi.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    for i in range(4):
+        micropsi.step_nodenet(test_nodenet)
+    nodespace = netapi.get_nodespace(None)
+    for i in range(5):
+        netapi.create_node('Register', None, "testnode_%d" % i)
+    Recorder.initial_size = 5
+    recorder = netapi.add_gate_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, interval=2, name="recorder")
+    micropsi.step_nodenet(test_nodenet)
+    micropsi.step_nodenet(test_nodenet)
+    data = micropsi.export_recorders(test_nodenet, [recorder.uid])
+    stream = BytesIO(data)
+    loaded = np.load(stream)
+    assert 'recorder_activations' in loaded
+    assert 'recorder_meta' in loaded
+    assert np.all(loaded['recorder_meta'] == [6, 2])
+    assert loaded['recorder_activations'][0][0] == 0

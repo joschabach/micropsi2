@@ -73,11 +73,15 @@ class Recorder(metaclass=ABCMeta):
     def get_values(self):
         pass  # pragma: no cover
 
-    def save(self, filename=None):
+    def export_data(self):
         data = {}
         for key in self.values:
             data["%s_%s" % (self.name, key)] = self.values[key]
             data['%s_meta' % self.name] = [self.first_step, self.interval]
+        return data
+
+    def save(self, filename=None):
+        data = self.export_data()
         np.savez(filename if filename is not None else self.filename, **data)
 
     def load(self, filename=None):

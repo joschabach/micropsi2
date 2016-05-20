@@ -154,6 +154,6 @@ def export_recorders(nodenet_uid, recorder_uids):
     stream = BytesIO()
     for uid in recorder_uids:
         recorder = nodenet.get_recorder(uid)
-        data[recorder.name] = recorder.values
+        data.update(recorder.export_data())
     np.savez(stream, **data)
     return stream.getvalue()

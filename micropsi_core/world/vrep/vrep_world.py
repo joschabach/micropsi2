@@ -102,6 +102,11 @@ class VREPWorld(World):
             self.logger.warn("v-rep call returned error code %d, error: %s" % (res, error))
 
     def get_world_view(self, step):
+        data = {
+            'objects': self.get_world_objects(),
+            'agents': self.data.get('agents', {}),
+            'current_step': self.current_step,
+        }
         if self.vision_type == "grayscale":
             plots = {}
             for uid in self.agents:
@@ -110,15 +115,8 @@ class VREPWorld(World):
                     bio = BytesIO()
                     image.figure.savefig(bio, format="png")
                     plots[uid] = base64.encodebytes(bio.getvalue()).decode("utf-8")
-
-            return {
-                'objects': self.get_world_objects(),
-                'agents': self.data.get('agents', {}),
-                'current_step': self.current_step,
-                'plots': plots
-            }
-        else:
-            return None
+            data['plots'] = plots
+        return data
 
     def kill_vrep_connection(self, *args):
         try:

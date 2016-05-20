@@ -1186,7 +1186,7 @@ def phatNM(netapi, node, **_):
     for i in range(10):
         registers.append(netapi.create_node("Register", None, 'reg%d' % i))
     netapi.group_nodes_by_names(None, node_name_prefix='reg', gate='gen')
-    netapi.group_node_slots(node.uid, slot='inbound', group_name='fat_in')
+    netapi.group_node_slots(node.uid, slot_prefix='inbound', group_name='fat_in')
     netapi.set_link_weights(None, 'reg', None, 'fat_in', np.eye(10))
     for i, r in enumerate(registers):
         links = r.get_gate('gen').get_links()

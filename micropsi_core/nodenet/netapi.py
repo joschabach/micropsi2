@@ -52,7 +52,7 @@ class NetAPI(object):
         """
         return self.__nodenet.get_node(uid)
 
-    def get_nodes(self, nodespace=None, node_name_prefix=None, nodetype=None, sortby='id'):
+    def get_nodes(self, nodespace=None, node_name_prefix=None, nodetype=None, sortby='ids'):
         """
         Returns a list of nodes in the given nodespace (all Nodespaces if None) whose names start with
         the given prefix (all if None)
@@ -76,6 +76,8 @@ class NetAPI(object):
             nodes = sorted(nodes, key=lambda node: node.uid)
         elif sortby == 'names':
             nodes = sorted(nodes, key=lambda node: node.name)
+        else:
+            raise ValueError("Unknown sortby value %s" % sortby)
 
         return nodes
 
@@ -454,7 +456,7 @@ class NetAPI(object):
         """
         self.__nodenet.group_nodes_by_names(nodespace_uid, node_name_prefix, gatetype=gate, sortby=sortby, group_name=group_name)
 
-    def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gate="gen", sortby='id'):
+    def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gate="gen", sortby='ids'):
         """
         Will group the given set of nodes.
         Groups can be used in bulk operations.

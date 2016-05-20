@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from io import BytesIO
 import base64
 import random
+import math
 
 import vrep
 from micropsi_core.world.world import World
@@ -244,6 +245,13 @@ class Robot(ArrayWorldAdapter):
                 tval = self.current_angle_target_values[i] * math.pi
                 vrep.simxSetJointPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
             vrep.simxPauseCommunication(self.world.clientID, False)
+
+            if self.world.ballgame_type == "reach-randomized":
+                max_dist = 0.8
+                rx = random.uniform(-max_dist, max_dist)
+                max_y = math.sqrt((max_dist ** 2) - (rx ** 2))
+                ry = random.uniform(-max_y, max_y)
+                vrep.simxSetObjectPosition(self.world.clientID, self.world.ball_handle, self.world.robot_handle, [rx, ry], vrep.simx_opmode_blocking)
 
             self.fetch_sensor_and_feedback_values_from_simulation()
             self.last_restart = self.world.current_step

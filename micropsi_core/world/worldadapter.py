@@ -134,7 +134,7 @@ class ArrayWorldAdapter(WorldAdapter, metaclass=ABCMeta):
     Numpy arrays can be passed directly into the engine.
     """
     def __init__(self, world, uid=None, **data):
-        WorldAdapter.__init__(self, world, uid=uid)
+        WorldAdapter.__init__(self, world, uid=uid, **data)
         self.datasource_values = [0] * len(self.get_available_datasources())
         self.datatarget_values = [0] * len(self.get_available_datatargets())
         self.datatarget_feedback_values = [0] * len(self.get_available_datatargets())

@@ -82,7 +82,8 @@ class Recorder(metaclass=ABCMeta):
 
     def save(self, filename=None):
         data = self.export_data()
-        np.savez(filename if filename is not None else self.filename, **data)
+        if data:
+            np.savez(filename if filename is not None else self.filename, **data)
 
     def load(self, filename=None):
         data = np.load(filename if filename is not None else self.filename)

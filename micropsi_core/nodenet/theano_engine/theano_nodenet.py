@@ -686,8 +686,6 @@ class TheanoNodenet(Nodenet):
         if position is not None:
             position = (position + [0] * 3)[:3]
             self.positions[uid] = position
-        if name is not None and name != "" and name != uid:
-            self.names[uid] = name
 
         if parameters is None:
             parameters = {}
@@ -695,9 +693,16 @@ class TheanoNodenet(Nodenet):
         if nodetype == "Sensor":
             if 'datasource' in parameters:
                 self.get_node(uid).set_parameter("datasource", parameters['datasource'])
+                if name is None or name == "" or name == uid:
+                    name = parameters['datasource']
         elif nodetype == "Actor":
             if 'datatarget' in parameters:
                 self.get_node(uid).set_parameter("datatarget", parameters['datatarget'])
+                if name is None or name == "" or name == uid:
+                    name = parameters['datatarget']
+
+        if name is not None and name != "" and name != uid:
+            self.names[uid] = name
 
         return uid
 

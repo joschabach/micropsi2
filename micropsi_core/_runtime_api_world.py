@@ -117,8 +117,9 @@ def new_world(world_name, world_type, owner="", uid=None, config={}):
     try:
         kwargs = micropsi_core.runtime.world_data[uid]
         micropsi_core.runtime.worlds[uid] = get_world_class_from_name(world_type)(**kwargs)
-    except AttributeError:
-        return False, "World type unknown"
+    except Exception as e:
+        os.remove(filename)
+        raise e
     return True, uid
 
 

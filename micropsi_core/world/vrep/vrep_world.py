@@ -158,7 +158,7 @@ class VREPWorld(World):
             {'name': 'ballgame_type',
              'description': 'Type of ball game to be played',
              'default': 'none',
-             'options': ["none", "reach-fixed", "reach-randomized"]}
+             'options': ["none", "reach", "reach-fixed", "reach-randomized"]}
         ]
 
 
@@ -236,13 +236,14 @@ class Robot(ArrayWorldAdapter):
             time.sleep(1)
             vrep.simxStartSimulation(self.world.clientID, vrep.simx_opmode_oneshot)
 
-            vrep.simxPauseCommunication(self.world.clientID, True)
-            for i, joint_handle in enumerate(self.world.joints):
-                self.datatarget_values[self.joint_offset + i] = random.uniform(-0.8, 0.8)
-                self.current_angle_target_values[i] = self.datatarget_values[self.joint_offset + i]
-                tval = self.current_angle_target_values[i] * math.pi
-                vrep.simxSetJointPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
-            vrep.simxPauseCommunication(self.world.clientID, False)
+            if self.world.ballgame_type != "reach":
+                vrep.simxPauseCommunication(self.world.clientID, True)
+                for i, joint_handle in enumerate(self.world.joints):
+                    self.datatarget_values[self.joint_offset + i] = random.uniform(-0.8, 0.8)
+                    self.current_angle_target_values[i] = self.datatarget_values[self.joint_offset + i]
+                    tval = self.current_angle_target_values[i] * math.pi
+                    vrep.simxSetJointPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
+                vrep.simxPauseCommunication(self.world.clientID, False)
 
             if self.world.ballgame_type == "reach-randomized":
                 max_dist = 0.8

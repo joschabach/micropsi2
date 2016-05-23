@@ -711,6 +711,7 @@ fetch_stepping_info = function(){
         }
 
         var end = new Date().getTime();
+        calculationRunning = data.calculation_running;
         if(data.calculation_running && !busy){
             if(runner_properties.timestep - (end - start) > 0){
                 window.setTimeout(fetch_stepping_info, runner_properties.timestep - (end - start));

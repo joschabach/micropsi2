@@ -609,6 +609,9 @@ if($('#nodenet_editor').height() > 0){
 }
 $('#nodenet_editor').on('shown', function(){
     register_stepping_function('nodenet_diff', get_nodenet_diff_params, setNodespaceDiffData);
+    if(!calculationRunning){
+        $(document).trigger('runner_stepped');
+    }
 });
 $('#nodenet_editor').on('hidden', function(){
     unregister_stepping_function('nodenet_diff');

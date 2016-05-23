@@ -18,8 +18,10 @@ $(function(){
         var agent_html = '';
         for(var uid in data.agents){
             agent_html += '<p><strong>' + data.agents[uid].name + ' ('+data.agents[uid].type+')</strong>';
-            if(uid in data.plots){
-                agent_html += '<br \><img src="data:image/png;base64,'+data.plots[uid]+'" />';
+            if(data.plots){
+                if(uid in data.plots){
+                    agent_html += '<br \><img src="data:image/png;base64,'+data.plots[uid]+'" />';
+                }
             }
             agent_html += '</p>'
 

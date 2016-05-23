@@ -3038,8 +3038,8 @@ function selectOperation(name){
             modal.modal('hide');
             runOperation(name, parameters);
         };
-        $('form', modal).on('submit', run);
-        $('.btn-primary', modal).on('click', run);
+        $('form', modal).off().on('submit', run);
+        $('.btn-primary', modal).off().on('click', run);
         modal.modal('show');
     } else {
         runOperation(name);

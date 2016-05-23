@@ -284,6 +284,10 @@ class TheanoNode(Node):
 
                 self._nodenet.sensormap[value] = self.uid
                 self._partition.sensor_indices[datasource_index] = sensor_element
+
+                if self.name is None or self.name == "" or self.name == self.uid:
+                    self.name = value
+
         elif self.type == "Actor" and parameter == "datatarget":
             if value is not None and value != "":
                 datatargets = self._nodenet.get_datatargets()
@@ -306,6 +310,10 @@ class TheanoNode(Node):
 
                 self._nodenet.actuatormap[value] = self.uid
                 self._partition.actuator_indices[datatarget_index] = actuator_element
+
+                if self.name is None or self.name == "" or self.name == self.uid:
+                    self.name = value
+
         elif self.type == "Activator" and parameter == "type":
             if value != "sampling":
                 self._nodenet.set_nodespace_gatetype_activator(self.parent_nodespace, value, self.uid)

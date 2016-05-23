@@ -264,6 +264,7 @@ class Robot(ArrayWorldAdapter):
             for i, joint_handle in enumerate(self.world.joints):
                 tval = self.current_angle_target_values[i] * math.pi
                 if self.world.control_type == "force/torque":
+                    tval += (old_datasource_values[self.joint_angle_offset + i]) * math.pi
                     vrep.simxSetJointTargetPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
                 elif self.world.control_type == "angles":
                     vrep.simxSetJointPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)

@@ -211,7 +211,7 @@ class Robot(ArrayWorldAdapter):
         self.distance_offset = 0
         self.collision_offset = 1
         self.position_offset = 2
-        self.joint_angle_offset = self.position_offset + 1
+        self.joint_angle_offset = self.position_offset + 2  # because ball_x, ball_y
         self.joint_force_offset = self.joint_angle_offset + len(self.world.joints)
 
         if self.world.vision_type == "grayscale":

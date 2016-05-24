@@ -68,7 +68,9 @@ class VREPWorld(World):
         if self.collision_name:
             res, self.collision_handle = vrep.simxGetCollisionHandle(self.clientID, self.collision_name, vrep.simx_opmode_blocking)
             self.handle_res(res)
-            if not self.collision_handle:
+            if self.collision_handle > 0:
+                res, collision_state = vrep.simxReadCollision(self.clientID, self.collision_handle, vrep.simx_opmode_streaming)
+            else:
                 self.logger.warning("Collision handle %s not found, not tracking collisions" % self.collision_name)
 
         res, self.ball_handle = vrep.simxGetObjectHandle(self.clientID, "Ball", vrep.simx_opmode_blocking)
@@ -294,8 +296,8 @@ class Robot(ArrayWorldAdapter):
             self.world.logger.warning("No data from vrep received")
             return
 
-        if self.world.collision_handle is not None:
-            res, collision_state = vrep.simxReadCollision(self.world.clientID, self.world.collision_handle, vrep.simx_opmode_streaming)
+        if self.world.collision_handle > 0:
+            res, collision_state = vrep.simxReadCollision(self.world.clientID, self.world.collision_handle, vrep.simx_opmode_buffer)
             self.datasource_values[self.collision_offset] = collision_state or 0
 
         for i, joint_handle in enumerate(self.world.joints):

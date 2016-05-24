@@ -8,23 +8,23 @@ $(function(){
 
     registerResizeHandler();
 
-    function get_world_data(){
-        return {step: currentWorldSimulationStep};
-    }
+    // function get_world_data(){
+    //     return {step: currentWorldSimulationStep};
+    // }
 
-    function set_world_data(data){
-        if(!jQuery.isEmptyObject(data)){
-            currentWorldSimulationStep = data.current_step;
-        }
-    }
+    // function set_world_data(data){
+    //     if(!jQuery.isEmptyObject(data)){
+    //         currentWorldSimulationStep = data.current_step;
+    //     }
+    // }
 
-    register_stepping_function('world', get_world_data, set_world_data);
+    // register_stepping_function('world', get_world_data, set_world_data);
 
-    function updateViewSize() {
-        if(typeof view != 'undefined'){
-            view.draw(true);
-        }
-    }
+    // function updateViewSize() {
+    //     if(typeof view != 'undefined'){
+    //         view.draw(true);
+    //     }
+    // }
 
     function registerResizeHandler(){
         // resize handler for nodenet viewer:

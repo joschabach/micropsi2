@@ -181,8 +181,8 @@ class Robot(ArrayWorldAdapter):
 
         self.available_datatargets = []
         self.available_datasources = []
-        self.available_datasources.append("collision")
         self.available_datasources.append("ball-distance")
+        self.available_datasources.append("collision")
         self.available_datasources.append("ball-x")
         self.available_datasources.append("ball-y")
 

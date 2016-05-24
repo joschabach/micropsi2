@@ -38,7 +38,7 @@ class VREPWorld(World):
 
         self.joints = []
         self.vision_resolution = []
-        self.collision_handle = None
+        self.collision_handle = -1
 
         self.iiwa_handle = -1
         self.ball_handle = -1

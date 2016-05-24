@@ -144,7 +144,19 @@ $(function(){
         setLoggingData(data);
     }
 
-    register_stepping_function('monitors', getPollParams, setData);
+    if($('#monitor').height() > 0){
+        register_stepping_function('monitors', getPollParams, setData);
+    }
+    $('#monitor').on('shown', function(){
+        register_stepping_function('monitors', getPollParams, setData);
+        if(!calculationRunning){
+            $(document).trigger('runner_stepped');
+        }
+    });
+    $('#monitor').on('hidden', function(){
+        unregister_stepping_function('monitors');
+    });
+
 
     function refreshMonitors(newNodenet){
         params = getPollParams();

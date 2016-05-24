@@ -447,7 +447,7 @@ class NetAPI(object):
             mapping[node] = self.get_node(uidmap[node.uid])
         return mapping
 
-    def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gate="gen", sortby='id', group_name=None):
+    def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gate="gen", sortby='ids', group_name=None):
         """
         Will group the given set of nodes.
         Groups can be used in bulk operations.

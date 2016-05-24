@@ -112,6 +112,8 @@ class TheanoNode(Node):
 
     def get_gate(self, type):
         if type not in self.__gatecache:
+            if type not in self.get_gate_types():
+                return None
             self.__gatecache[type] = TheanoGate(type, self, self._nodenet, self._partition)
         return self.__gatecache[type]
 

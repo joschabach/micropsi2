@@ -328,7 +328,7 @@ class Robot(ArrayWorldAdapter):
 
         if self.world.collision_handle > 0:
             res, collision_state = vrep.simxReadCollision(self.world.clientID, self.world.collision_handle, vrep.simx_opmode_buffer)
-            self.datasource_values[self.collision_offset] = collision_state or 0
+            self.datasource_values[self.collision_offset] = 1 if collision_state else 0
 
         for i, joint_handle in enumerate(self.world.joints):
             target_angle = self.datatarget_values[self.joint_offset + i]

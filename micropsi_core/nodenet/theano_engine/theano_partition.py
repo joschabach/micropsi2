@@ -1742,6 +1742,8 @@ class TheanoPartition():
         node_id = node_from_id(node_uid)
         nodespace_id = self.allocated_node_parents[node_id]
         nodespace_uid = nodespace_to_id(nodespace_id, self.pid)
+        if nodespace_uid not in self.nodegroups:
+            self.nodegroups[nodespace_uid] = {}
         strnodetype = get_string_node_type(self.allocated_nodes[node_id], self.nodenet.native_modules)
         nodetype = self.nodenet.get_nodetype(strnodetype)
         if gate:

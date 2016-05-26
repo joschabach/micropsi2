@@ -998,6 +998,7 @@ function nodeRedrawNeeded(node){
     if(node.uid in nodeLayer.children){
         if(node.x == nodes[node.uid].x &&
             node.y == nodes[node.uid].y &&
+            node.name == nodes[node.uid].name &&
             node.sheaves[currentSheaf].activation == nodes[node.uid].sheaves[currentSheaf].activation &&
             node.gatechecksum() == nodes[node.uid].gatechecksum() &&
             Object.keys(node.sheaves).length == Object.keys(nodes[node.uid].sheaves).length &&
@@ -3742,12 +3743,14 @@ function handleSelectDatasourceModal(event){
     var nodeUid = clickOriginUid;
     var value = $('#select_datasource_modal select').val();
     $("#select_datasource_modal").modal("hide");
-    nodes[clickOriginUid].parameters['datasource'] = value;
+    nodes[nodeUid].parameters['datasource'] = value;
     showNodeForm(nodeUid);
     api.call("bind_datasource_to_sensor", {
         nodenet_uid: currentNodenet,
         sensor_uid: nodeUid,
         datasource: value
+    }, function(data){
+        showNodeForm(nodeUid, true);
     });
 }
 
@@ -3755,12 +3758,14 @@ function handleSelectDatatargetModal(event){
     var nodeUid = clickOriginUid;
     var value = $('#select_datatarget_modal select').val();
     $("#select_datatarget_modal").modal("hide");
-    nodes[clickOriginUid].parameters['datatarget'] = value;
+    nodes[nodeUid].parameters['datatarget'] = value;
     showNodeForm(nodeUid);
     api.call("bind_datatarget_to_actor", {
         nodenet_uid: currentNodenet,
         actor_uid: nodeUid,
         datatarget: value
+    }, function(data){
+        showNodeForm(nodeUid, true);
     });
 }
 
@@ -3979,6 +3984,7 @@ function showNodeForm(nodeUid, refresh){
             node_uid: nodeUid
         }, function(data){
             item = new Node(nodeUid, data['position'][0], data['position'][1], data.parent_nodespace, data.name, data.type, data.sheaves, data.state, data.parameters, data.gate_activations, data.gate_parameters, data.gate_functions);
+            redrawNode(item);
             nodes[nodeUid].update(item);
             if(clickType == 'gate'){
                 showGateForm(nodes[nodeUid], nodes[nodeUid].gates[nodes[nodeUid].gateIndexes[clickIndex]]);

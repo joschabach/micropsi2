@@ -48,7 +48,7 @@ class VREPWorld(World):
         self.robot_position = []
 
         vrep.simxFinish(-1)  # just in case, close all opened connections
-        self.clientID = vrep.simxStart(config['vrep_host'], int(config['vrep_port']), True, 0, 5000, 5)  # Connect to V-REP
+        self.clientID = vrep.simxStart(config['vrep_host'], int(config['vrep_port']), True, False, 5000, 4)  # Connect to V-REP
         if self.clientID == -1:
             self.logger.critical("Could not connect to v-rep")
             return
@@ -321,9 +321,19 @@ class Robot(ArrayWorldAdapter):
             self.datasource_values[self.position_offset + 1] = relative_pos[1]
 
         res, joint_ids, something, data, se = vrep.simxGetObjectGroupData(self.world.clientID, vrep.sim_object_joint_type, 15, vrep.simx_opmode_blocking)
+        self.world.handle_res(res)
 
         if len(data) == 0:
-            self.world.logger.warning("No data from vrep received")
+            self.world.logger.warning("No data from vrep received. Sleeping for 5secs, the retrying.")
+            time.sleep(1)
+
+            res, joint_ids, something, data, se = vrep.simxGetObjectGroupData(self.world.clientID,
+                                                                              vrep.sim_object_joint_type, 15,
+                                                                              vrep.simx_opmode_blocking)
+            self.world.handle_res(res)
+
+            if len(data) == 0:
+                self.world.logger.error("No data from vrep received on retry. Giving up and returning no data.")
             return
 
         if self.world.collision_handle > 0:

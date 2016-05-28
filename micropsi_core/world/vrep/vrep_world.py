@@ -119,16 +119,16 @@ class VREPWorld(World):
             data['plots'] = plots
         return data
 
+    def on_vrep_connect(self):
+        """ is called by the connection_daemon, if a connection was established """
+        for uid in self.agents:
+            self.agents[uid].on_vrep_connect()
+
     def kill_vrep_connection(self, *args):
         if hasattr(self, "connection_daemon"):
             self.connection_daemon.is_active = False
             if self.connection_daemon:
                 self.connection_daemon.join()
-
-    def on_vrep_connect(self):
-        """ is called by the connection_daemon, if a connection was established """
-        for uid in self.agents:
-            self.agents[uid].on_vrep_connect()
 
     def __del__(self):
         self.kill_vrep_connection()
@@ -165,9 +165,9 @@ class VREPWorld(World):
 class Robot(ArrayWorldAdapter):
 
     def __init__(self, world, uid=None, **data):
-        super().__init__(world, uid, **data)
         self.available_datatargets = []
         self.available_datasources = []
+        super().__init__(world, uid, **data)
         self.block = True
         self.joints = []
         self.vision_resolution = []

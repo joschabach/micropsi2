@@ -19,6 +19,7 @@ and treated as parts of the world.
 __author__ = 'joscha'
 __date__ = '10.05.12'
 
+import logging
 from threading import Lock
 from micropsi_core.world.worldobject import WorldObject
 from abc import ABCMeta, abstractmethod
@@ -36,7 +37,9 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
         self.datatargets = {}
         self.datatarget_feedback = {}
         self.datasource_lock = Lock()
+        self.nodenet = None  # will be assigned by the nodenet once it's loaded
         WorldObject.__init__(self, world, category='agents', uid=uid, **data)
+        self.logger = logging.getLogger('agent.%s' % self.uid)
         if data.get('name'):
             self.data['name'] = data['name']
 

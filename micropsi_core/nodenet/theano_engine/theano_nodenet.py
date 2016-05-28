@@ -173,6 +173,7 @@ class TheanoNodenet(Nodenet):
     @worldadapter_instance.setter
     def worldadapter_instance(self, _worldadapter_instance):
         self._worldadapter_instance = _worldadapter_instance
+        self._worldadapter_instance.nodenet = self
         self._rebuild_sensor_actor_indices()
 
     @property
@@ -197,7 +198,7 @@ class TheanoNodenet(Nodenet):
 
         self.nodetypes = {}
         for type, data in STANDARD_NODETYPES.items():
-             self.nodetypes[type] = Nodetype(nodenet=self, **data)
+            self.nodetypes[type] = Nodetype(nodenet=self, **data)
 
         precision = settings['theano']['precision']
         if precision == "32":

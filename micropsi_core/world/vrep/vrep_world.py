@@ -6,6 +6,7 @@ import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
+import threading
 from io import BytesIO
 import base64
 import random
@@ -14,6 +15,64 @@ import math
 import vrep
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import ArrayWorldAdapter
+
+
+class VREPConnection(threading.Thread):
+    wait = 2
+    current_try = 0
+    ping_interval = 1
+
+    def __init__(self, host, port, connection_listeners=[]):
+        threading.Thread.__init__(self)
+        self.host = host
+        self.port = port
+        self.clientID = -1
+        self.daemon = True
+        self.paused = False
+        self.is_connected = False
+        self.logger = logging.getLogger("world")
+        self.state = threading.Condition()
+        self.is_active = True
+        self.connection_listeners = connection_listeners
+        self.start()
+
+    def run(self):
+        self.reconnect()
+        while self.is_active:
+            with self.state:
+                if self.paused:
+                    self.state.wait()
+            res, pingtime = vrep.simxGetPingTime(self.clientID)
+            if res != vrep.simx_return_ok:
+                self.reconnect()
+            time.sleep(self.ping_interval)
+        vrep.simxFinish(-1)
+
+    def reconnect(self):
+        self.is_connected = False
+        self.current_try = 0
+        self.clientID = -1
+        vrep.simxFinish(-1)  # just in case, close all opened connections
+        while self.clientID < 0 and self.is_active:
+            self.clientID = vrep.simxStart(self.host, self.port, True, 0, 5000, 5)  # Connect to V-REP
+            if self.clientID == -1:
+                self.logger.error("Could not connect to v-rep, trying again in %d seconds", self.current_try * self.wait)
+                time.sleep(self.current_try * self.wait)
+                self.current_try += 1
+            else:
+                self.is_connected = True
+                self.logger.info("Connected to local V-REP at port %d" % self.port)
+                for item in self.connection_listeners:
+                    item.on_vrep_connect()
+
+    def resume(self):
+        with self.state:
+            self.paused = False
+            self.state.notify()
+
+    def pause(self):
+        with self.state:
+            self.paused = True
 
 
 class VREPWorld(World):

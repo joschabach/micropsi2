@@ -39,10 +39,10 @@ class VREPConnection(threading.Thread):
     def run(self):
         self.reconnect()
         while self.is_active:
-            res, pingtime = vrep.simxGetPingTime(self.clientID)
-            if res != vrep.simx_return_ok:
-                self.reconnect()
-            time.sleep(self.ping_interval)
+            with self.state:
+                if self.paused:
+                    self.state.wait()
+            self.reconnect()
         vrep.simxFinish(-1)
 
     def reconnect(self):
@@ -61,6 +61,16 @@ class VREPConnection(threading.Thread):
                 self.logger.info("Connected to local V-REP at port %d" % self.port)
                 for item in self.connection_listeners:
                     item.on_vrep_connect()
+        self.pause()
+
+    def resume(self):
+        with self.state:
+            self.paused = False
+            self.state.notify()
+
+    def pause(self):
+        with self.state:
+            self.paused = True
 
     def terminate(self):
         self.stop.set()
@@ -173,8 +183,8 @@ class Robot(ArrayWorldAdapter):
 
     def handle_res(self, res):
         if res != vrep.simx_return_ok:
-            error = vrep.simxGetLastErrors(self.clientID, vrep.simx_opmode_blocking)
-            self.logger.warn("v-rep call returned error code %d, error: %s" % (res, error))
+            self.logger.warn("vrep call returned error, reconnecting instance")
+            self.world.connection_daemon.resume()
 
     def on_vrep_connect(self):
         """ is called by the world, if a connection was established """
@@ -355,6 +365,7 @@ class Robot(ArrayWorldAdapter):
             return
 
         res, resolution, image = vrep.simxGetVisionSensorImage(self.clientID, self.observer_handle, 0, vrep.simx_opmode_buffer)
+        self.handle_res(res)
         rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (self.vision_resolution[0] * self.vision_resolution[1], 3)).astype(np.float32)
         rgb_image /= 255.
         y_image = np.asarray([.2126 * px[0] + .7152 * px[1] + .0722 * px[2] for px in rgb_image]).astype(np.float32).reshape((self.vision_resolution[0], self.vision_resolution[1]))[::-1,:]   # todo: npyify and make faster

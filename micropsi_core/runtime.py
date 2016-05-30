@@ -226,9 +226,9 @@ MicropsiRunner.last_nodenet_exception = {}
 
 
 def kill_runners(signal=None, frame=None):
-    for uid in worlds:
-        if hasattr(worlds[uid], 'kill_minecraft_thread'):
-            worlds[uid].kill_minecraft_thread()
+    for uid in nodenets:
+        if nodenets[uid].is_active:
+            nodenets[uid].is_active = False
     runner['runner'].resume()
     runner['running'] = False
     runner['runner'].join()

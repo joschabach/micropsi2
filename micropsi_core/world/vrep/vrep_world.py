@@ -366,14 +366,15 @@ class Robot(ArrayWorldAdapter):
 
         res, resolution, image = vrep.simxGetVisionSensorImage(self.clientID, self.observer_handle, 0, vrep.simx_opmode_buffer)
         self.handle_res(res)
-        rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (self.vision_resolution[0] * self.vision_resolution[1], 3)).astype(np.float32)
-        rgb_image /= 255.
-        y_image = np.asarray([.2126 * px[0] + .7152 * px[1] + .0722 * px[2] for px in rgb_image]).astype(np.float32).reshape((self.vision_resolution[0], self.vision_resolution[1]))[::-1,:]   # todo: npyify and make faster
-        self.datasource_values[self.image_offset:len(self.datasource_values)-1] = y_image.flatten()
+        if len(image):
+            rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (self.vision_resolution[0] * self.vision_resolution[1], 3)).astype(np.float32)
+            rgb_image /= 255.
+            y_image = np.asarray([.2126 * px[0] + .7152 * px[1] + .0722 * px[2] for px in rgb_image]).astype(np.float32).reshape((self.vision_resolution[0], self.vision_resolution[1]))[::-1,:]   # todo: npyify and make faster
+            self.datasource_values[self.image_offset:len(self.datasource_values)-1] = y_image.flatten()
 
-        self.image.set_data(y_image)
+            self.image.set_data(y_image)
 
-        return self.image
+            return self.image
 
     def fetch_sensor_and_feedback_values_from_simulation(self, include_feedback=False, initial=False):
 

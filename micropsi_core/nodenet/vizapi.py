@@ -107,9 +107,7 @@ class NodenetPlot(object):
             sz = int(np.ceil(np.sqrt(data.shape[0])))
             matrix = data.reshape((sz, sz))
 
-        result = self.add_2d_matrix_plot(matrix, vmin=vmin, vmax=vmax)
-        if name is not None:
-            self.plots[name] = result
+        self.add_2d_matrix_plot(matrix, name=name, vmin=vmin, vmax=vmax)
 
     def add_linkweights_plot(self, linkweights, name=None, wspace=0.1, hspace=0.1, rows_outer=0, cols_outer=0, rows_inner=0, cols_inner=0):
         """ Adds a plot of linkweights to the figure.
@@ -133,11 +131,9 @@ class NodenetPlot(object):
             rows_inner or inner_sqrt,
             cols_inner or inner_sqrt
         ))
-        result = self.add_4d_matrix_plot(matrix, wspace=wspace, hspace=hspace)
-        if name is not None:
-            self.plots[name] = result
+        result = self.add_4d_matrix_plot(matrix, name=name, wspace=wspace, hspace=hspace)
 
-    def add_2d_matrix_plot(self, matrix, vmin=None, vmax=None):
+    def add_2d_matrix_plot(self, matrix, name=None, vmin=None, vmax=None):
         """ General plotter function to add a two-dimensional plot. The shape
         of the passed matrix determins the layout in rows and cols of the
         plot
@@ -145,9 +141,6 @@ class NodenetPlot(object):
             data - 2-dimensional numpy matrix
             vmin - minimal value
             vmax - maximal value
-        Returns:
-            AxesImage - the image, that can later be updated if need be
-            shape - the shape of the data this image can handle
         """
         ax = plt.Subplot(self.figure, self.grid[self.plotindex])
         ax.set_xticks([])
@@ -155,9 +148,10 @@ class NodenetPlot(object):
         thing = ax.imshow(matrix, cmap=matplotlib.cm.gray, vmin=vmin, vmax=vmax)
         self.figure.add_subplot(ax)
         self.plotindex += 1
-        return thing, matrix.shape
+        if name is not None:
+            self.plots[name] = thing, matrix.shape
 
-    def add_4d_matrix_plot(self, data, wspace=0, hspace=0, vmin=None, vmax=None):
+    def add_4d_matrix_plot(self, data, name=None, wspace=0, hspace=0, vmin=None, vmax=None):
         """ General plotter function to add a grid of several two-dimensional plots
         The shape of the passed matrix determins the layout in rows and cols of the
         plot
@@ -167,9 +161,6 @@ class NodenetPlot(object):
             hspace - horizontal spacing
             vmin - minimal value
             vmax - maximal value
-        Returns:
-            list of AxesImages - the images, that can later be updated if need be
-            shape - the shape of the data this collection of images can handle
         """
         # compute rows & cols
         row, col, inner_row, inner_col = data.shape
@@ -184,7 +175,8 @@ class NodenetPlot(object):
                 plots.append(ax.imshow(row_data[c, :], cmap=matplotlib.cm.gray, vmin=vmin, vmax=vmax))
                 self.figure.add_subplot(ax)
         self.plotindex += 1
-        return plots, data.shape
+        if name is not None:
+            self.plots[name] = plots, data.shape
 
     def save_to_file(self, filename, format="png", **params):
         """ saves the generated figure to the given file

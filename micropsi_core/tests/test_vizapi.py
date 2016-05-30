@@ -103,20 +103,16 @@ def test_update_plot(test_nodenet):
     activations_1 = np.random.rand(16)
     image.add_activation_plot(activations_1, name='my_activations_plot')
     result_1 = image.to_base64()
-    image.save_to_file('act_1.png')
     activations_2 = np.random.rand(16)
     image.update_plot('my_activations_plot', activations_2)
     result_2 = image.to_base64()
-    image.save_to_file('act_2.png')
     assert result_1 != result_2
 
     image = vizapi.NodenetPlot((4, 4))
     linkweights_1 = np.random.rand(4, 4)
     image.add_linkweights_plot(linkweights_1, name='my_linkweights_plot')
     result_1 = image.to_base64()
-    image.save_to_file('lw_1.png')
     linkweights_2 = np.random.rand(4, 4)
     image.update_plot('my_linkweights_plot', linkweights_2)
     result_2 = image.to_base64()
-    image.save_to_file('lw_2.png')
     assert result_1 != result_2

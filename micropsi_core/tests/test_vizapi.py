@@ -10,6 +10,7 @@ from micropsi_core import runtime as micropsi
 # skip these tests if numpy is not installed
 pytest.importorskip("numpy")
 
+
 def test_plot_activations(test_nodenet):
     from random import random
     nodenet = micropsi.get_nodenet(test_nodenet)

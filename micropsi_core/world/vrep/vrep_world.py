@@ -406,7 +406,7 @@ class Robot(ArrayWorldAdapter):
             self.logger.warning("No data from vrep received. Sleeping for 5secs, the retrying.")
             time.sleep(1)
 
-            res, joint_ids, something, data, se = vrep.simxGetObjectGroupData(self.world.clientID,
+            res, joint_ids, something, data, se = vrep.simxGetObjectGroupData(self.clientID,
                                                                               vrep.sim_object_joint_type, 15,
                                                                               vrep.simx_opmode_blocking)
             self.handle_res(res)

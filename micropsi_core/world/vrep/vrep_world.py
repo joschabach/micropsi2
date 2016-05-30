@@ -249,6 +249,7 @@ class Robot(ArrayWorldAdapter):
             vrep.simxStopSimulation(self.world.clientID, vrep.simx_opmode_oneshot)
             time.sleep(1)
             vrep.simxStartSimulation(self.world.clientID, vrep.simx_opmode_oneshot)
+            time.sleep(0.5)
 
             if self.world.ballgame_type != "reach":
                 vrep.simxPauseCommunication(self.world.clientID, True)

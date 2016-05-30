@@ -28,7 +28,7 @@ class VREPConnection(threading.Thread):
         self.port = port
         self.clientID = -1
         self.daemon = True
-        self.paused = False
+        self.stop  = threading.Event()
         self.is_connected = False
         self.logger = logging.getLogger("world")
         self.state = threading.Condition()
@@ -39,9 +39,6 @@ class VREPConnection(threading.Thread):
     def run(self):
         self.reconnect()
         while self.is_active:
-            with self.state:
-                if self.paused:
-                    self.state.wait()
             res, pingtime = vrep.simxGetPingTime(self.clientID)
             if res != vrep.simx_return_ok:
                 self.reconnect()
@@ -57,7 +54,7 @@ class VREPConnection(threading.Thread):
             self.clientID = vrep.simxStart(self.host, self.port, True, 0, 5000, 5)  # Connect to V-REP
             if self.clientID == -1:
                 self.logger.error("Could not connect to v-rep, trying again in %d seconds", self.current_try * self.wait)
-                time.sleep(self.current_try * self.wait)
+                self.stop.wait(self.current_try * self.wait)
                 self.current_try += 1
             else:
                 self.is_connected = True
@@ -65,15 +62,8 @@ class VREPConnection(threading.Thread):
                 for item in self.connection_listeners:
                     item.on_vrep_connect()
 
-    def resume(self):
-        with self.state:
-            self.paused = False
-            self.state.notify()
-
-    def pause(self):
-        with self.state:
-            self.paused = True
-
+    def terminate(self):
+        self.stop.set()
 
 class VREPWorld(World):
     """ A vrep robot simulator environment
@@ -128,6 +118,7 @@ class VREPWorld(World):
         if hasattr(self, "connection_daemon"):
             self.connection_daemon.is_active = False
             if self.connection_daemon:
+                self.connection_daemon.terminate()
                 self.connection_daemon.join()
 
     def __del__(self):

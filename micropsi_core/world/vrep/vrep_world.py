@@ -51,7 +51,7 @@ class VREPConnection(threading.Thread):
         self.clientID = -1
         vrep.simxFinish(-1)  # just in case, close all opened connections
         while self.clientID < 0 and self.is_active:
-            self.clientID = vrep.simxStart(self.host, self.port, True, 0, 5000, 5)  # Connect to V-REP
+            self.clientID = vrep.simxStart(self.host, self.port, True, False, 5000, 4)  # Connect to V-REP
             if self.clientID == -1:
                 self.logger.error("Could not connect to v-rep, trying again in %d seconds", self.current_try * self.wait)
                 self.stop.wait(self.current_try * self.wait)
@@ -199,7 +199,7 @@ class Robot(ArrayWorldAdapter):
             if self.collision_handle > 0:
                 res, collision_state = vrep.simxReadCollision(self.clientID, self.collision_handle, vrep.simx_opmode_streaming)
             else:
-                self.logger.warning("Collision handle %s not found, not tracking collisions" % self.world.collision_name)
+                self.logger.warning("Collision handle %s not found, not tracking collisions" % self.collision_name)
 
         if self.world.ballgame_type != "none":
             res, self.ball_handle = vrep.simxGetObjectHandle(self.clientID, "Ball", vrep.simx_opmode_blocking)
@@ -389,9 +389,19 @@ class Robot(ArrayWorldAdapter):
             self.datasource_values[self.position_offset + 1] = relative_pos[1]
 
         res, joint_ids, something, data, se = vrep.simxGetObjectGroupData(self.clientID, vrep.sim_object_joint_type, 15, vrep.simx_opmode_blocking)
+        self.handle_res(res)
 
         if len(data) == 0:
-            self.world.logger.warning("No data from vrep received")
+            self.logger.warning("No data from vrep received. Sleeping for 5secs, the retrying.")
+            time.sleep(1)
+
+            res, joint_ids, something, data, se = vrep.simxGetObjectGroupData(self.world.clientID,
+                                                                              vrep.sim_object_joint_type, 15,
+                                                                              vrep.simx_opmode_blocking)
+            self.handle_res(res)
+
+            if len(data) == 0:
+                self.world.logger.error("No data from vrep received on retry. Giving up and returning no data.")
             return
 
         if self.collision_handle > 0:

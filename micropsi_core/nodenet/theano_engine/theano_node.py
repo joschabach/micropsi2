@@ -192,7 +192,7 @@ class TheanoNode(Node):
         if self.is_highdimensional:
             start = self._partition.allocated_node_offsets[self._id]
             end = start + len(self._nodetype.slottypes)
-            self.slot_fat_snapshot = a_array[start:end]
+            self.slot_fat_snapshot = np.array(a_array[start:end])
 
     def get_slot(self, type):
         if type not in self.__slotcache:

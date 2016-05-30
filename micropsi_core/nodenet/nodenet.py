@@ -136,8 +136,9 @@ class Nodenet(metaclass=ABCMeta):
         """
         Connects the node net to the given world adapter uid, or disconnects if None is given
         """
-        self._worldadapter_instance.nodenet = self
         self._worldadapter_instance = _worldadapter_instance
+        if self._worldadapter_instance:
+            self._worldadapter_instance.nodenet = self
 
     def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None):
         """
@@ -148,7 +149,8 @@ class Nodenet(metaclass=ABCMeta):
         self._world_uid = world
         self._worldadapter_uid = worldadapter if world else None
         self._worldadapter_instance = worldadapter_instance
-        self._worldadapter_instance.nodenet = self
+        if self._worldadapter_instance:
+            self._worldadapter_instance.nodenet = self
         self.is_active = False
         self.use_modulators = use_modulators
 

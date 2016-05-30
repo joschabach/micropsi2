@@ -173,7 +173,8 @@ class TheanoNodenet(Nodenet):
     @worldadapter_instance.setter
     def worldadapter_instance(self, _worldadapter_instance):
         self._worldadapter_instance = _worldadapter_instance
-        self._worldadapter_instance.nodenet = self
+        if self._worldadapter_instance:
+            self._worldadapter_instance.nodenet = self
         self._rebuild_sensor_actor_indices()
 
     @property

@@ -4,8 +4,11 @@
 Tests for vizapi
 """
 
+import pytest
 from micropsi_core import runtime as micropsi
 
+# skip these tests if numpy is not installed
+pytest.importorskip("numpy")
 
 def test_plot_activations(test_nodenet):
     from random import random
@@ -90,3 +93,30 @@ def plotfunc(netapi, node=None, **params):
     micropsi.stop_nodenetrunner(test_nodenet)
     assert micropsi.MicropsiRunner.last_nodenet_exception == {}
     assert os.path.isfile(os.path.join(resourcepath, "plot.png"))
+
+
+def test_update_plot(test_nodenet):
+    import numpy as np
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    vizapi = nodenet.netapi.vizapi
+    image = vizapi.NodenetPlot((4, 4))
+    activations_1 = np.random.rand(16)
+    image.add_activation_plot(activations_1, name='my_activations_plot')
+    result_1 = image.to_base64()
+    image.save_to_file('act_1.png')
+    activations_2 = np.random.rand(16)
+    image.update_plot('my_activations_plot', activations_2)
+    result_2 = image.to_base64()
+    image.save_to_file('act_2.png')
+    assert result_1 != result_2
+
+    image = vizapi.NodenetPlot((4, 4))
+    linkweights_1 = np.random.rand(4, 4)
+    image.add_linkweights_plot(linkweights_1, name='my_linkweights_plot')
+    result_1 = image.to_base64()
+    image.save_to_file('lw_1.png')
+    linkweights_2 = np.random.rand(4, 4)
+    image.update_plot('my_linkweights_plot', linkweights_2)
+    result_2 = image.to_base64()
+    image.save_to_file('lw_2.png')
+    assert result_1 != result_2

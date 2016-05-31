@@ -246,7 +246,7 @@ class NetAPI(object):
         Deletes all links from a node ending at the given slot or originating at the given gate
         Read this as 'delete all por linkage from this node'
         """
-        self.logger.warn("unlink direction is deprecated. use unlink_gate and unlink_slot")
+        self.logger.warning("unlink direction is deprecated. use unlink_gate and unlink_slot")
         node.unlink(gateslot)
 
         links_to_delete = set()

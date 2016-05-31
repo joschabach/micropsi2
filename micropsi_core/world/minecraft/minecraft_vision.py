@@ -261,7 +261,7 @@ class MinecraftVision(MinecraftGraphLocomotion, MinecraftProjectionMixin):
                     self.record_file.write("%s,%s,%d,%d,%d,%d,%.3f,%.3f,%d,%d\n" %
                                            (data, label, pitch, yaw, fov_x, fov_y, res_x, res_y, len_x, len_y))
                 else:
-                    self.logger.warn('potentially corrupt data were ignored')
+                    self.logger.warning('potentially corrupt data were ignored')
 
     def simulate_visual_input(self, len_x, len_y):
         """

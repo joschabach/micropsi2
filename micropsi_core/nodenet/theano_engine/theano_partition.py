@@ -824,10 +824,10 @@ class TheanoPartition():
                 self.logger.info("Loading nodenet %s partition %i bulk data from file %s" % (self.nodenet.name, self.pid, datafilename))
                 datafile = np.load(datafilename)
             except ValueError:  # pragma: no cover
-                self.logger.warn("Could not read nodenet data from file %s" % datafile)
+                self.logger.warning("Could not read nodenet data from file %s" % datafile)
                 return False
             except IOError:  # pragma: no cover
-                self.logger.warn("Could not open nodenet file %s" % datafile)
+                self.logger.warning("Could not open nodenet file %s" % datafile)
                 return False
 
         if not datafile:
@@ -847,73 +847,73 @@ class TheanoPartition():
             self.a_prev = theano.shared(value=a_prev_array.astype(T.config.floatX), name="a_prev", borrow=True)
 
         else:
-            self.logger.warn("no sizeinformation in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no sizeinformation in file, falling back to defaults")  # pragma: no cover
 
         # the load bulk data into numpy arrays
         if 'allocated_nodes' in datafile:
             self.allocated_nodes = datafile['allocated_nodes']
         else:
-            self.logger.warn("no allocated_nodes in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_nodes in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_node_offsets' in datafile:
             self.allocated_node_offsets = datafile['allocated_node_offsets']
         else:
-            self.logger.warn("no allocated_node_offsets in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_node_offsets in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_elements_to_nodes' in datafile:
             self.allocated_elements_to_nodes = datafile['allocated_elements_to_nodes']
         else:
-            self.logger.warn("no allocated_elements_to_nodes in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_elements_to_nodes in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces' in datafile:
             self.allocated_nodespaces = datafile['allocated_nodespaces']
         else:
-            self.logger.warn("no allocated_nodespaces in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_nodespaces in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_node_parents' in datafile:
             self.allocated_node_parents = datafile['allocated_node_parents']
         else:
-            self.logger.warn("no allocated_node_parents in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_node_parents in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_elements_to_activators' in datafile:
             self.allocated_elements_to_activators = datafile['allocated_elements_to_activators']
         else:
-            self.logger.warn("no allocated_elements_to_activators in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_elements_to_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces_por_activators' in datafile:
             self.allocated_nodespaces_por_activators = datafile['allocated_nodespaces_por_activators']
         else:
-            self.logger.warn("no allocated_nodespaces_por_activators in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_nodespaces_por_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces_ret_activators' in datafile:
             self.allocated_nodespaces_ret_activators = datafile['allocated_nodespaces_ret_activators']
         else:
-            self.logger.warn("no allocated_nodespaces_ret_activators in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_nodespaces_ret_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces_sub_activators' in datafile:
             self.allocated_nodespaces_sub_activators = datafile['allocated_nodespaces_sub_activators']
         else:
-            self.logger.warn("no allocated_nodespaces_sub_activators in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_nodespaces_sub_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces_sur_activators' in datafile:
             self.allocated_nodespaces_sur_activators = datafile['allocated_nodespaces_sur_activators']
         else:
-            self.logger.warn("no allocated_nodespaces_sur_activators in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_nodespaces_sur_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces_cat_activators' in datafile:
             self.allocated_nodespaces_cat_activators = datafile['allocated_nodespaces_cat_activators']
         else:
-            self.logger.warn("no allocated_nodespaces_cat_activators in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_nodespaces_cat_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces_exp_activators' in datafile:
             self.allocated_nodespaces_exp_activators = datafile['allocated_nodespaces_exp_activators']
         else:
-            self.logger.warn("no allocated_nodespaces_exp_activators in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_nodespaces_exp_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces_sampling_activators' in datafile:
             self.allocated_nodespaces_sampling_activators = datafile['allocated_nodespaces_sampling_activators']
         else:
-            self.logger.warn("no allocated_nodespaces_por_activators in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_nodespaces_por_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'w_data' in datafile and 'w_indices' in datafile and 'w_indptr' in datafile:
             w = sp.csr_matrix((datafile['w_data'], datafile['w_indices'], datafile['w_indptr']), shape = (self.NoE, self.NoE))
@@ -924,62 +924,62 @@ class TheanoPartition():
             self.a = theano.shared(value=datafile['a'].astype(T.config.floatX), name="a", borrow=False)
             self.a_in = theano.shared(value=np.zeros_like(datafile['a']).astype(T.config.floatX), name="a_in", borrow=False)
         else:
-            self.logger.warn("no w_data, w_indices or w_indptr in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no w_data, w_indices or w_indptr in file, falling back to defaults")  # pragma: no cover
 
         if 'g_theta' in datafile:
             self.g_theta = theano.shared(value=datafile['g_theta'].astype(T.config.floatX), name="theta", borrow=False)
         else:
-            self.logger.warn("no g_theta in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no g_theta in file, falling back to defaults")  # pragma: no cover
 
         if 'g_factor' in datafile:
             self.g_factor = theano.shared(value=datafile['g_factor'].astype(T.config.floatX), name="g_factor", borrow=False)
         else:
-            self.logger.warn("no g_factor in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no g_factor in file, falling back to defaults")  # pragma: no cover
 
         if 'g_threshold' in datafile:
             self.g_threshold = theano.shared(value=datafile['g_threshold'].astype(T.config.floatX), name="g_threshold", borrow=False)
         else:
-            self.logger.warn("no g_threshold in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no g_threshold in file, falling back to defaults")  # pragma: no cover
 
         if 'g_amplification' in datafile:
             self.g_amplification = theano.shared(value=datafile['g_amplification'].astype(T.config.floatX), name="g_amplification", borrow=False)
         else:
-            self.logger.warn("no g_amplification in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no g_amplification in file, falling back to defaults")  # pragma: no cover
 
         if 'g_min' in datafile:
             self.g_min = theano.shared(value=datafile['g_min'].astype(T.config.floatX), name="g_min", borrow=False)
         else:
-            self.logger.warn("no g_min in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no g_min in file, falling back to defaults")  # pragma: no cover
 
         if 'g_max' in datafile:
             self.g_max = theano.shared(value=datafile['g_max'].astype(T.config.floatX), name="g_max", borrow=False)
         else:
-            self.logger.warn("no g_max in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no g_max in file, falling back to defaults")  # pragma: no cover
 
         if 'g_function_selector' in datafile:
             self.g_function_selector = theano.shared(value=datafile['g_function_selector'], name="gatefunction", borrow=False)
         else:
-            self.logger.warn("no g_function_selector in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no g_function_selector in file, falling back to defaults")  # pragma: no cover
 
         if 'g_expect' in datafile:
             self.g_expect = theano.shared(value=datafile['g_expect'], name="expectation", borrow=False)
         else:
-            self.logger.warn("no g_expect in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no g_expect in file, falling back to defaults")  # pragma: no cover
 
         if 'g_countdown' in datafile:
             self.g_countdown = theano.shared(value=datafile['g_countdown'], name="countdown", borrow=False)
         else:
-            self.logger.warn("no g_countdown in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no g_countdown in file, falling back to defaults")  # pragma: no cover
 
         if 'g_wait' in datafile:
             self.g_wait = theano.shared(value=datafile['g_wait'], name="wait", borrow=False)
         else:
-            self.logger.warn("no g_wait in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no g_wait in file, falling back to defaults")  # pragma: no cover
 
         if 'n_function_selector' in datafile:
             self.n_function_selector = theano.shared(value=datafile['n_function_selector'], name="nodefunction_per_gate", borrow=False)
         else:
-            self.logger.warn("no n_function_selector in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no n_function_selector in file, falling back to defaults")  # pragma: no cover
 
         # reconstruct other states
         self.por_ret_dirty = True
@@ -1004,7 +1004,7 @@ class TheanoPartition():
             self.has_gatefunction_one_over_x = GATE_FUNCTION_DIST in g_function_selector
             self.has_gatefunction_elu = GATE_FUNCTION_ELU in g_function_selector
         else:
-            self.logger.warn("no g_function_selector in file, falling back to defaults")
+            self.logger.warning("no g_function_selector in file, falling back to defaults")
 
         for id in np.nonzero(self.allocated_nodes)[0]:
             if self.allocated_nodes[id] > MAX_STD_NODETYPE:
@@ -1042,10 +1042,10 @@ class TheanoPartition():
             try:
                 datafile = np.load(datafilename)
             except ValueError:  # pragma: no cover
-                self.logger.warn("Could not read nodenet data from file %s" % datafile)
+                self.logger.warning("Could not read nodenet data from file %s" % datafile)
                 return False
             except IOError:  # pragma: no cover
-                self.logger.warn("Could not open nodenet file %s" % datafile)
+                self.logger.warning("Could not open nodenet file %s" % datafile)
                 return False
 
         if not datafile:
@@ -1083,7 +1083,7 @@ class TheanoPartition():
                 inlink_from_offset += inlink_from_lengths[i]
                 inlink_to_offset += inlink_to_lengths[i]
         else:
-            self.logger.warn("no or incomplete inlink information in file, no inter-partition links will be loaded")  # pragma: no cover
+            self.logger.warning("no or incomplete inlink information in file, no inter-partition links will be loaded")  # pragma: no cover
 
     def grow_number_of_nodespaces(self, growby):
 

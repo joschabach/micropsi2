@@ -110,7 +110,7 @@ class DictNode(NetEntity, Node):
                     try:
                         gate_parameters[gate_name][key] = float(gate_parameters[gate_name][key])
                     except:
-                        self.logger.warn('Invalid gate parameter value for gate %s, param %s, node %s' % (gate_name, key, self.uid))
+                        self.logger.warning('Invalid gate parameter value for gate %s, param %s, node %s' % (gate_name, key, self.uid))
                         gate_parameters[gate_name][key] = self.nodetype.gate_defaults[gate_name].get(key, 0)
                 else:
                     gate_parameters[gate_name][key] = float(gate_parameters[gate_name][key])

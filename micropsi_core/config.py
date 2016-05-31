@@ -78,7 +78,7 @@ class ConfigurationManager(object):
                 self.data = json.load(file)
             return True
         except ValueError:
-            logging.getLogger("system").warn("Could not read config data at %s" % self.config_file_name)
+            logging.getLogger("system").warning("Could not read config data at %s" % self.config_file_name)
         except IOError:
             logging.getLogger("system").info("No readable config data file, attempting to create one")
         return False

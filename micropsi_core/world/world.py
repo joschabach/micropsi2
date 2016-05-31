@@ -139,23 +139,23 @@ class World(object):
             try:
                 self.data.update(json.loads(string))
             except ValueError:
-                self.logger.warn("Could not read world data from string")
+                self.logger.warning("Could not read world data from string")
                 return False
         else:
             try:
                 with open(self.filename) as file:
                     self.data.update(json.load(file))
             except ValueError:
-                self.logger.warn("Could not read world data")
+                self.logger.warning("Could not read world data")
                 return False
             except IOError:
-                self.logger.warn("Could not open world file: " + self.filename)
+                self.logger.warning("Could not open world file: " + self.filename)
         self.data['world_type'] = self.__class__.__name__
         if "version" in self.data and self.data["version"] == WORLD_VERSION:
             self.initialize_world()
             return True
         else:
-            self.logger.warn("Wrong version of the world data")
+            self.logger.warning("Wrong version of the world data")
             return False
 
     def get_available_worldadapters(self):
@@ -172,7 +172,7 @@ class World(object):
             if object_data['type'] in self.supported_worldobjects:
                 self.objects[uid] = self.supported_worldobjects[object_data['type']](self, **object_data)
             else:
-                self.logger.warn('Worldobject of type %s not supported anymore. Deleting object of this type.' % object_data['type'])
+                self.logger.warning('Worldobject of type %s not supported anymore. Deleting object of this type.' % object_data['type'])
                 del self.data['objects'][uid]
 
     def step(self):

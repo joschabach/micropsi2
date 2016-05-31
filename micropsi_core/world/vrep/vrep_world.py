@@ -71,7 +71,7 @@ class VREPWorld(World):
             res, self.ball_handle = vrep.simxGetObjectHandle(self.clientID, "Ball", vrep.simx_opmode_blocking)
             self.handle_res(res)
             if self.ball_handle < 1:
-                self.logger.warn("Could not get handle for Ball object, distance values will not be available.")
+                self.logger.warning("Could not get handle for Ball object, distance values will not be available.")
             else:
                 res, _ = vrep.simxGetObjectPosition(self.clientID, self.ball_handle, -1, vrep.simx_opmode_streaming)
                 if res != 0 and res != 1:
@@ -88,7 +88,7 @@ class VREPWorld(World):
             res, self.observer_handle = vrep.simxGetObjectHandle(self.clientID, "Observer", vrep.simx_opmode_blocking)
             self.handle_res(res)
             if self.observer_handle < 1:
-                self.logger.warn("Could not get handle for Observer vision sensor, vision will not be available.")
+                self.logger.warning("Could not get handle for Observer vision sensor, vision will not be available.")
             else:
                 res, resolution, image = vrep.simxGetVisionSensorImage(self.clientID, self.observer_handle, 0, vrep.simx_opmode_streaming) # _split+4000)
                 if res != 0 and res != 1:
@@ -108,7 +108,7 @@ class VREPWorld(World):
     def handle_res(self, res):
         if res != vrep.simx_return_ok:
             error = vrep.simxGetLastErrors(self.clientID, vrep.simx_opmode_blocking)
-            self.logger.warn("v-rep call returned error code %d, error: %s" % (res, error))
+            self.logger.warning("v-rep call returned error code %d, error: %s" % (res, error))
 
     def get_world_view(self, step):
         data = {

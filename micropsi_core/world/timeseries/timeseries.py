@@ -59,7 +59,7 @@ class TimeSeries(World):
         self.shuffle = config['shuffle'] == "True"
 
         if clip_and_scale and sigmoid:
-            self.logger.warn("clip_and_scale and sigmoid cannot both be configured, choosing sigmoid")
+            self.logger.warning("clip_and_scale and sigmoid cannot both be configured, choosing sigmoid")
             clip_and_scale = False
 
         def sigm(X):
@@ -90,7 +90,7 @@ class TimeSeries(World):
             self.timeseries = data_z if not sigmoid else sigm(data_z)
 
         if dummydata:
-            self.logger.warn("! Using dummy data")
+            self.logger.warning("! Using dummy data")
             n_ids = self.timeseries.shape[1]
             self.timeseries = np.tile(np.random.rand(n_ids,1),(1,10))
 

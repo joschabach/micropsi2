@@ -114,6 +114,7 @@ def add_signal_handler(handler):
 
 def signal_handler(signal, frame):
     logging.getLogger('system').info("Shutting down")
+    kill_runners()
     for handler in signal_handler_registry:
         handler(signal, frame)
     sys.exit(0)
@@ -1696,9 +1697,6 @@ def initialize(persistency_path=None, resource_path=None):
     runner['running'] = True
     if runner.get('runner') is None:
         runner['runner'] = MicropsiRunner()
-
-    if kill_runners not in signal_handler_registry:
-        add_signal_handler(kill_runners)
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)

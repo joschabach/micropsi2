@@ -130,8 +130,10 @@ class VREPWorld(World):
         if hasattr(self, "connection_daemon"):
             self.connection_daemon.is_active = False
             if self.connection_daemon:
+                self.connection_daemon.resume()
                 self.connection_daemon.terminate()
                 self.connection_daemon.join()
+                vrep.simxFinish(-1)
 
     def __del__(self):
         self.kill_vrep_connection()

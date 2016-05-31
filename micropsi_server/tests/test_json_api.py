@@ -91,12 +91,12 @@ def test_set_node_state(app, test_nodenet, resourcepath):
     nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
     nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write('{"Testnode": {\
-            "name": "Testnode",\
-            "slottypes": ["gen", "foo", "bar"],\
-            "nodefunction_name": "testnodefunc",\
-            "gatetypes": ["gen", "foo", "bar"],\
-            "symbol": "t"}}')
+        fp.write("""{"Testnode": {
+            "name": "Testnode",
+            "slottypes": ["gen", "foo", "bar"],
+            "nodefunction_name": "testnodefunc",
+            "gatetypes": ["gen", "foo", "bar"],
+            "symbol": "t"}}""")
 
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
@@ -1133,12 +1133,12 @@ def test_reload_native_modules(app, test_nodenet, resourcepath):
     nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
     nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write('{"Testnode": {\
-            "name": "Testnode",\
-            "slottypes": ["gen", "foo", "bar"],\
-            "nodefunction_name": "testnodefunc",\
-            "gatetypes": ["gen", "foo", "bar"],\
-            "symbol": "t"}}')
+        fp.write("""{"Testnode": {
+            "name": "Testnode",
+            "slottypes": ["gen", "foo", "bar"],
+            "nodefunction_name": "testnodefunc",
+            "gatetypes": ["gen", "foo", "bar"],
+            "symbol": "t"}}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
     response = app.get_json('/rpc/reload_native_modules()')
@@ -1158,12 +1158,12 @@ def test_user_prompt_response(app, test_nodenet, resourcepath):
     nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
     nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write('{"Testnode": {\
-            "name": "Testnode",\
-            "slottypes": ["gen", "foo", "bar"],\
-            "nodefunction_name": "testnodefunc",\
-            "gatetypes": ["gen", "foo", "bar"],\
-            "symbol": "t"}}')
+        fp.write("""{"Testnode": {
+            "name": "Testnode",
+            "slottypes": ["gen", "foo", "bar"],
+            "nodefunction_name": "testnodefunc",
+            "gatetypes": ["gen", "foo", "bar"],
+            "symbol": "t"}}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
     response = app.get_json('/rpc/reload_native_modules()')
@@ -1325,12 +1325,12 @@ def test_nodenet_data_structure(app, test_nodenet, resourcepath, node):
     nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
     nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write('{"Testnode": {\
-            "name": "Testnode",\
-            "slottypes": ["gen", "foo", "bar"],\
-            "nodefunction_name": "testnodefunc",\
-            "gatetypes": ["gen", "foo", "bar"],\
-            "symbol": "t"}}')
+        fp.write("""{"Testnode": {
+            "name": "Testnode",
+            "slottypes": ["gen", "foo", "bar"],
+            "nodefunction_name": "testnodefunc",
+            "gatetypes": ["gen", "foo", "bar"],
+            "symbol": "t"}}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
     response = app.get_json('/rpc/reload_native_modules()')

@@ -1436,11 +1436,14 @@ class TheanoPartition():
         self.allocated_node_offsets[node_id] = 0
         self.allocated_node_parents[node_id] = 0
         g_function_selector_array = self.g_function_selector.get_value(borrow=True)
-        for element in range (0, get_elements_per_type(type, self.nodenet.native_modules)):
+
+        element = 0
+        while self.allocated_elements_to_nodes[offset + element] == node_id:
             self.allocated_elements_to_nodes[offset + element] = 0
             g_function_selector_array[offset + element] = 0
+            element += 1
+
         self.g_function_selector.set_value(g_function_selector_array, borrow=True)
-        self.allocated_elements_to_nodes[np.where(self.allocated_elements_to_nodes == node_id)[0]] = 0
 
         if type == SENSOR:
             sensor_index = np.where(self.sensor_indices == offset)[0]

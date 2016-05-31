@@ -166,7 +166,7 @@ class MicropsiRunner(threading.Thread):
                             nodenet.timed_step()
                             if self.profiler:
                                 self.profiler.disable()
-                            nodenet.update_monitors()
+                            nodenet.update_monitors_and_recorders()
                         except:
                             if self.profiler:
                                 self.profiler.disable()
@@ -262,9 +262,9 @@ def get_logger_messages(loggers=[], after=0):
     return logger.get_logs(loggers, after)
 
 
-def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor_count=-1):
+def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor_count=-1, with_recorders=False):
     """ Returns log-messages and monitor-data for the given nodenet."""
-    data = get_monitor_data(nodenet_uid, 0, monitor_from, monitor_count)
+    data = get_monitor_data(nodenet_uid, 0, monitor_from, monitor_count, with_recorders=with_recorders)
     data['logs'] = get_logger_messages(logger, after)
     return data
 
@@ -412,7 +412,7 @@ def get_nodes(nodenet_uid, nodespaces=[], include_links=True):
     return nodenet.get_nodes(nodespaces, include_links)
 
 
-def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
+def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None, recorders=None):
     """ returns the current state of the calculation
     """
     data = {}
@@ -455,6 +455,8 @@ def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=No
             data['monitors'] = get_monitoring_info(nodenet_uid=nodenet_uid, **monitors)
         if dashboard is not None:
             data['dashboard'] = get_agent_dashboard(nodenet_uid)
+        if recorders is not None:
+            data['recorders'] = nodenet_obj.construct_recorders_dict()
         return True, data
     else:
         return False, "No such nodenet"
@@ -633,7 +635,7 @@ def step_nodenet(nodenet_uid):
     """
     nodenet = get_nodenet(nodenet_uid)
     nodenet.timed_step()
-    nodenet.update_monitors()
+    nodenet.update_monitors_and_recorders()
     if nodenet.world and nodenet.current_step % configs['runner_factor'] == 0:
         worlds[nodenet.world].step()
     return nodenet.current_step
@@ -648,13 +650,13 @@ def step_nodenets_in_world(world_uid, nodenet_uid=None, steps=1):
     if nodenet and nodenet.world == world_uid:
         for i in range(steps):
             nodenet.timed_step()
-            nodenet.update_monitors()
+            nodenet.update_monitors_and_recorders()
     else:
         for i in range(steps):
             for uid in worlds[world_uid].agents:
                 nodenet = get_nodenet(uid)
                 nodenet.timed_step()
-                nodenet.update_monitors()
+                nodenet.update_monitors_and_recorders()
     return True
 
 

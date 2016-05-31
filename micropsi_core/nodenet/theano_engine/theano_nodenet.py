@@ -13,6 +13,7 @@ import numpy as np
 import scipy
 
 from micropsi_core.nodenet import monitor
+from micropsi_core.nodenet import recorder
 from micropsi_core.nodenet.nodenet import Nodenet
 from micropsi_core.nodenet.node import Nodetype
 from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators
@@ -369,7 +370,11 @@ class TheanoNodenet(Nodenet):
             metadata['monitors'] = self.construct_monitors_dict()
             metadata['modulators'] = self.construct_modulators_dict()
             metadata['partition_parents'] = self.inverted_partitionmap
+            metadata['recorders'] = self.construct_recorders_dict()
             fp.write(json.dumps(metadata, sort_keys=True, indent=4))
+
+        for recorder_uid in self._recorders:
+            self._recorders[recorder_uid].save()
 
         for partition in self.partitions.values():
             # write bulk data to our own numpy-based file format
@@ -397,6 +402,9 @@ class TheanoNodenet(Nodenet):
             # determine whether we have a complete json dump, or our theano npz partition files:
             nodes_data = initfrom.get('nodes', {})
 
+            # pop the monitors:
+            monitors = initfrom.pop('monitors', {})
+
             # initialize
             self.initialize_nodenet(initfrom)
 
@@ -412,6 +420,18 @@ class TheanoNodenet(Nodenet):
             # (numerical native module types are runtime dependent and may differ from when allocated_nodes
             # was saved).
             self.reload_native_modules(self.native_module_definitions)
+
+            for monitorid in monitors:
+                data = monitors[monitorid]
+                if hasattr(monitor, data['classname']):
+                    mon = getattr(monitor, data['classname'])(self, **data)
+                    self._monitors[mon.uid] = mon
+                else:
+                    self.logger.warn('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], monitorid))
+
+            for recorder_uid in initfrom.get('recorders', {}):
+                data = initfrom['recorders'][recorder_uid]
+                self._recorders[recorder_uid] = getattr(recorder, data['classname'])(self, **data)
 
             # re-initialize step operators for theano recompile to new shared variables
             self.initialize_stepoperators()
@@ -1625,6 +1645,24 @@ class TheanoNodenet(Nodenet):
                 uid = nodespace_to_id(uid, partition.pid)
                 result['nodespaces_dirty'][uid] = self.get_nodespace(uid).get_data()
         return result
+
+    def add_gate_activation_recorder(self, group_definition, name, interval=1):
+        """ Adds an activation recorder to a group of nodes."""
+        rec = recorder.GateActivationRecorder(self, group_definition, name, interval=interval)
+        self._recorders[rec.uid] = rec
+        return rec
+
+    def add_node_activation_recorder(self, group_definition, name, interval=1):
+        """ Adds an activation recorder to a group of nodes."""
+        rec = recorder.NodeActivationRecorder(self, group_definition, name, interval=interval)
+        self._recorders[rec.uid] = rec
+        return rec
+
+    def add_linkweight_recorder(self, from_group_definition, to_group_definition, name, interval=1):
+        """ Adds a linkweight recorder to links between to groups."""
+        rec = recorder.LinkweightRecorder(self, from_group_definition, to_group_definition, name, interval=interval)
+        self._recorders[rec.uid] = rec
+        return rec
 
     def get_dashboard(self):
         data = super(TheanoNodenet, self).get_dashboard()

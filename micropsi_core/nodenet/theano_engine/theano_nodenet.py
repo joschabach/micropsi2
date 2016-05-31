@@ -1443,8 +1443,10 @@ class TheanoNodenet(Nodenet):
         else:
             partitions = self.partitions.values()
         for partition in partitions:
-            partition.sensor_indices = np.zeros(len(self.get_datasources()), np.int32)
-            partition.actuator_indices = np.zeros(len(self.get_datatargets()), np.int32)
+            partition.sensor_indices = np.empty(len(self.get_datasources()), np.int32)
+            partition.sensor_indices.fill(-1)
+            partition.actuator_indices = np.empty(len(self.get_datatargets()), np.int32)
+            partition.actuator_indices.fill(-1)
             for datatarget, node_id in self.actuatormap.items():
                 if not isinstance(node_id, str):
                     node_id = node_id[0]

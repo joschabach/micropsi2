@@ -263,8 +263,8 @@ def test_sensor_actuator_indices(test_nodenet):
     assert round(actor.get_gate('gen').activation, 3) == 0.8
     netapi.delete_node(sensor)
     netapi.delete_node(actor)
-    assert set(nodenet.rootpartition.actuator_indices) == {0}
-    assert set(nodenet.rootpartition.sensor_indices) == {0}
+    assert set(nodenet.rootpartition.actuator_indices) == {-1}
+    assert set(nodenet.rootpartition.sensor_indices) == {-1}
 
 
 def test_partition_get_node_data(test_nodenet):

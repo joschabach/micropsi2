@@ -1447,11 +1447,11 @@ class TheanoPartition():
 
         if type == SENSOR:
             sensor_index = np.where(self.sensor_indices == offset)[0]
-            self.sensor_indices[sensor_index] = 0
+            self.sensor_indices[sensor_index] = -1
 
         if type == ACTUATOR:
             actuator_index = np.where(self.actuator_indices == offset)[0]
-            self.actuator_indices[actuator_index] = 0
+            self.actuator_indices[actuator_index] = -1
 
         if type == PIPE:
             n_function_selector_array = self.n_function_selector.get_value(borrow=True)

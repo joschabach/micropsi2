@@ -143,7 +143,7 @@ class NodeActivationRecorder(Recorder):
         self.base_group_name = group_config.pop('group_name', name)
 
         if not group_config.get('node_uids', []):
-            nodes = self._nodenet.netapi.get_nodes(nodespace=self.nodespace, node_name_prefix=group_config['node_name_prefix'], sortby=group_config.get('sortby', 'id'))
+            nodes = self._nodenet.netapi.get_nodes(nodespace=self.nodespace, node_name_prefix=group_config['node_name_prefix'], sortby=group_config.get('sortby', 'ids'))
         else:
             nodes = [self._nodenet.get_node(uid) for uid in group_config['node_uids']]
 

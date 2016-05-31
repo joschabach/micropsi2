@@ -173,11 +173,12 @@ class VREPWorld(World):
 
 class Robot(ArrayWorldAdapter):
 
+    block_runner_if_connection_lost = True
+
     def __init__(self, world, uid=None, **data):
         self.available_datatargets = []
         self.available_datasources = []
         super().__init__(world, uid, **data)
-        self.block = True
         self.joints = []
         self.vision_resolution = []
         self.collision_handle = -1
@@ -388,12 +389,14 @@ class Robot(ArrayWorldAdapter):
 
         # get data and feedback
         # read distance value
+
         if not self.world.connection_daemon.is_connected:
-            if self.block and not initial:
+            if self.block_runner_if_connection_lost and not initial:
                 while not self.world.connection_daemon.is_connected:
                     time.sleep(0.5)
             else:
                 return
+
         if self.world.connection_daemon.clientID != self.clientID:
             self.get_vrep_data()
 

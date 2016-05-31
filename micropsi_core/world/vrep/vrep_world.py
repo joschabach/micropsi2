@@ -179,14 +179,6 @@ class Robot(ArrayWorldAdapter):
         self.available_datatargets = []
         self.available_datasources = []
         super().__init__(world, uid, **data)
-        self.joints = []
-        self.vision_resolution = []
-        self.collision_handle = -1
-
-        self.robot_handle = -1
-        self.ball_handle = -1
-
-        self.robot_position = []
 
         self.get_vrep_data()
 
@@ -202,6 +194,13 @@ class Robot(ArrayWorldAdapter):
     def get_vrep_data(self):
 
         self.clientID = self.world.connection_daemon.clientID
+
+        self.joints = []
+        self.vision_resolution = []
+        self.collision_handle = -1
+        self.robot_handle = -1
+        self.ball_handle = -1
+        self.robot_position = []
 
         res, self.robot_handle = vrep.simxGetObjectHandle(self.clientID, self.world.robot_name, vrep.simx_opmode_blocking)
         self.handle_res(res)

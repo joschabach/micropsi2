@@ -36,7 +36,9 @@ class VREPWorld(World):
         self.vision_type = config['vision_type']
         self.control_type = config['control_type']
         self.collision_name = config.get('collision_name', '')
-        self.ballgame_type = config['ballgame_type']
+
+        self.randomize_arm = config['randomize_arm']
+        self.randomize_ball = config['randomize_ball']
 
         self.joints = []
         self.vision_resolution = []
@@ -77,22 +79,22 @@ class VREPWorld(World):
             else:
                 self.logger.warning("Collision handle %s not found, not tracking collisions" % self.collision_name)
 
-        if self.ballgame_type != "none":
-            res, self.ball_handle = vrep.simxGetObjectHandle(self.clientID, "Ball", vrep.simx_opmode_blocking)
-            self.handle_res(res)
-            if self.ball_handle < 1:
-                self.logger.warn("Could not get handle for Ball object, distance values will not be available.")
-            else:
-                res, _ = vrep.simxGetObjectPosition(self.clientID, self.ball_handle, -1, vrep.simx_opmode_streaming)
-                if res != 0 and res != 1:
-                    self.handle_res(res)
-                res, _ = vrep.simxGetObjectPosition(self.clientID, self.joints[len(self.joints) - 1], -1, vrep.simx_opmode_streaming)
-                if res != 0 and res != 1:
-                    self.handle_res(res)
-                res, robot_position = vrep.simxGetObjectPosition(self.clientID, self.robot_handle, -1, vrep.simx_opmode_blocking)
-                if res != 0 and res != 1:
-                    self.handle_res(res)
-                self.robot_position = robot_position
+        res, self.ball_handle = vrep.simxGetObjectHandle(self.clientID, "Ball", vrep.simx_opmode_blocking)
+        self.handle_res(res)
+        if self.ball_handle < 1:
+            self.logger.warn("Could not get handle for Ball object, distance values will not be available.")
+        else:
+            res, _ = vrep.simxGetObjectPosition(self.clientID, self.ball_handle, -1, vrep.simx_opmode_streaming)
+            if res != 0 and res != 1:
+                self.handle_res(res)
+            res, _ = vrep.simxGetObjectPosition(self.clientID, self.joints[len(self.joints) - 1], -1, vrep.simx_opmode_streaming)
+            if res != 0 and res != 1:
+                self.handle_res(res)
+            res, robot_position = vrep.simxGetObjectPosition(self.clientID, self.robot_handle, -1, vrep.simx_opmode_blocking)
+            if res != 0 and res != 1:
+                self.handle_res(res)
+            self.robot_position = robot_position
+
 
         if self.vision_type == "grayscale":
             res, self.observer_handle = vrep.simxGetObjectHandle(self.clientID, "Observer", vrep.simx_opmode_blocking)
@@ -168,10 +170,14 @@ class VREPWorld(World):
              'description': 'Type of vision information to receive',
              'default': 'none',
              'options': ["none", "grayscale"]},
-            {'name': 'ballgame_type',
-             'description': 'Type of ball game to be played',
-             'default': 'none',
-             'options': ["none", "reach", "reach-fixed", "reach-randomized"]}
+            {'name': 'randomize_arm',
+             'description': 'Initialize the robot arm randomly',
+             'default': 'False',
+             'options': ["False", "True"]},
+            {'name': 'randomize_ball',
+             'description': 'Initialize the ball position randomly',
+             'default': 'False',
+             'options': ["False", "True"]}
         ]
 
 
@@ -185,6 +191,10 @@ class Robot(ArrayWorldAdapter):
         self.available_datasources.append("collision")
         self.available_datasources.append("ball-x")
         self.available_datasources.append("ball-y")
+
+        self.available_datasources.append("tip-x")
+        self.available_datasources.append("tip-y")
+        self.available_datasources.append("tip-z")
 
         self.available_datatargets.append("restart")
         self.available_datatargets.append("execute")
@@ -210,8 +220,9 @@ class Robot(ArrayWorldAdapter):
 
         self.distance_offset = 0
         self.collision_offset = 1
-        self.position_offset = 2
-        self.joint_angle_offset = self.position_offset + 2  # because ball_x, ball_y
+        self.ball_position_offset = 2
+        self.tip_position_offset = self.ball_position_offset + 2  # because ball_x, ball_y
+        self.joint_angle_offset = self.tip_position_offset + 3  # because tipx tipy tipz
         self.joint_force_offset = self.joint_angle_offset + len(self.world.joints)
 
         if self.world.vision_type == "grayscale":
@@ -248,10 +259,12 @@ class Robot(ArrayWorldAdapter):
         # simulation restart
         if restart:
             vrep.simxStopSimulation(self.world.clientID, vrep.simx_opmode_oneshot)
-            time.sleep(1)
-            vrep.simxStartSimulation(self.world.clientID, vrep.simx_opmode_oneshot)
+            time.sleep(0.5)
+            res = vrep.simxStartSimulation(self.world.clientID, vrep.simx_opmode_oneshot)
+            self.world.handle_res(res)
+            time.sleep(0.5)
 
-            if self.world.ballgame_type != "reach":
+            if self.world.randomize_arm == "True":
                 vrep.simxPauseCommunication(self.world.clientID, True)
                 for i, joint_handle in enumerate(self.world.joints):
                     self.datatarget_values[self.joint_offset + i] = random.uniform(-0.8, 0.8)
@@ -260,11 +273,19 @@ class Robot(ArrayWorldAdapter):
                     vrep.simxSetJointPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
                 vrep.simxPauseCommunication(self.world.clientID, False)
 
-            if self.world.ballgame_type == "reach-randomized":
+            if self.world.randomize_ball == "True":
+                # max_dist = 0.8
+                # rx = random.uniform(-max_dist, max_dist)
+                # max_y = math.sqrt((max_dist ** 2) - (rx ** 2))
+                # ry = random.uniform(-max_y, max_y)
                 max_dist = 0.8
-                rx = random.uniform(-max_dist, max_dist)
-                max_y = math.sqrt((max_dist ** 2) - (rx ** 2))
-                ry = random.uniform(-max_y, max_y)
+                min_dist = 0.2
+                k = max_dist**2 - min_dist**2
+                a = np.random.rand() * 2 * np.pi
+                r = np.sqrt(np.random.rand() * k + min_dist**2)
+                rx = r*np.cos(a)
+                ry = r*np.sin(a)
+
                 vrep.simxSetObjectPosition(self.world.clientID, self.world.ball_handle, self.world.robot_handle, [rx, ry], vrep.simx_opmode_blocking)
 
             self.fetch_sensor_and_feedback_values_from_simulation(None)
@@ -309,19 +330,22 @@ class Robot(ArrayWorldAdapter):
 
     def fetch_sensor_and_feedback_values_from_simulation(self, targets, include_feedback=False):
 
+        res, joint_pos = vrep.simxGetObjectPosition(self.world.clientID, self.world.joints[len(self.world.joints)-1], -1, vrep.simx_opmode_streaming)
+        self.datasource_values[self.tip_position_offset + 0] = joint_pos[0] - self.world.robot_position[0]
+        self.datasource_values[self.tip_position_offset + 1] = joint_pos[1] - self.world.robot_position[1]
+        self.datasource_values[self.tip_position_offset + 2] = joint_pos[2] - self.world.robot_position[2]
         # get data and feedback
         # read distance value
-        if self.world.ballgame_type != "none" and self.world.ball_handle > 0:
+        if self.world.ball_handle > 0:
             res, ball_pos = vrep.simxGetObjectPosition(self.world.clientID, self.world.ball_handle, -1, vrep.simx_opmode_buffer)
-            res, joint_pos = vrep.simxGetObjectPosition(self.world.clientID, self.world.joints[len(self.world.joints)-1], -1, vrep.simx_opmode_streaming)
             relative_pos = [0,0]
             relative_pos[0] = ball_pos[0] - self.world.robot_position[0]
             relative_pos[1] = ball_pos[1] - self.world.robot_position[1]
 
             dist = np.linalg.norm(np.array(ball_pos) - np.array(joint_pos))
             self.datasource_values[self.distance_offset] = dist
-            self.datasource_values[self.position_offset + 0] = relative_pos[0]
-            self.datasource_values[self.position_offset + 1] = relative_pos[1]
+            self.datasource_values[self.ball_position_offset + 0] = relative_pos[0]
+            self.datasource_values[self.ball_position_offset + 1] = relative_pos[1]
 
         res, joint_ids, something, data, se = vrep.simxGetObjectGroupData(self.world.clientID, vrep.sim_object_joint_type, 15, vrep.simx_opmode_blocking)
         self.world.handle_res(res)

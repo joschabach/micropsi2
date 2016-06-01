@@ -1213,9 +1213,13 @@ class TheanoNodenet(Nodenet):
                     elements = get_elements_per_type(partition.allocated_nodes[id], self.native_modules)
                     offset = partition.allocated_node_offsets[id]
                     if rounded is None:
-                        activations[node_to_id(id, partition.pid)] = [n.item() for n in partition.a.get_value()[offset:offset+elements]]
+                        act = [n.item() for n in partition.a.get_value()[offset:offset+elements]]
+                        if set(act) != {0}:
+                            activations[node_to_id(id, partition.pid)] = act
                     else:
-                        activations[node_to_id(id, partition.pid)] = [n.item() / mult for n in np.rint(partition.a.get_value()[offset:offset+elements]*mult)]
+                        act = [n.item() / mult for n in np.rint(partition.a.get_value()[offset:offset+elements]*mult)]
+                        if set(act) != {0}:
+                            activations[node_to_id(id, partition.pid)] = act
         else:
             for nsuid in nodespace_uids:
                 nodespace = self.get_nodespace(nsuid)
@@ -1226,9 +1230,13 @@ class TheanoNodenet(Nodenet):
                     elements = get_elements_per_type(partition.allocated_nodes[id], self.native_modules)
                     offset = partition.allocated_node_offsets[id]
                     if rounded is None:
-                        activations[node_to_id(id, partition.pid)] = [n.item() for n in partition.a.get_value()[offset:offset+elements]]
+                        act = [n.item() for n in partition.a.get_value()[offset:offset+elements]]
+                        if set(act) != {0}:
+                            activations[node_to_id(id, partition.pid)] = act
                     else:
-                        activations[node_to_id(id, partition.pid)] = [n.item() / mult for n in np.rint(partition.a.get_value()[offset:offset+elements]*mult)]
+                        act = [n.item() / mult for n in np.rint(partition.a.get_value()[offset:offset+elements]*mult)]
+                        if set(act) != {0}:
+                            activations[node_to_id(id, partition.pid)] = act
         return activations
 
     def get_nodetype(self, type):

@@ -413,9 +413,13 @@ class DictNodenet(Nodenet):
         for uid in node_ids:
             node = self.get_node(uid)
             if rounded is None:
-                activations[uid] = [node.get_gate(gate_name).activation for gate_name in node.get_gate_types()]
+                act = [node.get_gate(gate_name).activation for gate_name in node.get_gate_types()]
+                if set(act) != {0}:
+                    activations[uid] = act
             else:
-                activations[uid] = [round(node.get_gate(gate_name).activation, rounded) for gate_name in node.get_gate_types()]
+                act = [round(node.get_gate(gate_name).activation, rounded) for gate_name in node.get_gate_types()]
+                if set(act) != {0}:
+                    activations[uid] = act
         return activations
 
     def delete_node(self, node_uid):

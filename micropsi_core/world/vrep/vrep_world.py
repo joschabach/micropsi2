@@ -163,7 +163,7 @@ class VREPWorld(World):
             {'name': 'control_type',
              'description': 'The type of input sent to the robot',
              'default': 'force/torque',
-             'options': ["force/torque", "angles", "movements"]},
+             'options': ["force/torque", "force/torque-sync", "angles", "movements"]},
             {'name': 'vision_type',
              'description': 'Type of vision information to receive',
              'default': 'none',
@@ -226,7 +226,7 @@ class Robot(ArrayWorldAdapter):
             self.image.norm.vmin = 0
             self.image.norm.vmax = 1
 
-        self.fetch_sensor_and_feedback_values_from_simulation()
+        self.fetch_sensor_and_feedback_values_from_simulation(None)
 
     def get_available_datasources(self):
         return self.available_datasources
@@ -240,6 +240,7 @@ class Robot(ArrayWorldAdapter):
 
         self.datatarget_feedback_values = [0] * len(self.available_datatargets)
         self.datasource_values = [0] * len(self.available_datasources)
+        tvals = None
 
         restart = self.datatarget_values[self.restart_offset] > 0.9 and self.world.current_step - self.last_restart >= 5
         execute = self.datatarget_values[self.execute_offset] > 0.9
@@ -266,18 +267,20 @@ class Robot(ArrayWorldAdapter):
                 ry = random.uniform(-max_y, max_y)
                 vrep.simxSetObjectPosition(self.world.clientID, self.world.ball_handle, self.world.robot_handle, [rx, ry], vrep.simx_opmode_blocking)
 
-            self.fetch_sensor_and_feedback_values_from_simulation()
+            self.fetch_sensor_and_feedback_values_from_simulation(None)
             self.last_restart = self.world.current_step
             return
 
         # execute movement, send new target angles
         if execute:
+            tvals = [0] * len(self.available_datatargets)
             self.current_angle_target_values = np.array(self.datatarget_values[self.joint_offset:self.joint_offset+len(self.world.joints)])
             vrep.simxPauseCommunication(self.world.clientID, True)
             for i, joint_handle in enumerate(self.world.joints):
                 tval = self.current_angle_target_values[i] * math.pi
-                if self.world.control_type == "force/torque":
+                if self.world.control_type == "force/torque" or self.world.control_type == "force/torque-sync":
                     tval += (old_datasource_values[self.joint_angle_offset + i]) * math.pi
+                    tvals[i] = tval
                     vrep.simxSetJointTargetPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
                 elif self.world.control_type == "angles":
                     vrep.simxSetJointPosition(self.world.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
@@ -287,7 +290,7 @@ class Robot(ArrayWorldAdapter):
             vrep.simxPauseCommunication(self.world.clientID, False)
 
         # read joint angle and force values
-        self.fetch_sensor_and_feedback_values_from_simulation(True)
+        self.fetch_sensor_and_feedback_values_from_simulation(tvals, True)
 
         # read vision data
         # if no observer present, don't query vision data
@@ -304,7 +307,7 @@ class Robot(ArrayWorldAdapter):
 
         return self.image
 
-    def fetch_sensor_and_feedback_values_from_simulation(self, include_feedback=False):
+    def fetch_sensor_and_feedback_values_from_simulation(self, targets, include_feedback=False):
 
         # get data and feedback
         # read distance value
@@ -336,22 +339,48 @@ class Robot(ArrayWorldAdapter):
                 self.world.logger.error("No data from vrep received on retry. Giving up and returning no data.")
             return
 
-        if self.world.collision_handle > 0:
-            res, collision_state = vrep.simxReadCollision(self.world.clientID, self.world.collision_handle, vrep.simx_opmode_buffer)
-            self.datasource_values[self.collision_offset] = 1 if collision_state else 0
+        movement_finished = False
+        count = 0
+        while not movement_finished:
+            allgood = True
+            for i, joint_handle in enumerate(self.world.joints):
+                angle = 0
+                force = 0
+                if self.world.control_type == "force/torque" or self.world.control_type == "force/torque-sync":
+                    angle = data[i*2]
+                    force = data[i*2 + 1]
+                    if targets is not None:
+                        target_angle = targets[i]
+                        if abs(abs(angle) - abs(target_angle)) < .001 and include_feedback:
+                            self.datatarget_feedback_values[self.joint_offset + i] = 1
+                        else:
+                            allgood = False
+                elif self.world.control_type == "angles":
+                    angle = data[i * 2]
+                elif self.world.control_type == "movements":
+                    angle = data[i * 2]
+                self.datasource_values[self.joint_angle_offset + i] = angle / math.pi
+                self.datasource_values[self.joint_force_offset + i] = force
 
-        for i, joint_handle in enumerate(self.world.joints):
-            target_angle = self.datatarget_values[self.joint_offset + i]
-            angle = 0
-            force = 0
-            if self.world.control_type == "force/torque":
-                angle = data[i*2] / math.pi
-                force = data[i*2 + 1]
-                if abs(angle) - abs(target_angle) < .001 and include_feedback:
-                    self.datatarget_feedback_values[self.joint_offset + i] = 1
-            elif self.world.control_type == "angles":
-                angle = data[i * 2] / math.pi
-            elif self.world.control_type == "movements":
-                angle = data[i * 2] / math.pi
-            self.datasource_values[self.joint_angle_offset + i] = angle
-            self.datasource_values[self.joint_force_offset + i] = force
+            movement_finished = allgood
+            if not movement_finished:
+                joint_positions = []
+                for i, joint_handle in enumerate(self.world.joints):
+                    joint_positions.append(data[i*2])
+
+                count += 1
+                if count == 10:
+                    self.world.logger.warning("Robot did not complete movement in time, giving up.");
+                    self.world.logger.warning("Joint   targets: %s" % str(targets));
+                    self.world.logger.warning("Joint positions: %s" % str(joint_positions));
+                    movement_finished = True
+                time.sleep(0.2)
+                res, joint_ids, something, data, se = vrep.simxGetObjectGroupData(self.world.clientID,
+                                                                                  vrep.sim_object_joint_type, 15,
+                                                                                  vrep.simx_opmode_blocking)
+                self.world.handle_res(res)
+
+        if self.world.collision_handle > 0:
+            res, collision_state = vrep.simxReadCollision(self.world.clientID, self.world.collision_handle,
+                                                          vrep.simx_opmode_buffer)
+            self.datasource_values[self.collision_offset] = 1 if collision_state else 0

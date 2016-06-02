@@ -403,13 +403,6 @@ class Robot(ArrayWorldAdapter):
 
     def fetch_sensor_and_feedback_values_from_simulation(self, targets, include_feedback=False, initial=False):
 
-        res, joint_pos = vrep.simxGetObjectPosition(self.clientID, self.joints[len(self.joints)-1], -1, vrep.simx_opmode_streaming)
-        self.datasource_values[self.tip_position_offset + 0] = joint_pos[0] - self.robot_position[0]
-        self.datasource_values[self.tip_position_offset + 1] = joint_pos[1] - self.robot_position[1]
-        self.datasource_values[self.tip_position_offset + 2] = joint_pos[2] - self.robot_position[2]
-        # get data and feedback
-        # read distance value
-
         if not self.world.connection_daemon.is_connected:
             if self.block_runner_if_connection_lost and not initial:
                 while not self.world.connection_daemon.is_connected:
@@ -419,6 +412,11 @@ class Robot(ArrayWorldAdapter):
 
         if self.world.connection_daemon.clientID != self.clientID:
             self.get_vrep_data()
+
+        res, joint_pos = vrep.simxGetObjectPosition(self.clientID, self.joints[len(self.joints)-1], -1, vrep.simx_opmode_streaming)
+        self.datasource_values[self.tip_position_offset + 0] = joint_pos[0] - self.robot_position[0]
+        self.datasource_values[self.tip_position_offset + 1] = joint_pos[1] - self.robot_position[1]
+        self.datasource_values[self.tip_position_offset + 2] = joint_pos[2] - self.robot_position[2]
 
         if self.ball_handle > 0:
             res, ball_pos = vrep.simxGetObjectPosition(self.clientID, self.ball_handle, -1, vrep.simx_opmode_buffer)

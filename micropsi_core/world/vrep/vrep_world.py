@@ -217,7 +217,7 @@ class Robot(ArrayWorldAdapter):
             if self.collision_handle > 0:
                 res, collision_state = vrep.simxReadCollision(self.clientID, self.collision_handle, vrep.simx_opmode_streaming)
             else:
-                self.logger.warning("Collision handle %s not found, not tracking collisions" % self.collision_name)
+                self.logger.warning("Collision handle %s not found, not tracking collisions" % self.world.collision_name)
 
         res, self.ball_handle = vrep.simxGetObjectHandle(self.clientID, "Ball", vrep.simx_opmode_blocking)
         self.handle_res(res)

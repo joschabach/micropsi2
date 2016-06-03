@@ -183,29 +183,29 @@ class Robot(ArrayWorldAdapter):
         self.get_vrep_data()
         self.initialized = True
 
-    def handle_res(self, res):
-        if res != vrep.simx_return_ok:
-            self.logger.warn("VREP ERROR")
-
     def call_vrep(self, method, params, empty_result_ok=False):
-        res, *data = method(*params)
-        if res == vrep.simx_return_novalue_flag and not empty_result_ok:
+        result = method(*params)
+        code = result if type(result) == int else result[0]
+        if code == vrep.simx_return_novalue_flag and not empty_result_ok:
                 # streaming mode did not return data. wait a bit, try again
                 self.logger.debug("Did not receive data from vrep when calling %s, trying again in 500 ms" % method.__name__)
                 time.sleep(0.5)
-                res, *data = method(*params)
-        if res != vrep.simx_return_ok and not empty_result_ok:
-            self.logger.warning("Vrep returned code %d when calling %s, attempting a reconnect" % (res, method.__name__))
+                result = method(*params)
+                code = result if type(result) == int else result[0]
+        if code != vrep.simx_return_ok and not empty_result_ok:
+            self.logger.warning("Vrep returned code %d when calling %s, attempting a reconnect" % (code, method.__name__))
             self.world.connection_daemon.resume()
             self.initialized = False
             while not self.world.connection_daemon.is_connected or not self.initialized:
                 time.sleep(0.2)
             return self.call_vrep(method, params)
         else:
-            if len(data) == 1:
-                return data[0]
+            if type(result) == int:
+                return True
+            if len(result) == 2:
+                return result[1]
             else:
-                return data
+                return result[1:]
 
     def on_vrep_connect(self):
         """ is called by the world, if a connection was established """
@@ -334,20 +334,19 @@ class Robot(ArrayWorldAdapter):
 
         # simulation restart
         if restart:
-            vrep.simxStopSimulation(self.clientID, vrep.simx_opmode_oneshot)
+            self.call_vrep(vrep.simxStopSimulation, [self.clientID, vrep.simx_opmode_oneshot], empty_result_ok=True)
             time.sleep(0.5)
-            res = vrep.simxStartSimulation(self.clientID, vrep.simx_opmode_oneshot)
-            self.handle_res(res)
+            self.call_vrep(vrep.simxStartSimulation, [self.clientID, vrep.simx_opmode_oneshot])
             time.sleep(0.5)
 
             if self.world.randomize_arm == "True":
-                vrep.simxPauseCommunication(self.clientID, True)
+                self.call_vrep(vrep.simxPauseCommunication, [self.clientID, True], empty_result_ok=True)
                 for i, joint_handle in enumerate(self.joints):
                     self.datatarget_values[self.joint_offset + i] = random.uniform(-0.8, 0.8)
                     self.current_angle_target_values[i] = self.datatarget_values[self.joint_offset + i]
                     tval = self.current_angle_target_values[i] * math.pi
-                    vrep.simxSetJointPosition(self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
-                vrep.simxPauseCommunication(self.clientID, False)
+                    self.call_vrep(vrep.simxSetJointPosition, [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot], empty_result_ok=True)
+                self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 
             if self.world.randomize_ball == "True":
                 # max_dist = 0.8
@@ -362,7 +361,7 @@ class Robot(ArrayWorldAdapter):
                 rx = r*np.cos(a)
                 ry = r*np.sin(a)
 
-                vrep.simxSetObjectPosition(self.clientID, self.ball_handle, self.robot_handle, [rx, ry], vrep.simx_opmode_blocking)
+                self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, self.ball_handle, self.robot_handle, [rx, ry], vrep.simx_opmode_blocking])
 
             self.fetch_sensor_and_feedback_values_from_simulation(None)
             self.last_restart = self.world.current_step
@@ -372,19 +371,19 @@ class Robot(ArrayWorldAdapter):
         if execute:
             tvals = [0] * len(self.available_datatargets)
             self.current_angle_target_values = np.array(self.datatarget_values[self.joint_offset:self.joint_offset+len(self.joints)])
-            vrep.simxPauseCommunication(self.clientID, True)
+            self.call_vrep(vrep.simxPauseCommunication, [self.clientID, True], empty_result_ok=True)
             for i, joint_handle in enumerate(self.joints):
                 tval = self.current_angle_target_values[i] * math.pi
                 if self.world.control_type == "force/torque" or self.world.control_type == "force/torque-sync":
                     tval += (old_datasource_values[self.joint_angle_offset + i]) * math.pi
                     tvals[i] = tval
-                    vrep.simxSetJointTargetPosition(self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
+                    self.call_vrep(vrep.simxSetJointTargetPosition, [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot], empty_result_ok=True)
                 elif self.world.control_type == "angles":
-                    vrep.simxSetJointPosition(self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
+                    self.call_vrep(vrep.simxSetJointPosition, [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot], empty_result_ok=True)
                 elif self.world.control_type == "movements":
                     tval += (old_datasource_values[self.joint_angle_offset + i]) * math.pi
-                    vrep.simxSetJointPosition(self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot)
-            vrep.simxPauseCommunication(self.clientID, False)
+                    self.call_vrep(vrep.simxSetJointPosition, [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot], empty_result_ok=True)
+            self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 
         # read joint angle and force values
         self.fetch_sensor_and_feedback_values_from_simulation(tvals, True)

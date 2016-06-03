@@ -181,6 +181,7 @@ class Robot(ArrayWorldAdapter):
         super().__init__(world, uid, **data)
 
         self.get_vrep_data()
+        self.initialized = True
 
     def handle_res(self, res):
         if res != vrep.simx_return_ok:
@@ -196,7 +197,8 @@ class Robot(ArrayWorldAdapter):
         if res != vrep.simx_return_ok and not empty_result_ok:
             self.logger.warning("Vrep returned code %d when calling %s, attempting a reconnect" % (res, method.__name__))
             self.world.connection_daemon.resume()
-            while not self.world.connection_daemon.is_connected:
+            self.initialized = False
+            while not self.world.connection_daemon.is_connected or not self.initialized:
                 time.sleep(0.2)
             return self.call_vrep(method, params)
         else:
@@ -208,6 +210,7 @@ class Robot(ArrayWorldAdapter):
     def on_vrep_connect(self):
         """ is called by the world, if a connection was established """
         self.get_vrep_data()
+        self.initialized = True
 
     def get_vrep_data(self):
 
@@ -393,7 +396,6 @@ class Robot(ArrayWorldAdapter):
 
         resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_buffer])
 
-        self.vision_resolution = resolution
         rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (self.vision_resolution[0] * self.vision_resolution[1], 3)).astype(np.float32)
         rgb_image /= 255.
         y_image = np.asarray([.2126 * px[0] + .7152 * px[1] + .0722 * px[2] for px in rgb_image]).astype(np.float32).reshape((self.vision_resolution[0], self.vision_resolution[1]))[::-1,:]   # todo: npyify and make faster

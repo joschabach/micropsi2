@@ -197,7 +197,7 @@ class Robot(ArrayWorldAdapter):
             self.logger.warn("Vrep returned code %d, attempting a reconnect" % res)
             self.world.connection_daemon.resume()
             while not self.world.connection_daemon.is_connected:
-                sleep(0.2)
+                time.sleep(0.2)
             return self.call_vrep(method, params)
         else:
             if len(data) == 1:

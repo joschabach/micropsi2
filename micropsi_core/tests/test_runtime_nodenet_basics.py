@@ -54,16 +54,16 @@ def test_user_prompt(fixed_nodenet, resourcepath):
     nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
     nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write('{"Testnode": {\
-            "name": "Testnode",\
-            "slottypes": ["gen", "foo", "bar"],\
-            "gatetypes": ["gen", "foo", "bar"],\
-            "nodefunction_name": "testnodefunc",\
-            "parameters": ["testparam"],\
-            "parameter_defaults": {\
-                "testparam": 13\
-              }\
-            }}')
+        fp.write("""{"Testnode": {
+            "name": "Testnode",
+            "slottypes": ["gen", "foo", "bar"],
+            "gatetypes": ["gen", "foo", "bar"],
+            "nodefunction_name": "testnodefunc",
+            "parameters": ["testparam"],
+            "parameter_defaults": {
+                "testparam": 13
+              }
+            }}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
@@ -298,21 +298,21 @@ def test_node_parameters(fixed_nodenet, resourcepath):
     nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
     nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write('{"Testnode": {\
-            "name": "Testnode",\
-            "slottypes": ["gen", "foo", "bar"],\
-            "gatetypes": ["gen", "foo", "bar"],\
-            "nodefunction_name": "testnodefunc",\
-            "parameters": ["linktype", "threshold", "protocol_mode"],\
-            "parameter_values": {\
-                "linktype": ["catexp", "subsur"],\
-                "protocol_mode": ["all_active", "most_active_one"]\
-            },\
-            "parameter_defaults": {\
-                "linktype": "catexp",\
-                "protocol_mode": "all_active"\
-            }}\
-        }')
+        fp.write("""{"Testnode": {
+            "name": "Testnode",
+            "slottypes": ["gen", "foo", "bar"],
+            "gatetypes": ["gen", "foo", "bar"],
+            "nodefunction_name": "testnodefunc",
+            "parameters": ["linktype", "threshold", "protocol_mode"],
+            "parameter_values": {
+                "linktype": ["catexp", "subsur"],
+                "protocol_mode": ["all_active", "most_active_one"]
+            },
+            "parameter_defaults": {
+                "linktype": "catexp",
+                "protocol_mode": "all_active"
+            }}
+        }""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
@@ -354,12 +354,12 @@ def test_multiple_nodenet_interference(engine, resourcepath):
     nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
     nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write('{"Testnode": {\
-            "name": "Testnode",\
-            "slottypes": ["gen", "foo", "bar"],\
-            "gatetypes": ["gen", "foo", "bar"],\
-            "nodefunction_name": "testnodefunc"\
-        }}')
+        fp.write("""{"Testnode": {
+            "name": "Testnode",
+            "slottypes": ["gen", "foo", "bar"],
+            "gatetypes": ["gen", "foo", "bar"],
+            "nodefunction_name": "testnodefunc"
+        }}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    node.get_gate('gen').gate_function(17)")
 

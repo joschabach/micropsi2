@@ -269,7 +269,7 @@ class TheanoNode(Node):
                 sensor_element = self._partition.allocated_node_offsets[self._id] + GEN
                 old_datasource_index = np.where(self._partition.sensor_indices == sensor_element)[0]
 
-                self._partition.sensor_indices[old_datasource_index] = 0
+                self._partition.sensor_indices[old_datasource_index] = -1
                 if value not in datasources:
                     self.logger.warning("Datasource %s not known, will not be assigned." % value)
                     return
@@ -295,7 +295,7 @@ class TheanoNode(Node):
                 datatargets = self._nodenet.get_datatargets()
                 actuator_element = self._partition.allocated_node_offsets[self._id] + GEN
                 old_datatarget_index = np.where(self._partition.actuator_indices == actuator_element)[0]
-                self._partition.actuator_indices[old_datatarget_index] = 0
+                self._partition.actuator_indices[old_datatarget_index] = -1
                 if value not in datatargets:
                     self.logger.warning("Datatarget %s not known, will not be assigned." % value)
                     return
@@ -421,7 +421,7 @@ class TheanoNode(Node):
         except Exception:
             self._nodenet.is_active = False
             if self.nodetype is not None and self.nodetype.nodefunction is None:
-                self.logger.warn("No nodefunction found for nodetype %s. Node function definition is: %s" % (self.nodetype.name, self.nodetype.nodefunction_definition))
+                self.logger.warning("No nodefunction found for nodetype %s. Node function definition is: %s" % (self.nodetype.name, self.nodetype.nodefunction_definition))
             else:
                 raise
 

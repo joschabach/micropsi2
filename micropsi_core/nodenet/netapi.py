@@ -246,7 +246,7 @@ class NetAPI(object):
         Deletes all links from a node ending at the given slot or originating at the given gate
         Read this as 'delete all por linkage from this node'
         """
-        self.logger.warn("unlink direction is deprecated. use unlink_gate and unlink_slot")
+        self.logger.warning("unlink direction is deprecated. use unlink_gate and unlink_slot")
         node.unlink(gateslot)
 
         links_to_delete = set()
@@ -548,6 +548,12 @@ class NetAPI(object):
         return-value for every calculation step.
         Returns the uid of the new monitor."""
         return self.__nodenet.add_custom_monitor(function, name, color=color)
+
+    def add_group_monitor(self, nodespace, name, node_name_prefix='', node_uids=[], gate='gen', color=None):
+        """Adds a continuous monitor, that tracks the activations of the given group
+        return-value for every calculation step.
+        Returns the uid of the new monitor."""
+        return self.__nodenet.add_group_monitor(nodespace, name, node_name_prefix=node_name_prefix, node_uids=node_uids, gate=gate, color=color)
 
     def get_monitor(self, uid):
         """Returns the monitor with the given uid"""

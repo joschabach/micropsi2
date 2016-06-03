@@ -22,6 +22,7 @@ h3 {
 .monitor_list input {display:inline;}
 .monitor_list label {display:inline;}
 .monitor_list li {padding: 2px 0;}
+#monitor input[type="checkbox"] {margin: 0;}
 
 #graph, #logs {
   overflow: auto;
@@ -41,8 +42,8 @@ h3 {
   color: white;
 }
 
-.delete_monitor i { opacity: 0.5; }
-.delete_monitor:hover i { opacity: 1; }
+.monitor_action i { opacity: 0.5; }
+.monitor_action:hover i { opacity: 1; }
 
 .logentry{
   display:block;
@@ -633,6 +634,10 @@ p.clear {
 
 .hint.small {
   font-size: 0.9em;
+}
+
+table th {
+  text-align: left;
 }
 
 #console_input {

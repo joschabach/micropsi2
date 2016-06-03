@@ -226,7 +226,7 @@ class MinecraftHistogramVision(MinecraftGraphLocomotion, MinecraftProjectionMixi
                     data = "{0}".format(",".join(str(b) for b in patch))
                     self.record_file.write("%s,%s,%d,%d,%d,%d\n" % (data, label, pitch, yaw, fov_x, fov_y))
                 else:
-                    self.logger.warn('potentially corrupt data were ignored')
+                    self.logger.warning('potentially corrupt data were ignored')
 
     def simulate_visual_input(self):
         """

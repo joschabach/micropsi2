@@ -44,6 +44,14 @@ bottle.debug(cfg['micropsi2'].get('debug', False))  # devV
 bottle.TEMPLATE_PATH.insert(0, os.path.join(APP_PATH, 'view', ''))
 bottle.TEMPLATE_PATH.insert(1, os.path.join(APP_PATH, 'static', ''))
 
+theano_available = True
+try:
+    import theano
+except ImportError:
+    theano_available = False
+
+bottle.BaseTemplate.defaults['theano_available'] = theano_available
+
 # runtime = micropsi_core.runtime.MicroPsiRuntime()
 usermanager = usermanagement.UserManager()
 
@@ -555,24 +563,39 @@ def export_nodenet(nodenet_uid):
     return runtime.export_nodenet(nodenet_uid)
 
 
+@micropsi_app.route("/recorder/export/<nodenet_uid>-<recorder_uid>")
+def export_recorder(nodenet_uid, recorder_uid):
+    data = runtime.export_recorders(nodenet_uid, [recorder_uid])
+    recorder = runtime.get_recorder(nodenet_uid, recorder_uid)
+    response.set_header('Content-type', 'application/octet-stream')
+    response.set_header('Content-Disposition', 'attachment; filename="recorder_%s.npz"' % recorder.name)
+    return data
+
+
+@micropsi_app.route("/recorder/export/<nodenet_uid>", method="POST")
+def export_recorders(nodenet_uid):
+    uids = []
+    for param in request.params.allitems():
+        if param[0] == 'recorder_uids[]':
+            uids.append(param[1])
+    data = runtime.export_recorders(nodenet_uid, uids)
+    response.set_header('Content-type', 'application/octet-stream')
+    response.set_header('Content-Disposition', 'attachment; filename="recorders_%s.npz"' % nodenet_uid)
+    return data
+
+
 @micropsi_app.route("/nodenet/edit")
 def edit_nodenet():
     user_id, permissions, token = get_request_data()
     # nodenet_id = request.params.get('id', None)
     title = 'Edit Nodenet' if id is not None else 'New Nodenet'
 
-    theano_available = True
-    try:
-        import theano
-    except ImportError:
-        theano_available = False
-
     return template("nodenet_form.tpl", title=title,
         # nodenet_uid=nodenet_uid,
         nodenets=runtime.get_available_nodenets(),
         templates=runtime.get_available_nodenets(),
         worlds=runtime.get_available_worlds(),
-        version=VERSION, user_id=user_id, permissions=permissions, theano_available=theano_available)
+        version=VERSION, user_id=user_id, permissions=permissions)
 
 
 @micropsi_app.route("/nodenet/edit", method="POST")
@@ -739,8 +762,8 @@ def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadap
 
 
 @rpc("get_calculation_state")
-def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
-    return runtime.get_calculation_state(nodenet_uid, nodenet=nodenet, nodenet_diff=nodenet_diff, world=world, monitors=monitors, dashboard=dashboard)
+def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None, recorders=None):
+    return runtime.get_calculation_state(nodenet_uid, nodenet=nodenet, nodenet_diff=nodenet_diff, world=world, monitors=monitors, dashboard=dashboard, recorders=recorders)
 
 
 @rpc("get_nodenet_changes")
@@ -1028,6 +1051,11 @@ def add_custom_monitor(nodenet_uid, function, name, color=None):
     return True, runtime.add_custom_monitor(nodenet_uid, function, name, color=color)
 
 
+@rpc("add_group_monitor")
+def add_group_monitor(nodenet_uid, nodespace, name, node_name_prefix='', node_uids=[], gate='gen', color=None):
+    return True, runtime.add_group_monitor(nodenet_uid, nodespace, name, node_name_prefix=node_name_prefix, node_uids=node_uids, gate=gate, color=color)
+
+
 @rpc("remove_monitor")
 def remove_monitor(nodenet_uid, monitor_uid):
     try:
@@ -1046,14 +1074,9 @@ def clear_monitor(nodenet_uid, monitor_uid):
         return dict(status='error', msg='unknown nodenet or monitor')
 
 
-@rpc("export_monitor_data")
-def export_monitor_data(nodenet_uid, monitor_uid=None):
-    return True, runtime.export_monitor_data(nodenet_uid, monitor_uid)
-
-
 @rpc("get_monitor_data")
-def get_monitor_data(nodenet_uid, step, monitor_from=0, monitor_count=-1):
-    return True, runtime.get_monitor_data(nodenet_uid, step, monitor_from, monitor_count)
+def get_monitor_data(nodenet_uid, step=0, monitor_from=0, monitor_count=-1):
+    return True, runtime.get_monitor_data(nodenet_uid, step, from_step=monitor_from, count=monitor_count)
 
 
 # Nodenet
@@ -1226,6 +1249,44 @@ def get_emoexpression_parameters(nodenet_uid):
     nodenet = runtime.get_nodenet(nodenet_uid)
     return True, emoexpression.calc_emoexpression_parameters(nodenet)
 
+
+# --------- recorder --------
+
+
+@rpc("add_gate_activation_recorder")
+def add_gate_activation_recorder(nodenet_uid, group_definition, name, interval=1):
+    """ Adds an activation recorder to a group of nodes."""
+    return runtime.add_gate_activation_recorder(nodenet_uid, group_definition, name, interval)
+
+
+@rpc("add_node_activation_recorder")
+def add_node_activation_recorder(nodenet_uid, group_definition, name, interval=1):
+    """ Adds an activation recorder to a group of nodes."""
+    return runtime.add_node_activation_recorder(nodenet_uid, group_definition, name, interval)
+
+
+@rpc("add_linkweight_recorder")
+def add_linkweight_recorder(nodenet_uid, from_group_definition, to_group_definition, name, interval=1):
+    """ Adds a linkweight recorder to links between to groups."""
+    return runtime.add_linkweight_recorder(nodenet_uid, from_group_definition, to_group_definition, name, interval)
+
+
+@rpc("remove_recorder")
+def remove_recorder(nodenet_uid, recorder_uid):
+    """Deletes a recorder."""
+    return runtime.remove_recorder(nodenet_uid, recorder_uid)
+
+
+@rpc("clear_recorder")
+def clear_recorder(nodenet_uid, recorder_uid):
+    """Leaves the recorder intact, but deletes the current list of stored values."""
+    return runtime.clear_recorder(nodenet_uid, recorder_uid)
+
+
+@rpc("get_recorders")
+def get_recorders(nodenet_uid):
+    return runtime.get_recorder_data(nodenet_uid)
+
 # --------- logging --------
 
 
@@ -1241,8 +1302,8 @@ def get_logger_messages(logger=[], after=0):
 
 
 @rpc("get_monitoring_info")
-def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor_count=-1):
-    data = runtime.get_monitoring_info(nodenet_uid, logger, after, monitor_from, monitor_count)
+def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor_count=-1, with_recorders=False):
+    data = runtime.get_monitoring_info(nodenet_uid, logger, after, monitor_from, monitor_count, with_recorders=with_recorders)
     return True, data
 
 

@@ -13,6 +13,7 @@ import numpy as np
 import scipy
 
 from micropsi_core.nodenet import monitor
+from micropsi_core.nodenet import recorder
 from micropsi_core.nodenet.nodenet import Nodenet
 from micropsi_core.nodenet.node import Nodetype
 from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators
@@ -213,7 +214,7 @@ class TheanoNodenet(Nodenet):
             self.numpyfloatX = np.float64
             self.byte_per_float = 8
         else:  # pragma: no cover
-            self.logger.warn("Unsupported precision value from configuration: %s, falling back to float64", precision)
+            self.logger.warning("Unsupported precision value from configuration: %s, falling back to float64", precision)
             T.config.floatX = "float64"
             self.scipyfloatX = scipy.float64
             self.numpyfloatX = np.float64
@@ -224,7 +225,7 @@ class TheanoNodenet(Nodenet):
         if device.startswith("gpu"):
             self.logger.info("Using CUDA with cuda_root=%s and theano_flags=%s", os.environ["CUDA_ROOT"], os.environ["THEANO_FLAGS"])
             if T.config.floatX != "float32":
-                self.logger.warn("Precision set to %s, but attempting to use gpu.", precision)
+                self.logger.warning("Precision set to %s, but attempting to use gpu.", precision)
 
         self.netapi = TheanoNetAPI(self)
 
@@ -236,14 +237,14 @@ class TheanoNodenet(Nodenet):
         try:
             average_elements_per_node_assumption = int(configured_elements_per_node_assumption)
         except:  # pragma: no cover
-            self.logger.warn("Unsupported elements_per_node_assumption value from configuration: %s, falling back to 4", configured_elements_per_node_assumption)
+            self.logger.warning("Unsupported elements_per_node_assumption value from configuration: %s, falling back to 4", configured_elements_per_node_assumption)
 
         initial_number_of_nodes = 2000
         configured_initial_number_of_nodes = settings['theano']['initial_number_of_nodes']
         try:
             initial_number_of_nodes = int(configured_initial_number_of_nodes)
         except:  # pragma: no cover
-            self.logger.warn("Unsupported initial_number_of_nodes value from configuration: %s, falling back to 2000", configured_initial_number_of_nodes)
+            self.logger.warning("Unsupported initial_number_of_nodes value from configuration: %s, falling back to 2000", configured_initial_number_of_nodes)
 
         sparse = True
         configuredsparse = settings['theano']['sparse_weight_matrix']
@@ -252,7 +253,7 @@ class TheanoNodenet(Nodenet):
         elif configuredsparse == "False":
             sparse = False
         else:  # pragma: no cover
-            self.logger.warn("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)
+            self.logger.warning("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)
             sparse = True
 
         rootpartition = TheanoPartition(self,
@@ -371,7 +372,11 @@ class TheanoNodenet(Nodenet):
             metadata['monitors'] = self.construct_monitors_dict()
             metadata['modulators'] = self.construct_modulators_dict()
             metadata['partition_parents'] = self.inverted_partitionmap
+            metadata['recorders'] = self.construct_recorders_dict()
             fp.write(json.dumps(metadata, sort_keys=True, indent=4))
+
+        for recorder_uid in self._recorders:
+            self._recorders[recorder_uid].save()
 
         for partition in self.partitions.values():
             # write bulk data to our own numpy-based file format
@@ -390,14 +395,17 @@ class TheanoNodenet(Nodenet):
                     with open(filename) as file:
                         initfrom.update(json.load(file))
                 except ValueError:  # pragma: no cover
-                    self.logger.warn("Could not read nodenet metadata from file %s", filename)
+                    self.logger.warning("Could not read nodenet metadata from file %s", filename)
                     return False
                 except IOError:  # pragma: no cover
-                    self.logger.warn("Could not open nodenet metadata file %s", filename)
+                    self.logger.warning("Could not open nodenet metadata file %s", filename)
                     return False
 
             # determine whether we have a complete json dump, or our theano npz partition files:
             nodes_data = initfrom.get('nodes', {})
+
+            # pop the monitors:
+            monitors = initfrom.pop('monitors', {})
 
             # initialize
             self.initialize_nodenet(initfrom)
@@ -414,6 +422,18 @@ class TheanoNodenet(Nodenet):
             # (numerical native module types are runtime dependent and may differ from when allocated_nodes
             # was saved).
             self.reload_native_modules(self.native_module_definitions)
+
+            for monitorid in monitors:
+                data = monitors[monitorid]
+                if hasattr(monitor, data['classname']):
+                    mon = getattr(monitor, data['classname'])(self, **data)
+                    self._monitors[mon.uid] = mon
+                else:
+                    self.logger.warning('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], monitorid))
+
+            for recorder_uid in initfrom.get('recorders', {}):
+                data = initfrom['recorders'][recorder_uid]
+                self._recorders[recorder_uid] = getattr(recorder, data['classname'])(self, **data)
 
             # re-initialize step operators for theano recompile to new shared variables
             self.initialize_stepoperators()
@@ -511,7 +531,7 @@ class TheanoNodenet(Nodenet):
                 parent_uid = uidmap[data['parent_nodespace']]
                 id_to_pass = None
             if data['type'] not in self.nodetypes and data['type'] not in self.native_modules:
-                self.logger.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
+                self.logger.warning("Invalid nodetype %s for node %s" % (data['type'], uid))
                 data['parameters'] = {
                     'comment': 'There was a %s node here' % data['type']
                 }
@@ -569,7 +589,7 @@ class TheanoNodenet(Nodenet):
                     mon = getattr(monitor, data['classname'])(self, **data)
                     self._monitors[mon.uid] = mon
                 else:
-                    self.logger.warn('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], monitorid))
+                    self.logger.warning('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], monitorid))
             else:
                 # Compatibility mode
                 mon = monitor.NodeMonitor(self, name=data['node_name'], **data)
@@ -943,7 +963,7 @@ class TheanoNodenet(Nodenet):
                 try:
                     average_elements_per_node_assumption = int(configured_elements_per_node_assumption)
                 except:
-                    self.logger.warn("Unsupported elements_per_node_assumption value from configuration: %s, falling back to 4", configured_elements_per_node_assumption)  # pragma: no cover
+                    self.logger.warning("Unsupported elements_per_node_assumption value from configuration: %s, falling back to 4", configured_elements_per_node_assumption)  # pragma: no cover
 
             initial_number_of_nodes = 2000
             if "initial_number_of_nodes" in options:
@@ -953,7 +973,7 @@ class TheanoNodenet(Nodenet):
                 try:
                     initial_number_of_nodes = int(configured_initial_number_of_nodes)
                 except:
-                    self.logger.warn("Unsupported initial_number_of_nodes value from configuration: %s, falling back to 2000", configured_initial_number_of_nodes)  # pragma: no cover
+                    self.logger.warning("Unsupported initial_number_of_nodes value from configuration: %s, falling back to 2000", configured_initial_number_of_nodes)  # pragma: no cover
 
             sparse = True
             if "sparse" in options:
@@ -965,7 +985,7 @@ class TheanoNodenet(Nodenet):
                 elif configuredsparse == "False":
                     sparse = False
                 else:
-                    self.logger.warn("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)  # pragma: no cover
+                    self.logger.warning("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)  # pragma: no cover
                     sparse = True
 
             self.last_allocated_partition += 1
@@ -1108,7 +1128,7 @@ class TheanoNodenet(Nodenet):
         for partition in self.partitions.values():
             for uid, instance in partition.native_module_instances.items():
                 if instance.type not in native_modules:
-                    self.logger.warn("No more definition available for node type %s, deleting instance %s" %
+                    self.logger.warning("No more definition available for node type %s, deleting instance %s" %
                                     (instance.type, uid))
                     instances_to_delete[uid] = instance
                     continue
@@ -1195,9 +1215,13 @@ class TheanoNodenet(Nodenet):
                     elements = get_elements_per_type(partition.allocated_nodes[id], self.native_modules)
                     offset = partition.allocated_node_offsets[id]
                     if rounded is None:
-                        activations[node_to_id(id, partition.pid)] = [n.item() for n in partition.a.get_value()[offset:offset+elements]]
+                        act = [n.item() for n in partition.a.get_value()[offset:offset+elements]]
+                        if set(act) != {0}:
+                            activations[node_to_id(id, partition.pid)] = act
                     else:
-                        activations[node_to_id(id, partition.pid)] = [n.item() / mult for n in np.rint(partition.a.get_value()[offset:offset+elements]*mult)]
+                        act = [n.item() / mult for n in np.rint(partition.a.get_value()[offset:offset+elements]*mult)]
+                        if set(act) != {0}:
+                            activations[node_to_id(id, partition.pid)] = act
         else:
             for nsuid in nodespace_uids:
                 nodespace = self.get_nodespace(nsuid)
@@ -1208,9 +1232,13 @@ class TheanoNodenet(Nodenet):
                     elements = get_elements_per_type(partition.allocated_nodes[id], self.native_modules)
                     offset = partition.allocated_node_offsets[id]
                     if rounded is None:
-                        activations[node_to_id(id, partition.pid)] = [n.item() for n in partition.a.get_value()[offset:offset+elements]]
+                        act = [n.item() for n in partition.a.get_value()[offset:offset+elements]]
+                        if set(act) != {0}:
+                            activations[node_to_id(id, partition.pid)] = act
                     else:
-                        activations[node_to_id(id, partition.pid)] = [n.item() / mult for n in np.rint(partition.a.get_value()[offset:offset+elements]*mult)]
+                        act = [n.item() / mult for n in np.rint(partition.a.get_value()[offset:offset+elements]*mult)]
+                        if set(act) != {0}:
+                            activations[node_to_id(id, partition.pid)] = act
         return activations
 
     def get_nodetype(self, type):
@@ -1425,8 +1453,10 @@ class TheanoNodenet(Nodenet):
         else:
             partitions = self.partitions.values()
         for partition in partitions:
-            partition.sensor_indices = np.zeros(len(self.get_datasources()), np.int32)
-            partition.actuator_indices = np.zeros(len(self.get_datatargets()), np.int32)
+            partition.sensor_indices = np.empty(len(self.get_datasources()), np.int32)
+            partition.sensor_indices.fill(-1)
+            partition.actuator_indices = np.empty(len(self.get_datatargets()), np.int32)
+            partition.actuator_indices.fill(-1)
             for datatarget, node_id in self.actuatormap.items():
                 if not isinstance(node_id, str):
                     node_id = node_id[0]
@@ -1627,6 +1657,24 @@ class TheanoNodenet(Nodenet):
                 uid = nodespace_to_id(uid, partition.pid)
                 result['nodespaces_dirty'][uid] = self.get_nodespace(uid).get_data()
         return result
+
+    def add_gate_activation_recorder(self, group_definition, name, interval=1):
+        """ Adds an activation recorder to a group of nodes."""
+        rec = recorder.GateActivationRecorder(self, group_definition, name, interval=interval)
+        self._recorders[rec.uid] = rec
+        return rec
+
+    def add_node_activation_recorder(self, group_definition, name, interval=1):
+        """ Adds an activation recorder to a group of nodes."""
+        rec = recorder.NodeActivationRecorder(self, group_definition, name, interval=interval)
+        self._recorders[rec.uid] = rec
+        return rec
+
+    def add_linkweight_recorder(self, from_group_definition, to_group_definition, name, interval=1):
+        """ Adds a linkweight recorder to links between to groups."""
+        rec = recorder.LinkweightRecorder(self, from_group_definition, to_group_definition, name, interval=interval)
+        self._recorders[rec.uid] = rec
+        return rec
 
     def get_dashboard(self):
         data = super(TheanoNodenet, self).get_dashboard()

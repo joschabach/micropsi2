@@ -4,8 +4,9 @@
 Nodenet definition
 """
 
-
+import os
 import logging
+
 from datetime import datetime
 from threading import Lock
 from abc import ABCMeta, abstractmethod
@@ -13,6 +14,7 @@ from abc import ABCMeta, abstractmethod
 import micropsi_core.tools
 from .netapi import NetAPI
 from . import monitor
+from . import recorder
 from .node import Nodetype
 
 __author__ = 'joscha'
@@ -160,6 +162,7 @@ class Nodenet(metaclass=ABCMeta):
 
         self.owner = owner
         self._monitors = {}
+        self._recorders = {}
         self._nodespace_ui_properties = {}
 
         self.netlock = Lock()
@@ -634,12 +637,25 @@ class Nodenet(metaclass=ABCMeta):
         self._monitors[mon.uid] = mon
         return mon.uid
 
+    def add_group_monitor(self, nodespace, name, node_name_prefix='', node_uids=[], gate='gen', color=None):
+        """Adds a continuous monitor, that tracks the activations of the given group
+        return-value for every calculation step.
+        Returns the uid of the new monitor."""
+        mon = monitor.GroupMonitor(self, nodespace, name, node_name_prefix, node_uids, gate, color=color)
+        self._monitors[mon.uid] = mon
+        return mon.uid
+
     def get_monitor(self, uid):
         return self._monitors.get(uid)
 
-    def update_monitors(self):
+    def get_recorder(self, uid):
+        return self._recorders.get(uid)
+
+    def update_monitors_and_recorders(self):
         for uid in self._monitors:
             self._monitors[uid].step(self.current_step)
+        for uid in self._recorders:
+            self._recorders[uid].step(self.current_step)
 
     def construct_monitors_dict(self):
         data = {}
@@ -647,8 +663,32 @@ class Nodenet(metaclass=ABCMeta):
             data[monitor_uid] = self._monitors[monitor_uid].get_data()
         return data
 
+    def construct_recorders_dict(self):
+        data = {}
+        for uid in self._recorders:
+            data[uid] = self._recorders[uid].get_data()
+        return data
+
     def remove_monitor(self, monitor_uid):
         del self._monitors[monitor_uid]
+
+    def add_gate_activation_recorder(self, group_definition, name, interval=1):
+        """ Adds an activation recorder to a group of nodes."""
+        raise NotImplementedError("Recorders are not implemented in the this engine")
+
+    def add_node_activation_recorder(self, group_definition, name, interval=1):
+        """ Adds an activation recorder to a group of nodes."""
+        raise NotImplementedError("Recorders are not implemented in the this engine")
+
+    def add_linkweight_recorder(self, from_group_definition, to_group_definition, name, interval=1):
+        """ Adds a linkweight recorder to links between to groups."""
+        raise NotImplementedError("Recorders are not implemented in the this engine")
+
+    def remove_recorder(self, recorder_uid):
+        filename = self._recorders[recorder_uid].filename
+        if os.path.isfile(filename):
+            os.remove(filename)
+        del self._recorders[recorder_uid]
 
     def get_dashboard(self):
         data = self.dashboard_values.copy()

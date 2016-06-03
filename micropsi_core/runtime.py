@@ -167,7 +167,7 @@ class MicropsiRunner(threading.Thread):
                             nodenet.timed_step()
                             if self.profiler:
                                 self.profiler.disable()
-                            nodenet.update_monitors()
+                            nodenet.update_monitors_and_recorders()
                         except:
                             if self.profiler:
                                 self.profiler.disable()
@@ -263,9 +263,9 @@ def get_logger_messages(loggers=[], after=0):
     return logger.get_logs(loggers, after)
 
 
-def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor_count=-1):
+def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor_count=-1, with_recorders=False):
     """ Returns log-messages and monitor-data for the given nodenet."""
-    data = get_monitor_data(nodenet_uid, 0, monitor_from, monitor_count)
+    data = get_monitor_data(nodenet_uid, 0, monitor_from, monitor_count, with_recorders=with_recorders)
     data['logs'] = get_logger_messages(logger, after)
     return data
 
@@ -333,12 +333,12 @@ def load_nodenet(nodenet_uid):
                         world_uid = data.world
                         worldadapter = data.get('worldadapter')
                     else:
-                        logging.getLogger("system").warn("World %s for nodenet %s not found" % (data.world, data.uid))
+                        logging.getLogger("system").warning("World %s for nodenet %s not found" % (data.world, data.uid))
 
                 if world_uid:
                     result, worldadapter_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet_uid, nodenet_name=data['name'])
                     if not result:
-                        logging.getLogger('system').warn(worldadapter_instance)
+                        logging.getLogger('system').warning(worldadapter_instance)
                         worldadapter_instance = None
                         worldadapter = None
                         world_uid = None
@@ -392,7 +392,8 @@ def get_nodenet_metadata(nodenet_uid):
         'nodespaces': nodenet.construct_nodespaces_dict(None, transitive=True),
         'native_modules': nodenet.get_native_module_definitions(),
         'monitors': nodenet.construct_monitors_dict(),
-        'rootnodespace': nodenet.get_nodespace(None).uid
+        'rootnodespace': nodenet.get_nodespace(None).uid,
+        'resource_path': RESOURCE_PATH
     })
     return data
 
@@ -413,7 +414,7 @@ def get_nodes(nodenet_uid, nodespaces=[], include_links=True):
     return nodenet.get_nodes(nodespaces, include_links)
 
 
-def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
+def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None, recorders=None):
     """ returns the current state of the calculation
     """
     data = {}
@@ -456,6 +457,8 @@ def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=No
             data['monitors'] = get_monitoring_info(nodenet_uid=nodenet_uid, **monitors)
         if dashboard is not None:
             data['dashboard'] = get_agent_dashboard(nodenet_uid)
+        if recorders is not None:
+            data['recorders'] = nodenet_obj.construct_recorders_dict()
         return True, data
     else:
         return False, "No such nodenet"
@@ -634,7 +637,7 @@ def step_nodenet(nodenet_uid):
     """
     nodenet = get_nodenet(nodenet_uid)
     nodenet.timed_step()
-    nodenet.update_monitors()
+    nodenet.update_monitors_and_recorders()
     if nodenet.world and nodenet.current_step % configs['runner_factor'] == 0:
         worlds[nodenet.world].step()
     return nodenet.current_step
@@ -649,13 +652,13 @@ def step_nodenets_in_world(world_uid, nodenet_uid=None, steps=1):
     if nodenet and nodenet.world == world_uid:
         for i in range(steps):
             nodenet.timed_step()
-            nodenet.update_monitors()
+            nodenet.update_monitors_and_recorders()
     else:
         for i in range(steps):
             for uid in worlds[world_uid].agents:
                 nodenet = get_nodenet(uid)
                 nodenet.timed_step()
-                nodenet.update_monitors()
+                nodenet.update_monitors_and_recorders()
     return True
 
 
@@ -1434,9 +1437,9 @@ def crawl_definition_files(path, type="definition"):
                         data = parse_definition(json.load(file), filename)
                         result[data.uid] = data
                 except ValueError:
-                    logging.getLogger('system').warn("Invalid %s data in file '%s'" % (type, definition_file_name))
+                    logging.getLogger('system').warning("Invalid %s data in file '%s'" % (type, definition_file_name))
                 except IOError:
-                    logging.getLogger('system').warn("Could not open %s data file '%s'" % (type, definition_file_name))
+                    logging.getLogger('system').warning("Could not open %s data file '%s'" % (type, definition_file_name))
     return result
 
 
@@ -1488,9 +1491,9 @@ def init_worlds(world_data):
             except TypeError:
                 worlds[uid] = world.World(**world_data[uid])
             except AttributeError as err:
-                logging.getLogger('system').warn("Unknown world_type: %s (%s)" % (world_data[uid].world_type, str(err)))
+                logging.getLogger('system').warning("Unknown world_type: %s (%s)" % (world_data[uid].world_type, str(err)))
             except:
-                logging.getLogger('system').warn("Can not instantiate World \"%s\": %s" % (world_data[uid].name, str(sys.exc_info()[1])))
+                logging.getLogger('system').warning("Can not instantiate World \"%s\": %s" % (world_data[uid].name, str(sys.exc_info()[1])))
         else:
             worlds[uid] = world.World(**world_data[uid])
     return worlds

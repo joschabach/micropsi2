@@ -190,11 +190,11 @@ class Robot(ArrayWorldAdapter):
         res, *data = method(*params)
         if res == vrep.simx_return_novalue_flag and not empty_result_ok:
                 # streaming mode did not return data. wait a bit, try again
-                self.logger.debug("Did not receive data from vrep, trying again in 500 ms")
+                self.logger.debug("Did not receive data from vrep when calling %s, trying again in 500 ms" % method.__name__)
                 time.sleep(0.5)
                 res, *data = method(*params)
         if res != vrep.simx_return_ok and not empty_result_ok:
-            self.logger.warn("Vrep returned code %d, attempting a reconnect" % res)
+            self.logger.warning("Vrep returned code %d when calling %s, attempting a reconnect" % (res, method.__name__))
             self.world.connection_daemon.resume()
             while not self.world.connection_daemon.is_connected:
                 time.sleep(0.2)
@@ -393,6 +393,7 @@ class Robot(ArrayWorldAdapter):
 
         resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_buffer])
 
+        self.vision_resolution = resolution
         rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (self.vision_resolution[0] * self.vision_resolution[1], 3)).astype(np.float32)
         rgb_image /= 255.
         y_image = np.asarray([.2126 * px[0] + .7152 * px[1] + .0722 * px[2] for px in rgb_image]).astype(np.float32).reshape((self.vision_resolution[0], self.vision_resolution[1]))[::-1,:]   # todo: npyify and make faster

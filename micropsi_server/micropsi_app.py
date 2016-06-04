@@ -640,11 +640,15 @@ def export_world(world_uid):
 @micropsi_app.route("/world/edit")
 def edit_world_form():
     token = request.get_cookie("token")
-    id = request.params.get('id', None)
-    title = 'Edit World' if id is not None else 'New World'
+    world_uid = request.params.get('id', None)
+    world = None
+    if world_uid:
+        world = runtime.worlds.get(world_uid)
+    title = 'Edit World' if world is not None else 'New World'
     worldtypes = runtime.get_available_world_types()
     return template("world_form.tpl", title=title,
         worldtypes=worldtypes,
+        world=world,
         version=VERSION,
         user_id=usermanager.get_user_id_for_session_token(token),
         permissions=usermanager.get_permissions_for_session_token(token))
@@ -653,18 +657,26 @@ def edit_world_form():
 @micropsi_app.route("/world/edit", method="POST")
 def edit_world():
     params = dict((key, request.forms.getunicode(key)) for key in request.forms)
-    type = params['world_type']
+    world_uid = params.get('world_uid')
+    if world_uid:
+        world_type = runtime.worlds[world_uid].__class__.__name__
+    else:
+        world_type = params['world_type']
     config = {}
     for p in params:
-        if p.startswith(type + '_'):
-            config[p[len(type) + 1:]] = params[p]
+        if p.startswith(world_type + '_'):
+            config[p[len(world_type) + 1:]] = params[p]
     user_id, permissions, token = get_request_data()
     if "manage worlds" in permissions:
-        result, uid = runtime.new_world(params['world_name'], params['world_type'], user_id, config=config)
-        if result:
-            return dict(status="success", msg="World created", world_uid=uid)
+        if world_uid:
+            runtime.set_world_properties(world_uid, world_name=params['world_name'], config=config)
+            return dict(status="success", msg="World changes saved")
         else:
-            return dict(status="error", msg=": %s" % result)
+            result, uid = runtime.new_world(params['world_name'], world_type, user_id, config=config)
+            if result:
+                return dict(status="success", msg="World created", world_uid=uid)
+            else:
+                return dict(status="error", msg=": %s" % result)
     return dict(status="error", msg="Insufficient rights to create world")
 
 

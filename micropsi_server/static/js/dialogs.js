@@ -328,7 +328,11 @@ $(function() {
             });
         });
     });
-    $('.navbar a.world_edit').on('click', remote_form);
+
+    $('.navbar a.world_edit').on('click', function(event){
+        event.preventDefault();
+        dialogs.remote_form_dialog($(event.target).attr("href") + "?id=" + currentWorld);
+    });
 
     $('.navbar a.world_delete').on('click', function(event){
         event.preventDefault();

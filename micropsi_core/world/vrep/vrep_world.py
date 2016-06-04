@@ -186,26 +186,34 @@ class Robot(ArrayWorldAdapter):
     def call_vrep(self, method, params, empty_result_ok=False):
         result = method(*params)
         code = result if type(result) == int else result[0]
-        if code == vrep.simx_return_novalue_flag and not empty_result_ok:
-                # streaming mode did not return data. wait a bit, try again
-                self.logger.debug("Did not receive data from vrep when calling %s, trying again in 500 ms" % method.__name__)
-                time.sleep(0.5)
-                result = method(*params)
-                code = result if type(result) == int else result[0]
-        if code != vrep.simx_return_ok and not empty_result_ok:
-            self.logger.warning("Vrep returned code %d when calling %s, attempting a reconnect" % (code, method.__name__))
-            self.world.connection_daemon.resume()
-            self.initialized = False
-            while not self.world.connection_daemon.is_connected or not self.initialized:
-                time.sleep(0.2)
-            return self.call_vrep(method, params)
+        if code != vrep.simx_return_ok:
+            if (code == vrep.simx_return_novalue_flag or code == vrep.simx_return_split_progress_flag) and not empty_result_ok:
+                    # streaming mode did not return data. wait a bit, try again
+                    self.logger.debug("Did not receive data from vrep when calling %s, trying again in 500 ms" % method.__name__)
+                    time.sleep(0.5)
+                    result = method(*params)
+                    code = result if type(result) == int else result[0]
+            if code == vrep.simx_return_illegal_opmode_flag:
+                self.logger.error("Illegal opmode for VREP call %s" % method.__name)
+            if code == vrep.simx_return_remote_error_flag:
+                self.logger.error("VREP internal error when calling %s. Invalid handle specified?" % method.__name__)
+            elif code == vrep.simx_return_local_error_flag:
+                self.logger.error("Client error for VREP call %s" % method.__name)
+            elif code == vrep.simx_return_initialize_error_flag:
+                self.logger.error("VREP Simulation is not running")
+            elif code == vrep.simx_return_timeout_flag or ((code == vrep.simx_return_novalue_flag or code == vrep.simx_return_split_progress_flag) and not empty_result_ok):
+                self.logger.warning("Vrep returned code %d when calling %s, attempting a reconnect" % (code, method.__name__))
+                self.world.connection_daemon.resume()
+                self.initialized = False
+                while not self.world.connection_daemon.is_connected or not self.initialized:
+                    time.sleep(0.2)
+                return self.call_vrep(method, params)
+        if type(result) == int:
+            return True
+        if len(result) == 2:
+            return result[1]
         else:
-            if type(result) == int:
-                return True
-            if len(result) == 2:
-                return result[1]
-            else:
-                return result[1:]
+            return result[1:]
 
     def on_vrep_connect(self):
         """ is called by the world, if a connection was established """

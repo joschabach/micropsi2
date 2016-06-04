@@ -322,7 +322,6 @@ class Robot(ArrayWorldAdapter):
         self.initialized = True
 
         self.reset_simulation_state()
-        self.fetch_sensor_and_feedback_values_from_simulation(None)
 
     def get_available_datasources(self):
         return self.available_datasources

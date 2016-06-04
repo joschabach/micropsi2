@@ -56,26 +56,23 @@ def test_get_nodenet_activation_data(test_nodenet):
     nodes = prepare_nodenet(test_nodenet)
     uid = nodes['a']
     activation_data = micropsi.get_nodenet_activation_data(test_nodenet, [None])
-    assert activation_data["activations"][uid][0] == 0
-    assert activation_data["activations"][uid][1] == 0
-    assert activation_data["activations"][uid][2] == 0
-    assert activation_data["activations"][uid][3] == 0
-    assert activation_data["activations"][uid][4] == 0
-    assert activation_data["activations"][uid][5] == 0
-    assert activation_data["activations"][uid][6] == 0
-
+    uid not in activation_data["activations"]
     micropsi.set_node_activation(test_nodenet, nodes['a'], 0.34556865)
-
     activation_data = micropsi.get_nodenet_activation_data(test_nodenet, [None])
     assert activation_data["activations"][uid][0] == 0.3
 
 
 def test_get_nodenet_activation_data_for_nodespace(test_nodenet):
     nodes = prepare_nodenet(test_nodenet)
+    netapi = micropsi.nodenets[test_nodenet].netapi
     uid = nodes['a']
     nodespace = micropsi.nodenets[test_nodenet].get_nodespace_uids()[0]
     activation_data = micropsi.get_nodenet_activation_data(test_nodenet, [nodespace])
-    assert activation_data["activations"][uid][0] == 0
+    # zero activations are not sent anymore
+    assert uid not in activation_data["activations"]
+    netapi.get_node(uid).activation = 0.9
+    activation_data = micropsi.get_nodenet_activation_data(test_nodenet, [nodespace])
+    assert activation_data["activations"][uid][0] == 0.9
 
 
 def test_get_nodespace(test_nodenet):

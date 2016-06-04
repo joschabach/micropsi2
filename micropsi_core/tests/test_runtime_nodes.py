@@ -182,6 +182,7 @@ def test_native_module_and_recipe_categories(fixed_nodenet, resourcepath):
     micropsi.reload_native_modules()
     res = micropsi.get_available_native_module_types(fixed_nodenet)
     assert res['Testnode']['category'] == 'Test'
+    assert res['Testnode']['line_number'] == 1
     res = micropsi.get_available_recipes()
     assert res['testrecipe']['category'] == 'Test/Test2'
 

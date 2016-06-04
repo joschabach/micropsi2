@@ -181,7 +181,6 @@ class Robot(ArrayWorldAdapter):
         super().__init__(world, uid, **data)
 
         self.get_vrep_data()
-        self.initialized = True
 
     def call_vrep(self, method, params, empty_result_ok=False):
         result = method(*params)
@@ -218,7 +217,6 @@ class Robot(ArrayWorldAdapter):
     def on_vrep_connect(self):
         """ is called by the world, if a connection was established """
         self.get_vrep_data()
-        self.initialized = True
 
     def get_vrep_data(self):
 
@@ -321,7 +319,10 @@ class Robot(ArrayWorldAdapter):
         self.datasource_values = [0] * len(self.available_datasources)
         self.datatarget_values = [0] * len(self.available_datatargets)
         self.datatarget_feedback_values = [0] * len(self.available_datatargets)
-        self.fetch_sensor_and_feedback_values_from_simulation(None, initial=True)
+        self.initialized = True
+
+        self.reset_simulation_state()
+        self.fetch_sensor_and_feedback_values_from_simulation(None)
 
     def get_available_datasources(self):
         return self.available_datasources
@@ -342,38 +343,7 @@ class Robot(ArrayWorldAdapter):
 
         # simulation restart
         if restart:
-            self.call_vrep(vrep.simxStopSimulation, [self.clientID, vrep.simx_opmode_oneshot], empty_result_ok=True)
-            time.sleep(0.5)
-            self.call_vrep(vrep.simxStartSimulation, [self.clientID, vrep.simx_opmode_oneshot])
-            time.sleep(0.5)
-
-            if self.world.randomize_arm == "True":
-                self.call_vrep(vrep.simxPauseCommunication, [self.clientID, True], empty_result_ok=True)
-                for i, joint_handle in enumerate(self.joints):
-                    self.datatarget_values[self.joint_offset + i] = random.uniform(-0.8, 0.8)
-                    self.current_angle_target_values[i] = self.datatarget_values[self.joint_offset + i]
-                    tval = self.current_angle_target_values[i] * math.pi
-                    self.call_vrep(vrep.simxSetJointPosition, [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot], empty_result_ok=True)
-                self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
-
-            if self.world.randomize_ball == "True":
-                # max_dist = 0.8
-                # rx = random.uniform(-max_dist, max_dist)
-                # max_y = math.sqrt((max_dist ** 2) - (rx ** 2))
-                # ry = random.uniform(-max_y, max_y)
-                max_dist = 0.8
-                min_dist = 0.2
-                k = max_dist**2 - min_dist**2
-                a = np.random.rand() * 2 * np.pi
-                r = np.sqrt(np.random.rand() * k + min_dist**2)
-                rx = r*np.cos(a)
-                ry = r*np.sin(a)
-
-                self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, self.ball_handle, self.robot_handle, [rx, ry], vrep.simx_opmode_blocking])
-
-            self.fetch_sensor_and_feedback_values_from_simulation(None)
-            self.last_restart = self.world.current_step
-            return
+            return self.reset_simulation_state()
 
         # execute movement, send new target angles
         if execute:
@@ -412,10 +382,43 @@ class Robot(ArrayWorldAdapter):
 
         return self.image
 
-    def fetch_sensor_and_feedback_values_from_simulation(self, targets, include_feedback=False, initial=False):
+    def reset_simulation_state(self):
+        self.call_vrep(vrep.simxStopSimulation, [self.clientID, vrep.simx_opmode_oneshot], empty_result_ok=True)
+        time.sleep(0.5)
+        self.call_vrep(vrep.simxStartSimulation, [self.clientID, vrep.simx_opmode_oneshot])
+        time.sleep(0.5)
+
+        if self.world.randomize_arm == "True":
+            self.call_vrep(vrep.simxPauseCommunication, [self.clientID, True], empty_result_ok=True)
+            for i, joint_handle in enumerate(self.joints):
+                self.datatarget_values[self.joint_offset + i] = random.uniform(-0.8, 0.8)
+                self.current_angle_target_values[i] = self.datatarget_values[self.joint_offset + i]
+                tval = self.current_angle_target_values[i] * math.pi
+                self.call_vrep(vrep.simxSetJointPosition, [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot], empty_result_ok=True)
+            self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
+
+        if self.world.randomize_ball == "True":
+            # max_dist = 0.8
+            # rx = random.uniform(-max_dist, max_dist)
+            # max_y = math.sqrt((max_dist ** 2) - (rx ** 2))
+            # ry = random.uniform(-max_y, max_y)
+            max_dist = 0.8
+            min_dist = 0.2
+            k = max_dist**2 - min_dist**2
+            a = np.random.rand() * 2 * np.pi
+            r = np.sqrt(np.random.rand() * k + min_dist**2)
+            rx = r*np.cos(a)
+            ry = r*np.sin(a)
+
+            self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, self.ball_handle, self.robot_handle, [rx, ry], vrep.simx_opmode_blocking])
+
+        self.fetch_sensor_and_feedback_values_from_simulation(None)
+        self.last_restart = self.world.current_step
+
+    def fetch_sensor_and_feedback_values_from_simulation(self, targets, include_feedback=False):
 
         if not self.world.connection_daemon.is_connected:
-            if self.block_runner_if_connection_lost and not initial:
+            if self.block_runner_if_connection_lost:
                 while not self.world.connection_daemon.is_connected:
                     time.sleep(0.5)
             else:

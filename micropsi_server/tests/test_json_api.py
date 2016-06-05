@@ -795,7 +795,18 @@ def test_get_nodespace_activations(app, test_nodenet, node):
         'last_call_step': -1
     })
     assert_success(response)
-    assert node in response.json_body['data']['activations']
+    assert node not in response.json_body['data']['activations']
+    response = app.post_json('/rpc/set_node_activation', params={
+        'nodenet_uid': test_nodenet,
+        'node_uid': node,
+        'activation': -1
+    })
+    response = app.post_json('/rpc/get_nodespace_activations', params={
+        'nodenet_uid': test_nodenet,
+        'nodespaces': [None],
+        'last_call_step': -1
+    })
+    assert response.json_body['data']['activations'][node][0] == -1
 
 
 def test_get_node(app, test_nodenet, node):

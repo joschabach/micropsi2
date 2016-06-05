@@ -13,7 +13,7 @@ import configparser
 import warnings
 
 configini = os.path.dirname(os.path.realpath(__file__)) + "/config.ini"
-defaultconfigini = os.path.dirname(os.path.realpath(__file__)) + "/default.config.ini"
+defaultconfigini = os.path.dirname(os.path.realpath(__file__)) + "/config.default.ini"
 
 if os.path.isfile(configini):
     filename = configini

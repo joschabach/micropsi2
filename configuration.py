@@ -12,10 +12,13 @@ import os
 import configparser
 import warnings
 
-if os.path.isfile('config.ini'):
-    filename = 'config.ini'
+configini = os.path.dirname(os.path.realpath(__file__)) + "/config.ini"
+defaultconfigini = os.path.dirname(os.path.realpath(__file__)) + "/default.config.ini"
+
+if os.path.isfile(configini):
+    filename = configini
 else:
-    filename = 'config.default.ini'
+    filename = defaultconfigini
 try:
     config = configparser.ConfigParser()
     with open(filename) as fp:

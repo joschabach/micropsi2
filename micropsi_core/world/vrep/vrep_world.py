@@ -219,6 +219,12 @@ class Robot(ArrayWorldAdapter):
 
         self.clientID = self.world.connection_daemon.clientID
 
+        self.datasource_names = []
+        self.datatarget_names = []
+        self.datasource_values = []
+        self.datatarget_values = []
+        self.datatarget_feedback_values = []
+
         self.joints = []
         self.vision_resolution = []
         self.collision_handle = -1

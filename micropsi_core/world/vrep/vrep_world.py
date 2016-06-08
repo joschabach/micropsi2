@@ -257,12 +257,7 @@ class Robot(ArrayWorldAdapter):
             if self.observer_handle < 1:
                 self.logger.warn("Could not get handle for Observer vision sensor, vision will not be available.")
             else:
-                resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_streaming]) # _split+4000)
-                self.vision_resolution = resolution
-                if len(resolution) != 2:
-                    self.logger.error("Could not determine vision resolution.")
-                else:
-                    self.logger.info("Vision resolution is %s" % str(self.vision_resolution))
+                self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_streaming]) # _split+4000)
 
         self.available_datatargets = []
         self.available_datasources = []
@@ -303,16 +298,22 @@ class Robot(ArrayWorldAdapter):
         self.joint_force_offset = self.joint_angle_offset + len(self.joints)
 
         if self.world.vision_type == "grayscale":
-            self.image_offset = self.joint_force_offset + len(self.joints)
-            self.image_length = self.vision_resolution[0] * self.vision_resolution[1]
+            resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_streaming]) # _split+4000)
+            if len(resolution) != 2:
+                self.logger.error("Could not determine vision resolution.")
+            else:
+                self.logger.info("Vision resolution is %s" % str(resolution))
+                self.vision_resolution = resolution
+                self.image_offset = self.joint_force_offset + len(self.joints)
+                self.image_length = self.vision_resolution[0] * self.vision_resolution[1]
 
-            for y in range(self.vision_resolution[1]):
-                for x in range(self.vision_resolution[0]):
-                    self.available_datasources.append("px_%d_%d" % (x, y))
+                for y in range(self.vision_resolution[1]):
+                    for x in range(self.vision_resolution[0]):
+                        self.available_datasources.append("px_%d_%d" % (x, y))
 
-            self.image = plt.imshow(np.zeros(shape=(self.vision_resolution[0], self.vision_resolution[1])), cmap="bone")
-            self.image.norm.vmin = 0
-            self.image.norm.vmax = 1
+                self.image = plt.imshow(np.zeros(shape=(self.vision_resolution[0], self.vision_resolution[1])), cmap="bone")
+                self.image.norm.vmin = 0
+                self.image.norm.vmax = 1
 
         if self.nodenet:
             self.nodenet.worldadapter_instance = self

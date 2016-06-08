@@ -374,7 +374,7 @@ class Robot(ArrayWorldAdapter):
 
         rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (self.vision_resolution[0] * self.vision_resolution[1], 3)).astype(np.float32)
         rgb_image /= 255.
-        luminance = np.add(rgb_image * np.asarray([.2126, .7152, .0722]), axis=1)
+        luminance = np.sum(rgb_image * np.asarray([.2126, .7152, .0722]), axis=1)
         y_image = luminance.astype(np.float32).reshape((self.vision_resolution[0], self.vision_resolution[1]))[::-1,:]   # todo: npyify and make faster
         self.datasource_values[self.image_offset:len(self.datasource_values)-1] = y_image.flatten()
 

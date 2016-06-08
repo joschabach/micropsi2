@@ -138,9 +138,55 @@ class ArrayWorldAdapter(WorldAdapter, metaclass=ABCMeta):
     """
     def __init__(self, world, uid=None, **data):
         WorldAdapter.__init__(self, world, uid=uid, **data)
-        self.datasource_values = [0] * len(self.get_available_datasources())
-        self.datatarget_values = [0] * len(self.get_available_datatargets())
-        self.datatarget_feedback_values = [0] * len(self.get_available_datatargets())
+
+        self.datasource_names = []
+        self.datatarget_names = []
+        self.datasource_values = []
+        self.datatarget_values = []
+        self.datatarget_feedback_values = []
+
+    def add_datasource(self, name, initial_value=0):
+        """ Adds a datasource, and returns the index
+        where they were added"""
+        self.datasource_names.append(name)
+        self.datasource_values.append(0)
+        return len(self.datasource_names) - 1
+
+    def add_datatarget(self, name, initial_value=0):
+        """ Adds a datatarget, and returns the index
+        where they were added"""
+        self.datatarget_names.append(name)
+        self.datatarget_values.append(0)
+        return len(self.datatarget_names) - 1
+
+    def add_datasources(self, names, initial_values=False):
+        """ Adds a list of datasources, and returns the indexes
+        where they were added"""
+        offset = len(self.datasource_names)
+        self.datasource_names.extend(names)
+        self.datasource_values.extend([0] * len(names))
+        return range(offset, offset + len(names))
+
+    def add_datatargets(self, names, initial_values=False):
+        """ Adds a list of datatargets, and returns the indexes
+        where they were added"""
+        offset = len(self.datatarget_names)
+        self.datatarget_names.extend(names)
+        self.datatarget_values.extend([0] * len(names))
+        self.datatarget_feedback_values.extend([0] * len(names))
+        return range(offset, offset + len(names))
+
+    def get_available_datasources(self):
+        return self.datasource_names
+
+    def get_available_datatargets(self):
+        return self.datatarget_names
+
+    def get_datasource_index(self, name):
+        return self.datasource_names.index(name)
+
+    def get_datatarget_index(self, name):
+        return self.datatarget_names.index(name)
 
     def get_datasource_value(self, key):
         """allows the agent to read a value from a datasource"""
@@ -156,43 +202,48 @@ class ArrayWorldAdapter(WorldAdapter, metaclass=ABCMeta):
         index = self.get_available_datasources().index(key)
         self.datatarget_values[index] += value
 
+    def set_datatarget_values(self, values):
+        """allows the agent to write a list of value to the datatargets"""
+        self.datatarget_values = values
+
     def get_datatarget_feedback_value(self, key):
         """get feedback whether the actor-induced action succeeded"""
         index = self.get_available_datatargets().index(key)
         return self.datatarget_feedback_values[index]
-
-    def get_datatarget_feedback_values(self):
-        """allows the agent to read all datasource values"""
-        return self.datatarget_feedback_values
 
     def set_datatarget_feedback(self, key, value):
         """set feedback for the given datatarget"""
         index = self.get_available_datatargets().index(key)
         self.datatarget_feedback_values[index] = value
 
-    def set_datatarget_values(self, values):
-        """allows the agent to write a list of value to the datatargets"""
-        self.datatarget_values = values
+    def get_datatarget_feedback_values(self):
+        """allows the agent to read all datasource values"""
+        return self.datatarget_feedback_values
 
     def reset_datatargets(self):
         """ resets (zeros) the datatargets """
         pass
 
-    @abstractmethod
-    def get_available_datasources(self):
-        """
-        must be implemented by the concrete world adapater and return a list of datasource name strings,
-        in the same order as values returned by get_datasource_values()
-        """
-        pass
+    def _set_datasource_value(self, key, value):
+        self.datasource_values[self.get_datasource_index(key)] = value
 
-    @abstractmethod
-    def get_available_datatargets(self):
-        """
-        must be implemented by the concrete world adapater and return a list of datatarget name strings,
-        in the same order as values returned by get_datatarget_feedback_values()
-        """
-        pass
+    def _get_datatarget_value(self, key):
+        return self.datatarget_values[self.get_datatarget_index(key)]
+
+    def _set_datatarget_feedback_value(self, key, value):
+        self.datatarget_feedback_values[self.get_datatarget_index(key)] = value
+
+    def _set_datasource_values(self, start_key, values):
+        idx = self.get_datasource_index(start_key)
+        self.datasource_values[idx:idx + len(values)] = values
+
+    def _get_datatarget_values(self, start_key, length):
+        idx = self.get_datatarget_index(start_key)
+        return self.datatarget_values[idx:idx + length]
+
+    def _set_datatarget_values(self, start_key, values):
+        idx = self.get_datatarget_index(start_key)
+        self.datatarget_feedback_values[idx:idx + len(values)] = values
 
     @abstractmethod
     def update_data_sources_and_targets(self):

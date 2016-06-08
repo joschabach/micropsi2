@@ -450,9 +450,9 @@ class Robot(ArrayWorldAdapter):
 
                 count += 1
                 if count == 10:
-                    self.logger.info("Robot did not complete movement in time, giving up.");
-                    self.logger.info("Joint   targets: %s" % str(targets));
-                    self.logger.info("Joint positions: %s" % str(joint_positions));
+                    self.logger.info("Robot did not complete movement in time, giving up.")
+                    self.logger.info("Joint   targets: %s" % str(targets))
+                    self.logger.info("Joint positions: %s" % str(joint_positions))
                     movement_finished = True
                 time.sleep(0.1)
                 joint_ids, something, data, se = self.call_vrep(vrep.simxGetObjectGroupData, [self.clientID,

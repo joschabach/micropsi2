@@ -227,6 +227,7 @@ class Robot(ArrayWorldAdapter):
         self.collision_handle = -1
         self.robot_handle = -1
         self.ball_handle = -1
+        self.sphere_handle = -1
         self.robot_position = []
 
         self.robot_handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, self.world.robot_name, vrep.simx_opmode_blocking])
@@ -251,6 +252,9 @@ class Robot(ArrayWorldAdapter):
             self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.ball_handle, -1, vrep.simx_opmode_streaming], empty_result_ok=True)
             self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.joints[len(self.joints) - 1], -1, vrep.simx_opmode_streaming], empty_result_ok=True)
             self.robot_position = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.robot_handle, -1, vrep.simx_opmode_blocking])
+
+        self.sphere_handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, "Sphere", vrep.simx_opmode_blocking])
+        print('sphere handle:', str(self.sphere_handle))
 
         if self.world.vision_type == "grayscale":
             self.observer_handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, "Observer", vrep.simx_opmode_blocking])
@@ -282,6 +286,10 @@ class Robot(ArrayWorldAdapter):
         for i in range(len(self.joints)):
             self.available_datasources.append("joint_force_%s" % str(i + 1))
 
+        self.available_datatargets.append("sphere_x")
+        self.available_datatargets.append("sphere_y")
+
+
         self.last_restart = 0
 
         self.current_angle_target_values = np.zeros_like(self.joints)
@@ -289,13 +297,17 @@ class Robot(ArrayWorldAdapter):
         self.restart_offset = 0
         self.execute_offset = 1
         self.joint_offset = 2
+        self.sphere_offset = self.joint_offset + len(self.joints)
+
 
         self.distance_offset = 0
         self.collision_offset = 1
         self.ball_position_offset = 2
-        self.tip_position_offset = self.ball_position_offset + 2  # because ball_x, ball_y
+        self.tip_position_offset =  self.ball_position_offset + 2  # because ball_x, ball_y
         self.joint_angle_offset = self.tip_position_offset + 3  # because tipx tipy tipz
         self.joint_force_offset = self.joint_angle_offset + len(self.joints)
+
+
 
         if self.world.vision_type == "grayscale":
             resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_streaming]) # _split+4000)
@@ -307,9 +319,9 @@ class Robot(ArrayWorldAdapter):
                 self.image_offset = self.joint_force_offset + len(self.joints)
                 self.image_length = self.vision_resolution[0] * self.vision_resolution[1]
 
-                for y in range(self.vision_resolution[1]):
-                    for x in range(self.vision_resolution[0]):
-                        self.available_datasources.append("px_%d_%d" % (x, y))
+            for y in range(self.vision_resolution[1]):
+                for x in range(self.vision_resolution[0]):
+                    self.available_datasources.append("px_%03d_%03d" % (x, y))
 
                 self.image = plt.imshow(np.zeros(shape=(self.vision_resolution[0], self.vision_resolution[1])), cmap="bone")
                 self.image.norm.vmin = 0
@@ -361,6 +373,10 @@ class Robot(ArrayWorldAdapter):
                 elif self.world.control_type == "movements":
                     tval += (old_datasource_values[self.joint_angle_offset + i]) * math.pi
                     self.call_vrep(vrep.simxSetJointPosition, [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot], empty_result_ok=True)
+            # position the transparent sphere:
+            rx,ry = self.datatarget_values[self.sphere_offset:self.sphere_offset+2]
+            self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, self.sphere_handle, self.robot_handle, [-rx, -ry], vrep.simx_opmode_oneshot], empty_result_ok=True)
+
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 
         # read joint angle and force values
@@ -385,9 +401,9 @@ class Robot(ArrayWorldAdapter):
 
     def reset_simulation_state(self):
         self.call_vrep(vrep.simxStopSimulation, [self.clientID, vrep.simx_opmode_oneshot], empty_result_ok=True)
-        time.sleep(0.5)
+        time.sleep(0.3)
         self.call_vrep(vrep.simxStartSimulation, [self.clientID, vrep.simx_opmode_oneshot])
-        time.sleep(0.5)
+        time.sleep(0.2)
 
         if self.world.randomize_arm == "True":
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, True], empty_result_ok=True)
@@ -396,6 +412,9 @@ class Robot(ArrayWorldAdapter):
                 self.current_angle_target_values[i] = self.datatarget_values[self.joint_offset + i]
                 tval = self.current_angle_target_values[i] * math.pi
                 self.call_vrep(vrep.simxSetJointPosition, [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot], empty_result_ok=True)
+            # hack: noeppel down
+            self.call_vrep(vrep.simxSetJointPosition, [self.clientID, self.joints[-2], math.pi/2, vrep.simx_opmode_oneshot], empty_result_ok=True)
+            # /hack
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 
         if self.world.randomize_ball == "True":

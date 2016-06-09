@@ -299,7 +299,6 @@ class NetAPI(object):
             return all_actors
 
         datatargets = self.worldadapter.get_available_datatargets()
-        datatargets = sorted(datatargets)
 
         for datatarget in datatargets:
             if datatarget_prefix is None or datatarget.startswith(datatarget_prefix):
@@ -323,7 +322,6 @@ class NetAPI(object):
             return all_sensors
 
         datasources = self.worldadapter.get_available_datasources()
-        datasources = sorted(datasources)
 
         for datasource in datasources:
             if datasource_prefix is None or datasource.startswith(datasource_prefix):

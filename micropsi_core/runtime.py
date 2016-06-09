@@ -114,6 +114,7 @@ def add_signal_handler(handler):
 
 def signal_handler(signal, frame):
     logging.getLogger('system').info("Shutting down")
+    kill_runners()
     for handler in signal_handler_registry:
         handler(signal, frame)
     sys.exit(0)
@@ -226,9 +227,9 @@ MicropsiRunner.last_nodenet_exception = {}
 
 
 def kill_runners(signal=None, frame=None):
-    for uid in worlds:
-        if hasattr(worlds[uid], 'kill_minecraft_thread'):
-            worlds[uid].kill_minecraft_thread()
+    for uid in nodenets:
+        if nodenets[uid].is_active:
+            nodenets[uid].is_active = False
     runner['runner'].resume()
     runner['running'] = False
     runner['runner'].join()
@@ -1699,9 +1700,6 @@ def initialize(persistency_path=None, resource_path=None):
     runner['running'] = True
     if runner.get('runner') is None:
         runner['runner'] = MicropsiRunner()
-
-    if kill_runners not in signal_handler_registry:
-        add_signal_handler(kill_runners)
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)

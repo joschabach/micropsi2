@@ -33,7 +33,7 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
     """
 
     @classmethod
-    def get_parameters(cls):
+    def get_config_options(cls):
         return []
 
     def __init__(self, world, uid=None, config={}, **data):

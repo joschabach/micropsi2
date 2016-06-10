@@ -146,7 +146,7 @@ class WorldAdapterMixin(object):
     functionality reusable in several worldadapters """
 
     @staticmethod
-    def get_parameters():
+    def get_config_options():
         """ returns an array of parameters that are needed
         to configure this mixin """
         return []
@@ -171,7 +171,7 @@ class WorldAdapterMixin(object):
 class VrepCollisions(WorldAdapterMixin):
 
     @staticmethod
-    def get_parameters():
+    def get_config_options():
         return [{'name': 'collision_name',
              'default': 'Collision',
              'description': 'The name of the robot\'s collision handle'}]
@@ -231,7 +231,7 @@ class VrepVision(WorldAdapterMixin):
 class VrepOneBallGame(WorldAdapterMixin):
 
     @staticmethod
-    def get_parameters():
+    def get_config_options():
         return [{'name': 'randomize_ball',
              'description': 'Initialize the ball position randomly',
              'default': 'False',
@@ -289,7 +289,7 @@ class Robot(ArrayWorldAdapter, WorldAdapterMixin):
     block_runner_if_connection_lost = True
 
     @staticmethod
-    def get_parameters():
+    def get_config_options():
         return [
             {'name': 'robot_name',
              'description': 'The name of the robot object in V-REP',
@@ -517,11 +517,11 @@ class OneBallRobot(VrepVision, VrepCollisions, VrepOneBallGame, Robot):
     """ A Worldadapter to play the one-ball-reaching-task """
 
     @classmethod
-    def get_parameters(cls):
+    def get_config_options(cls):
         """ I've found no way around this yet """
         parameters = []
-        parameters.extend(Robot.get_parameters())
-        parameters.extend(VrepCollisions.get_parameters())
-        parameters.extend(VrepVision.get_parameters())
-        parameters.extend(VrepOneBallGame.get_parameters())
+        parameters.extend(Robot.get_config_options())
+        parameters.extend(VrepCollisions.get_config_options())
+        parameters.extend(VrepVision.get_config_options())
+        parameters.extend(VrepOneBallGame.get_config_options())
         return parameters

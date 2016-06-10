@@ -336,7 +336,7 @@ def load_nodenet(nodenet_uid):
                         logging.getLogger("system").warning("World %s for nodenet %s not found" % (data.world, data.uid))
 
                 if world_uid:
-                    result, worldadapter_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet_uid, nodenet_name=data['name'])
+                    result, worldadapter_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet_uid, nodenet_name=data['name'], config=data.get('worldadapter_config', {}))
                     if not result:
                         logging.getLogger('system').warning(worldadapter_instance)
                         worldadapter_instance = None
@@ -483,7 +483,7 @@ def unload_nodenet(nodenet_uid):
     return True
 
 
-def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=None, owner="", world_uid=None, uid=None, use_modulators=True):
+def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=None, owner="", world_uid=None, uid=None, use_modulators=True, worldadapter_config={}):
     """Creates a new node net manager and registers it.
 
     Arguments:
@@ -510,7 +510,8 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
         world=world_uid,
         settings={},
         engine=engine,
-        use_modulators=use_modulators)
+        use_modulators=use_modulators,
+        worldadapter_config=worldadapter_config)
 
     filename = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
     nodenet_data[data['uid']] = Bunch(**data)
@@ -1455,6 +1456,7 @@ def parse_definition(json, filename=None):
         if "worldadapter" in json:
             result['worldadapter'] = json["worldadapter"]
             result['world'] = json["world"]
+            result['worldadapter_config'] = json.get('worldadapter_config', {})
         if "world_type" in json:
             result['world_type'] = json['world_type']
         if "settings" in json:

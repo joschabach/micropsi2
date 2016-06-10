@@ -587,12 +587,13 @@ def export_recorders(nodenet_uid):
 @micropsi_app.route("/nodenet/edit")
 def edit_nodenet():
     user_id, permissions, token = get_request_data()
-    # nodenet_id = request.params.get('id', None)
-    title = 'Edit Nodenet' if id is not None else 'New Nodenet'
+    nodenet_uid = request.params.get('id')
+    title = 'Edit Nodenet' if nodenet_uid is not None else 'New Nodenet'
 
     return template("nodenet_form.tpl", title=title,
         # nodenet_uid=nodenet_uid,
         nodenets=runtime.get_available_nodenets(),
+        worldtypes=runtime.get_available_world_types(),
         templates=runtime.get_available_nodenets(),
         worlds=runtime.get_available_worlds(),
         version=VERSION, user_id=user_id, permissions=permissions)
@@ -602,8 +603,22 @@ def edit_nodenet():
 def write_nodenet():
     user_id, permissions, token = get_request_data()
     params = dict((key, request.forms.getunicode(key)) for key in request.forms)
+    worldadapter_name = params['nn_worldadapter']
+    wa_params = {}
+    for key in params:
+        if key.startswith('worldadapter_%s_' % worldadapter_name):
+            strip = len("worldadapter_%s_" % worldadapter_name)
+            wa_params[key[strip:]] = params[key]
     if "manage nodenets" in permissions:
-        result, nodenet_uid = runtime.new_nodenet(params['nn_name'], engine=params['nn_engine'], worldadapter=params['nn_worldadapter'], template=params.get('nn_template'), owner=user_id, world_uid=params.get('nn_world'), use_modulators=params.get('nn_modulators', False))
+        result, nodenet_uid = runtime.new_nodenet(
+            params['nn_name'],
+            engine=params['nn_engine'],
+            worldadapter=params['nn_worldadapter'],
+            template=params.get('nn_template'),
+            owner=user_id,
+            world_uid=params.get('nn_world'),
+            use_modulators=params.get('nn_modulators', False),
+            worldadapter_config=wa_params)
         if result:
             return dict(status="success", msg="Nodenet created", nodenet_uid=nodenet_uid)
         else:

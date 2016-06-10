@@ -27,8 +27,15 @@ $(function(){
         var val = el.val();
         $('#nn_worldadapter_hint').text(adapters[val]);
     }
+    var updateOptions = function(){
+        var val = $('#nn_worldadapter').val();
+        $('.worldadapter-config').hide();
+        $('.worldadapter-'+val).show();
+    }
+    el.on('change', updateOptions)
     el.on('change', updateDescription);
     updateDescription();
+    updateOptions();
 });
 </script>
 %end

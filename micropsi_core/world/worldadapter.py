@@ -32,16 +32,23 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
     takes care of translating between the world and these values at each world cycle.
     """
 
-    def __init__(self, world, uid=None, **data):
+    @classmethod
+    def get_parameters(cls):
+        return []
+
+    def __init__(self, world, uid=None, config={}, **data):
         self.datasources = {}
         self.datatargets = {}
         self.datatarget_feedback = {}
         self.datasource_lock = Lock()
+        self.config = config
         self.nodenet = None  # will be assigned by the nodenet once it's loaded
         WorldObject.__init__(self, world, category='agents', uid=uid, **data)
         self.logger = logging.getLogger('agent.%s' % self.uid)
         if data.get('name'):
             self.data['name'] = data['name']
+        for key in config:
+            setattr(self, key, config[key])
 
     def initialize_worldobject(self, data):
         for key in self.datasources:
@@ -114,8 +121,8 @@ class Default(WorldAdapter):
     """
     A default Worldadapter, that provides example-datasources and -targets
     """
-    def __init__(self, world, uid=None, **data):
-        super().__init__(world, uid=uid, **data)
+    def __init__(self, world, uid=None, config={}, **data):
+        super().__init__(world, uid=uid, config=config, **data)
         self.datasources = dict((s, 0) for s in ['static_on', 'random', 'static_off'])
         self.datatargets = {'echo': 0}
         self.datatarget_feedback = {'echo': 0}
@@ -136,8 +143,8 @@ class ArrayWorldAdapter(WorldAdapter, metaclass=ABCMeta):
     Engines that bulk-query values, such as the theano_engine, will be faster.
     Numpy arrays can be passed directly into the engine.
     """
-    def __init__(self, world, uid=None, **data):
-        WorldAdapter.__init__(self, world, uid=uid, **data)
+    def __init__(self, world, uid=None, config={}, **data):
+        WorldAdapter.__init__(self, world, uid=uid, config=config, **data)
 
         self.datasource_names = []
         self.datatarget_names = []

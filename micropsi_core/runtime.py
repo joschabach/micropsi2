@@ -329,6 +329,7 @@ def load_nodenet(nodenet_uid):
 
                 worldadapter_instance = None
                 if hasattr(data, 'world') and data.world:
+                    load_world(data.world)
                     if data.world in worlds:
                         world_uid = data.world
                         worldadapter = data.get('worldadapter')
@@ -381,6 +382,25 @@ def load_nodenet(nodenet_uid):
 
         return True, nodenet_uid
     return False, "Nodenet %s not found in %s" % (nodenet_uid, PERSISTENCY_PATH)
+
+
+def load_world(world_uid):
+    global worlds
+    if world_uid not in worlds:
+        if world_uid in world_data:
+            if "world_type" in world_data[world_uid]:
+                try:
+                    worlds[world_uid] = get_world_class_from_name(world_data[world_uid].world_type)(**world_data[world_uid])
+                except TypeError:
+                    worlds[world_uid] = world.World(**world_data[world_uid])
+                # except AttributeError as err:
+                #     logging.getLogger('system').warning("Unknown world_type: %s (%s)" % (world_data[world_uid].world_type, str(err)))
+                # except:
+                #     logging.getLogger('system').warning("Can not instantiate World \"%s\": %s" % (world_data[world_uid].name, str(sys.exc_info()[1])))
+            else:
+                worlds[world_uid] = world.World(**world_data[world_uid])
+    return worlds.get(world_uid)
+
 
 
 def get_nodenet_metadata(nodenet_uid):
@@ -1483,24 +1503,6 @@ def load_definitions():
     return nodenet_data, world_data
 
 
-# set up all worlds referred to in the world_data:
-def init_worlds(world_data):
-    global worlds
-    for uid in world_data:
-        if "world_type" in world_data[uid]:
-            try:
-                worlds[uid] = get_world_class_from_name(world_data[uid].world_type)(**world_data[uid])
-            except TypeError:
-                worlds[uid] = world.World(**world_data[uid])
-            except AttributeError as err:
-                logging.getLogger('system').warning("Unknown world_type: %s (%s)" % (world_data[uid].world_type, str(err)))
-            except:
-                logging.getLogger('system').warning("Can not instantiate World \"%s\": %s" % (world_data[uid].name, str(sys.exc_info()[1])))
-        else:
-            worlds[uid] = world.World(**world_data[uid])
-    return worlds
-
-
 def load_user_files(path, reload_nodefunctions=False, errors=[]):
     global native_modules, custom_recipes
     for f in os.listdir(path):
@@ -1683,7 +1685,6 @@ def initialize(persistency_path=None, resource_path=None):
         }, cfg['logging'].get('logfile'))
 
     load_definitions()
-    init_worlds(world_data)
     result, errors = reload_native_modules()
     for e in errors:
         logging.getLogger("system").error(e)

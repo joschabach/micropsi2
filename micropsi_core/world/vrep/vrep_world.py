@@ -94,6 +94,8 @@ class VREPWorld(World):
 
         self.connection_daemon = VREPConnection(config['vrep_host'], int(config['vrep_port']), connection_listeners=[self])
 
+        time.sleep(1)  # wait for the daemon to get started before continuing.
+
         from micropsi_core.runtime import add_signal_handler
         add_signal_handler(self.kill_vrep_connection)
 

@@ -23,10 +23,10 @@ def get_available_worlds(owner=None):
         owner (optional): when submitted, the list is filtered by this owner
     """
     if owner:
-        return dict((uid, micropsi_core.runtime.worlds[uid]) for uid in micropsi_core.runtime.worlds if
-                    micropsi_core.runtime.worlds[uid].owner == owner)
+        return dict((uid, micropsi_core.runtime.world_data[uid]) for uid in micropsi_core.runtime.world_data if
+                    micropsi_core.runtime.world_data[uid].owner == owner)
     else:
-        return micropsi_core.runtime.worlds
+        return micropsi_core.runtime.world_data
 
 
 def get_world_properties(world_uid):
@@ -227,4 +227,4 @@ def get_available_world_types():
     """Returns a mapping of the available world type names to their classes"""
     import importlib
     from micropsi_core.world.world import World
-    return dict((cls.__name__, cls) for cls in tools.itersubclasses(vars()['World']))
+    return dict((cls.__name__, cls) for cls in tools.itersubclasses(World))

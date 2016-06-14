@@ -224,6 +224,8 @@ class VrepOneBallGame(WorldAdapterMixin):
         self.add_datasource("ball-distance")
         self.add_datasource("ball-x")
         self.add_datasource("ball-y")
+        self.add_datatarget("sphere_x")
+        self.add_datatarget("sphere_y")
 
     def update_data_sources_and_targets(self):
         super().update_data_sources_and_targets()
@@ -239,6 +241,10 @@ class VrepOneBallGame(WorldAdapterMixin):
             self._set_datasource_value('ball-distance', dist)
             self._set_datasource_value('ball-x', relative_pos[0])
             self._set_datasource_value('ball-y', relative_pos[1])
+            # position the transparent sphere:
+            rx = self._get_datatarget_value('sphere_x')
+            ry = self._get_datatarget_value('sphere_y')
+            self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, self.sphere_handle, self.robot_handle, [-rx, -ry], vrep.simx_opmode_oneshot], empty_result_ok=True)
 
     def reset_simulation_state(self):
         super().reset_simulation_state()
@@ -362,10 +368,6 @@ class Robot(ArrayWorldAdapter, WorldAdapterMixin):
         for i in range(len(self.joints)):
             self.add_datasource("joint_force_%s" % str(i + 1))
 
-        self.add_datatarget("sphere_x")
-        self.add_datatarget("sphere_y")
-
-
         self.last_restart = 0
 
         self.current_angle_target_values = np.zeros_like(self.joints)
@@ -409,10 +411,6 @@ class Robot(ArrayWorldAdapter, WorldAdapterMixin):
                 elif self.control_type == "movements":
                     tval += (old_datasource_values[joint_angle_offset + i]) * math.pi
                     self.call_vrep(vrep.simxSetJointPosition, [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot], empty_result_ok=True)
-            # position the transparent sphere:
-            rx = self._get_datatarget_value('sphere_x')
-            ry = self._get_datatarget_value('sphere_y')
-            self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, self.sphere_handle, self.robot_handle, [-rx, -ry], vrep.simx_opmode_oneshot], empty_result_ok=True)
 
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 

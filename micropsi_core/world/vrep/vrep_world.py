@@ -294,6 +294,7 @@ class Robot(ArrayWorldAdapter):
         self.current_angle_target_values = np.zeros_like(self.joints)
 
         if self.world.vision_type == "grayscale":
+            self.vision_resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_buffer])
             for y in range(self.vision_resolution[1]):
                 for x in range(self.vision_resolution[0]):
                     self.add_datasource("px_%d_%d" % (x, y))

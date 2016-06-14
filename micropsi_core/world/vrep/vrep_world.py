@@ -182,7 +182,7 @@ class VrepVision(WorldAdapterMixin):
                 self.logger.info("Vision resolution is %s" % str(self.vision_resolution))
         for y in range(self.vision_resolution[1]):
             for x in range(self.vision_resolution[0]):
-                self.add_datasource("px_%d_%d" % (x, y))
+                self.add_datasource("px_%03d_%03d" % (x, y))
 
         self.image = plt.imshow(np.zeros(shape=(self.vision_resolution[0], self.vision_resolution[1])), cmap="bone")
         self.image.norm.vmin = 0
@@ -197,7 +197,7 @@ class VrepVision(WorldAdapterMixin):
         luminance = np.sum(rgb_image * np.asarray([.2126, .7152, .0722]), axis=1)
         y_image = luminance.astype(np.float32).reshape((self.vision_resolution[0], self.vision_resolution[1]))[::-1,:]   # todo: npyify and make faster
 
-        self._set_datasource_values('px_0_0', y_image.flatten())
+        self._set_datasource_values('px_000_000', y_image.flatten())
 
         self.image.set_data(y_image)
 
@@ -332,9 +332,9 @@ class Robot(ArrayWorldAdapter, WorldAdapterMixin):
 
         self.datasource_names = []
         self.datatarget_names = []
-        self.datasource_values = []
-        self.datatarget_values = []
-        self.datatarget_feedback_values = []
+        self.datasource_values = np.zeros(0)
+        self.datatarget_values = np.zeros(0)
+        self.datatarget_feedback_values = np.zeros(0)
 
         super().initialize()
 

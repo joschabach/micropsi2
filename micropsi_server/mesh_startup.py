@@ -1,4 +1,7 @@
 
+def no_exit(code):
+    pass
+
 def mesh_startup():
 
     import sys
@@ -9,6 +12,8 @@ def mesh_startup():
         for root,dirs,files in walk(p):
             if p is not root:
                 sys.path.append(root)
+
+    sys.exit = no_exit
 
     import micropsi_server.micropsi_app
 

@@ -25,6 +25,34 @@ from micropsi_core.world.worldobject import WorldObject
 from abc import ABCMeta, abstractmethod
 
 
+class WorldAdapterMixin(object):
+
+    """ Superclass for modular world-adapter extensions that provide
+    functionality reusable in several worldadapters. See examples in vrep_world.py"""
+
+    @staticmethod
+    def get_config_options():
+        """ returns an array of parameters that are needed
+        to configure this mixin """
+        return []
+
+    def __init__(self, world, uid=None, config={}, **kwargs):
+        super().__init__(world, uid=uid, config=config, **kwargs)
+        for key in config:
+            setattr(self, key, config[key])
+
+    def initialize(self):
+        """ Called after a reset of the simulation """
+        pass
+
+    def reset_simulation_state(self):
+        """ Called on reset """
+        pass
+
+    def update_datasources_and_targets(self):
+        pass
+
+
 class WorldAdapter(WorldObject, metaclass=ABCMeta):
     """Transmits data between agent and environment.
 

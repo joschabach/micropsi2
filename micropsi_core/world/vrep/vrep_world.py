@@ -221,9 +221,9 @@ class Robot(ArrayWorldAdapter):
 
         self.datasource_names = []
         self.datatarget_names = []
-        self.datasource_values = []
-        self.datatarget_values = []
-        self.datatarget_feedback_values = []
+        self.datasource_values = np.zeros(0)
+        self.datatarget_values = np.zeros(0)
+        self.datatarget_feedback_values = np.zeros(0)
 
         self.joints = []
         self.vision_resolution = []

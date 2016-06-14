@@ -297,7 +297,7 @@ class Robot(ArrayWorldAdapter):
             self.vision_resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_buffer])
             for y in range(self.vision_resolution[1]):
                 for x in range(self.vision_resolution[0]):
-                    self.add_datasource("px_%d_%d" % (x, y))
+                    self.add_datasource("px_%03d_%03d" % (x, y))
 
             self.image = plt.imshow(np.zeros(shape=(self.vision_resolution[0], self.vision_resolution[1])), cmap="bone")
             self.image.norm.vmin = 0
@@ -363,7 +363,7 @@ class Robot(ArrayWorldAdapter):
         rgb_image /= 255.
         luminance = np.sum(rgb_image * np.asarray([.2126, .7152, .0722]), axis=1)
         y_image = luminance.astype(np.float32).reshape((self.vision_resolution[0], self.vision_resolution[1]))[::-1,:]   # todo: npyify and make faster
-        self._set_datasource_values('px_0_0', y_image.flatten())
+        self._set_datasource_values('px_000_000', y_image.flatten())
 
         self.image.set_data(y_image)
 

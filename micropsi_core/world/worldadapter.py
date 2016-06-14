@@ -227,6 +227,9 @@ class ArrayWorldAdapter(WorldAdapter, metaclass=ABCMeta):
     def _set_datasource_value(self, key, value):
         self.datasource_values[self.get_datasource_index(key)] = value
 
+    def _set_datatarget_value(self, key, value):
+        self.datatarget_values[self.get_datatarget_index(key)] = value
+
     def _get_datatarget_value(self, key):
         return self.datatarget_values[self.get_datatarget_index(key)]
 

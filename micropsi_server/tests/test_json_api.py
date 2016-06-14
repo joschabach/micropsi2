@@ -819,15 +819,17 @@ def test_add_node(app, test_nodenet):
     app.set_auth()
     response = app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
-        'type': 'Register',
+        'type': 'Pipe',
         'position': [23, 42, 13],
         'nodespace': None,
-        'name': 'N2'
+        'name': 'N2',
+        'parameters': {'wait': "3"}
     })
     assert_success(response)
     uid = response.json_body['data']
     response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="%s")' % (test_nodenet, uid))
     assert response.json_body['data']['name'] == 'N2'
+    assert int(response.json_body['data']['parameters']['wait']) == 3
 
 
 def test_add_nodespace(app, test_nodenet):

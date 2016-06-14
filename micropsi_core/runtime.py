@@ -1633,7 +1633,7 @@ def reload_native_modules():
     # load builtins:
     from micropsi_core.nodenet.native_modules import nodetypes
     native_modules.update(nodetypes)
-    operationspath = os.path.abspath('micropsi_core/nodenet/operations/')
+    operationspath = os.path.dirname(os.path.realpath(__file__)) + '/nodenet/operations/'
     for file in os.listdir(operationspath):
         import micropsi_core.nodenet.operations
         if file != '__init__.py' and not file.startswith('.') and os.path.isfile(os.path.join(operationspath, file)):

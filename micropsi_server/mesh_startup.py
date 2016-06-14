@@ -17,4 +17,4 @@ def mesh_startup():
 
     import micropsi_server.micropsi_app
 
-    micropsi_server.micropsi_app.main("localhost", 6543)
+    micropsi_server.micropsi_app.main("localhost", 7543)

@@ -264,7 +264,7 @@ class VrepOneBallGame(WorldAdapterMixin):
             self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, self.ball_handle, self.robot_handle, [rx, ry], vrep.simx_opmode_blocking])
 
 
-class Robot(ArrayWorldAdapter, WorldAdapterMixin):
+class Robot(ArrayWorldAdapter):
     """ The basic worldadapter to control a robot in vrep.
     Combine this with the Vrep Mixins for a useful robot simulation"""
 
@@ -328,6 +328,7 @@ class Robot(ArrayWorldAdapter, WorldAdapterMixin):
         self.initialize()
 
     def initialize(self):
+
         self.clientID = self.world.connection_daemon.clientID
 
         self.datasource_names = []
@@ -499,7 +500,7 @@ class Robot(ArrayWorldAdapter, WorldAdapterMixin):
                                                                                   vrep.simx_opmode_blocking])
 
 
-class OneBallRobot(VrepVision, VrepCollisions, VrepOneBallGame, Robot):
+class OneBallRobot(Robot, VrepVision, VrepCollisions, VrepOneBallGame):
     """ A Worldadapter to play the one-ball-reaching-task """
 
     @classmethod

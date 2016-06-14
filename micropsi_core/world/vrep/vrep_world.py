@@ -285,8 +285,8 @@ class Robot(ArrayWorldAdapter):
         for i in range(len(self.joints)):
             self.add_datasource("joint_force_%s" % str(i + 1))
 
-        self.available_datatargets.append("sphere_x")
-        self.available_datatargets.append("sphere_y")
+        self.add_datatarget("sphere_x")
+        self.add_datatarget("sphere_y")
 
 
         self.last_restart = 0
@@ -342,7 +342,8 @@ class Robot(ArrayWorldAdapter):
                     tval += (old_datasource_values[joint_angle_offset + i]) * math.pi
                     self.call_vrep(vrep.simxSetJointPosition, [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot], empty_result_ok=True)
             # position the transparent sphere:
-            rx,ry = self.datatarget_values[self.sphere_offset:self.sphere_offset+2]
+            rx = self._get_datatarget_value('sphere_x')
+            ry = self._get_datatarget_value('sphere_y')
             self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, self.sphere_handle, self.robot_handle, [-rx, -ry], vrep.simx_opmode_oneshot], empty_result_ok=True)
 
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])

@@ -230,6 +230,7 @@ class Robot(ArrayWorldAdapter):
         self.collision_handle = -1
         self.robot_handle = -1
         self.ball_handle = -1
+        self.sphere_handle = -1
         self.robot_position = []
 
         self.robot_handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, self.world.robot_name, vrep.simx_opmode_blocking])
@@ -255,17 +256,15 @@ class Robot(ArrayWorldAdapter):
             self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.joints[len(self.joints) - 1], -1, vrep.simx_opmode_streaming], empty_result_ok=True)
             self.robot_position = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.robot_handle, -1, vrep.simx_opmode_blocking])
 
+        self.sphere_handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, "Sphere", vrep.simx_opmode_blocking])
+        print('sphere handle:', str(self.sphere_handle))
+
         if self.world.vision_type == "grayscale":
             self.observer_handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, "Observer", vrep.simx_opmode_blocking])
             if self.observer_handle < 1:
                 self.logger.warn("Could not get handle for Observer vision sensor, vision will not be available.")
             else:
-                resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_streaming]) # _split+4000)
-                self.vision_resolution = resolution
-                if len(resolution) != 2:
-                    self.logger.error("Could not determine vision resolution.")
-                else:
-                    self.logger.info("Vision resolution is %s" % str(self.vision_resolution))
+                self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_streaming]) # _split+4000)
 
         self.add_datasource("ball-distance")
         self.add_datasource("collision")
@@ -285,6 +284,10 @@ class Robot(ArrayWorldAdapter):
 
         for i in range(len(self.joints)):
             self.add_datasource("joint_force_%s" % str(i + 1))
+
+        self.available_datatargets.append("sphere_x")
+        self.available_datatargets.append("sphere_y")
+
 
         self.last_restart = 0
 
@@ -338,6 +341,10 @@ class Robot(ArrayWorldAdapter):
                 elif self.world.control_type == "movements":
                     tval += (old_datasource_values[joint_angle_offset + i]) * math.pi
                     self.call_vrep(vrep.simxSetJointPosition, [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot], empty_result_ok=True)
+            # position the transparent sphere:
+            rx,ry = self.datatarget_values[self.sphere_offset:self.sphere_offset+2]
+            self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, self.sphere_handle, self.robot_handle, [-rx, -ry], vrep.simx_opmode_oneshot], empty_result_ok=True)
+
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 
         # read joint angle and force values
@@ -352,7 +359,8 @@ class Robot(ArrayWorldAdapter):
 
         rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (self.vision_resolution[0] * self.vision_resolution[1], 3)).astype(np.float32)
         rgb_image /= 255.
-        y_image = np.asarray([.2126 * px[0] + .7152 * px[1] + .0722 * px[2] for px in rgb_image]).astype(np.float32).reshape((self.vision_resolution[0], self.vision_resolution[1]))[::-1,:]   # todo: npyify and make faster
+        luminance = np.sum(rgb_image * np.asarray([.2126, .7152, .0722]), axis=1)
+        y_image = luminance.astype(np.float32).reshape((self.vision_resolution[0], self.vision_resolution[1]))[::-1,:]   # todo: npyify and make faster
         self._set_datasource_values('px_0_0', y_image.flatten())
 
         self.image.set_data(y_image)
@@ -361,9 +369,9 @@ class Robot(ArrayWorldAdapter):
 
     def reset_simulation_state(self):
         self.call_vrep(vrep.simxStopSimulation, [self.clientID, vrep.simx_opmode_oneshot], empty_result_ok=True)
-        time.sleep(0.5)
+        time.sleep(0.3)
         self.call_vrep(vrep.simxStartSimulation, [self.clientID, vrep.simx_opmode_oneshot])
-        time.sleep(0.5)
+        time.sleep(0.2)
 
         if self.world.randomize_arm == "True":
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, True], empty_result_ok=True)
@@ -372,6 +380,9 @@ class Robot(ArrayWorldAdapter):
                 self.current_angle_target_values[i] = self._get_datatarget_value("joint_%d" % (i + 1))
                 tval = self.current_angle_target_values[i] * math.pi
                 self.call_vrep(vrep.simxSetJointPosition, [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot], empty_result_ok=True)
+            # hack: noeppel down
+            self.call_vrep(vrep.simxSetJointPosition, [self.clientID, self.joints[-2], math.pi/2, vrep.simx_opmode_oneshot], empty_result_ok=True)
+            # /hack
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 
         if self.world.randomize_ball == "True":

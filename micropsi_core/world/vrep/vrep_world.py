@@ -218,6 +218,8 @@ class VrepOneBallGame(WorldAdapterMixin):
             self.logger.warn("Could not get handle for Ball object, distance values will not be available.")
         else:
             self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.ball_handle, -1, vrep.simx_opmode_streaming], empty_result_ok=True)
+        self.sphere_handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, "Sphere", vrep.simx_opmode_blocking])
+        print('sphere handle:', str(self.sphere_handle))
 
         self.add_datasource("ball-distance")
         self.add_datasource("ball-x")
@@ -360,6 +362,10 @@ class Robot(ArrayWorldAdapter, WorldAdapterMixin):
         for i in range(len(self.joints)):
             self.add_datasource("joint_force_%s" % str(i + 1))
 
+        self.available_datatargets.append("sphere_x")
+        self.available_datatargets.append("sphere_y")
+
+
         self.last_restart = 0
 
         self.current_angle_target_values = np.zeros_like(self.joints)
@@ -403,6 +409,10 @@ class Robot(ArrayWorldAdapter, WorldAdapterMixin):
                 elif self.control_type == "movements":
                     tval += (old_datasource_values[joint_angle_offset + i]) * math.pi
                     self.call_vrep(vrep.simxSetJointPosition, [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot], empty_result_ok=True)
+            # position the transparent sphere:
+            rx,ry = self.datatarget_values[self.sphere_offset:self.sphere_offset+2]
+            self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, self.sphere_handle, self.robot_handle, [-rx, -ry], vrep.simx_opmode_oneshot], empty_result_ok=True)
+
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 
         # read joint angle and force values
@@ -410,7 +420,7 @@ class Robot(ArrayWorldAdapter, WorldAdapterMixin):
 
     def reset_simulation_state(self):
         self.call_vrep(vrep.simxStopSimulation, [self.clientID, vrep.simx_opmode_oneshot], empty_result_ok=True)
-        time.sleep(0.5)
+        time.sleep(0.3)
         self.call_vrep(vrep.simxStartSimulation, [self.clientID, vrep.simx_opmode_oneshot])
         time.sleep(0.5)
         super().reset_simulation_state()
@@ -421,6 +431,9 @@ class Robot(ArrayWorldAdapter, WorldAdapterMixin):
                 self.current_angle_target_values[i] = self._get_datatarget_value("joint_%d" % (i + 1))
                 tval = self.current_angle_target_values[i] * math.pi
                 self.call_vrep(vrep.simxSetJointPosition, [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot], empty_result_ok=True)
+            # hack: noeppel down
+            self.call_vrep(vrep.simxSetJointPosition, [self.clientID, self.joints[-2], math.pi/2, vrep.simx_opmode_oneshot], empty_result_ok=True)
+            # /hack
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 
         self.fetch_sensor_and_feedback_values_from_simulation(None)

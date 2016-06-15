@@ -211,13 +211,13 @@ function get_available_worldadapters(world_uid, callback){
                 }
                 $('#nodenet_worldadapter').html(str);
                 if(callback){
-                    callback();
+                    callback(data);
                 }
         });
     } else {
         $('#nodenet_worldadapter').html('<option>&lt;No world selected&gt;</option>');
         if(callback){
-            callback();
+            callback({});
         }
     }
 }
@@ -240,6 +240,7 @@ function setNodenetValues(data){
     if (!jQuery.isEmptyObject(worldadapters)) {
         var worldadapter_select = $('#nodenet_worldadapter');
         worldadapter_select.val(data.worldadapter);
+        worldadapter_select.trigger("change");
         if(worldadapter_select.val() != data.worldadapter){
             dialogs.notification("The worldadapter of this nodenet is not compatible to the world. Please choose a worldadapter from the list", 'Error');
         }
@@ -3948,10 +3949,37 @@ function initializeSidebarForms(){
         $('#native_parameters').append('<tr><td><input name="param_name" type="text" class="inplace"/></td><td><input name="param_value" type="text"  class="inplace" /></td></tr>');
     });
     var world_selector = $("#nodenet_world");
+    var worldadapter_selector = $("#nodenet_worldadapter");
+    var update_worldadapter_params = function(data){
+        var html = [];
+        var wa = worldadapters[worldadapter_selector.val()];
+        if(!wa) return ;
+        for(var i in wa.config_options){
+            var op = wa.config_options[i]
+            var param = '<tr><td><label for="nodenet_wa_'+op.name+'">'+op.name+'</td>';
+            if(op.options){
+                param += '<td><select id="nodenet_wa_'+op.name+'">';
+                param += '<option>' + op.options.join("</option><option>") + '<option>';
+                param += '</select></td>';
+            } else {
+                param += '<td><input type="text id="nodenet_wa_'+op.name+'"></td>';
+            }
+            html.push(param +'</tr>')
+        }
+        $('#nodenet_editor .worldadapter_config').html('<table>' + html.join('') + '</table>');
+        for(var i in wa.config_options){
+            var op = wa.config_options[i];
+            $('#nodenet_wa_' + op.name).val((wa.config && wa.config[op.name]) ? wa.config[op.name] : op.default);
+        }
+    };
     world_selector.on('change', function(){
-        get_available_worldadapters(world_selector.val(), function(){
-            $('#nodenet_worldadapter').val(nodenet_data.worldadapter);
+        get_available_worldadapters(world_selector.val(), function(data){
+            worldadapter_selector.val(nodenet_data.worldadapter);
+            update_worldadapter_params(data);
         });
+    });
+    worldadapter_selector.on('change', function(){
+        update_worldadapter_params();
     });
 }
 

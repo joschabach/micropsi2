@@ -56,9 +56,13 @@ def get_worldadapters(world_uid, nodenet_uid=None):
     if world_uid in micropsi_core.runtime.worlds:
         world = micropsi_core.runtime.worlds[world_uid]
         for name, worldadapter in world.supported_worldadapters.items():
-            data[name] = {'description': worldadapter.__doc__}
+            data[name] = {
+                'description': worldadapter.__doc__,
+                'config_options': worldadapter.get_config_options()
+            }
         if nodenet_uid and nodenet_uid in world.agents:
             agent = world.agents[nodenet_uid]
+            data[agent.__class__.__name__]['config'] = micropsi_core.runtime.nodenets[nodenet_uid].metadata['worldadapter_config']
             data[agent.__class__.__name__]['datasources'] = agent.get_available_datasources()
             data[agent.__class__.__name__]['datatargets'] = agent.get_available_datatargets()
     return data

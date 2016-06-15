@@ -152,18 +152,20 @@ class VrepCollisions(WorldAdapterMixin):
 
     def initialize(self):
         super().initialize()
-        self.collision_handle = self.call_vrep(vrep.simxGetCollisionHandle, [self.clientID, self.collision_name, vrep.simx_opmode_blocking])
-        if self.collision_handle < 1:
-            self.logger.warning("Collision handle %s not found, not tracking collisions" % self.collision_name)
-        else:
-            self.call_vrep(vrep.simxReadCollision, [self.clientID, self.collision_handle, vrep.simx_opmode_streaming], empty_result_ok=True)
-        self.add_datasource("collision")
+        if self.collision_name:
+            self.collision_handle = self.call_vrep(vrep.simxGetCollisionHandle, [self.clientID, self.collision_name, vrep.simx_opmode_blocking])
+            if self.collision_handle < 1:
+                self.logger.warning("Collision handle %s not found, not tracking collisions" % self.collision_name)
+            else:
+                self.call_vrep(vrep.simxReadCollision, [self.clientID, self.collision_handle, vrep.simx_opmode_streaming], empty_result_ok=True)
+            self.add_datasource("collision")
 
     def update_data_sources_and_targets(self):
         super().update_data_sources_and_targets()
-        collision_state = self.call_vrep(vrep.simxReadCollision, [self.clientID, self.collision_handle,
-                                                      vrep.simx_opmode_buffer])
-        self._set_datasource_value("collision", 1 if collision_state else 0)
+        if self.collision_name:
+            collision_state = self.call_vrep(vrep.simxReadCollision, [self.clientID, self.collision_handle,
+                                                          vrep.simx_opmode_buffer])
+            self._set_datasource_value("collision", 1 if collision_state else 0)
 
 
 class VrepVision(WorldAdapterMixin):

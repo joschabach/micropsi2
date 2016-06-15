@@ -24,7 +24,7 @@ def get_available_worlds(owner=None):
     """
     if owner:
         return dict((uid, micropsi_core.runtime.world_data[uid]) for uid in micropsi_core.runtime.world_data if
-                    micropsi_core.runtime.world_data[uid].owner == owner)
+                    micropsi_core.runtime.world_data[uid].get('owner') is None or micropsi_core.runtime.world_data[uid].get('owner') == owner)
     else:
         return micropsi_core.runtime.world_data
 

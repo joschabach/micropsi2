@@ -41,7 +41,7 @@
                     <div class="controls">
                         <select class="input-xlarge" id="world_type" name="world_type">
                             <option value="">None</option>
-                            % for type in worldtypes:
+                            % for type in sorted(worldtypes):
                                 %if defined("world") and type == world.type:
                                     <option value="{{type}}" selected="selected">{{type}}</option>
                                 %else:
@@ -55,7 +55,7 @@
                     </div>
                 </div>
 
-                %for type in worldtypes:
+                %for type in sorted(worldtypes):
                     % for param in worldtypes[type].get_config_options():
                     <div class="control-group world_config world_config_{{type}}" style="display:none">
                         <label class="control-label" for="world_config_{{type}}_{{param['name']}}">{{param['name']}}</label>

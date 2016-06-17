@@ -161,12 +161,11 @@ def _add_world_list(template_name, **params):
         response.set_cookie('selected_world', current_world)
     else:
         current_world = request.get_cookie('selected_world')
+    world_assets = {}
     if current_world:
         world_obj = runtime.load_world(current_world)
         if hasattr(world_obj, 'assets'):
             world_assets = world_obj.assets
-    else:
-        world_assets = {}
     return template(template_name, current=current_world,
         mine=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].get('owner') == params['user_id']),
         others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].get('owner') != params['user_id']),

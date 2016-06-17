@@ -728,10 +728,11 @@ def create_new_nodenet_form():
 
 @micropsi_app.route("/create_worldadapter_selector/<world_uid>")
 def create_worldadapter_selector(world_uid):
-    nodenets = runtime.get_available_nodenets()
-    worlds = runtime.get_available_worlds()
-    return template("worldadapter_selector", world_uid=world_uid,
-        nodenets=nodenets, worlds=worlds)
+    return template("worldadapter_selector",
+        world_uid=world_uid,
+        nodenets=runtime.get_available_nodenets(),
+        worlds=runtime.get_available_worlds(),
+        worldtypes=runtime.get_available_world_types())
 
 
 @micropsi_app.route("/dashboard")

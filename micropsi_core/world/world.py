@@ -84,7 +84,7 @@ class World(object):
         return []
 
     @classmethod
-    def get_suppoerted_worldadapters(cls):
+    def get_supported_worldadapters(cls):
         folder = cls.__module__.split('.')
         folder.pop()
         folder = '.'.join(folder)

@@ -124,7 +124,7 @@
                 </div>
 
                 %for type in worldtypes:
-                    % for name, adapter in worldtypes[type].get_suppoerted_worldadapters().items():
+                    % for name, adapter in worldtypes[type].get_supported_worldadapters().items():
                         % for param in adapter.get_config_options():
                             <div class="control-group worldadapter-config worldadapter-{{name}}" style="display:none">
                                 <label class="control-label" for="worldadapter_config_{{name}}_{{param['name']}}">{{param['name']}}</label>

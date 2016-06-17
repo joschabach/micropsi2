@@ -50,7 +50,7 @@
                             %end
                         </select>
                         % for type in worldtypes:
-                            <div class="hint small world_docstring world_docstring_{{type}}" style="display:none; white-space: pre-wrap;">{{worldtypes[type].__doc__.strip()}}</div>
+                            <div class="hint small world_docstring world_docstring_{{type}}" style="display:none; white-space: pre-wrap;">{{(worldtypes[type].__doc__ or '').strip()}}</div>
                         %end
                     </div>
                 </div>

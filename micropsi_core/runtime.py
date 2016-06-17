@@ -1498,11 +1498,11 @@ def load_definitions():
         # create a default world for convenience.
         uid = tools.generate_uid()
         filename = os.path.join(PERSISTENCY_PATH, WORLD_DIRECTORY, uid + '.json')
-        world_data[uid] = Bunch(uid=uid, name="default", version=1, filename=filename)
+        world_data[uid] = Bunch(uid=uid, name="default", version=1, filename=filename, owner="admin", world_type="DefaultWorld")
         with open(filename, 'w+') as fp:
             fp.write(json.dumps(world_data[uid], sort_keys=True, indent=4))
     for uid in world_data:
-        world_data[uid].supported_worldadapters = get_world_class_from_name(world_data[uid].get('world_type', "World")).get_suppoerted_worldadapters()
+        world_data[uid].supported_worldadapters = get_world_class_from_name(world_data[uid].get('world_type', "DefaultWorld")).get_supported_worldadapters()
     return nodenet_data, world_data
 
 

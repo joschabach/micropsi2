@@ -342,6 +342,9 @@ class World(object):
         pass
 
 
+class DefaultWorld(World):
+    supported_worldadapters = ['Default']
+
 # imports of individual world types:
 try:
     from micropsi_core.world.island import island

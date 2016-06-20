@@ -146,7 +146,7 @@ def default_world(request):
     Fixture: A test world of type default
     """
     for uid in micropsi.world_data:
-        if micropsi.world_data[uid].get('world_type', 'World') == 'World':
+        if micropsi.world_data[uid].get('world_type', 'DefaultWorld') == 'DefaultWorld':
             return uid
 
 

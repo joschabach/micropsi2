@@ -14,7 +14,7 @@ import math
 
 import vrep
 from micropsi_core.world.world import World
-from micropsi_core.world.worldadapter import ArrayWorldAdapter
+from micropsi_core.world.worldadapter import ArrayWorldAdapter, WorldAdapterMixin
 
 
 class VREPConnection(threading.Thread):
@@ -75,13 +75,14 @@ class VREPConnection(threading.Thread):
     def terminate(self):
         self.stop.set()
 
+
 class VREPWorld(World):
     """ A vrep robot simulator environment
         In V-REP, the following setup has to be performed:
         - simExtRemoteApiStart(19999) has to have been run
         - the simulation must have been started
     """
-    supported_worldadapters = ['Robot']
+    supported_worldadapters = ['Robot', 'OneBallRobot']
 
     assets = {
         'template': 'vrep/vrep.tpl',
@@ -91,15 +92,9 @@ class VREPWorld(World):
     def __init__(self, filename, world_type="VREPWorld", name="", owner="", engine=None, uid=None, version=1, config={}):
         World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
 
-        self.robot_name = config['robot_name']
-        self.vision_type = config['vision_type']
-        self.control_type = config['control_type']
-        self.collision_name = config.get('collision_name', '')
-
-        self.randomize_arm = config['randomize_arm']
-        self.randomize_ball = config['randomize_ball']
-
         self.connection_daemon = VREPConnection(config['vrep_host'], int(config['vrep_port']), connection_listeners=[self])
+
+        time.sleep(1)  # wait for the daemon to get started before continuing.
 
         from micropsi_core.runtime import add_signal_handler
         add_signal_handler(self.kill_vrep_connection)
@@ -110,15 +105,14 @@ class VREPWorld(World):
             'agents': self.data.get('agents', {}),
             'current_step': self.current_step,
         }
-        if self.vision_type == "grayscale":
-            plots = {}
-            for uid in self.agents:
+        plots = {}
+        for uid in self.agents:
+            if hasattr(self.agents[uid], 'image'):
                 image = self.agents[uid].image
-                if image:
-                    bio = BytesIO()
-                    image.figure.savefig(bio, format="png")
-                    plots[uid] = base64.encodebytes(bio.getvalue()).decode("utf-8")
-            data['plots'] = plots
+                bio = BytesIO()
+                image.figure.savefig(bio, format="png")
+                plots[uid] = base64.encodebytes(bio.getvalue()).decode("utf-8")
+        data['plots'] = plots
         return data
 
     def on_vrep_connect(self):
@@ -144,40 +138,160 @@ class VREPWorld(World):
             {'name': 'vrep_host',
              'default': '127.0.0.1'},
             {'name': 'vrep_port',
-             'default': 19999},
+             'default': 19999}
+        ]
+
+
+class VrepCollisions(WorldAdapterMixin):
+
+    @staticmethod
+    def get_config_options():
+        return [{'name': 'collision_name',
+             'default': 'Collision',
+             'description': 'The name of the robot\'s collision handle'}]
+
+    def initialize(self):
+        super().initialize()
+        if self.collision_name:
+            self.collision_handle = self.call_vrep(vrep.simxGetCollisionHandle, [self.clientID, self.collision_name, vrep.simx_opmode_blocking])
+            if self.collision_handle < 1:
+                self.logger.warning("Collision handle %s not found, not tracking collisions" % self.collision_name)
+            else:
+                self.call_vrep(vrep.simxReadCollision, [self.clientID, self.collision_handle, vrep.simx_opmode_streaming], empty_result_ok=True)
+            self.add_datasource("collision")
+
+    def update_data_sources_and_targets(self):
+        super().update_data_sources_and_targets()
+        if self.collision_name:
+            collision_state = self.call_vrep(vrep.simxReadCollision, [self.clientID, self.collision_handle,
+                                                          vrep.simx_opmode_buffer])
+            self._set_datasource_value("collision", 1 if collision_state else 0)
+
+
+class VrepVision(WorldAdapterMixin):
+
+    def initialize(self):
+        super().initialize()
+        self.observer_handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, "Observer", vrep.simx_opmode_blocking])
+        if self.observer_handle < 1:
+            self.logger.warn("Could not get handle for Observer vision sensor, vision will not be available.")
+        else:
+            resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_streaming]) # _split+4000)
+            self.vision_resolution = resolution
+            if len(resolution) != 2:
+                self.logger.error("Could not determine vision resolution.")
+            else:
+                self.logger.info("Vision resolution is %s" % str(self.vision_resolution))
+        for y in range(self.vision_resolution[1]):
+            for x in range(self.vision_resolution[0]):
+                self.add_datasource("px_%03d_%03d" % (x, y))
+
+        self.image = plt.imshow(np.zeros(shape=(self.vision_resolution[0], self.vision_resolution[1])), cmap="bone")
+        self.image.norm.vmin = 0
+        self.image.norm.vmax = 1
+
+    def update_data_sources_and_targets(self):
+        super().update_data_sources_and_targets()
+        resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_buffer])
+
+        rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (self.vision_resolution[0] * self.vision_resolution[1], 3)).astype(np.float32)
+        rgb_image /= 255.
+        luminance = np.sum(rgb_image * np.asarray([.2126, .7152, .0722]), axis=1)
+        y_image = luminance.astype(np.float32).reshape((self.vision_resolution[0], self.vision_resolution[1]))[::-1,:]   # todo: npyify and make faster
+
+        self._set_datasource_values('px_000_000', y_image.flatten())
+
+        self.image.set_data(y_image)
+
+
+class VrepOneBallGame(WorldAdapterMixin):
+
+    @staticmethod
+    def get_config_options():
+        return [{'name': 'randomize_ball',
+             'description': 'Initialize the ball position randomly',
+             'default': 'False',
+             'options': ["False", "True"]}]
+
+    def initialize(self):
+        super().initialize()
+        self.ball_handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, "Ball", vrep.simx_opmode_blocking])
+        if self.ball_handle < 1:
+            self.logger.warn("Could not get handle for Ball object, distance values will not be available.")
+        else:
+            self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.ball_handle, -1, vrep.simx_opmode_streaming], empty_result_ok=True)
+        self.sphere_handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, "Sphere", vrep.simx_opmode_blocking])
+        print('sphere handle:', str(self.sphere_handle))
+
+        self.add_datasource("ball-distance")
+        self.add_datasource("ball-x")
+        self.add_datasource("ball-y")
+        self.add_datatarget("sphere_x")
+        self.add_datatarget("sphere_y")
+
+    def update_data_sources_and_targets(self):
+        super().update_data_sources_and_targets()
+        if self.ball_handle > 0:
+            ball_pos = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.ball_handle, -1, vrep.simx_opmode_buffer])
+            joint_pos = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.joints[len(self.joints)-1], -1, vrep.simx_opmode_streaming])
+
+            relative_pos = [0,0]
+            relative_pos[0] = ball_pos[0] - self.robot_position[0]
+            relative_pos[1] = ball_pos[1] - self.robot_position[1]
+
+            dist = np.linalg.norm(np.array(ball_pos) - np.array(joint_pos))
+            self._set_datasource_value('ball-distance', dist)
+            self._set_datasource_value('ball-x', relative_pos[0])
+            self._set_datasource_value('ball-y', relative_pos[1])
+            # position the transparent sphere:
+            rx = self._get_datatarget_value('sphere_x')
+            ry = self._get_datatarget_value('sphere_y')
+            self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, self.sphere_handle, self.robot_handle, [-rx, -ry], vrep.simx_opmode_oneshot], empty_result_ok=True)
+
+    def reset_simulation_state(self):
+        super().reset_simulation_state()
+        if self.randomize_ball == "True":
+            # max_dist = 0.8
+            # rx = random.uniform(-max_dist, max_dist)
+            # max_y = math.sqrt((max_dist ** 2) - (rx ** 2))
+            # ry = random.uniform(-max_y, max_y)
+            max_dist = 0.8
+            min_dist = 0.2
+            k = max_dist**2 - min_dist**2
+            a = np.random.rand() * 2 * np.pi
+            r = np.sqrt(np.random.rand() * k + min_dist**2)
+            rx = r*np.cos(a)
+            ry = r*np.sin(a)
+
+            self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, self.ball_handle, self.robot_handle, [rx, ry], vrep.simx_opmode_blocking])
+
+
+class Robot(WorldAdapterMixin, ArrayWorldAdapter):
+    """ The basic worldadapter to control a robot in vrep.
+    Combine this with the Vrep Mixins for a useful robot simulation"""
+
+    block_runner_if_connection_lost = True
+
+    @staticmethod
+    def get_config_options():
+        return [
             {'name': 'robot_name',
              'description': 'The name of the robot object in V-REP',
              'default': 'LBR_iiwa_7_R800',
              'options': ["LBR_iiwa_7_R800", "MTB_Robot"]},
-            {'name': 'collision_name',
-             'default': 'Collision',
-             'description': 'The name of the robot\'s collision handle'},
             {'name': 'control_type',
              'description': 'The type of input sent to the robot',
              'default': 'force/torque',
              'options': ["force/torque", "force/torque-sync", "angles", "movements"]},
-            {'name': 'vision_type',
-             'description': 'Type of vision information to receive',
-             'default': 'none',
-             'options': ["none", "grayscale"]},
             {'name': 'randomize_arm',
              'description': 'Initialize the robot arm randomly',
              'default': 'False',
              'options': ["False", "True"]},
-            {'name': 'randomize_ball',
-             'description': 'Initialize the ball position randomly',
-             'default': 'False',
-             'options': ["False", "True"]}
         ]
-
-
-class Robot(ArrayWorldAdapter):
-
-    block_runner_if_connection_lost = True
 
     def __init__(self, world, uid=None, **data):
         super().__init__(world, uid, **data)
-        self.get_vrep_data()
+        self.initialize()
 
     def call_vrep(self, method, params, empty_result_ok=False):
         result = method(*params)
@@ -213,9 +327,9 @@ class Robot(ArrayWorldAdapter):
 
     def on_vrep_connect(self):
         """ is called by the world, if a connection was established """
-        self.get_vrep_data()
+        self.initialize()
 
-    def get_vrep_data(self):
+    def initialize(self):
 
         self.clientID = self.world.connection_daemon.clientID
 
@@ -225,51 +339,23 @@ class Robot(ArrayWorldAdapter):
         self.datatarget_values = np.zeros(0)
         self.datatarget_feedback_values = np.zeros(0)
 
+        super().initialize()
+
         self.joints = []
-        self.vision_resolution = []
-        self.collision_handle = -1
         self.robot_handle = -1
-        self.ball_handle = -1
-        self.sphere_handle = -1
         self.robot_position = []
 
-        self.robot_handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, self.world.robot_name, vrep.simx_opmode_blocking])
+        self.robot_handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, self.robot_name, vrep.simx_opmode_blocking])
 
         if self.robot_handle < 1:
-            self.logger.critical("There seems to be no robot with the name %s in the v-rep simulation." % self.world.robot_name)
-
-        self.joints = self.call_vrep(vrep.simxGetObjects, [self.clientID, vrep.sim_object_joint_type, vrep.simx_opmode_blocking])
-        self.logger.info("Found robot with %d joints" % len(self.joints))
-
-        if self.world.collision_name:
-            self.collision_handle = self.call_vrep(vrep.simxGetCollisionHandle, [self.clientID, self.world.collision_name, vrep.simx_opmode_blocking])
-            if self.collision_handle < 1:
-                self.logger.warning("Collision handle %s not found, not tracking collisions" % self.world.collision_name)
-            else:
-                self.call_vrep(vrep.simxReadCollision, [self.clientID, self.collision_handle, vrep.simx_opmode_streaming], empty_result_ok=True)
-
-        self.ball_handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, "Ball", vrep.simx_opmode_blocking])
-        if self.ball_handle < 1:
-            self.logger.warn("Could not get handle for Ball object, distance values will not be available.")
+            self.logger.critical("There seems to be no robot with the name %s in the v-rep simulation." % self.robot_name)
         else:
-            self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.ball_handle, -1, vrep.simx_opmode_streaming], empty_result_ok=True)
-            self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.joints[len(self.joints) - 1], -1, vrep.simx_opmode_streaming], empty_result_ok=True)
             self.robot_position = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.robot_handle, -1, vrep.simx_opmode_blocking])
 
-        self.sphere_handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, "Sphere", vrep.simx_opmode_blocking])
-        print('sphere handle:', str(self.sphere_handle))
+        self.joints = self.call_vrep(vrep.simxGetObjects, [self.clientID, vrep.sim_object_joint_type, vrep.simx_opmode_blocking])
+        self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.joints[len(self.joints) - 1], -1, vrep.simx_opmode_streaming], empty_result_ok=True)
 
-        if self.world.vision_type == "grayscale":
-            self.observer_handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, "Observer", vrep.simx_opmode_blocking])
-            if self.observer_handle < 1:
-                self.logger.warn("Could not get handle for Observer vision sensor, vision will not be available.")
-            else:
-                self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_streaming]) # _split+4000)
-
-        self.add_datasource("ball-distance")
-        self.add_datasource("collision")
-        self.add_datasource("ball-x")
-        self.add_datasource("ball-y")
+        self.logger.info("Found robot with %d joints" % len(self.joints))
 
         self.add_datasource("tip-x")
         self.add_datasource("tip-y")
@@ -285,23 +371,9 @@ class Robot(ArrayWorldAdapter):
         for i in range(len(self.joints)):
             self.add_datasource("joint_force_%s" % str(i + 1))
 
-        self.add_datatarget("sphere_x")
-        self.add_datatarget("sphere_y")
-
-
         self.last_restart = 0
 
         self.current_angle_target_values = np.zeros_like(self.joints)
-
-        if self.world.vision_type == "grayscale":
-            self.vision_resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_buffer])
-            for y in range(self.vision_resolution[1]):
-                for x in range(self.vision_resolution[0]):
-                    self.add_datasource("px_%03d_%03d" % (x, y))
-
-            self.image = plt.imshow(np.zeros(shape=(self.vision_resolution[0], self.vision_resolution[1])), cmap="bone")
-            self.image.norm.vmin = 0
-            self.image.norm.vmax = 1
 
         if self.nodenet:
             self.nodenet.worldadapter_instance = self
@@ -310,11 +382,10 @@ class Robot(ArrayWorldAdapter):
         self.reset_simulation_state()
 
     def update_data_sources_and_targets(self):
-
         old_datasource_values = np.array(self.datasource_values)
-
         self.datatarget_feedback_values = [0] * len(self.datatarget_values)
         self.datasource_values = [0] * len(self.datasource_values)
+        super().update_data_sources_and_targets()
 
         tvals = None
 
@@ -333,49 +404,28 @@ class Robot(ArrayWorldAdapter):
             joint_angle_offset = self.get_datasource_index("joint_angle_1")
             for i, joint_handle in enumerate(self.joints):
                 tval = self.current_angle_target_values[i] * math.pi
-                if self.world.control_type == "force/torque" or self.world.control_type == "force/torque-sync":
+                if self.control_type == "force/torque" or self.control_type == "force/torque-sync":
                     tval += (old_datasource_values[joint_angle_offset + i]) * math.pi
                     tvals[i] = tval
                     self.call_vrep(vrep.simxSetJointTargetPosition, [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot], empty_result_ok=True)
-                elif self.world.control_type == "angles":
+                elif self.control_type == "angles":
                     self.call_vrep(vrep.simxSetJointPosition, [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot], empty_result_ok=True)
-                elif self.world.control_type == "movements":
+                elif self.control_type == "movements":
                     tval += (old_datasource_values[joint_angle_offset + i]) * math.pi
                     self.call_vrep(vrep.simxSetJointPosition, [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot], empty_result_ok=True)
-            # position the transparent sphere:
-            rx = self._get_datatarget_value('sphere_x')
-            ry = self._get_datatarget_value('sphere_y')
-            self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, self.sphere_handle, self.robot_handle, [-rx, -ry], vrep.simx_opmode_oneshot], empty_result_ok=True)
 
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 
         # read joint angle and force values
         self.fetch_sensor_and_feedback_values_from_simulation(tvals, True)
 
-        # read vision data
-        # if no observer present, don't query vision data
-        if self.world.vision_type != "grayscale":
-            return
-
-        resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_buffer])
-
-        rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (self.vision_resolution[0] * self.vision_resolution[1], 3)).astype(np.float32)
-        rgb_image /= 255.
-        luminance = np.sum(rgb_image * np.asarray([.2126, .7152, .0722]), axis=1)
-        y_image = luminance.astype(np.float32).reshape((self.vision_resolution[0], self.vision_resolution[1]))[::-1,:]
-        self._set_datasource_values('px_000_000', y_image.flatten())
-
-        self.image.set_data(y_image)
-
-        return self.image
-
     def reset_simulation_state(self):
         self.call_vrep(vrep.simxStopSimulation, [self.clientID, vrep.simx_opmode_oneshot], empty_result_ok=True)
         time.sleep(0.3)
         self.call_vrep(vrep.simxStartSimulation, [self.clientID, vrep.simx_opmode_oneshot])
-        time.sleep(0.2)
-
-        if self.world.randomize_arm == "True":
+        time.sleep(0.5)
+        super().reset_simulation_state()
+        if self.randomize_arm == "True":
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, True], empty_result_ok=True)
             for i, joint_handle in enumerate(self.joints):
                 self._set_datatarget_value("joint_%d" % (i + 1), random.uniform(-0.8, 0.8))
@@ -386,21 +436,6 @@ class Robot(ArrayWorldAdapter):
             self.call_vrep(vrep.simxSetJointPosition, [self.clientID, self.joints[-2], math.pi/2, vrep.simx_opmode_oneshot], empty_result_ok=True)
             # /hack
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
-
-        if self.world.randomize_ball == "True":
-            # max_dist = 0.8
-            # rx = random.uniform(-max_dist, max_dist)
-            # max_y = math.sqrt((max_dist ** 2) - (rx ** 2))
-            # ry = random.uniform(-max_y, max_y)
-            max_dist = 0.8
-            min_dist = 0.2
-            k = max_dist**2 - min_dist**2
-            a = np.random.rand() * 2 * np.pi
-            r = np.sqrt(np.random.rand() * k + min_dist**2)
-            rx = r*np.cos(a)
-            ry = r*np.sin(a)
-
-            self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, self.ball_handle, self.robot_handle, [rx, ry], vrep.simx_opmode_blocking])
 
         self.fetch_sensor_and_feedback_values_from_simulation(None)
         self.last_restart = self.world.current_step
@@ -415,26 +450,13 @@ class Robot(ArrayWorldAdapter):
                 return
 
         if self.world.connection_daemon.clientID != self.clientID:
-            self.get_vrep_data()
+            self.initialize()
 
         joint_pos = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.joints[len(self.joints)-1], -1, vrep.simx_opmode_streaming])
 
         self._set_datasource_value('tip-x', joint_pos[0] - self.robot_position[0])
         self._set_datasource_value('tip-y', joint_pos[1] - self.robot_position[1])
         self._set_datasource_value('tip-z', joint_pos[2] - self.robot_position[2])
-
-        if self.ball_handle > 0:
-            ball_pos = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.ball_handle, -1, vrep.simx_opmode_buffer])
-            joint_pos = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.joints[len(self.joints)-1], -1, vrep.simx_opmode_streaming])
-
-            relative_pos = [0,0]
-            relative_pos[0] = ball_pos[0] - self.robot_position[0]
-            relative_pos[1] = ball_pos[1] - self.robot_position[1]
-
-            dist = np.linalg.norm(np.array(ball_pos) - np.array(joint_pos))
-            self._set_datasource_value('ball-distance', dist)
-            self._set_datasource_value('ball-x', relative_pos[0])
-            self._set_datasource_value('ball-y', relative_pos[1])
 
         joint_ids, something, data, se = self.call_vrep(vrep.simxGetObjectGroupData, [self.clientID, vrep.sim_object_joint_type, 15, vrep.simx_opmode_blocking])
 
@@ -445,7 +467,7 @@ class Robot(ArrayWorldAdapter):
             for i, joint_handle in enumerate(self.joints):
                 angle = 0
                 force = 0
-                if self.world.control_type == "force/torque" or self.world.control_type == "force/torque-sync":
+                if self.control_type == "force/torque" or self.control_type == "force/torque-sync":
                     angle = data[i*2]
                     force = data[i*2 + 1]
                     if targets is not None:
@@ -454,9 +476,9 @@ class Robot(ArrayWorldAdapter):
                             self._set_datatarget_feedback_value("joint_%s" % (i + 1), 1)
                         else:
                             allgood = False
-                elif self.world.control_type == "angles":
+                elif self.control_type == "angles":
                     angle = data[i * 2]
-                elif self.world.control_type == "movements":
+                elif self.control_type == "movements":
                     angle = data[i * 2]
                 self._set_datasource_value("joint_angle_%s" % (i + 1), angle / math.pi)
                 self._set_datasource_value("joint_force_%s" % (i + 1), force)
@@ -478,7 +500,16 @@ class Robot(ArrayWorldAdapter):
                                                                                   vrep.sim_object_joint_type, 15,
                                                                                   vrep.simx_opmode_blocking])
 
-        if self.collision_handle > 0:
-            collision_state = self.call_vrep(vrep.simxReadCollision, [self.clientID, self.collision_handle,
-                                                          vrep.simx_opmode_buffer])
-            self._set_datasource_value("collision", 1 if collision_state else 0)
+
+class OneBallRobot(Robot, VrepVision, VrepCollisions, VrepOneBallGame):
+    """ A Worldadapter to play the one-ball-reaching-task """
+
+    @classmethod
+    def get_config_options(cls):
+        """ I've found no way around this yet """
+        parameters = []
+        parameters.extend(Robot.get_config_options())
+        parameters.extend(VrepCollisions.get_config_options())
+        parameters.extend(VrepVision.get_config_options())
+        parameters.extend(VrepOneBallGame.get_config_options())
+        return parameters

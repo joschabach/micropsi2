@@ -83,6 +83,13 @@ class World(object):
         """
         return []
 
+    @classmethod
+    def get_supported_worldadapters(cls):
+        folder = cls.__module__.split('.')
+        folder.pop()
+        folder = '.'.join(folder)
+        return {wacls.__name__: wacls for wacls in tools.itersubclasses(worldadapter.WorldAdapter, folder=folder) if wacls.__name__ in cls.supported_worldadapters}
+
     supported_worldadapters = ['Default']
 
     def __init__(self, filename, world_type="", name="", owner="", uid=None, engine=None, version=WORLD_VERSION, config={}):
@@ -238,7 +245,7 @@ class World(object):
                     objects[uid] = obj
         return objects
 
-    def register_nodenet(self, worldadapter, nodenet_uid, nodenet_name=None):
+    def register_nodenet(self, worldadapter, nodenet_uid, nodenet_name=None, config={}):
         """Attempts to register a nodenet at this world.
 
         Returns True, spawned_agent_instance if successful,
@@ -256,7 +263,7 @@ class World(object):
                 return True, self.agents[nodenet_uid]
             else:
                 return False, "Nodenet agent already exists in this world, but has the wrong type"
-        return self.spawn_agent(worldadapter, nodenet_uid, nodenet_name=nodenet_name)
+        return self.spawn_agent(worldadapter, nodenet_uid, nodenet_name=nodenet_name, config=config)
 
     def unregister_nodenet(self, nodenet_uid):
         """Removes the connection between a nodenet and its incarnation in this world; may remove the corresponding
@@ -269,7 +276,7 @@ class World(object):
         if nodenet_uid in self.data['agents']:
             del self.data['agents'][nodenet_uid]
 
-    def spawn_agent(self, worldadapter_name, nodenet_uid, **options):
+    def spawn_agent(self, worldadapter_name, nodenet_uid, nodenet_name=None, config={}):
         """Creates an agent object,
 
         Returns True, spawned_agent_instance if successful,
@@ -279,8 +286,8 @@ class World(object):
             self.agents[nodenet_uid] = self.supported_worldadapters[worldadapter_name](
                 self,
                 uid=nodenet_uid,
-                name=options.get('nodenet_name', worldadapter_name),
-                **options)
+                name=nodenet_name or worldadapter_name,
+                config=config)
             return True, self.agents[nodenet_uid]
         else:
             self.logger.error("World %s does not support Worldadapter %s" % (self.name, worldadapter_name))
@@ -334,6 +341,9 @@ class World(object):
         """Empty destructor"""
         pass
 
+
+class DefaultWorld(World):
+    supported_worldadapters = ['Default']
 
 # imports of individual world types:
 try:

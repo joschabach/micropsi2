@@ -329,6 +329,7 @@ def load_nodenet(nodenet_uid):
 
                 worldadapter_instance = None
                 if hasattr(data, 'world') and data.world:
+                    load_world(data.world)
                     if data.world in worlds:
                         world_uid = data.world
                         worldadapter = data.get('worldadapter')
@@ -336,7 +337,7 @@ def load_nodenet(nodenet_uid):
                         logging.getLogger("system").warning("World %s for nodenet %s not found" % (data.world, data.uid))
 
                 if world_uid:
-                    result, worldadapter_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet_uid, nodenet_name=data['name'])
+                    result, worldadapter_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet_uid, nodenet_name=data['name'], config=data.get('worldadapter_config', {}))
                     if not result:
                         logging.getLogger('system').warning(worldadapter_instance)
                         worldadapter_instance = None
@@ -381,6 +382,25 @@ def load_nodenet(nodenet_uid):
 
         return True, nodenet_uid
     return False, "Nodenet %s not found in %s" % (nodenet_uid, PERSISTENCY_PATH)
+
+
+def load_world(world_uid):
+    global worlds
+    if world_uid not in worlds:
+        if world_uid in world_data:
+            if "world_type" in world_data[world_uid]:
+                try:
+                    worlds[world_uid] = get_world_class_from_name(world_data[world_uid].world_type)(**world_data[world_uid])
+                except TypeError:
+                    worlds[world_uid] = world.World(**world_data[world_uid])
+                # except AttributeError as err:
+                #     logging.getLogger('system').warning("Unknown world_type: %s (%s)" % (world_data[world_uid].world_type, str(err)))
+                # except:
+                #     logging.getLogger('system').warning("Can not instantiate World \"%s\": %s" % (world_data[world_uid].name, str(sys.exc_info()[1])))
+            else:
+                worlds[world_uid] = world.World(**world_data[world_uid])
+    return worlds.get(world_uid)
+
 
 
 def get_nodenet_metadata(nodenet_uid):
@@ -483,7 +503,7 @@ def unload_nodenet(nodenet_uid):
     return True
 
 
-def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=None, owner="", world_uid=None, uid=None, use_modulators=True):
+def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=None, owner="", world_uid=None, uid=None, use_modulators=True, worldadapter_config={}):
     """Creates a new node net manager and registers it.
 
     Arguments:
@@ -510,7 +530,8 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
         world=world_uid,
         settings={},
         engine=engine,
-        use_modulators=use_modulators)
+        use_modulators=use_modulators,
+        worldadapter_config=worldadapter_config)
 
     filename = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
     nodenet_data[data['uid']] = Bunch(**data)
@@ -539,7 +560,7 @@ def delete_nodenet(nodenet_uid):
     return True
 
 
-def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None):
+def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None, worldadapter_config={}):
     """Sets the supplied parameters (and only those) for the nodenet with the given uid."""
 
     nodenet = get_nodenet(nodenet_uid)
@@ -549,10 +570,11 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
     if worldadapter is None:
         worldadapter = nodenet.worldadapter
     if world_uid is not None and worldadapter is not None:
-        assert worldadapter in worlds[world_uid].supported_worldadapters
+        world_obj = load_world(world_uid)
+        assert worldadapter in world_obj.supported_worldadapters
         nodenet.world = world_uid
         nodenet.worldadapter = worldadapter
-        result, wa_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet.uid, nodenet_name=nodenet.name)
+        result, wa_instance = world_obj.register_nodenet(worldadapter, nodenet.uid, nodenet_name=nodenet.name)
         if result:
             nodenet.worldadapter_instance = wa_instance
     if nodenet_name:
@@ -1455,6 +1477,7 @@ def parse_definition(json, filename=None):
         if "worldadapter" in json:
             result['worldadapter'] = json["worldadapter"]
             result['world'] = json["world"]
+            result['worldadapter_config'] = json.get('worldadapter_config', {})
         if "world_type" in json:
             result['world_type'] = json['world_type']
         if "settings" in json:
@@ -1475,28 +1498,12 @@ def load_definitions():
         # create a default world for convenience.
         uid = tools.generate_uid()
         filename = os.path.join(PERSISTENCY_PATH, WORLD_DIRECTORY, uid + '.json')
-        world_data[uid] = Bunch(uid=uid, name="default", version=1, filename=filename)
+        world_data[uid] = Bunch(uid=uid, name="default", version=1, filename=filename, owner="admin", world_type="DefaultWorld")
         with open(filename, 'w+') as fp:
             fp.write(json.dumps(world_data[uid], sort_keys=True, indent=4))
-    return nodenet_data, world_data
-
-
-# set up all worlds referred to in the world_data:
-def init_worlds(world_data):
-    global worlds
     for uid in world_data:
-        if "world_type" in world_data[uid]:
-            try:
-                worlds[uid] = get_world_class_from_name(world_data[uid].world_type)(**world_data[uid])
-            except TypeError:
-                worlds[uid] = world.World(**world_data[uid])
-            except AttributeError as err:
-                logging.getLogger('system').warning("Unknown world_type: %s (%s)" % (world_data[uid].world_type, str(err)))
-            except:
-                logging.getLogger('system').warning("Can not instantiate World \"%s\": %s" % (world_data[uid].name, str(sys.exc_info()[1])))
-        else:
-            worlds[uid] = world.World(**world_data[uid])
-    return worlds
+        world_data[uid].supported_worldadapters = get_world_class_from_name(world_data[uid].get('world_type', "DefaultWorld")).get_supported_worldadapters()
+    return nodenet_data, world_data
 
 
 def load_user_files(path, reload_nodefunctions=False, errors=[]):
@@ -1681,7 +1688,6 @@ def initialize(persistency_path=None, resource_path=None):
         }, cfg['logging'].get('logfile'))
 
     load_definitions()
-    init_worlds(world_data)
     result, errors = reload_native_modules()
     for e in errors:
         logging.getLogger("system").error(e)

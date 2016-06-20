@@ -25,6 +25,34 @@ from micropsi_core.world.worldobject import WorldObject
 from abc import ABCMeta, abstractmethod
 
 
+class WorldAdapterMixin(object):
+
+    """ Superclass for modular world-adapter extensions that provide
+    functionality reusable in several worldadapters. See examples in vrep_world.py"""
+
+    @staticmethod
+    def get_config_options():
+        """ returns an array of parameters that are needed
+        to configure this mixin """
+        return []
+
+    def __init__(self, world, uid=None, config={}, **kwargs):
+        super().__init__(world, uid=uid, config=config, **kwargs)
+        for key in config:
+            setattr(self, key, config[key])
+
+    def initialize(self):
+        """ Called after a reset of the simulation """
+        pass
+
+    def reset_simulation_state(self):
+        """ Called on reset """
+        pass
+
+    def update_datasources_and_targets(self):
+        pass
+
+
 class WorldAdapter(WorldObject, metaclass=ABCMeta):
     """Transmits data between agent and environment.
 
@@ -32,16 +60,23 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
     takes care of translating between the world and these values at each world cycle.
     """
 
-    def __init__(self, world, uid=None, **data):
+    @classmethod
+    def get_config_options(cls):
+        return []
+
+    def __init__(self, world, uid=None, config={}, **data):
         self.datasources = {}
         self.datatargets = {}
         self.datatarget_feedback = {}
         self.datasource_lock = Lock()
+        self.config = config
         self.nodenet = None  # will be assigned by the nodenet once it's loaded
         WorldObject.__init__(self, world, category='agents', uid=uid, **data)
         self.logger = logging.getLogger('agent.%s' % self.uid)
         if data.get('name'):
             self.data['name'] = data['name']
+        for key in config:
+            setattr(self, key, config[key])
 
     def initialize_worldobject(self, data):
         for key in self.datasources:
@@ -114,8 +149,8 @@ class Default(WorldAdapter):
     """
     A default Worldadapter, that provides example-datasources and -targets
     """
-    def __init__(self, world, uid=None, **data):
-        super().__init__(world, uid=uid, **data)
+    def __init__(self, world, uid=None, config={}, **data):
+        super().__init__(world, uid=uid, config=config, **data)
         self.datasources = dict((s, 0) for s in ['static_on', 'random', 'static_off'])
         self.datatargets = {'echo': 0}
         self.datatarget_feedback = {'echo': 0}

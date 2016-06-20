@@ -533,6 +533,5 @@ ground_types = (
         'type': 'cliff',
         'move_efficiency': 1.0,
         'agent_allowed': False,
-        }
-
+    }
 )

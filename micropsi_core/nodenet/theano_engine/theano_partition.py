@@ -1344,7 +1344,7 @@ class TheanoPartition():
                 self.allocated_node_offsets[self.allocated_nodespaces_exp_activators[nodespace_id]]
 
             if nto.parameter_defaults.get('expectation'):
-                value = nto.parameter_defaults['expectation']
+                value = int(parameters.get('expectation', nto.parameter_defaults['expectation']))
                 g_expect_array = self.g_expect.get_value(borrow=True)
                 g_expect_array[offset + GEN] = float(value)
                 g_expect_array[offset + SUR] = float(value)
@@ -1352,7 +1352,7 @@ class TheanoPartition():
                 self.g_expect.set_value(g_expect_array, borrow=True)
 
             if nto.parameter_defaults.get('wait'):
-                value = nto.parameter_defaults['wait']
+                value = int(parameters.get('wait', nto.parameter_defaults['wait']))
                 g_wait_array = self.g_wait.get_value(borrow=True)
                 g_wait_array[offset + SUR] = int(min(value, 128))
                 g_wait_array[offset + POR] = int(min(value, 128))

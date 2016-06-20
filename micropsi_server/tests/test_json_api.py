@@ -795,7 +795,18 @@ def test_get_nodespace_activations(app, test_nodenet, node):
         'last_call_step': -1
     })
     assert_success(response)
-    assert node in response.json_body['data']['activations']
+    assert node not in response.json_body['data']['activations']
+    response = app.post_json('/rpc/set_node_activation', params={
+        'nodenet_uid': test_nodenet,
+        'node_uid': node,
+        'activation': -1
+    })
+    response = app.post_json('/rpc/get_nodespace_activations', params={
+        'nodenet_uid': test_nodenet,
+        'nodespaces': [None],
+        'last_call_step': -1
+    })
+    assert response.json_body['data']['activations'][node][0] == -1
 
 
 def test_get_node(app, test_nodenet, node):
@@ -808,15 +819,17 @@ def test_add_node(app, test_nodenet):
     app.set_auth()
     response = app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
-        'type': 'Register',
+        'type': 'Pipe',
         'position': [23, 42, 13],
         'nodespace': None,
-        'name': 'N2'
+        'name': 'N2',
+        'parameters': {'wait': "3"}
     })
     assert_success(response)
     uid = response.json_body['data']
     response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="%s")' % (test_nodenet, uid))
     assert response.json_body['data']['name'] == 'N2'
+    assert int(response.json_body['data']['parameters']['wait']) == 3
 
 
 def test_add_nodespace(app, test_nodenet):

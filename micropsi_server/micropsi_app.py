@@ -161,13 +161,14 @@ def _add_world_list(template_name, **params):
         response.set_cookie('selected_world', current_world)
     else:
         current_world = request.get_cookie('selected_world')
-    if current_world in worlds and hasattr(worlds[current_world], 'assets'):
-        world_assets = worlds[current_world].assets
-    else:
-        world_assets = {}
+    world_assets = {}
+    if current_world:
+        world_obj = runtime.load_world(current_world)
+        if hasattr(world_obj, 'assets'):
+            world_assets = world_obj.assets
     return template(template_name, current=current_world,
-        mine=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner == params['user_id']),
-        others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner != params['user_id']),
+        mine=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].get('owner') == params['user_id']),
+        others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].get('owner') != params['user_id']),
         world_assets=world_assets, **params)
 
 
@@ -587,12 +588,13 @@ def export_recorders(nodenet_uid):
 @micropsi_app.route("/nodenet/edit")
 def edit_nodenet():
     user_id, permissions, token = get_request_data()
-    # nodenet_id = request.params.get('id', None)
-    title = 'Edit Nodenet' if id is not None else 'New Nodenet'
+    nodenet_uid = request.params.get('id')
+    title = 'Edit Nodenet' if nodenet_uid is not None else 'New Nodenet'
 
     return template("nodenet_form.tpl", title=title,
         # nodenet_uid=nodenet_uid,
         nodenets=runtime.get_available_nodenets(),
+        worldtypes=runtime.get_available_world_types(),
         templates=runtime.get_available_nodenets(),
         worlds=runtime.get_available_worlds(),
         version=VERSION, user_id=user_id, permissions=permissions)
@@ -602,8 +604,22 @@ def edit_nodenet():
 def write_nodenet():
     user_id, permissions, token = get_request_data()
     params = dict((key, request.forms.getunicode(key)) for key in request.forms)
+    worldadapter_name = params['nn_worldadapter']
+    wa_params = {}
+    for key in params:
+        if key.startswith('worldadapter_%s_' % worldadapter_name):
+            strip = len("worldadapter_%s_" % worldadapter_name)
+            wa_params[key[strip:]] = params[key]
     if "manage nodenets" in permissions:
-        result, nodenet_uid = runtime.new_nodenet(params['nn_name'], engine=params['nn_engine'], worldadapter=params['nn_worldadapter'], template=params.get('nn_template'), owner=user_id, world_uid=params.get('nn_world'), use_modulators=params.get('nn_modulators', False))
+        result, nodenet_uid = runtime.new_nodenet(
+            params['nn_name'],
+            engine=params['nn_engine'],
+            worldadapter=params['nn_worldadapter'],
+            template=params.get('nn_template'),
+            owner=user_id,
+            world_uid=params.get('nn_world'),
+            use_modulators=params.get('nn_modulators', False),
+            worldadapter_config=wa_params)
         if result:
             return dict(status="success", msg="Nodenet created", nodenet_uid=nodenet_uid)
         else:
@@ -713,21 +729,13 @@ def edit_runner_properties():
         return template("runner_form", action="/config/runner", value=runtime.get_runner_properties())
 
 
-@micropsi_app.route("/create_new_nodenet_form")
-def create_new_nodenet_form():
-    user_id, permissions, token = get_request_data()
-    nodenets = runtime.get_available_nodenets()
-    worlds = runtime.get_available_worlds()
-    return template("nodenet_form", user_id=user_id, template="None",
-        nodenets=nodenets, worlds=worlds)
-
-
 @micropsi_app.route("/create_worldadapter_selector/<world_uid>")
 def create_worldadapter_selector(world_uid):
-    nodenets = runtime.get_available_nodenets()
-    worlds = runtime.get_available_worlds()
-    return template("worldadapter_selector", world_uid=world_uid,
-        nodenets=nodenets, worlds=worlds)
+    return template("worldadapter_selector",
+        world_uid=world_uid,
+        nodenets=runtime.get_available_nodenets(),
+        worlds=runtime.get_available_worlds(),
+        worldtypes=runtime.get_available_world_types())
 
 
 @micropsi_app.route("/dashboard")
@@ -825,8 +833,8 @@ def delete_nodenet(nodenet_uid):
 
 
 @rpc("set_nodenet_properties", permission_required="manage nodenets")
-def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None):
-    return runtime.set_nodenet_properties(nodenet_uid, nodenet_name=nodenet_name, worldadapter=worldadapter, world_uid=world_uid, owner=owner)
+def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None, worldadapter_config={}):
+    return runtime.set_nodenet_properties(nodenet_uid, nodenet_name=nodenet_name, worldadapter=worldadapter, world_uid=world_uid, owner=owner, worldadapter_config=worldadapter_config)
 
 
 @rpc("set_node_state")

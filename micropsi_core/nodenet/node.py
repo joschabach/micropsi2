@@ -601,11 +601,13 @@ class Nodetype(object):
     def nodefunction_name(self, nodefunction_name):
         import os
         from importlib.machinery import SourceFileLoader
+        import inspect
         self._nodefunction_name = nodefunction_name
         try:
             if self.path:
                 module = SourceFileLoader("nodefunctions", self.path).load_module()
                 self.nodefunction = getattr(module, nodefunction_name)
+                self.line_number = inspect.getsourcelines(self.nodefunction)[1]
             else:
                 from micropsi_core.nodenet import nodefunctions
                 if hasattr(nodefunctions, nodefunction_name):
@@ -633,6 +635,7 @@ class Nodetype(object):
         self._parameters = []
         self._nodefunction_definition = None
         self._nodefunction_name = None
+        self.line_number = -1
 
         self.dimensionality = {}
         self.is_highdimensional = bool(dimensionality)
@@ -712,6 +715,7 @@ class Nodetype(object):
             'nodefunction_name': self.nodefunction_name,
             'path': self.path,
             'category': self.category,
+            'line_number': self.line_number,
             'is_highdimensional': self.is_highdimensional
         }
         if self.is_highdimensional:

@@ -76,6 +76,9 @@
                         <td><select name="nodenet_worldadapter" id="nodenet_worldadapter"></select></td>
                     </tr>
                     <tr>
+                        <td colspan="2" class="worldadapter_config">
+                    </tr>
+                    <tr>
                         <td><label for="nodenet_snap">Snap to grid</label></td>
                         <td><input type="checkbox" name="nodenet_snap" id="nodenet_snap" /></td>
                     </tr>

@@ -90,7 +90,7 @@ class VREPWorld(World):
     }
 
     def __init__(self, filename, world_type="VREPWorld", name="", owner="", engine=None, uid=None, version=1, config={}):
-        World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
+        World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version, config=config)
 
         self.connection_daemon = VREPConnection(config['vrep_host'], int(config['vrep_port']), connection_listeners=[self])
 

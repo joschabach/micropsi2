@@ -19,8 +19,8 @@
 <script type="text/javascript">
 $(function(){
     var adapters = {};
-    %for name in worlds[world_uid].supported_worldadapters:
-    adapters["{{name}}"] = "{{(worldtypes[worlds[world_uid].world_type].get_supported_worldadapters()[name].__doc__ or '').replace('\n', ' ')}}";
+    %for name, data in worldtypes[worlds[world_uid].world_type].get_supported_worldadapters().items():
+        adapters["{{name}}"] = "{{(data.__doc__ or '').replace('\n', ' ')}}";
     %end
     var el = $('#nn_worldadapter');
     var updateDescription = function(){

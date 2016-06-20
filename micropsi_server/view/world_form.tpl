@@ -18,7 +18,7 @@
 
             %if world is not None and world.uid:
             <div class="alert alert-info">
-            Attention: This will immediately write the new values, and re-initialize the world.
+            Please note: Saving this form will immediately write the new values. This world will be saved and re-initialized.
             </div>
             %end
 

@@ -182,17 +182,8 @@ class TimeSeriesRunner(ArrayWorldAdapter):
     def __init__(self, world, uid=None, **data):
         super().__init__(world, uid, **data)
 
-        self.available_datatargets = []
-        self.available_datasources = []
-
         for idx, ID in enumerate(self.world.ids):
-            self.available_datasources.append(str(ID))
-
-    def get_available_datasources(self):
-        return self.available_datasources
-
-    def get_available_datatargets(self):
-        return self.available_datatargets
+            self.add_datasource(str(ID))
 
     def update_data_sources_and_targets(self):
         self.datasource_values = self.world.state

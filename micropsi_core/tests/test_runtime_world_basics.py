@@ -54,7 +54,7 @@ def test_get_worldadapters(test_world, test_nodenet):
 
 
 def test_add_worldobject(test_world):
-    world = runtime.get_available_worlds()[test_world]
+    world = runtime.load_world(test_world)
     runtime.add_worldobject(test_world, "Default", (10, 10), uid='foobar', name='foobar', parameters={})
     assert "foobar" in world.data['objects']
     assert "foobar" in world.objects
@@ -65,7 +65,7 @@ def test_add_worldobject(test_world):
 
 
 def test_add_worldobject_without_id(test_world):
-    world = runtime.get_available_worlds()[test_world]
+    world = runtime.load_world(test_world)
     count = len(world.objects)
     runtime.add_worldobject(test_world, "Default", (10, 10), name='bazbaz', parameters={})
     assert count + 1 == len(world.objects)
@@ -73,6 +73,7 @@ def test_add_worldobject_without_id(test_world):
 
 
 def test_get_worldobjects(test_world):
+    world = runtime.load_world(test_world)
     runtime.add_worldobject(test_world, "Default", (10, 10), uid='foobar', name='foobar', parameters={})
     objects = runtime.get_world_objects(test_world)
     assert 'foobar' in objects
@@ -83,7 +84,7 @@ def test_get_worldobjects(test_world):
 
 
 def test_register_agent(test_world, test_nodenet):
-    world = runtime.worlds[test_world]
+    world = runtime.load_world(test_world)
     nodenet = runtime.get_nodenet(test_nodenet)
     assert nodenet.uid not in world.data['agents']
     nodenet.world = test_world
@@ -97,7 +98,7 @@ def test_register_agent(test_world, test_nodenet):
 
 
 def test_set_object_properties(test_world):
-    world = runtime.get_available_worlds()[test_world]
+    world = runtime.load_world(test_world)
     runtime.add_worldobject(test_world, "Default", (10, 10), uid='foobar', name='foobar', parameters={})
     runtime.set_worldobject_properties(test_world, "foobar", position=(5, 5))
     assert world.objects["foobar"].position == (5, 5)
@@ -106,7 +107,7 @@ def test_set_object_properties(test_world):
 
 
 def test_set_agent_properties(test_world, test_nodenet):
-    world = runtime.worlds[test_world]
+    world = runtime.load_world(test_world)
     runtime.set_nodenet_properties(test_nodenet, worldadapter='Braitenberg', world_uid=test_world)
     runtime.set_worldagent_properties(test_world, test_nodenet, position=(5, 5))
     assert world.agents[test_nodenet].position == (5, 5)
@@ -114,7 +115,7 @@ def test_set_agent_properties(test_world, test_nodenet):
 
 
 def test_agent_dying_unregisters_agent(test_world, test_nodenet):
-    world = runtime.worlds[test_world]
+    world = runtime.load_world(test_world)
     nodenet = runtime.get_nodenet(test_nodenet)
     nodenet.world = test_world
     runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
@@ -152,7 +153,7 @@ def test_world_does_not_spawn_deleted_agents(test_world, resourcepath):
 
 
 def test_reset_datatargets(test_world, test_nodenet):
-    world = runtime.worlds[test_world]
+    world = runtime.load_world(test_world)
     nodenet = runtime.get_nodenet(test_nodenet)
     nodenet.world = test_world
     runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
@@ -164,7 +165,7 @@ def test_reset_datatargets(test_world, test_nodenet):
 
 
 def test_worldadapter_update_calls_reset_datatargets(test_world, test_nodenet):
-    world = runtime.worlds[test_world]
+    world = runtime.load_world(test_world)
     nodenet = runtime.get_nodenet(test_nodenet)
     nodenet.world = test_world
     runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)

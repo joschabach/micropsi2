@@ -382,11 +382,10 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter):
         self.reset_simulation_state()
 
     def update_data_sources_and_targets(self):
-        super().update_data_sources_and_targets()
         old_datasource_values = np.array(self.datasource_values)
-
         self.datatarget_feedback_values = [0] * len(self.datatarget_values)
         self.datasource_values = [0] * len(self.datasource_values)
+        super().update_data_sources_and_targets()
 
         tvals = None
 

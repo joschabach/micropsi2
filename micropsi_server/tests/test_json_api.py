@@ -91,12 +91,12 @@ def test_set_node_state(app, test_nodenet, resourcepath):
     nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
     nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write('{"Testnode": {\
-            "name": "Testnode",\
-            "slottypes": ["gen", "foo", "bar"],\
-            "nodefunction_name": "testnodefunc",\
-            "gatetypes": ["gen", "foo", "bar"],\
-            "symbol": "t"}}')
+        fp.write("""{"Testnode": {
+            "name": "Testnode",
+            "slottypes": ["gen", "foo", "bar"],
+            "nodefunction_name": "testnodefunc",
+            "gatetypes": ["gen", "foo", "bar"],
+            "symbol": "t"}}""")
 
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
@@ -602,10 +602,10 @@ def test_import_world(app, test_world):
 ##
 ###################################################
 
-def test_export_monitor_data_all(app, test_nodenet):
-    response = app.get_json('/rpc/export_monitor_data(nodenet_uid="%s")' % test_nodenet)
+def test_get_monitor_data_all(app, test_nodenet):
+    response = app.get_json('/rpc/get_monitor_data(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
-    assert response.json_body['data'] == {}
+    assert response.json_body['data']['monitors'] == {}
 
 
 def test_add_gate_monitor(app, test_nodenet, node):
@@ -617,15 +617,14 @@ def test_add_gate_monitor(app, test_nodenet, node):
     })
     assert_success(response)
     uid = response.json_body['data']
-    response = app.post_json('/rpc/export_monitor_data', params={
-        'nodenet_uid': test_nodenet,
-        'monitor_uid': uid
+    response = app.post_json('/rpc/get_monitor_data', params={
+        'nodenet_uid': test_nodenet
     })
-    assert response.json_body['data']['node_uid'] == node
-    assert response.json_body['data']['target'] == 'sub'
-    assert response.json_body['data']['type'] == 'gate'
-    assert response.json_body['data']['sheaf'] == 'default'
-    assert response.json_body['data']['values'] == {}
+    assert response.json_body['data']['monitors'][uid]['node_uid'] == node
+    assert response.json_body['data']['monitors'][uid]['target'] == 'sub'
+    assert response.json_body['data']['monitors'][uid]['type'] == 'gate'
+    assert response.json_body['data']['monitors'][uid]['sheaf'] == 'default'
+    assert response.json_body['data']['monitors'][uid]['values'] == {}
 
 
 @pytest.mark.engine("dict_engine")
@@ -638,16 +637,15 @@ def test_add_slot_monitor(app, test_nodenet, node):
     })
     assert_success(response)
     uid = response.json_body['data']
-    response = app.post_json('/rpc/export_monitor_data', params={
-        'nodenet_uid': test_nodenet,
-        'monitor_uid': uid
+    response = app.post_json('/rpc/get_monitor_data', params={
+        'nodenet_uid': test_nodenet
     })
-    assert response.json_body['data']['name'] == 'Foobar'
-    assert response.json_body['data']['node_uid'] == node
-    assert response.json_body['data']['target'] == 'gen'
-    assert response.json_body['data']['type'] == 'slot'
-    assert response.json_body['data']['sheaf'] == 'default'
-    assert response.json_body['data']['values'] == {}
+    assert response.json_body['data']['monitors'][uid]['name'] == 'Foobar'
+    assert response.json_body['data']['monitors'][uid]['node_uid'] == node
+    assert response.json_body['data']['monitors'][uid]['target'] == 'gen'
+    assert response.json_body['data']['monitors'][uid]['type'] == 'slot'
+    assert response.json_body['data']['monitors'][uid]['sheaf'] == 'default'
+    assert response.json_body['data']['monitors'][uid]['values'] == {}
 
 
 def test_add_link_monitor(app, test_nodenet, node):
@@ -662,16 +660,15 @@ def test_add_link_monitor(app, test_nodenet, node):
     })
     assert_success(response)
     uid = response.json_body['data']
-    response = app.post_json('/rpc/export_monitor_data', params={
-        'nodenet_uid': test_nodenet,
-        'monitor_uid': uid
+    response = app.post_json('/rpc/get_monitor_data', params={
+        'nodenet_uid': test_nodenet
     })
-    assert response.json_body['data']['name'] == 'LinkWeight'
-    assert response.json_body['data']['source_node_uid'] == node
-    assert response.json_body['data']['gate_type'] == 'gen'
-    assert response.json_body['data']['target_node_uid'] == node
-    assert response.json_body['data']['slot_type'] == 'gen'
-    assert response.json_body['data']['property'] == 'weight'
+    assert response.json_body['data']['monitors'][uid]['name'] == 'LinkWeight'
+    assert response.json_body['data']['monitors'][uid]['source_node_uid'] == node
+    assert response.json_body['data']['monitors'][uid]['gate_type'] == 'gen'
+    assert response.json_body['data']['monitors'][uid]['target_node_uid'] == node
+    assert response.json_body['data']['monitors'][uid]['slot_type'] == 'gen'
+    assert response.json_body['data']['monitors'][uid]['property'] == 'weight'
 
 
 def test_add_custom_monitor(app, test_nodenet):
@@ -682,11 +679,64 @@ def test_add_custom_monitor(app, test_nodenet):
     })
     assert_success(response)
     uid = response.json_body['data']
-    response = app.post_json('/rpc/export_monitor_data', params={
-        'nodenet_uid': test_nodenet,
-        'monitor_uid': uid
+    response = app.post_json('/rpc/get_monitor_data', params={
+        'nodenet_uid': test_nodenet
     })
-    assert response.json_body['data']['name'] == 'nodecount'
+    assert response.json_body['data']['monitors'][uid]['name'] == 'nodecount'
+
+
+def test_add_group_monitor_by_name(app, test_nodenet):
+    app.set_auth()
+    uids = []
+    for i in range(3):
+        response = app.post_json('/rpc/add_node', params={
+            'nodenet_uid': test_nodenet,
+            'type': 'Register',
+            'position': [23, 23, 12],
+            'nodespace': None,
+            'name': 'Testnode %d' % i
+        })
+        uids.append(response.json_body['data'])
+    response = app.post_json('/rpc/add_group_monitor', {
+        'nodenet_uid': test_nodenet,
+        'name': 'testmonitor',
+        'nodespace': None,
+        'node_name_prefix': 'Testnode',
+        'gate': 'gen'
+    })
+    mon_uid = response.json_body['data']
+    response = app.post_json('/rpc/get_monitor_data', params={
+        'nodenet_uid': test_nodenet
+    })
+    assert response.json_body['data']['monitors'][mon_uid]['name'] == 'testmonitor'
+    assert response.json_body['data']['monitors'][mon_uid]['node_uids'] == uids
+
+
+def test_add_group_monitor_by_ids(app, test_nodenet):
+    app.set_auth()
+    uids = []
+    for i in range(3):
+        response = app.post_json('/rpc/add_node', params={
+            'nodenet_uid': test_nodenet,
+            'type': 'Register',
+            'position': [23, 23, 12],
+            'nodespace': None,
+            'name': 'Testnode %d' % i
+        })
+        uids.append(response.json_body['data'])
+    response = app.post_json('/rpc/add_group_monitor', {
+        'nodenet_uid': test_nodenet,
+        'name': 'testmonitor',
+        'nodespace': None,
+        'node_uids': uids,
+        'gate': 'gen'
+    })
+    mon_uid = response.json_body['data']
+    response = app.post_json('/rpc/get_monitor_data', params={
+        'nodenet_uid': test_nodenet
+    })
+    assert response.json_body['data']['monitors'][mon_uid]['name'] == 'testmonitor'
+    assert response.json_body['data']['monitors'][mon_uid]['node_uids'] == uids
 
 
 def test_remove_monitor(app, test_nodenet, node):
@@ -701,10 +751,10 @@ def test_remove_monitor(app, test_nodenet, node):
         'monitor_uid': uid
     })
     assert_success(response)
-    response = app.post_json('/rpc/export_monitor_data', params={
+    response = app.post_json('/rpc/get_monitor_data', params={
         'nodenet_uid': test_nodenet
     })
-    assert uid not in response.json_body['data']
+    assert uid not in response.json_body['data']['monitors']
 
 
 def test_clear_monitor(app, test_nodenet, node):
@@ -719,23 +769,6 @@ def test_clear_monitor(app, test_nodenet, node):
         'monitor_uid': uid
     })
     assert_success(response)
-
-
-def test_get_monitor_data(app, test_nodenet, node):
-    response = app.post_json('/rpc/add_gate_monitor', params={
-        'nodenet_uid': test_nodenet,
-        'node_uid': node,
-        'gate': 'sub'
-    })
-    uid = response.json_body['data']
-    response = app.post_json('/rpc/get_monitor_data', params={
-        'nodenet_uid': test_nodenet,
-        'step': 0,
-        'monitor_from': 3,
-        'monitor_count': 20
-    })
-    assert_success(response)
-    assert uid in response.json_body['data']['monitors']
 
 
 ###################################################
@@ -762,7 +795,18 @@ def test_get_nodespace_activations(app, test_nodenet, node):
         'last_call_step': -1
     })
     assert_success(response)
-    assert node in response.json_body['data']['activations']
+    assert node not in response.json_body['data']['activations']
+    response = app.post_json('/rpc/set_node_activation', params={
+        'nodenet_uid': test_nodenet,
+        'node_uid': node,
+        'activation': -1
+    })
+    response = app.post_json('/rpc/get_nodespace_activations', params={
+        'nodenet_uid': test_nodenet,
+        'nodespaces': [None],
+        'last_call_step': -1
+    })
+    assert response.json_body['data']['activations'][node][0] == -1
 
 
 def test_get_node(app, test_nodenet, node):
@@ -775,15 +819,17 @@ def test_add_node(app, test_nodenet):
     app.set_auth()
     response = app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
-        'type': 'Register',
+        'type': 'Pipe',
         'position': [23, 42, 13],
         'nodespace': None,
-        'name': 'N2'
+        'name': 'N2',
+        'parameters': {'wait': "3"}
     })
     assert_success(response)
     uid = response.json_body['data']
     response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="%s")' % (test_nodenet, uid))
     assert response.json_body['data']['name'] == 'N2'
+    assert int(response.json_body['data']['parameters']['wait']) == 3
 
 
 def test_add_nodespace(app, test_nodenet):
@@ -1100,12 +1146,12 @@ def test_reload_native_modules(app, test_nodenet, resourcepath):
     nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
     nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write('{"Testnode": {\
-            "name": "Testnode",\
-            "slottypes": ["gen", "foo", "bar"],\
-            "nodefunction_name": "testnodefunc",\
-            "gatetypes": ["gen", "foo", "bar"],\
-            "symbol": "t"}}')
+        fp.write("""{"Testnode": {
+            "name": "Testnode",
+            "slottypes": ["gen", "foo", "bar"],
+            "nodefunction_name": "testnodefunc",
+            "gatetypes": ["gen", "foo", "bar"],
+            "symbol": "t"}}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
     response = app.get_json('/rpc/reload_native_modules()')
@@ -1125,12 +1171,12 @@ def test_user_prompt_response(app, test_nodenet, resourcepath):
     nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
     nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write('{"Testnode": {\
-            "name": "Testnode",\
-            "slottypes": ["gen", "foo", "bar"],\
-            "nodefunction_name": "testnodefunc",\
-            "gatetypes": ["gen", "foo", "bar"],\
-            "symbol": "t"}}')
+        fp.write("""{"Testnode": {
+            "name": "Testnode",
+            "slottypes": ["gen", "foo", "bar"],
+            "nodefunction_name": "testnodefunc",
+            "gatetypes": ["gen", "foo", "bar"],
+            "symbol": "t"}}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
     response = app.get_json('/rpc/reload_native_modules()')
@@ -1292,12 +1338,12 @@ def test_nodenet_data_structure(app, test_nodenet, resourcepath, node):
     nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
     nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write('{"Testnode": {\
-            "name": "Testnode",\
-            "slottypes": ["gen", "foo", "bar"],\
-            "nodefunction_name": "testnodefunc",\
-            "gatetypes": ["gen", "foo", "bar"],\
-            "symbol": "t"}}')
+        fp.write("""{"Testnode": {
+            "name": "Testnode",
+            "slottypes": ["gen", "foo", "bar"],
+            "nodefunction_name": "testnodefunc",
+            "gatetypes": ["gen", "foo", "bar"],
+            "symbol": "t"}}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
     response = app.get_json('/rpc/reload_native_modules()')
@@ -1339,8 +1385,8 @@ def test_nodenet_data_structure(app, test_nodenet, resourcepath, node):
     data = response_2.json_body['data']
 
     # Monitors
-    response = app.get_json('/rpc/export_monitor_data(nodenet_uid="%s", monitor_uid="%s")' % (test_nodenet, monitor_uid))
-    monitor_data = response.json_body['data']
+    response = app.get_json('/rpc/get_monitor_data(nodenet_uid="%s")' % test_nodenet)
+    monitor_data = response.json_body['data']['monitors'][monitor_uid]
 
     assert data['monitors']['monitors'][monitor_uid]['name'] == 'Testmonitor'
     assert data['monitors']['monitors'][monitor_uid]['node_uid'] == node
@@ -1501,3 +1547,147 @@ def test_run_operation(app, test_nodenet, node):
         'selection_uids': [None]
     })
     assert response.json_body['status'] == 'success'
+
+
+@pytest.mark.engine("theano_engine")
+def test_add_gate_activation_recorder(app, test_nodenet, resourcepath):
+    from micropsi_core import runtime
+    app.set_auth()
+    nodenet = runtime.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    nodespace = netapi.get_nodespace(None)
+    for i in range(3):
+        netapi.create_node('Register', None, "testnode_%d" % i)
+    response = app.post_json('/rpc/add_gate_activation_recorder', {
+        'nodenet_uid': test_nodenet,
+        'group_definition': {'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'},
+        'name': "recorder",
+        'interval': 2
+    })
+    assert_success(response)
+    recorder_uid = response.json_body['data']
+    runtime.step_nodenet(test_nodenet)
+    runtime.step_nodenet(test_nodenet)
+    assert netapi.get_recorder(recorder_uid).name == 'recorder'
+    assert 'activations' in netapi.get_recorder(recorder_uid).values
+
+
+@pytest.mark.engine("theano_engine")
+def test_add_node_activation_recorder(app, test_nodenet, resourcepath):
+    from micropsi_core import runtime
+    app.set_auth()
+    nodenet = runtime.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    nodespace = netapi.get_nodespace(None)
+    for i in range(3):
+        netapi.create_node('Pipe', None, "testnode_%d" % i)
+    response = app.post_json('/rpc/add_node_activation_recorder', {
+        'nodenet_uid': test_nodenet,
+        'group_definition': {'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'},
+        'name': "recorder",
+        'interval': 2
+    })
+    assert_success(response)
+    recorder_uid = response.json_body['data']
+    runtime.step_nodenet(test_nodenet)
+    runtime.step_nodenet(test_nodenet)
+    assert netapi.get_recorder(recorder_uid).name == 'recorder'
+    assert netapi.get_recorder(recorder_uid).values['activations'][0].shape == (7, 3)
+
+
+@pytest.mark.engine("theano_engine")
+def test_add_linkweight_recorder(app, test_nodenet, resourcepath):
+    from micropsi_core import runtime
+    app.set_auth()
+    nodenet = runtime.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    nodespace = netapi.get_nodespace(None)
+    layer1 = []
+    layer2 = []
+    for i in range(3):
+        layer1.append(netapi.create_node('Register', None, "l1_%d" % i))
+        layer2.append(netapi.create_node('Register', None, "l2_%d" % i))
+    for i in range(3):
+        for j in range(3):
+            netapi.link(layer1[i], 'gen', layer2[j], 'gen', weight=0.89)
+
+    response = app.post_json('/rpc/add_linkweight_recorder', {
+        'nodenet_uid': test_nodenet,
+        'from_group_definition': {'nodespace_uid': nodespace.uid, 'node_name_prefix': 'l1'},
+        'to_group_definition': {'nodespace_uid': nodespace.uid, 'node_name_prefix': 'l2'},
+        'name': "recorder",
+        'interval': 2
+    })
+    assert_success(response)
+    recorder_uid = response.json_body['data']
+    runtime.step_nodenet(test_nodenet)
+    runtime.step_nodenet(test_nodenet)
+    assert netapi.get_recorder(recorder_uid).name == 'recorder'
+    assert 'linkweights' in netapi.get_recorder(recorder_uid).values
+
+
+@pytest.mark.engine("theano_engine")
+def test_clear_recorder(app, test_nodenet, resourcepath):
+    from micropsi_core import runtime
+    app.set_auth()
+    nodenet = runtime.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    nodespace = netapi.get_nodespace(None)
+    for i in range(3):
+        netapi.create_node('Register', None, "testnode_%d" % i)
+    recorder = netapi.add_gate_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder")
+    for i in range(3):
+        runtime.step_nodenet(test_nodenet)
+
+    response = app.post_json('/rpc/clear_recorder', {
+        'nodenet_uid': test_nodenet,
+        'recorder_uid': recorder.uid,
+    })
+    assert_success(response)
+    assert recorder.values == {}
+
+
+@pytest.mark.engine("theano_engine")
+def test_remove_recorder(app, test_nodenet, resourcepath):
+    from micropsi_core import runtime
+    app.set_auth()
+    nodenet = runtime.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    nodespace = netapi.get_nodespace(None)
+    for i in range(3):
+        netapi.create_node('Register', None, "testnode_%d" % i)
+    recorder = netapi.add_gate_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder")
+    for i in range(3):
+        runtime.step_nodenet(test_nodenet)
+
+    response = app.post_json('/rpc/remove_recorder', {
+        'nodenet_uid': test_nodenet,
+        'recorder_uid': recorder.uid,
+    })
+    assert_success(response)
+    assert netapi.get_recorder(recorder.uid) is None
+
+
+@pytest.mark.engine("theano_engine")
+def test_get_recorders(app, test_nodenet):
+    from micropsi_core import runtime
+    nodenet = runtime.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    nodespace = netapi.get_nodespace(None)
+    for i in range(3):
+        netapi.create_node('Register', None, "testnode_%d" % i)
+    runtime.step_nodenet(test_nodenet)
+    recorder = netapi.add_gate_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder", interval=3)
+    runtime.step_nodenet(test_nodenet)
+    runtime.step_nodenet(test_nodenet)
+    response = app.post_json('/rpc/get_recorders', {
+        'nodenet_uid': test_nodenet
+    })
+    data = response.json_body['data'][recorder.uid]
+    assert data["uid"] == recorder.uid
+    assert data["name"] == 'recorder'
+    assert data["interval"] == 3
+    assert data["filename"] == recorder.filename
+    assert data["current_index"] == 0
+    assert data["first_step"] == 3
+    assert data["classname"] == 'GateActivationRecorder'

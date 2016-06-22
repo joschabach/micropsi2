@@ -16,6 +16,13 @@
             </div>
             %end
 
+            %if world is not None and world.uid:
+            <div class="alert alert-info">
+            Please note: Saving this form will immediately write the new values. This world will be saved and re-initialized.
+            </div>
+            %end
+
+
             <fieldset class="well">
 
                 %if not defined("name_error"):
@@ -27,7 +34,7 @@
                     <div class="controls">
                         <input type="text" class="input-xlarge" maxlength="256" id="world_name" name="world_name"
                         %if defined('world'):
-                        value="{{world.name}}"
+                        value="{{world.name if world else ''}}"
                         %end
                         />
                         %if defined("name_error"):
@@ -39,23 +46,25 @@
                 <div class="control-group">
                     <label class="control-label" for="world_type">Type</label>
                     <div class="controls">
-                        <select class="input-xlarge" id="world_type" name="world_type">
-                            <option value="">None</option>
-                            % for type in worldtypes:
-                                %if defined("world") and type == world.type:
+                        %if world is not None and world.uid:
+                            <select class="input-xlarge" id="world_type" name="world_type" disabled="disabled">
+                                <option value="{{world.__class__.__name__}}" selected="selected">{{world.__class__.__name__}}</option>
+                            </select>
+                        %else:
+                            <select class="input-xlarge" id="world_type" name="world_type">
+                                <option value="">None</option>
+                                % for type in sorted(worldtypes):
                                     <option value="{{type}}" selected="selected">{{type}}</option>
-                                %else:
-                                    <option value="{{type}}">{{type}}</option>
                                 %end
-                            %end
-                        </select>
+                            </select>
+                        %end
                         % for type in worldtypes:
-                            <div class="hint small world_docstring world_docstring_{{type}}" style="display:none; white-space: pre-wrap;">{{worldtypes[type].__doc__.strip()}}</div>
+                            <div class="hint small world_docstring world_docstring_{{type}}" style="display:none; white-space: pre-wrap;">{{(worldtypes[type].__doc__ or '').strip()}}</div>
                         %end
                     </div>
                 </div>
 
-                %for type in worldtypes:
+                %for type in sorted(worldtypes):
                     % for param in worldtypes[type].get_config_options():
                     <div class="control-group world_config world_config_{{type}}" style="display:none">
                         <label class="control-label" for="world_config_{{type}}_{{param['name']}}">{{param['name']}}</label>
@@ -63,16 +72,22 @@
                             % if param.get('options'):
                             <select class="input-xlarge" id="world_config_{{type}}_{{param['name']}}" name="{{type}}_{{param['name']}}">
                                 % for val in param['options']:
-                                    <option value="{{val}}" 
-                                    %if param.get('default') and param['default'] == val:
-                                        selected="selected"
+                                    <option value="{{val}}"
+                                    %if world and world.uid:
+                                        %if world.config.get(param['name']) == val:
+                                            selected="selected"
+                                        %end
+                                    %else:
+                                        %if param.get('default') and param['default'] == val:
+                                            selected="selected"
+                                        %end
                                     %end
                                     >{{val}}</option>
                                 %end
                             </select>
                             %else:
                             <input class="input-xlarge" id="world_config_{{type}}_{{param['name']}}" name="{{type}}_{{param['name']}}"
-                                type="text" value="{{param.get('default', '')}}" />
+                                type="text" value="{{world.config.get(param['name'], '') if world else param.get('default', '')}}" />
                             %end
                             %if param.get('description'):
                                 <div class="hint small">{{param['description']}}</div>
@@ -84,7 +99,7 @@
                 %end
 
 
-            %if defined("world"):
+            %if world is not None:
                 <input type="hidden" name="world_uid" value="{{world.uid}}" />
             %end
 
@@ -107,5 +122,6 @@ $('#world_type').on('change', function(event){
     $('.world_config_'+val).show();
     $('.world_docstring').hide();
     $('.world_docstring_'+val).show();
-})
+});
+$('#world_type').trigger("change");
 </script>

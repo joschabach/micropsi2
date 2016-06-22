@@ -96,7 +96,7 @@ class UserManager(object):
             with open(self.user_file_name) as file:
                 self.users = json.load(file)
         except ValueError:
-            logging.getLogger('system').warn("Invalid user data")
+            logging.getLogger('system').warning("Invalid user data")
         except IOError:
             logging.getLogger('system').info("No readable userdata file, attempting to create one.")
 

@@ -26,6 +26,14 @@
     <link href="/static/css/bootstrap-slider.css" rel="stylesheet">
     <link href="/static/css/chosen.min.css" rel="stylesheet">
 
+    <script type="text/javascript">
+        % if theano_available:
+            theano_available = true;
+        % else:
+            theano_available = false;
+        % end
+    </script>
+
     <!-- HTML5 shim, for IE6-8 -->
     <!--[if lt IE 9]>
     <script src="/static/js/html5.js"></script>

@@ -59,7 +59,7 @@ class TimeSeries(World):
         self.shuffle = config['shuffle'] == "True"
 
         if clip_and_scale and sigmoid:
-            self.logger.warn("clip_and_scale and sigmoid cannot both be configured, choosing sigmoid")
+            self.logger.warning("clip_and_scale and sigmoid cannot both be configured, choosing sigmoid")
             clip_and_scale = False
 
         def sigm(X):
@@ -90,7 +90,7 @@ class TimeSeries(World):
             self.timeseries = data_z if not sigmoid else sigm(data_z)
 
         if dummydata:
-            self.logger.warn("! Using dummy data")
+            self.logger.warning("! Using dummy data")
             n_ids = self.timeseries.shape[1]
             self.timeseries = np.tile(np.random.rand(n_ids,1),(1,10))
 
@@ -182,17 +182,8 @@ class TimeSeriesRunner(ArrayWorldAdapter):
     def __init__(self, world, uid=None, **data):
         super().__init__(world, uid, **data)
 
-        self.available_datatargets = []
-        self.available_datasources = []
-
         for idx, ID in enumerate(self.world.ids):
-            self.available_datasources.append(str(ID))
-
-    def get_available_datasources(self):
-        return self.available_datasources
-
-    def get_available_datatargets(self):
-        return self.available_datatargets
+            self.add_datasource(str(ID))
 
     def update_data_sources_and_targets(self):
         self.datasource_values = self.world.state

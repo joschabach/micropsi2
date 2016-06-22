@@ -44,6 +44,14 @@ bottle.debug(cfg['micropsi2'].get('debug', False))  # devV
 bottle.TEMPLATE_PATH.insert(0, os.path.join(APP_PATH, 'view', ''))
 bottle.TEMPLATE_PATH.insert(1, os.path.join(APP_PATH, 'static', ''))
 
+theano_available = True
+try:
+    import theano
+except ImportError:
+    theano_available = False
+
+bottle.BaseTemplate.defaults['theano_available'] = theano_available
+
 # runtime = micropsi_core.runtime.MicroPsiRuntime()
 usermanager = usermanagement.UserManager()
 
@@ -153,13 +161,14 @@ def _add_world_list(template_name, **params):
         response.set_cookie('selected_world', current_world)
     else:
         current_world = request.get_cookie('selected_world')
-    if current_world in worlds and hasattr(worlds[current_world], 'assets'):
-        world_assets = worlds[current_world].assets
-    else:
-        world_assets = {}
+    world_assets = {}
+    if current_world:
+        world_obj = runtime.load_world(current_world)
+        if hasattr(world_obj, 'assets'):
+            world_assets = world_obj.assets
     return template(template_name, current=current_world,
-        mine=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner == params['user_id']),
-        others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner != params['user_id']),
+        mine=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].get('owner') == params['user_id']),
+        others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].get('owner') != params['user_id']),
         world_assets=world_assets, **params)
 
 
@@ -555,32 +564,62 @@ def export_nodenet(nodenet_uid):
     return runtime.export_nodenet(nodenet_uid)
 
 
+@micropsi_app.route("/recorder/export/<nodenet_uid>-<recorder_uid>")
+def export_recorder(nodenet_uid, recorder_uid):
+    data = runtime.export_recorders(nodenet_uid, [recorder_uid])
+    recorder = runtime.get_recorder(nodenet_uid, recorder_uid)
+    response.set_header('Content-type', 'application/octet-stream')
+    response.set_header('Content-Disposition', 'attachment; filename="recorder_%s.npz"' % recorder.name)
+    return data
+
+
+@micropsi_app.route("/recorder/export/<nodenet_uid>", method="POST")
+def export_recorders(nodenet_uid):
+    uids = []
+    for param in request.params.allitems():
+        if param[0] == 'recorder_uids[]':
+            uids.append(param[1])
+    data = runtime.export_recorders(nodenet_uid, uids)
+    response.set_header('Content-type', 'application/octet-stream')
+    response.set_header('Content-Disposition', 'attachment; filename="recorders_%s.npz"' % nodenet_uid)
+    return data
+
+
 @micropsi_app.route("/nodenet/edit")
 def edit_nodenet():
     user_id, permissions, token = get_request_data()
-    # nodenet_id = request.params.get('id', None)
-    title = 'Edit Nodenet' if id is not None else 'New Nodenet'
-
-    theano_available = True
-    try:
-        import theano
-    except ImportError:
-        theano_available = False
+    nodenet_uid = request.params.get('id')
+    title = 'Edit Nodenet' if nodenet_uid is not None else 'New Nodenet'
 
     return template("nodenet_form.tpl", title=title,
         # nodenet_uid=nodenet_uid,
         nodenets=runtime.get_available_nodenets(),
+        worldtypes=runtime.get_available_world_types(),
         templates=runtime.get_available_nodenets(),
         worlds=runtime.get_available_worlds(),
-        version=VERSION, user_id=user_id, permissions=permissions, theano_available=theano_available)
+        version=VERSION, user_id=user_id, permissions=permissions)
 
 
 @micropsi_app.route("/nodenet/edit", method="POST")
 def write_nodenet():
     user_id, permissions, token = get_request_data()
     params = dict((key, request.forms.getunicode(key)) for key in request.forms)
+    worldadapter_name = params['nn_worldadapter']
+    wa_params = {}
+    for key in params:
+        if key.startswith('worldadapter_%s_' % worldadapter_name):
+            strip = len("worldadapter_%s_" % worldadapter_name)
+            wa_params[key[strip:]] = params[key]
     if "manage nodenets" in permissions:
-        result, nodenet_uid = runtime.new_nodenet(params['nn_name'], engine=params['nn_engine'], worldadapter=params['nn_worldadapter'], template=params.get('nn_template'), owner=user_id, world_uid=params.get('nn_world'), use_modulators=params.get('nn_modulators', False))
+        result, nodenet_uid = runtime.new_nodenet(
+            params['nn_name'],
+            engine=params['nn_engine'],
+            worldadapter=params['nn_worldadapter'],
+            template=params.get('nn_template'),
+            owner=user_id,
+            world_uid=params.get('nn_world'),
+            use_modulators=params.get('nn_modulators', False),
+            worldadapter_config=wa_params)
         if result:
             return dict(status="success", msg="Nodenet created", nodenet_uid=nodenet_uid)
         else:
@@ -617,11 +656,15 @@ def export_world(world_uid):
 @micropsi_app.route("/world/edit")
 def edit_world_form():
     token = request.get_cookie("token")
-    id = request.params.get('id', None)
-    title = 'Edit World' if id is not None else 'New World'
+    world_uid = request.params.get('id', None)
+    world = None
+    if world_uid:
+        world = runtime.worlds.get(world_uid)
+    title = 'Edit World' if world is not None else 'New World'
     worldtypes = runtime.get_available_world_types()
     return template("world_form.tpl", title=title,
         worldtypes=worldtypes,
+        world=world,
         version=VERSION,
         user_id=usermanager.get_user_id_for_session_token(token),
         permissions=usermanager.get_permissions_for_session_token(token))
@@ -630,18 +673,26 @@ def edit_world_form():
 @micropsi_app.route("/world/edit", method="POST")
 def edit_world():
     params = dict((key, request.forms.getunicode(key)) for key in request.forms)
-    type = params['world_type']
+    world_uid = params.get('world_uid')
+    if world_uid:
+        world_type = runtime.worlds[world_uid].__class__.__name__
+    else:
+        world_type = params['world_type']
     config = {}
     for p in params:
-        if p.startswith(type + '_'):
-            config[p[len(type) + 1:]] = params[p]
+        if p.startswith(world_type + '_'):
+            config[p[len(world_type) + 1:]] = params[p]
     user_id, permissions, token = get_request_data()
     if "manage worlds" in permissions:
-        result, uid = runtime.new_world(params['world_name'], params['world_type'], user_id, config=config)
-        if result:
-            return dict(status="success", msg="World created", world_uid=uid)
+        if world_uid:
+            runtime.set_world_properties(world_uid, world_name=params['world_name'], config=config)
+            return dict(status="success", msg="World changes saved")
         else:
-            return dict(status="error", msg=": %s" % result)
+            result, uid = runtime.new_world(params['world_name'], world_type, user_id, config=config)
+            if result:
+                return dict(status="success", msg="World created", world_uid=uid)
+            else:
+                return dict(status="error", msg=": %s" % result)
     return dict(status="error", msg="Insufficient rights to create world")
 
 
@@ -678,21 +729,13 @@ def edit_runner_properties():
         return template("runner_form", action="/config/runner", value=runtime.get_runner_properties())
 
 
-@micropsi_app.route("/create_new_nodenet_form")
-def create_new_nodenet_form():
-    user_id, permissions, token = get_request_data()
-    nodenets = runtime.get_available_nodenets()
-    worlds = runtime.get_available_worlds()
-    return template("nodenet_form", user_id=user_id, template="None",
-        nodenets=nodenets, worlds=worlds)
-
-
 @micropsi_app.route("/create_worldadapter_selector/<world_uid>")
 def create_worldadapter_selector(world_uid):
-    nodenets = runtime.get_available_nodenets()
-    worlds = runtime.get_available_worlds()
-    return template("worldadapter_selector", world_uid=world_uid,
-        nodenets=nodenets, worlds=worlds)
+    return template("worldadapter_selector",
+        world_uid=world_uid,
+        nodenets=runtime.get_available_nodenets(),
+        worlds=runtime.get_available_worlds(),
+        worldtypes=runtime.get_available_world_types())
 
 
 @micropsi_app.route("/dashboard")
@@ -739,8 +782,8 @@ def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadap
 
 
 @rpc("get_calculation_state")
-def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
-    return runtime.get_calculation_state(nodenet_uid, nodenet=nodenet, nodenet_diff=nodenet_diff, world=world, monitors=monitors, dashboard=dashboard)
+def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None, recorders=None):
+    return runtime.get_calculation_state(nodenet_uid, nodenet=nodenet, nodenet_diff=nodenet_diff, world=world, monitors=monitors, dashboard=dashboard, recorders=recorders)
 
 
 @rpc("get_nodenet_changes")
@@ -790,8 +833,8 @@ def delete_nodenet(nodenet_uid):
 
 
 @rpc("set_nodenet_properties", permission_required="manage nodenets")
-def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None):
-    return runtime.set_nodenet_properties(nodenet_uid, nodenet_name=nodenet_name, worldadapter=worldadapter, world_uid=world_uid, owner=owner)
+def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None, worldadapter_config={}):
+    return runtime.set_nodenet_properties(nodenet_uid, nodenet_name=nodenet_name, worldadapter=worldadapter, world_uid=world_uid, owner=owner, worldadapter_config=worldadapter_config)
 
 
 @rpc("set_node_state")
@@ -1028,6 +1071,11 @@ def add_custom_monitor(nodenet_uid, function, name, color=None):
     return True, runtime.add_custom_monitor(nodenet_uid, function, name, color=color)
 
 
+@rpc("add_group_monitor")
+def add_group_monitor(nodenet_uid, nodespace, name, node_name_prefix='', node_uids=[], gate='gen', color=None):
+    return True, runtime.add_group_monitor(nodenet_uid, nodespace, name, node_name_prefix=node_name_prefix, node_uids=node_uids, gate=gate, color=color)
+
+
 @rpc("remove_monitor")
 def remove_monitor(nodenet_uid, monitor_uid):
     try:
@@ -1046,14 +1094,9 @@ def clear_monitor(nodenet_uid, monitor_uid):
         return dict(status='error', msg='unknown nodenet or monitor')
 
 
-@rpc("export_monitor_data")
-def export_monitor_data(nodenet_uid, monitor_uid=None):
-    return True, runtime.export_monitor_data(nodenet_uid, monitor_uid)
-
-
 @rpc("get_monitor_data")
-def get_monitor_data(nodenet_uid, step, monitor_from=0, monitor_count=-1):
-    return True, runtime.get_monitor_data(nodenet_uid, step, monitor_from, monitor_count)
+def get_monitor_data(nodenet_uid, step=0, monitor_from=0, monitor_count=-1):
+    return True, runtime.get_monitor_data(nodenet_uid, step, from_step=monitor_from, count=monitor_count)
 
 
 # Nodenet
@@ -1226,6 +1269,44 @@ def get_emoexpression_parameters(nodenet_uid):
     nodenet = runtime.get_nodenet(nodenet_uid)
     return True, emoexpression.calc_emoexpression_parameters(nodenet)
 
+
+# --------- recorder --------
+
+
+@rpc("add_gate_activation_recorder")
+def add_gate_activation_recorder(nodenet_uid, group_definition, name, interval=1):
+    """ Adds an activation recorder to a group of nodes."""
+    return runtime.add_gate_activation_recorder(nodenet_uid, group_definition, name, interval)
+
+
+@rpc("add_node_activation_recorder")
+def add_node_activation_recorder(nodenet_uid, group_definition, name, interval=1):
+    """ Adds an activation recorder to a group of nodes."""
+    return runtime.add_node_activation_recorder(nodenet_uid, group_definition, name, interval)
+
+
+@rpc("add_linkweight_recorder")
+def add_linkweight_recorder(nodenet_uid, from_group_definition, to_group_definition, name, interval=1):
+    """ Adds a linkweight recorder to links between to groups."""
+    return runtime.add_linkweight_recorder(nodenet_uid, from_group_definition, to_group_definition, name, interval)
+
+
+@rpc("remove_recorder")
+def remove_recorder(nodenet_uid, recorder_uid):
+    """Deletes a recorder."""
+    return runtime.remove_recorder(nodenet_uid, recorder_uid)
+
+
+@rpc("clear_recorder")
+def clear_recorder(nodenet_uid, recorder_uid):
+    """Leaves the recorder intact, but deletes the current list of stored values."""
+    return runtime.clear_recorder(nodenet_uid, recorder_uid)
+
+
+@rpc("get_recorders")
+def get_recorders(nodenet_uid):
+    return runtime.get_recorder_data(nodenet_uid)
+
 # --------- logging --------
 
 
@@ -1241,8 +1322,8 @@ def get_logger_messages(logger=[], after=0):
 
 
 @rpc("get_monitoring_info")
-def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor_count=-1):
-    data = runtime.get_monitoring_info(nodenet_uid, logger, after, monitor_from, monitor_count)
+def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor_count=-1, with_recorders=False):
+    data = runtime.get_monitoring_info(nodenet_uid, logger, after, monitor_from, monitor_count, with_recorders=with_recorders)
     return True, data
 
 

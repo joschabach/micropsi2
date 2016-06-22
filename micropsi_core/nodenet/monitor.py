@@ -24,10 +24,12 @@ class Monitor(metaclass=ABCMeta):
         values: the observed values
 
     """
-    def __init__(self, nodenet, name='', uid=None, color=None):
+    def __init__(self, nodenet, name='', uid=None, color=None, values={}):
         self.uid = uid or micropsi_core.tools.generate_uid()
         self.nodenet = nodenet
         self.values = {}
+        for key in sorted(values.keys()):
+            self.values[int(key)] = values[key]
         self.name = name or "some monitor"
         self.color = color or "#%02d%02d%02d" % (random.randint(0,99), random.randint(0,99), random.randint(0,99))
 
@@ -41,18 +43,52 @@ class Monitor(metaclass=ABCMeta):
         }
 
     @abstractmethod
-    def step(self, step):
+    def getvalue(self):
         pass  # pragma: no cover
+
+    def step(self, step):
+        self.values[step] = self.getvalue()
 
     def clear(self):
         self.values = {}
 
 
+class GroupMonitor(Monitor):
+
+    def __init__(self, nodenet, nodespace, name, name_prefix='', node_uids=[], gate='gen', uid=None, color=None, values={}, **_):
+        super().__init__(nodenet, name=name, uid=uid, color=color, values=values)
+        self.nodespace = nodespace
+        self.node_uids = node_uids
+        self.name_prefix = name_prefix
+        self.gate = gate
+        if len(node_uids) == 0:
+            self.nodenet.group_nodes_by_names(nodespace, name_prefix, gatetype=gate, group_name=name)
+            self.node_uids = self.nodenet.get_node_uids(nodespace, name)
+        else:
+            self.nodenet.group_nodes_by_ids(nodespace, node_uids, name, gatetype=gate)
+
+    def get_data(self):
+        data = super().get_data()
+        data.update({
+            "nodespace": self.nodespace,
+            "node_uids": self.node_uids,
+            "gate": self.gate
+        })
+        return data
+
+    def getvalue(self):
+        data = self.nodenet.get_activations(self.nodespace, self.name)
+        if type(data) == list:
+            return data
+        else:
+            return data.tolist()
+
+
 class NodeMonitor(Monitor):
 
-    def __init__(self, nodenet, node_uid, type, target, sheaf=None, name=None, uid=None, color=None, **_):
+    def __init__(self, nodenet, node_uid, type, target, sheaf=None, name=None, uid=None, color=None, values={}, **_):
         name = name or "%s %s @ Node %s" % (type, target, nodenet.get_node(node_uid).name or nodenet.get_node(node_uid).uid)
-        super(NodeMonitor, self).__init__(nodenet, name, uid, color=color)
+        super(NodeMonitor, self).__init__(nodenet, name, uid, color=color, values=values)
         self.node_uid = node_uid
         self.type = type
         self.target = target or 'gen'
@@ -68,7 +104,7 @@ class NodeMonitor(Monitor):
         })
         return data
 
-    def step(self, step):
+    def getvalue(self):
         value = None
         if self.nodenet.is_node(self.node_uid):
             if self.type == 'gate' and self.target in self.nodenet.get_node(self.node_uid).get_gate_types():
@@ -77,17 +113,17 @@ class NodeMonitor(Monitor):
                 value = self.nodenet.get_node(self.node_uid).get_slot(self.target).activations[self.sheaf]
 
         if value is not None and not math.isnan(value):
-            self.values[step] = value
+            return value
         else:
-            self.values[step] = None
+            return None
 
 
 class LinkMonitor(Monitor):
 
-    def __init__(self, nodenet, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, uid=None, color=None, **_):
+    def __init__(self, nodenet, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, uid=None, color=None, values={}, **_):
         api = nodenet.netapi
         name = name or "%s:%s -> %s:%s" % (api.get_node(source_node_uid).name, gate_type, api.get_node(source_node_uid).name, slot_type)
-        super(LinkMonitor, self).__init__(nodenet, name, uid, color=color)
+        super(LinkMonitor, self).__init__(nodenet, name, uid, color=color, values=values)
         self.source_node_uid = source_node_uid
         self.target_node_uid = target_node_uid
         self.gate_type = gate_type
@@ -115,19 +151,19 @@ class LinkMonitor(Monitor):
                         return l
         return None
 
-    def step(self, step):
+    def getvalue(self):
         link = self.find_link()
         if link:
-            self.values[step] = getattr(self.find_link(), self.property)
+            return getattr(self.find_link(), self.property)
         else:
-            self.values[step] = None
+            return None
 
 
 class ModulatorMonitor(Monitor):
 
-    def __init__(self, nodenet, modulator, name=None, uid=None, color=None, **_):
+    def __init__(self, nodenet, modulator, name=None, uid=None, color=None, values={}, **_):
         name = name or "Modulator: %s" % modulator
-        super(ModulatorMonitor, self).__init__(nodenet, name, uid, color=color)
+        super(ModulatorMonitor, self).__init__(nodenet, name, uid, color=color, values=values)
         self.modulator = modulator
         self.nodenet = nodenet
 
@@ -138,14 +174,14 @@ class ModulatorMonitor(Monitor):
         })
         return data
 
-    def step(self, step):
-        self.values[step] = self.nodenet.get_modulator(self.modulator)
+    def getvalue(self):
+        return self.nodenet.get_modulator(self.modulator)
 
 
 class CustomMonitor(Monitor):
 
-    def __init__(self, nodenet, function, name=None, uid=None, color=None, **_):
-        super(CustomMonitor, self).__init__(nodenet, name, uid, color=color)
+    def __init__(self, nodenet, function, name=None, uid=None, color=None, values={}, **_):
+        super(CustomMonitor, self).__init__(nodenet, name, uid, color=color, values=values)
         self.function = function
         self.compiled_function = micropsi_core.tools.create_function(self.function, parameters="netapi")
 
@@ -156,5 +192,5 @@ class CustomMonitor(Monitor):
         })
         return data
 
-    def step(self, step):
-        self.values[step] = self.compiled_function(self.nodenet.netapi)
+    def getvalue(self):
+        return self.compiled_function(self.nodenet.netapi)

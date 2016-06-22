@@ -56,26 +56,23 @@ def test_get_nodenet_activation_data(test_nodenet):
     nodes = prepare_nodenet(test_nodenet)
     uid = nodes['a']
     activation_data = micropsi.get_nodenet_activation_data(test_nodenet, [None])
-    assert activation_data["activations"][uid][0] == 0
-    assert activation_data["activations"][uid][1] == 0
-    assert activation_data["activations"][uid][2] == 0
-    assert activation_data["activations"][uid][3] == 0
-    assert activation_data["activations"][uid][4] == 0
-    assert activation_data["activations"][uid][5] == 0
-    assert activation_data["activations"][uid][6] == 0
-
+    uid not in activation_data["activations"]
     micropsi.set_node_activation(test_nodenet, nodes['a'], 0.34556865)
-
     activation_data = micropsi.get_nodenet_activation_data(test_nodenet, [None])
     assert activation_data["activations"][uid][0] == 0.3
 
 
 def test_get_nodenet_activation_data_for_nodespace(test_nodenet):
     nodes = prepare_nodenet(test_nodenet)
+    netapi = micropsi.nodenets[test_nodenet].netapi
     uid = nodes['a']
     nodespace = micropsi.nodenets[test_nodenet].get_nodespace_uids()[0]
     activation_data = micropsi.get_nodenet_activation_data(test_nodenet, [nodespace])
-    assert activation_data["activations"][uid][0] == 0
+    # zero activations are not sent anymore
+    assert uid not in activation_data["activations"]
+    netapi.get_node(uid).activation = 0.9
+    activation_data = micropsi.get_nodenet_activation_data(test_nodenet, [nodespace])
+    assert activation_data["activations"][uid][0] == 0.9
 
 
 def test_get_nodespace(test_nodenet):
@@ -172,12 +169,12 @@ def test_native_module_and_recipe_categories(fixed_nodenet, resourcepath):
     nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
     recipe_file = os.path.join(resourcepath, 'Test', 'Test2', 'recipes.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write('{"Testnode": {\
-            "name": "Testnode",\
-            "slottypes": ["gen", "foo", "bar"],\
-            "nodefunction_name": "testnodefunc",\
-            "gatetypes": ["gen", "foo", "bar"]\
-            }}')
+        fp.write("""{"Testnode": {
+            "name": "Testnode",
+            "slottypes": ["gen", "foo", "bar"],
+            "nodefunction_name": "testnodefunc",
+            "gatetypes": ["gen", "foo", "bar"]
+            }}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
     with open(recipe_file, 'w') as fp:
@@ -185,6 +182,7 @@ def test_native_module_and_recipe_categories(fixed_nodenet, resourcepath):
     micropsi.reload_native_modules()
     res = micropsi.get_available_native_module_types(fixed_nodenet)
     assert res['Testnode']['category'] == 'Test'
+    assert res['Testnode']['line_number'] == 1
     res = micropsi.get_available_recipes()
     assert res['testrecipe']['category'] == 'Test/Test2'
 
@@ -201,33 +199,33 @@ def test_gate_defaults_change_with_nodetype(fixed_nodenet, resourcepath,):
     nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
     nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write('{"Testnode": {\
-            "name": "Testnode",\
-            "slottypes": ["gen", "foo", "bar"],\
-            "nodefunction_name": "testnodefunc",\
-            "gatetypes": ["gen", "foo", "bar"],\
-            "symbol": "t",\
-            "gate_defaults":{\
-              "foo": {\
-                "amplification": 13\
-              }\
-            }}}')
+        fp.write("""{"Testnode": {
+            "name": "Testnode",
+            "slottypes": ["gen", "foo", "bar"],
+            "nodefunction_name": "testnodefunc",
+            "gatetypes": ["gen", "foo", "bar"],
+            "symbol": "t",
+            "gate_defaults":{
+              "foo": {
+                "amplification": 13
+              }
+            }}}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
     micropsi.reload_native_modules()
     res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10], name="Testnode")
     with open(nodetype_file, 'w') as fp:
-        fp.write('{"Testnode": {\
-            "name": "Testnode",\
-            "slottypes": ["gen", "foo", "bar"],\
-            "nodefunction_name": "testnodefunc",\
-            "gatetypes": ["gen", "foo", "bar"],\
-            "symbol": "t",\
-            "gate_defaults":{\
-              "foo": {\
-                "amplification": 5\
-              }\
-            }}}')
+        fp.write("""{"Testnode": {
+            "name": "Testnode",
+            "slottypes": ["gen", "foo", "bar"],
+            "nodefunction_name": "testnodefunc",
+            "gatetypes": ["gen", "foo", "bar"],
+            "symbol": "t",
+            "gate_defaults":{
+              "foo": {
+                "amplification": 5
+              }
+            }}}""")
     micropsi.reload_native_modules()
     params = micropsi.nodenets[fixed_nodenet].get_node(uid).get_gate_parameters()
     assert params["foo"]["amplification"] == 5
@@ -264,17 +262,17 @@ def test_remove_and_reload_native_module(fixed_nodenet, resourcepath):
     nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
     nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write('{"Testnode": {\
-            "name": "Testnode",\
-            "slottypes": ["gen", "foo", "bar"],\
-            "nodefunction_name": "testnodefunc",\
-            "gatetypes": ["gen", "foo", "bar"],\
-            "symbol": "t",\
-            "gate_defaults":{\
-              "foo": {\
-                "amplification": 13\
-              }\
-            }}}')
+        fp.write("""{"Testnode": {
+            "name": "Testnode",
+            "slottypes": ["gen", "foo", "bar"],
+            "nodefunction_name": "testnodefunc",
+            "gatetypes": ["gen", "foo", "bar"],
+            "symbol": "t",
+            "gate_defaults":{
+              "foo": {
+                "amplification": 13
+              }
+            }}}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
@@ -292,18 +290,18 @@ def test_engine_specific_nodetype_dict(fixed_nodenet, resourcepath):
     nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
     nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write('{"Testnode": {\
-            "engine": "theano_engine",\
-            "name": "Testnode",\
-            "slottypes": ["gen", "foo", "bar"],\
-            "nodefunction_name": "testnodefunc",\
-            "gatetypes": ["gen", "foo", "bar"],\
-            "symbol": "t",\
-            "gate_defaults":{\
-              "foo": {\
-                "amplification": 13\
-              }\
-            }}}')
+        fp.write("""{"Testnode": {
+            "engine": "theano_engine",
+            "name": "Testnode",
+            "slottypes": ["gen", "foo", "bar"],
+            "nodefunction_name": "testnodefunc",
+            "gatetypes": ["gen", "foo", "bar"],
+            "symbol": "t",
+            "gate_defaults":{
+              "foo": {
+                "amplification": 13
+              }
+            }}}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
@@ -318,18 +316,18 @@ def test_engine_specific_nodetype_theano(fixed_nodenet, resourcepath):
     nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
     nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write('{"Testnode": {\
-            "engine": "dict_engine",\
-            "name": "Testnode",\
-            "slottypes": ["gen", "foo", "bar"],\
-            "nodefunction_name": "testnodefunc",\
-            "gatetypes": ["gen", "foo", "bar"],\
-            "symbol": "t",\
-            "gate_defaults":{\
-              "foo": {\
-                "amplification": 13\
-              }\
-            }}}')
+        fp.write("""{"Testnode": {
+            "engine": "dict_engine",
+            "name": "Testnode",
+            "slottypes": ["gen", "foo", "bar"],
+            "nodefunction_name": "testnodefunc",
+            "gatetypes": ["gen", "foo", "bar"],
+            "symbol": "t",
+            "gate_defaults":{
+              "foo": {
+                "amplification": 13
+              }
+            }}}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
@@ -382,16 +380,16 @@ def test_node_parameter_defaults(fixed_nodenet, resourcepath):
     nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
     nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write('{"Testnode": {\
-            "name": "Testnode",\
-            "slottypes": ["gen", "foo", "bar"],\
-            "gatetypes": ["gen", "foo", "bar"],\
-            "nodefunction_name": "testnodefunc",\
-            "parameters": ["testparam"],\
-            "parameter_defaults": {\
-                "testparam": 13\
-              }\
-            }}')
+        fp.write("""{"Testnode": {
+            "name": "Testnode",
+            "slottypes": ["gen", "foo", "bar"],
+            "gatetypes": ["gen", "foo", "bar"],
+            "nodefunction_name": "testnodefunc",
+            "parameters": ["testparam"],
+            "parameter_defaults": {
+                "testparam": 13
+              }
+            }}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
@@ -406,16 +404,16 @@ def test_node_parameters_from_persistence(fixed_nodenet, resourcepath):
     nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
     nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write('{"Testnode": {\
-            "name": "Testnode",\
-            "slottypes": ["gen", "foo", "bar"],\
-            "gatetypes": ["gen", "foo", "bar"],\
-            "nodefunction_name": "testnodefunc",\
-            "parameters": ["testparam"],\
-            "parameter_defaults": {\
-                "testparam": 13\
-              }\
-            }}')
+        fp.write("""{"Testnode": {
+            "name": "Testnode",
+            "slottypes": ["gen", "foo", "bar"],
+            "gatetypes": ["gen", "foo", "bar"],
+            "nodefunction_name": "testnodefunc",
+            "parameters": ["testparam"],
+            "parameter_defaults": {
+                "testparam": 13
+              }
+            }}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
     micropsi.reload_native_modules()

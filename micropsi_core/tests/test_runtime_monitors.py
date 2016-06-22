@@ -100,27 +100,30 @@ def test_remove_monitor(fixed_nodenet):
 
 
 def test_remove_monitored_node(fixed_nodenet):
+    nodenet = micropsi.nodenets[fixed_nodenet]
     uid = micropsi.add_gate_monitor(fixed_nodenet, 'n0001', 'gen', sheaf='default')
     micropsi.delete_nodes(fixed_nodenet, ['n0001'])
     micropsi.step_nodenet(fixed_nodenet)
-    monitor = micropsi.export_monitor_data(fixed_nodenet)
-    assert monitor[uid]['values'][1] is None
+    monitor = nodenet.get_monitor(uid)
+    assert monitor.values[1] is None
 
 
 def test_remove_monitored_link(fixed_nodenet):
+    nodenet = micropsi.nodenets[fixed_nodenet]
     uid = micropsi.add_link_monitor(fixed_nodenet, 'n0005', 'gen', 'n0003', 'gen', 'weight', 'Testmonitor')
     micropsi.delete_link(fixed_nodenet, 'n0005', 'gen', 'n0003', 'gen')
     micropsi.step_nodenet(fixed_nodenet)
-    monitor = micropsi.export_monitor_data(fixed_nodenet)
-    assert monitor[uid]['values'][1] is None
+    monitor = nodenet.get_monitor(uid)
+    assert monitor.values[1] is None
 
 
 def test_remove_monitored_link_via_delete_node(fixed_nodenet):
+    nodenet = micropsi.nodenets[fixed_nodenet]
     uid = micropsi.add_link_monitor(fixed_nodenet, 'n0005', 'gen', 'n0003', 'gen', 'weight', 'Testmonitor')
     micropsi.delete_nodes(fixed_nodenet, ['n0005'])
     micropsi.step_nodenet(fixed_nodenet)
-    monitor = micropsi.export_monitor_data(fixed_nodenet)
-    assert monitor[uid]['values'][1] is None
+    monitor = nodenet.get_monitor(uid)
+    assert monitor.values[1] is None
 
 
 def test_get_monitor_data(fixed_nodenet):
@@ -134,25 +137,6 @@ def test_get_monitor_data(fixed_nodenet):
     assert [k for k in values.keys()] == [1]
 
 
-def test_export_monitor_data(fixed_nodenet):
-    uid1 = micropsi.add_gate_monitor(fixed_nodenet, 'n0001', 'gen')
-    uid2 = micropsi.add_gate_monitor(fixed_nodenet, 'n0003', 'gen')
-    micropsi.step_nodenet(fixed_nodenet)
-    data = micropsi.export_monitor_data(fixed_nodenet)
-    assert uid1 in data
-    assert 'values' in data[uid1]
-    assert uid2 in data
-
-
-def test_export_monitor_data_with_id(fixed_nodenet):
-    uid1 = micropsi.add_gate_monitor(fixed_nodenet, 'n0001', 'gen', name="Testmonitor")
-    micropsi.add_gate_monitor(fixed_nodenet, 'n0003', 'gen')
-    micropsi.step_nodenet(fixed_nodenet)
-    data = micropsi.export_monitor_data(fixed_nodenet, monitor_uid=uid1)
-    assert data['name'] == 'Testmonitor'
-    assert 'values' in data
-
-
 def test_clear_monitor(fixed_nodenet):
     uid = micropsi.add_gate_monitor(fixed_nodenet, 'n0001', 'gen')
     micropsi.step_nodenet(fixed_nodenet)
@@ -162,40 +146,66 @@ def test_clear_monitor(fixed_nodenet):
     assert len(values.keys()) == 0
 
 
-def test_fetch_partial_monitor_data(fixed_nodenet):
+def test_get_partial_monitor_data(fixed_nodenet):
     uid = micropsi.add_gate_monitor(fixed_nodenet, 'n0001', 'gen')
     i = 0
     while i < 50:
         micropsi.step_nodenet(fixed_nodenet)
         i += 1
-    assert micropsi.nodenets[fixed_nodenet].current_step == 50
+    nodenet = micropsi.nodenets[fixed_nodenet]
+    assert nodenet.current_step == 50
 
     # get 10 items from [20 - 29]
-    data = micropsi.export_monitor_data(fixed_nodenet, monitor_from=20, monitor_count=10)
-    values = data[uid]['values']
-    assert len(values.keys()) == 10
-    assert set(list(values.keys())) == set(range(20, 30))
-
-    # get 10 items from [20 - 29] for one monitor
-    data = micropsi.export_monitor_data(fixed_nodenet, monitor_uid=uid, monitor_from=20, monitor_count=10)
-    values = data['values']
+    data = micropsi.get_monitor_data(fixed_nodenet, from_step=20, count=10)
+    values = data['monitors'][uid]['values']
     assert len(values.keys()) == 10
     assert set(list(values.keys())) == set(range(20, 30))
 
     # get 10 newest values [41-50]
-    data = micropsi.export_monitor_data(fixed_nodenet, monitor_count=10)
-    values = data[uid]['values']
+    data = micropsi.get_monitor_data(fixed_nodenet, count=10)
+    values = data['monitors'][uid]['values']
     assert len(values.keys()) == 10
     assert set(list(values.keys())) == set(range(41, 51))
 
     # get 10 items, starting at 45 -- assert they are filled up to the left.
-    data = micropsi.export_monitor_data(fixed_nodenet, monitor_from=40, monitor_count=15)
-    values = data[uid]['values']
+    data = micropsi.get_monitor_data(fixed_nodenet, from_step=40, count=15)
+    values = data['monitors'][uid]['values']
     assert len(values.keys()) == 15
     assert set(list(values.keys())) == set(range(36, 51))
 
     # get all items, starting at 10
-    data = micropsi.export_monitor_data(fixed_nodenet, monitor_from=10)
-    values = data[uid]['values']
+    data = micropsi.get_monitor_data(fixed_nodenet, from_step=10)
+    values = data['monitors'][uid]['values']
     assert len(values.keys()) == 41
     assert set(list(values.keys())) == set(range(10, 51))
+
+
+def test_add_group_monitor(test_nodenet):
+    nodenet = micropsi.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    nodespace = netapi.get_nodespace(None)
+    nodes = []
+    for i in range(10):
+        node = netapi.create_node('Register', None, "testnode_%d" % i)
+        nodes.append(node)
+        if i > 0:
+            netapi.link(nodes[i - 1], 'gen', node, 'gen')
+    source = netapi.create_node("Register", None, "Source")
+    netapi.link(source, 'gen', source, 'gen')
+    netapi.link(source, 'gen', nodes[0], 'gen')
+    source.activation = 1
+    monitor_uid = netapi.add_group_monitor(nodespace.uid, 'testndoes', node_name_prefix='testnode', gate='gen', color='purple')
+    for i in range(5):
+        micropsi.step_nodenet(test_nodenet)
+    data = nodenet.get_monitor(monitor_uid).get_data()
+    assert set(data['values'][4][:4]) == {1.0}  # first 4 active
+    assert set(data['values'][4][4:]) == {0.0}  # rest off
+    micropsi.save_nodenet(test_nodenet)
+    micropsi.revert_nodenet(test_nodenet)
+    nodenet = micropsi.nodenets[test_nodenet]
+    data2 = nodenet.get_monitor(monitor_uid).get_data()
+    assert data2 == data
+    micropsi.step_nodenet(test_nodenet)
+    data3 = nodenet.get_monitor(monitor_uid).get_data()
+    assert set(data3['values'][6][:6]) == {1.0}  # first 6 active
+    assert set(data3['values'][6][6:]) == {0.0}  # rest off

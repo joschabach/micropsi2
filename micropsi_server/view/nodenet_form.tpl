@@ -123,6 +123,37 @@
                     </div>
                 </div>
 
+                %for type in worldtypes:
+                    % for name, adapter in worldtypes[type].get_supported_worldadapters().items():
+                        % for param in adapter.get_config_options():
+                            <div class="control-group worldadapter-config worldadapter-{{name}}" style="display:none">
+                                <label class="control-label" for="worldadapter_config_{{name}}_{{param['name']}}">{{param['name']}}</label>
+                                <div class="controls">
+                                    % if param.get('options'):
+                                    <select class="input-xlarge" id="worldadapter_config_{{name}}_{{param['name']}}" name="worldadapter_{{name}}_{{param['name']}}">
+                                        % for val in param['options']:
+                                            <option value="{{val}}"
+                                            %if param.get('default') and param['default'] == val:
+                                                selected="selected"
+                                            %end
+                                            >{{val}}</option>
+                                        %end
+                                    </select>
+                                    %else:
+                                    <input class="input-xlarge" id="world_config_{{name}}_{{param['name']}}" name="worldadapter_{{name}}_{{param['name']}}"
+                                        type="text" value="{{param.get('default', '')}}" />
+                                    %end
+                                    %if param.get('description'):
+                                        <div class="hint small">{{param['description']}}</div>
+
+                                    %end
+                                </div>
+                            </div>
+                        % end
+                    %end
+                %end
+
+
             </fieldset>
     </div>
 
@@ -134,4 +165,3 @@
     </form>
 
 </div>
-

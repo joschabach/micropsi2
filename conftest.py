@@ -143,10 +143,10 @@ def test_world(request):
 @pytest.fixture(scope="function")
 def default_world(request):
     """
-    Fixture: A test world of type Island
+    Fixture: A test world of type default
     """
-    for uid in micropsi.worlds:
-        if micropsi.worlds[uid].data['world_type'] == 'World':
+    for uid in micropsi.world_data:
+        if micropsi.world_data[uid].get('world_type', 'DefaultWorld') == 'DefaultWorld':
             return uid
 
 

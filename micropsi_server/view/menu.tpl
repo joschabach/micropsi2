@@ -40,6 +40,7 @@
                         <b class="caret"></b></a>
                     <ul class="dropdown-menu">
                         <li><a href="/world/edit" class="world_new">New...</a></li>
+                        <li data="world-needed"><a href="/world/edit" class="world_edit">Edit</a></li>
                         <li class="divider"></li>
                         <li data="world-needed"><a href="#" class="world_delete">Delete</a></li>
                         <li data="world-needed"><a href="#" class="world_save">Save</a></li>

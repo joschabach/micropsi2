@@ -264,10 +264,10 @@ class DictNodenet(Nodenet):
                     with open(filename) as file:
                         initfrom.update(json.load(file))
                 except ValueError:
-                    self.logger.warn("Could not read nodenet data")
+                    self.logger.warning("Could not read nodenet data")
                     return False
                 except IOError:
-                    self.logger.warn("Could not open nodenet file")
+                    self.logger.warning("Could not open nodenet file")
                     return False
 
             if self._version == NODENET_VERSION:
@@ -319,6 +319,9 @@ class DictNodenet(Nodenet):
         # set up nodespaces; make sure that parent nodespaces exist before children are initialized
         self._nodespaces = {}
         self._nodespaces["Root"] = DictNodespace(self, None, [0, 0, 0], name="Root", uid="Root")
+
+        if 'current_step' in initfrom:
+            self._step = initfrom['current_step']
 
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)
@@ -410,9 +413,13 @@ class DictNodenet(Nodenet):
         for uid in node_ids:
             node = self.get_node(uid)
             if rounded is None:
-                activations[uid] = [node.get_gate(gate_name).activation for gate_name in node.get_gate_types()]
+                act = [node.get_gate(gate_name).activation for gate_name in node.get_gate_types()]
+                if set(act) != {0}:
+                    activations[uid] = act
             else:
-                activations[uid] = [round(node.get_gate(gate_name).activation, rounded) for gate_name in node.get_gate_types()]
+                act = [round(node.get_gate(gate_name).activation, rounded) for gate_name in node.get_gate_types()]
+                if set(act) != {0}:
+                    activations[uid] = act
         return activations
 
     def delete_node(self, node_uid):
@@ -477,7 +484,7 @@ class DictNodenet(Nodenet):
             data['uid'] = newuid
             uidmap[uid] = newuid
             if data['type'] not in self.nodetypes and data['type'] not in self.native_modules:
-                self.logger.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
+                self.logger.warning("Invalid nodetype %s for node %s" % (data['type'], uid))
                 data['parameters'] = {
                     'comment': 'There was a %s node here' % data['type']
                 }
@@ -513,7 +520,7 @@ class DictNodenet(Nodenet):
                     mon = getattr(monitor, data['classname'])(self, **data)
                     self._monitors[mon.uid] = mon
                 else:
-                    self.logger.warn('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], monitorid))
+                    self.logger.warning('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], monitorid))
             else:
                 # Compatibility mode
                 mon = monitor.NodeMonitor(self, name=data['node_name'], **data)

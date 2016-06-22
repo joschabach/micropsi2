@@ -23,10 +23,10 @@ def get_available_worlds(owner=None):
         owner (optional): when submitted, the list is filtered by this owner
     """
     if owner:
-        return dict((uid, micropsi_core.runtime.worlds[uid]) for uid in micropsi_core.runtime.worlds if
-                    micropsi_core.runtime.worlds[uid].owner == owner)
+        return dict((uid, micropsi_core.runtime.world_data[uid]) for uid in micropsi_core.runtime.world_data if
+                    micropsi_core.runtime.world_data[uid].get('owner') is None or micropsi_core.runtime.world_data[uid].get('owner') == owner)
     else:
-        return micropsi_core.runtime.worlds
+        return micropsi_core.runtime.world_data
 
 
 def get_world_properties(world_uid):
@@ -56,9 +56,13 @@ def get_worldadapters(world_uid, nodenet_uid=None):
     if world_uid in micropsi_core.runtime.worlds:
         world = micropsi_core.runtime.worlds[world_uid]
         for name, worldadapter in world.supported_worldadapters.items():
-            data[name] = {'description': worldadapter.__doc__}
+            data[name] = {
+                'description': worldadapter.__doc__,
+                'config_options': worldadapter.get_config_options()
+            }
         if nodenet_uid and nodenet_uid in world.agents:
             agent = world.agents[nodenet_uid]
+            data[agent.__class__.__name__]['config'] = micropsi_core.runtime.nodenets[nodenet_uid].metadata['worldadapter_config']
             data[agent.__class__.__name__]['datasources'] = agent.get_available_datasources()
             data[agent.__class__.__name__]['datatargets'] = agent.get_available_datatargets()
     return data
@@ -150,12 +154,20 @@ def get_world_view(world_uid, step):
     return {}
 
 
-def set_world_properties(world_uid, world_name=None, owner=None):
+def set_world_properties(world_uid, world_name=None, owner=None, config=None):
     """Sets the supplied parameters (and only those) for the world with the given uid."""
     if world_uid not in micropsi_core.runtime.worlds:
         raise KeyError("World not found")
     micropsi_core.runtime.worlds[world_uid].name = world_name
-    micropsi_core.runtime.worlds[world_uid].owner = owner
+    if owner is not None:
+        micropsi_core.runtime.worlds[world_uid].owner = owner
+    if config is not None:
+        micropsi_core.runtime.world_data[world_uid].name = world_name
+        micropsi_core.runtime.world_data[world_uid].config.update(config)
+        filename = os.path.join(micropsi_core.runtime.PERSISTENCY_PATH, micropsi_core.runtime.WORLD_DIRECTORY, world_uid)
+        with open(filename + '.json', 'w+') as fp:
+            fp.write(json.dumps(micropsi_core.runtime.world_data[world_uid], sort_keys=True, indent=4))
+        micropsi_core.runtime.revert_world(world_uid)
     return True
 
 
@@ -227,4 +239,4 @@ def get_available_world_types():
     """Returns a mapping of the available world type names to their classes"""
     import importlib
     from micropsi_core.world.world import World
-    return dict((cls.__name__, cls) for cls in tools.itersubclasses(vars()['World']))
+    return dict((cls.__name__, cls) for cls in tools.itersubclasses(World))

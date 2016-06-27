@@ -82,7 +82,7 @@ class VREPWorld(World):
         - simExtRemoteApiStart(19999) has to have been run
         - the simulation must have been started
     """
-    supported_worldadapters = ['Robot', 'OneBallRobot']
+    supported_worldadapters = ['Robot', 'OneBallRobot', 'Objects6D']
 
     assets = {
         'template': 'vrep/vrep.tpl',
@@ -266,34 +266,16 @@ class VrepOneBallGame(WorldAdapterMixin):
             self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, self.ball_handle, self.robot_handle, [rx, ry], vrep.simx_opmode_blocking])
 
 
-class Robot(WorldAdapterMixin, ArrayWorldAdapter):
-    """ The basic worldadapter to control a robot in vrep.
-    Combine this with the Vrep Mixins for a useful robot simulation"""
+class VrepCallMixin():
 
     block_runner_if_connection_lost = True
 
-    @staticmethod
-    def get_config_options():
-        return [
-            {'name': 'robot_name',
-             'description': 'The name of the robot object in V-REP',
-             'default': 'LBR_iiwa_7_R800',
-             'options': ["LBR_iiwa_7_R800", "MTB_Robot"]},
-            {'name': 'control_type',
-             'description': 'The type of input sent to the robot',
-             'default': 'force/torque',
-             'options': ["force/torque", "force/torque-sync", "angles", "movements"]},
-            {'name': 'randomize_arm',
-             'description': 'Initialize the robot arm randomly',
-             'default': 'False',
-             'options': ["False", "True"]},
-        ]
-
-    def __init__(self, world, uid=None, **data):
-        super().__init__(world, uid, **data)
+    def on_vrep_connect(self):
+        """ is called by the world, if a connection was established """
         self.initialize()
 
     def call_vrep(self, method, params, empty_result_ok=False):
+        """ error handling wrapper for calls to the vrep API """
         result = method(*params)
         code = result if type(result) == int else result[0]
         if code != vrep.simx_return_ok:
@@ -325,8 +307,30 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter):
         else:
             return result[1:]
 
-    def on_vrep_connect(self):
-        """ is called by the world, if a connection was established """
+
+class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
+    """ The basic worldadapter to control a robot in vrep.
+    Combine this with the Vrep Mixins for a useful robot simulation"""
+
+    @staticmethod
+    def get_config_options():
+        return [
+            {'name': 'robot_name',
+             'description': 'The name of the robot object in V-REP',
+             'default': 'LBR_iiwa_7_R800',
+             'options': ["LBR_iiwa_7_R800", "MTB_Robot"]},
+            {'name': 'control_type',
+             'description': 'The type of input sent to the robot',
+             'default': 'force/torque',
+             'options': ["force/torque", "force/torque-sync", "angles", "movements"]},
+            {'name': 'randomize_arm',
+             'description': 'Initialize the robot arm randomly',
+             'default': 'False',
+             'options': ["False", "True"]},
+        ]
+
+    def __init__(self, world, uid=None, **data):
+        super().__init__(world, uid, **data)
         self.initialize()
 
     def initialize(self):
@@ -515,17 +519,18 @@ class OneBallRobot(Robot, VrepVision, VrepCollisions, VrepOneBallGame):
         return parameters
 
 
-
-class Objects6D(Robot):
-    """ worldadapter to observe and control 6D poses of arbitrary objects in a scene
+class Objects6D(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
+    """ worldadapter to observe and control 6D poses of arbitrary objects in a vrep scene
     (i.e. their positons and orientations)"""
     block_runner_if_connection_lost = True
 
     @staticmethod
     def get_config_options():
-        return [{'name': 'objects',
-                'description': 'comma-separated names of objects in the vrep scene',
-                'default': 'fork,ghost_fork'}]
+        parameters = [{'name': 'objects',
+                      'description': 'comma-separated names of objects in the vrep scene',
+                      'default': 'fork,ghost_fork'}]
+        parameters.extend(VrepVision.get_config_options())
+        return parameters
 
     def __init__(self, world, uid=None, **data):
         super().__init__(world, uid, **data)
@@ -578,12 +583,12 @@ class Objects6D(Robot):
         if self.nodenet:
             self.nodenet.worldadapter_instance = self
         self.initialized = True
-
+        # print('objects6D initialize: self.datasources=',self.datasources)
         self.reset_simulation_state()
 
     def update_data_sources_and_targets(self):
         # self.datatarget_feedback_values = np.zeros_like(self.datatarget_values)
-        self.datasource_values = np.zeros_like(self.datasource_values)
+        self.datasource_values = np.zeros_like(self.datasource_values, dtype='float64')  # need to override self.datasource_values' dtype to float. why?
         super().update_data_sources_and_targets()
 
         restart = self._get_datatarget_value('restart') > 0.9 and self.world.current_step - self.last_restart >= 5
@@ -610,6 +615,9 @@ class Objects6D(Robot):
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 
         self.fetch_sensor_and_feedback_values_from_simulation(None)
+
+        # print("update: self.datasource_values=", self.datasource_values)
+
 
     def reset_simulation_state(self):
         self.call_vrep(vrep.simxStopSimulation, [self.clientID, vrep.simx_opmode_oneshot], empty_result_ok=True)
@@ -643,7 +651,5 @@ class Objects6D(Robot):
             self._set_datasource_value("%s-beta" % name, tbeta)
             self._set_datasource_value("%s-gamma" % name, tgamma)
 
-            # todo: are we interested in "datatarget feedback values" for this simple world?
-            # self._set_datatarget_feedback_value("%s-x" % name, 1)
-            # self._set_datatarget_feedback_value("%s-y" % name, 1)
-            # (...)
+            # if name == 'fork':
+            #     print('fetch: i={}, name={}, handle={}\nx={} y={} z={}\nalpha={} beta={} gamma={}\n'.format(i, name, handle, tx, ty, tz, talpha, tbeta, tgamma))

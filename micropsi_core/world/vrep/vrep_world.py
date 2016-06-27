@@ -513,3 +513,137 @@ class OneBallRobot(Robot, VrepVision, VrepCollisions, VrepOneBallGame):
         parameters.extend(VrepVision.get_config_options())
         parameters.extend(VrepOneBallGame.get_config_options())
         return parameters
+
+
+
+class Objects6D(Robot):
+    """ worldadapter to observe and control 6D poses of arbitrary objects in a scene
+    (i.e. their positons and orientations)"""
+    block_runner_if_connection_lost = True
+
+    @staticmethod
+    def get_config_options():
+        return [{'name': 'objects',
+                'description': 'comma-separated names of objects in the vrep scene',
+                'default': 'fork,ghost_fork'}]
+
+    def __init__(self, world, uid=None, **data):
+        super().__init__(world, uid, **data)
+        self.object_names = [name.strip() for name in self.objects.split(',')]
+        self.initialize()
+
+    def initialize(self):
+        self.clientID = self.world.connection_daemon.clientID
+
+        self.datasource_names = []
+        self.datatarget_names = []
+        self.datasource_values = np.zeros(0)
+        self.datatarget_values = np.zeros(0)
+        self.datatarget_feedback_values = np.zeros(0)
+
+        super().initialize()
+
+        self.object_handles = []
+        for name in self.object_names:
+            handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, name, vrep.simx_opmode_blocking])
+            if handle < 1:
+                self.logger.critical("There seems to be no object with the name %s in the v-rep simulation." % self.name)
+            else:
+                self.object_handles.append(handle)
+                self.logger.info("Found object %s" % name)
+
+                # position:
+                self.add_datasource("%s-x" % name)
+                self.add_datasource("%s-y" % name)
+                self.add_datasource("%s-z" % name)
+                # angle:
+                self.add_datasource("%s-alpha" % name)
+                self.add_datasource("%s-beta" % name)
+                self.add_datasource("%s-gamma" % name)
+
+                # target position:
+                self.add_datatarget("%s-x" % name)
+                self.add_datatarget("%s-y" % name)
+                self.add_datatarget("%s-z" % name)
+                # target angle:
+                self.add_datatarget("%s-alpha" % name)
+                self.add_datatarget("%s-beta" % name)
+                self.add_datatarget("%s-gamma" % name)
+
+        self.add_datatarget("restart")
+        self.add_datatarget("execute")
+
+        self.last_restart = 0
+
+        if self.nodenet:
+            self.nodenet.worldadapter_instance = self
+        self.initialized = True
+
+        self.reset_simulation_state()
+
+    def update_data_sources_and_targets(self):
+        # self.datatarget_feedback_values = np.zeros_like(self.datatarget_values)
+        self.datasource_values = np.zeros_like(self.datasource_values)
+        super().update_data_sources_and_targets()
+
+        restart = self._get_datatarget_value('restart') > 0.9 and self.world.current_step - self.last_restart >= 5
+        execute = self._get_datatarget_value('execute') > 0.9
+
+        # simulation restart
+        if restart:
+            return self.reset_simulation_state()
+
+        # send new target positions and angles
+        if execute:
+            self.call_vrep(vrep.simxPauseCommunication, [self.clientID, True], empty_result_ok=True)
+            for i, (name, handle) in enumerate(zip(self.object_names, self.object_handles)):
+                # set position:
+                tx = self._get_datatarget_value("%s-x" % name)
+                ty = self._get_datatarget_value("%s-y" % name)
+                tz = self._get_datatarget_value("%s-z" % name)
+                self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, handle, -1, [tx, ty, tz], vrep.simx_opmode_oneshot], empty_result_ok=True)
+                # set angles:
+                talpha = self._get_datatarget_value("%s-alpha" % name)
+                tbeta = self._get_datatarget_value("%s-beta" % name)
+                tgamma = self._get_datatarget_value("%s-gamma" % name)
+                self.call_vrep(vrep.simxSetObjectOrientation, [self.clientID, handle, -1, [talpha, tbeta, tgamma], vrep.simx_opmode_oneshot], empty_result_ok=True)
+            self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
+
+        self.fetch_sensor_and_feedback_values_from_simulation(None)
+
+    def reset_simulation_state(self):
+        self.call_vrep(vrep.simxStopSimulation, [self.clientID, vrep.simx_opmode_oneshot], empty_result_ok=True)
+        time.sleep(0.3)
+        self.call_vrep(vrep.simxStartSimulation, [self.clientID, vrep.simx_opmode_oneshot])
+        time.sleep(0.5)
+        super().reset_simulation_state()
+
+        self.fetch_sensor_and_feedback_values_from_simulation(None)
+        self.last_restart = self.world.current_step
+
+    def fetch_sensor_and_feedback_values_from_simulation(self, targets, include_feedback=False):
+        if not self.world.connection_daemon.is_connected:
+            if self.block_runner_if_connection_lost:
+                while not self.world.connection_daemon.is_connected:
+                    time.sleep(0.5)
+            else:
+                return
+
+        if self.world.connection_daemon.clientID != self.clientID:
+            self.initialize()
+
+        for i, (name, handle) in enumerate(zip(self.object_names, self.object_handles)):
+            tx, ty, tz = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, handle, -1, vrep.simx_opmode_oneshot], empty_result_ok=True)
+            self._set_datasource_value("%s-x" % name, tx)
+            self._set_datasource_value("%s-y" % name, ty)
+            self._set_datasource_value("%s-z" % name, tz)
+
+            talpha, tbeta, tgamma = self.call_vrep(vrep.simxGetObjectOrientation, [self.clientID, handle, -1, vrep.simx_opmode_oneshot], empty_result_ok=True)
+            self._set_datasource_value("%s-alpha" % name, talpha)
+            self._set_datasource_value("%s-beta" % name, tbeta)
+            self._set_datasource_value("%s-gamma" % name, tgamma)
+
+            # todo: are we interested in "datatarget feedback values" for this simple world?
+            # self._set_datatarget_feedback_value("%s-x" % name, 1)
+            # self._set_datatarget_feedback_value("%s-y" % name, 1)
+            # (...)

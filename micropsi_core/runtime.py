@@ -1672,7 +1672,7 @@ def reload_native_modules():
 
 
 def initialize(persistency_path=None, resource_path=None):
-    global PERSISTENCY_PATH, RESOURCE_PATH, configs, logger, runner
+    global PERSISTENCY_PATH, RESOURCE_PATH, configs, logger, runner, initialized
 
     if persistency_path is None:
         persistency_path = cfg['paths']['data_directory']

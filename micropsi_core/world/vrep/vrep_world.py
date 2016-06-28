@@ -12,6 +12,10 @@ import base64
 import random
 import math
 
+
+from scipy.misc import toimage, fromimage
+from PIL import Image
+
 import vrep
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import ArrayWorldAdapter, WorldAdapterMixin
@@ -168,7 +172,7 @@ class VrepCollisions(WorldAdapterMixin):
             self._set_datasource_value("collision", 1 if collision_state else 0)
 
 
-class VrepVision(WorldAdapterMixin):
+class VrepGreyscaleVision(WorldAdapterMixin):
 
     def initialize(self):
         super().initialize()
@@ -181,27 +185,81 @@ class VrepVision(WorldAdapterMixin):
             if len(resolution) != 2:
                 self.logger.error("Could not determine vision resolution.")
             else:
-                self.logger.info("Vision resolution is %s" % str(self.vision_resolution))
+                self.logger.info("Vision resolution is %s, greyscale" % str(self.vision_resolution))
         for y in range(self.vision_resolution[1]):
             for x in range(self.vision_resolution[0]):
                 self.add_datasource("px_%03d_%03d" % (x, y))
 
-        self.image = plt.imshow(np.zeros(shape=(self.vision_resolution[0], self.vision_resolution[1])), cmap="bone")
+        self.image = plt.imshow(np.zeros(shape=(self.vision_resolution[0], self.vision_resolution[1])), cmap="bone", interpolation='nearest')
         self.image.norm.vmin = 0
         self.image.norm.vmax = 1
 
     def update_data_sources_and_targets(self):
         super().update_data_sources_and_targets()
         resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_buffer])
-
         rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (self.vision_resolution[0] * self.vision_resolution[1], 3)).astype(np.float32)
         rgb_image /= 255.
         luminance = np.sum(rgb_image * np.asarray([.2126, .7152, .0722]), axis=1)
         y_image = luminance.astype(np.float32).reshape((self.vision_resolution[0], self.vision_resolution[1]))[::-1,:]   # todo: npyify and make faster
 
         self._set_datasource_values('px_000_000', y_image.flatten())
-
         self.image.set_data(y_image)
+        print('vrep vision image sum', np.sum(abs(y_image)))
+
+
+
+class VrepRGBVision(WorldAdapterMixin):
+
+    downscale_factor = 2**2  # rescale the image before sending it to the toolkit. use a power of two.
+
+    def initialize(self):
+        super().initialize()
+        self.observer_handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, "Observer", vrep.simx_opmode_blocking])
+        if self.observer_handle < 1:
+            self.logger.warn("Could not get handle for Observer vision sensor, vision will not be available.")
+        else:
+            resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_streaming]) # _split+4000)
+            if len(resolution) != 2:
+                self.logger.error("Could not determine vision resolution.")
+            else:
+                self.vision_resolution = (int(resolution[0] / self.downscale_factor), int(resolution[1] / self.downscale_factor))
+                self.logger.info("Vision resolution is %s (RGB)" % str(self.vision_resolution))
+
+        for y in range(self.vision_resolution[1]):
+            for x in range(self.vision_resolution[0]):
+                for c in "rgb":
+                    self.add_datasource("px_%03d_%03d_%s" % (x, y, c))
+
+        self.logger.info("added %d vision data sources." % (self.vision_resolution[1]*self.vision_resolution[0]*3))
+
+        self.image = plt.imshow(np.zeros(shape=(self.vision_resolution[0], self.vision_resolution[1], 3)), interpolation='nearest')
+        self.image.norm.vmin = 0
+        self.image.norm.vmax = 1
+
+    def update_data_sources_and_targets(self):
+        super().update_data_sources_and_targets()
+        resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_buffer])
+        rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (
+                               self.vision_resolution[0]*self.downscale_factor, self.vision_resolution[1]*self.downscale_factor, 3)).astype(np.float32)
+        # rgb_image /= 255.
+
+        # smooth & resize the image.
+        # it would be nice to use scipy.ndimage.zoom for that since that doesnt require PIL.
+        # but it doesnt correctly downsample rgb images (i.e., colors go wrong at sharp edges)
+        pil_img = toimage(rgb_image, high=255, low=0, mode='RGB')
+        scaled_image = fromimage(pil_img.resize(self.vision_resolution, resample=Image.LANCZOS), mode='RGB') / 255
+
+        import ipdb; ipdb.set_trace()
+        plt.imshow(scaled_image)
+        plt.savefig('bla.png')
+
+        self._set_datasource_values('px_000_000_r', scaled_image.flatten())
+        self.image.set_data(scaled_image)
+        print('nvrep vision image sum', np.sum(abs(scaled_image)))
+
+
+# class VrepRGBDVision(WorldAdapterMixin):
+#    ...
 
 
 class VrepOneBallGame(WorldAdapterMixin):
@@ -505,7 +563,7 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
                                                                                   vrep.simx_opmode_blocking])
 
 
-class OneBallRobot(Robot, VrepVision, VrepCollisions, VrepOneBallGame):
+class OneBallRobot(Robot, VrepGreyscaleVision, VrepCollisions, VrepOneBallGame):
     """ A Worldadapter to play the one-ball-reaching-task """
 
     @classmethod
@@ -514,12 +572,12 @@ class OneBallRobot(Robot, VrepVision, VrepCollisions, VrepOneBallGame):
         parameters = []
         parameters.extend(Robot.get_config_options())
         parameters.extend(VrepCollisions.get_config_options())
-        parameters.extend(VrepVision.get_config_options())
+        parameters.extend(VrepGreyscaleVision.get_config_options())
         parameters.extend(VrepOneBallGame.get_config_options())
         return parameters
 
 
-class Objects6D(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
+class Objects6D(VrepRGBVision, ArrayWorldAdapter, VrepCallMixin):
     """ worldadapter to observe and control 6D poses of arbitrary objects in a vrep scene
     (i.e. their positons and orientations)"""
     block_runner_if_connection_lost = True
@@ -529,12 +587,12 @@ class Objects6D(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
         parameters = [{'name': 'objects',
                       'description': 'comma-separated names of objects in the vrep scene',
                       'default': 'fork,ghost_fork'}]
-        parameters.extend(VrepVision.get_config_options())
+        parameters.extend(VrepGreyscaleVision.get_config_options())
         return parameters
 
     def __init__(self, world, uid=None, **data):
         super().__init__(world, uid, **data)
-        self.object_names = [name.strip() for name in self.objects.split(',')]
+
         self.initialize()
 
     def initialize(self):
@@ -548,6 +606,7 @@ class Objects6D(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
 
         super().initialize()
 
+        self.object_names = [name.strip() for name in self.objects.split(',')]
         self.object_handles = []
         for name in self.object_names:
             handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, name, vrep.simx_opmode_blocking])

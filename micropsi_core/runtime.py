@@ -612,9 +612,13 @@ def set_runner_condition(nodenet_uid, monitor=None, steps=None):
     """ registers a condition that stops the runner if it is fulfilled"""
     nodenet = get_nodenet(nodenet_uid)
     condition = {}
-    if monitor is not None:
-        condition['monitor'] = monitor
-    if steps is not None:
+    if monitor:
+        if type(monitor) == dict and 'uid' in monitor and 'value' in monitor:
+            condition['monitor'] = monitor
+        else:
+            return False, "Monitor condition expects a dict with keys 'uid' and 'value'"
+    if steps:
+        steps = int(steps)
         condition['step'] = nodenet.current_step + steps
         condition['step_amount'] = steps
     if condition:

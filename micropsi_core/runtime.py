@@ -56,6 +56,8 @@ custom_operations = {}
 
 netapi_consoles = {}
 
+initialized = False
+
 from code import InteractiveConsole
 
 
@@ -1709,3 +1711,4 @@ def initialize(persistency_path=None, resource_path=None):
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
+    initialized = True

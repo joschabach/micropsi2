@@ -210,7 +210,7 @@ class VrepGreyscaleVision(WorldAdapterMixin):
 
 class VrepRGBVision(WorldAdapterMixin):
 
-    downscale_factor = 2**4  # rescale the image before sending it to the toolkit. use a power of two.
+    downscale_factor = 2**2  # rescale the image before sending it to the toolkit. use a power of two.
 
     def initialize(self):
         super().initialize()
@@ -225,10 +225,10 @@ class VrepRGBVision(WorldAdapterMixin):
                 self.vision_resolution = (int(resolution[0] / self.downscale_factor), int(resolution[1] / self.downscale_factor))
                 self.logger.info("Vision resolution is %s (RGB)" % str(self.vision_resolution))
 
-        for y in range(self.vision_resolution[1]):
-            for x in range(self.vision_resolution[0]):
-                for c in "rgb":
-                    self.add_datasource("px_%03d_%03d_%s" % (x, y, c))
+        for x in range(self.vision_resolution[0]):
+            for y in range(self.vision_resolution[1]):
+                for c in range(3):
+                    self.add_datasource("px_%03d_%03d_%d" % (x, y, c))
 
         self.logger.info("added %d vision data sources." % (self.vision_resolution[1]*self.vision_resolution[0]*3))
 
@@ -249,11 +249,11 @@ class VrepRGBVision(WorldAdapterMixin):
         pil_img = toimage(rgb_image, high=255, low=0, mode='RGB')
         scaled_image = fromimage(pil_img.resize(self.vision_resolution, resample=Image.LANCZOS), mode='RGB') / 255
 
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         plt.imshow(scaled_image)
-        plt.savefig('bla.png')
+        plt.savefig('/tmp/upsi/vision_worldadapter.png')
 
-        self._set_datasource_values('px_000_000_r', scaled_image.flatten())
+        self._set_datasource_values('px_000_000_0', scaled_image.flatten())
         self.image.set_data(scaled_image)
         print('nvrep vision image sum', np.sum(abs(scaled_image)))
 

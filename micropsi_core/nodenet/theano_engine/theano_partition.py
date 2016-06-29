@@ -1757,7 +1757,7 @@ class TheanoPartition():
             dimensionality = nodetype.get_slot_dimensionality(slot)
         start = self.allocated_node_offsets[node_id] + element
         stop = start + dimensionality
-        self.nodegroups[nodespace_uid][group_name] = range(start, stop)
+        self.nodegroups[nodespace_uid][group_name] = np.arange(start, stop)
 
     def ungroup_nodes(self, nodespace_uid, group):
         if nodespace_uid in self.nodegroups and group in self.nodegroups[nodespace_uid]:

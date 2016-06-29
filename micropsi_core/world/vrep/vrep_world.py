@@ -210,7 +210,7 @@ class VrepGreyscaleVision(WorldAdapterMixin):
 
 class VrepRGBVision(WorldAdapterMixin):
 
-    downscale_factor = 2**2  # rescale the image before sending it to the toolkit. use a power of two.
+    downscale_factor = 2**4  # rescale the image before sending it to the toolkit. use a power of two.
 
     def initialize(self):
         super().initialize()

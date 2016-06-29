@@ -158,4 +158,4 @@ class NodenetPlot(object):
         """
         bio = BytesIO()
         self.figure.savefig(bio, format=format, **params)
-        return base64.encodebytes(bio.getvalue()).decode("utf-8")
+        return ''.join(base64.encodebytes(bio.getvalue()).decode("utf-8").splitlines())

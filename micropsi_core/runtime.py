@@ -56,6 +56,8 @@ custom_operations = {}
 
 netapi_consoles = {}
 
+initialized = False
+
 from code import InteractiveConsole
 
 
@@ -610,9 +612,13 @@ def set_runner_condition(nodenet_uid, monitor=None, steps=None):
     """ registers a condition that stops the runner if it is fulfilled"""
     nodenet = get_nodenet(nodenet_uid)
     condition = {}
-    if monitor is not None:
-        condition['monitor'] = monitor
-    if steps is not None:
+    if monitor:
+        if type(monitor) == dict and 'uid' in monitor and 'value' in monitor:
+            condition['monitor'] = monitor
+        else:
+            return False, "Monitor condition expects a dict with keys 'uid' and 'value'"
+    if steps:
+        steps = int(steps)
         condition['step'] = nodenet.current_step + steps
         condition['step_amount'] = steps
     if condition:
@@ -1666,7 +1672,7 @@ def reload_native_modules():
 
 
 def initialize(persistency_path=None, resource_path=None):
-    global PERSISTENCY_PATH, RESOURCE_PATH, configs, logger, runner
+    global PERSISTENCY_PATH, RESOURCE_PATH, configs, logger, runner, initialized
 
     if persistency_path is None:
         persistency_path = cfg['paths']['data_directory']
@@ -1709,3 +1715,4 @@ def initialize(persistency_path=None, resource_path=None):
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
+    initialized = True

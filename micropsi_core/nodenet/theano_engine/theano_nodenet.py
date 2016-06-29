@@ -1600,8 +1600,8 @@ class TheanoNodenet(Nodenet):
             if nodespace_to_uid not in partition_to.nodegroups or group_to not in partition_to.nodegroups[nodespace_to_uid]:
                 raise ValueError("Group %s does not exist in nodespace %s." % (group_to, nodespace_to_uid))
 
-            elements_from_indices = partition_from.nodegroups[nodespace_from_uid][group_from]
-            elements_to_indices = partition_to.nodegroups[nodespace_to_uid][group_to]
+            elements_from_indices = np.array(partition_from.nodegroups[nodespace_from_uid][group_from], dtype='int32')
+            elements_to_indices = np.array(partition_to.nodegroups[nodespace_to_uid][group_to], dtype='int32')
 
             partition_to.set_inlink_weights(partition_from.spid, elements_from_indices, elements_to_indices, new_w)
         else:

@@ -250,8 +250,8 @@ class VrepRGBVision(WorldAdapterMixin):
         scaled_image = fromimage(pil_img.resize(self.vision_resolution, resample=Image.LANCZOS), mode='RGB') / 255
 
         # import ipdb; ipdb.set_trace()
-        plt.imshow(scaled_image)
-        plt.savefig('/tmp/upsi/vision_worldadapter.png')
+        # plt.imshow(scaled_image)
+        # plt.savefig('/tmp/upsi/vision_worldadapter.png')
 
         self._set_datasource_values('px_000_000_0', scaled_image.flatten())
         self.image.set_data(scaled_image)

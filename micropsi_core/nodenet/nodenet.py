@@ -568,7 +568,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_nodespace_changes(self, nodespace_uids=[], since_step=0):
+    def get_nodespace_changes(self, nodespace_uids=[], since_step=0, include_links=True):
         """
         Returns a dictionary of structural changes that happened in the given nodespace
         since the given step

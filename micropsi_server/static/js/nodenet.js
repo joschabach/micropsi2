@@ -604,6 +604,7 @@ function get_nodenet_diff_params(){
     return {
         'nodespaces': [currentNodeSpace],
         'step': window.currentSimulationStep,
+        'include_links': nodespaceProperties[currentNodeSpace].renderlinks == 'always'
     }
 }
 
@@ -843,7 +844,7 @@ function addLink(link) {
             slot = true;
         }
         if((sourceNode.uid && !gate) || (targetNode.uid && !slot)){
-            console.error('Incompatible slots and gates');
+            console.error('Incompatible slots and gates: gate:'+ link.gateName + ' / slot:'+link.slotName);
             return;
         }
         // check if link is visible

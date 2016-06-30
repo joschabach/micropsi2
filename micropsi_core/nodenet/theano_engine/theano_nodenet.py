@@ -745,27 +745,34 @@ class TheanoNodenet(Nodenet):
                 element = partition.allocated_node_offsets[node_id] + numeric_slot
                 from_elements = inlinks[0].get_value(borrow=True)
                 to_elements = inlinks[1].get_value(borrow=True)
-                weights = inlinks[2].get_value(borrow=True)
+
                 if element in to_elements:
-                    from_partition = self.partitions[partition_from_spid]
-                    element_index = np.where(to_elements == element)[0][0]
-                    slotrow = weights[element_index]
-                    links_indices = np.nonzero(slotrow)[0]
-                    for link_index in links_indices:
-                        source_id = from_partition.allocated_elements_to_nodes[from_elements[link_index]]
-                        associated_uids.append(node_to_id(source_id, from_partition.pid))
-                    # set all weights for this element to 0
-                    new_weights = np.delete(weights, element_index, 0)
-                    if len(new_weights) == 0:
-                        # if this was the last link, remove whole inlinks information for this partition pair
-                        del partition.inlinks[partition_from_spid]
-                        break
-                    # find empty columns (elements linking only to this element)
-                    zero_columns = np.where(~new_weights.any(axis=0))[0]
-                    # remove empty columns from weight matrix:
-                    new_weights = np.delete(new_weights, zero_columns, 1)
-                    # save new weight matrix
-                    partition.inlinks[partition_from_spid][2].set_value(new_weights)
+                    inlink_type = inlinks[4]
+                    if inlink_type == "dense":
+                        weights = inlinks[2].get_value(borrow=True)
+                        from_partition = self.partitions[partition_from_spid]
+                        element_index = np.where(to_elements == element)[0][0]
+                        slotrow = weights[element_index]
+                        links_indices = np.nonzero(slotrow)[0]
+                        for link_index in links_indices:
+                            source_id = from_partition.allocated_elements_to_nodes[from_elements[link_index]]
+                            associated_uids.append(node_to_id(source_id, from_partition.pid))
+                        # set all weights for this element to 0
+                        new_weights = np.delete(weights, element_index, 0)
+                        if len(new_weights) == 0:
+                            # if this was the last link, remove whole inlinks information for this partition pair
+                            del partition.inlinks[partition_from_spid]
+                            break
+
+                        # find empty columns (elements linking only to this element)
+                        zero_columns = np.where(~new_weights.any(axis=0))[0]
+                        # remove empty columns from weight matrix:
+                        new_weights = np.delete(new_weights, zero_columns, 1)
+                        # save new weight matrix
+                        partition.inlinks[partition_from_spid][2].set_value(new_weights)
+                    elif inlink_type == "identity":
+                        pass
+
                     # remove this element
                     partition.inlinks[partition_from_spid][1].set_value(np.delete(to_elements, element_index))
                     # remove from_elements
@@ -779,26 +786,34 @@ class TheanoNodenet(Nodenet):
                     inlinks = to_partition.inlinks[partition.spid]
                     from_elements = inlinks[0].get_value(borrow=True)
                     to_elements = inlinks[1].get_value(borrow=True)
-                    weights = inlinks[2].get_value(borrow=True)
+
                     if element in from_elements:
-                        element_index = np.where(from_elements == element)[0][0]
-                        gatecolumn = weights[:, element_index]
-                        links_indices = np.nonzero(gatecolumn)[0]
-                        for link_index in links_indices:
-                            target_id = to_partition.allocated_elements_to_nodes[to_elements[link_index]]
-                            associated_uids.append(node_to_id(target_id, to_partition.pid))
-                        # set all weights for this element to 0
-                        new_weights = np.delete(weights, element_index, 1)
-                        if len(new_weights) == 0:
-                            # if this was the last link, remove whole inlinks information for target partition
-                            del to_partition.inlinks[partition.spid]
-                            break
-                        # find empty rows (elements linked only by this node)
-                        zero_rows = np.where(~new_weights.any(axis=1))[0]
-                        # remove empty rows from weight matrix
-                        new_weights = np.delete(new_weights, zero_rows, 0)
-                        # save new weights
-                        to_partition.inlinks[partition.spid][2].set_value(new_weights)
+                        inlink_type = inlinks[4]
+                        if inlink_type == "dense":
+                            weights = inlinks[2].get_value(borrow=True)
+                            element_index = np.where(from_elements == element)[0][0]
+                            gatecolumn = weights[:, element_index]
+                            links_indices = np.nonzero(gatecolumn)[0]
+                            for link_index in links_indices:
+                                target_id = to_partition.allocated_elements_to_nodes[to_elements[link_index]]
+                                associated_uids.append(node_to_id(target_id, to_partition.pid))
+                            # set all weights for this element to 0
+                            new_weights = np.delete(weights, element_index, 1)
+                            if len(new_weights) == 0:
+                                # if this was the last link, remove whole inlinks information for target partition
+                                del to_partition.inlinks[partition.spid]
+                                break
+
+                            # find empty rows (elements linked only by this node)
+                            zero_rows = np.where(~new_weights.any(axis=1))[0]
+                            # remove empty rows from weight matrix
+                            new_weights = np.delete(new_weights, zero_rows, 0)
+                            # save new weights
+                            to_partition.inlinks[partition.spid][2].set_value(new_weights)
+
+                        elif inlink_type == "identity":
+                            pass
+
                         # remove this element
                         to_partition.inlinks[partition.spid][0].set_value(np.delete(from_elements, element_index))
                         # remove to_elements
@@ -1296,12 +1311,35 @@ class TheanoNodenet(Nodenet):
                     inlinks = to_partition.inlinks[partition.spid]
                     from_elements = inlinks[0].get_value(borrow=True)
                     to_elements = inlinks[1].get_value(borrow=True)
-                    weights = inlinks[2].get_value(borrow=True)
-                    for i, element in enumerate(to_elements):
-                        slotrow = weights[i]
-                        links_indices = np.nonzero(slotrow)[0]
-                        for link_index in links_indices:
-                            source_id = partition.allocated_elements_to_nodes[from_elements[link_index]]
+
+                    inlink_type = inlinks[4]
+                    if inlink_type == "dense":
+                        weights = inlinks[2].get_value(borrow=True)
+                        for i, element in enumerate(to_elements):
+                            slotrow = weights[i]
+                            links_indices = np.nonzero(slotrow)[0]
+                            for link_index in links_indices:
+                                source_id = partition.allocated_elements_to_nodes[from_elements[link_index]]
+                                source_type = partition.allocated_nodes[source_id]
+                                source_gate_numerical = from_elements[link_index] - partition.allocated_node_offsets[source_id]
+                                source_gate_type = get_string_gate_type(source_gate_numerical, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
+
+                                target_id = to_partition.allocated_elements_to_nodes[element]
+                                target_type = to_partition.allocated_nodes[target_id]
+                                target_slot_numerical = element - to_partition.allocated_node_offsets[target_id]
+                                target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
+
+                                data.append({
+                                    "weight": float(weights[i, link_index]),
+                                    "certainty": 1,
+                                    "target_slot_name": target_slot_type,
+                                    "target_node_uid": node_to_id(target_id, to_partition.pid),
+                                    "source_gate_name": source_gate_type,
+                                    "source_node_uid": node_to_id(source_id, partition.pid)
+                                })
+                    elif inlink_type == "identity":
+                        for i, element in enumerate(to_elements):
+                            source_id = partition.allocated_elements_to_nodes[from_elements[i]]
                             source_type = partition.allocated_nodes[source_id]
                             source_gate_numerical = from_elements[link_index] - partition.allocated_node_offsets[source_id]
                             source_gate_type = get_string_gate_type(source_gate_numerical, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
@@ -1312,7 +1350,7 @@ class TheanoNodenet(Nodenet):
                             target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
 
                             data.append({
-                                "weight": float(weights[i, link_index]),
+                                "weight": 1.,
                                 "certainty": 1,
                                 "target_slot_name": target_slot_type,
                                 "target_node_uid": node_to_id(target_id, to_partition.pid),

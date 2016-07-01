@@ -750,11 +750,14 @@ class TheanoPartition():
 
         for spid, inlinks in self.inlinks.items():
             filename = os.path.join(os.path.dirname(datafilename), "%s-inlinks-%s-from-%s" % (self.nodenet.uid, self.spid, spid))
+            from_ids = inlinks[0].get_value(borrow=True)
+            to_ids = inlinks[1].get_value(borrow=True)
+            weights = inlinks[2].get_value(borrow=True) if inlinks[2] else None
             np.savez(filename,
                 from_partition_id=spid,
-                from_ids=inlinks[1],
-                to_ids=inlinks[2],
-                weights=inlinks[3],
+                from_ids=from_ids,
+                to_ids=to_ids,
+                weights=weights,
                 inlink_type=inlinks[4])
 
         np.savez(datafilename,
@@ -1013,18 +1016,20 @@ class TheanoPartition():
     def load_inlinks(self, datafilename):
         base = os.path.dirname(datafilename)
         for spid in self.nodenet.partitions:
-            filename = os.path.join(base, "%s-inlinks-%s-from-%s" % (self.nodenet.uid, self.spid, spid))
+            filename = os.path.join(base, "%s-inlinks-%s-from-%s.npz" % (self.nodenet.uid, self.spid, spid))
             if os.path.isfile(filename):
-
                 datafile = np.load(filename)
-                if datafile['inlink_type'] == 'identity':
+                
+                if str(datafile['inlink_type']) == 'identity':
                     weights = 1
+                else:
+                    weights = datafile['weights']
 
                 self.set_inlink_weights(
-                    datafile['from_partition_id'],
+                    str(datafile['from_partition_id']),
                     datafile['from_ids'],
                     datafile['to_ids'],
-                    datafile['weights'])
+                    weights)
 
     def grow_number_of_nodespaces(self, growby):
 

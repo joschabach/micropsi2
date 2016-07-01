@@ -53,13 +53,15 @@ def get_worldadapters(world_uid, nodenet_uid=None):
     """ Returns the world adapters available in the given world. Provide an optional nodenet_uid of an agent
     in the given world to obtain datasources and datatargets for the agent's worldadapter"""
     data = {}
+    worlddata = micropsi_core.runtime.world_data[world_uid]
+    supported_worldadapters = get_world_class_from_name(worlddata.get('world_type', 'World')).get_supported_worldadapters()
+    for name, worldadapter in supported_worldadapters.items():
+        data[name] = {
+            'description': worldadapter.__doc__,
+            'config_options': worldadapter.get_config_options()
+        }
     if world_uid in micropsi_core.runtime.worlds:
         world = micropsi_core.runtime.worlds[world_uid]
-        for name, worldadapter in world.supported_worldadapters.items():
-            data[name] = {
-                'description': worldadapter.__doc__,
-                'config_options': worldadapter.get_config_options()
-            }
         if nodenet_uid and nodenet_uid in world.agents:
             agent = world.agents[nodenet_uid]
             data[agent.__class__.__name__]['config'] = micropsi_core.runtime.nodenets[nodenet_uid].metadata['worldadapter_config']

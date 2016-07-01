@@ -951,10 +951,7 @@ def get_world_properties(world_uid):
 
 @rpc("get_worldadapters")
 def get_worldadapters(world_uid, nodenet_uid=None):
-    try:
-        return True, runtime.get_worldadapters(world_uid, nodenet_uid=nodenet_uid)
-    except KeyError:
-        return False, 'World %s not found' % world_uid
+    return True, runtime.get_worldadapters(world_uid, nodenet_uid=nodenet_uid)
 
 
 @rpc("get_world_objects")

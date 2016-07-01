@@ -186,13 +186,14 @@ class TheanoNode(Node):
     def take_slot_activation_snapshot(self):
         a_array = self._partition.a.get_value(borrow=True)
         self.slot_activation_snapshot.clear()
-        for slottype in self.nodetype.slottypes:
-            self.slot_activation_snapshot[slottype] =  \
-                a_array[self._partition.allocated_node_offsets[self._id] + get_numerical_slot_type(slottype, self.nodetype)]
         if self.is_highdimensional:
             start = self._partition.allocated_node_offsets[self._id]
             end = start + len(self._nodetype.slottypes)
             self.slot_fat_snapshot = np.array(a_array[start:end])
+        else:
+            for slottype in self.nodetype.slottypes:
+                self.slot_activation_snapshot[slottype] =  \
+                    a_array[self._partition.allocated_node_offsets[self._id] + get_numerical_slot_type(slottype, self.nodetype)]
 
     def get_slot(self, type):
         if type not in self.__slotcache:

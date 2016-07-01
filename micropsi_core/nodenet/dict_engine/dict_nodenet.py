@@ -852,7 +852,7 @@ class DictNodenet(Nodenet):
                 return True
         return False
 
-    def get_nodespace_changes(self, nodespace_uids=[], since_step=0):
+    def get_nodespace_changes(self, nodespace_uids=[], since_step=0, include_links=True):
         result = {
             'nodes_dirty': {},
             'nodespaces_dirty': {},
@@ -874,10 +874,11 @@ class DictNodenet(Nodenet):
             for uid in self.get_nodespace(nsuid).get_known_ids():
                 if uid not in result['nodes_deleted'] and self.is_node(uid):
                     if self.get_node(uid).last_changed >= since_step:
-                        result['nodes_dirty'][uid] = self.get_node(uid).get_data(include_links=True)
-                        for assoc in self.get_node(uid).get_associated_node_uids():
-                            if self.get_node(assoc).parent_nodespace not in nodespace_uids and assoc not in result['nodes_dirty']:
-                                result['nodes_dirty'][assoc] = self.get_node(assoc).get_data(include_links=True)
+                        result['nodes_dirty'][uid] = self.get_node(uid).get_data(include_links=include_links)
+                        if include_links:
+                            for assoc in self.get_node(uid).get_associated_node_uids():
+                                if self.get_node(assoc).parent_nodespace not in nodespace_uids and assoc not in result['nodes_dirty']:
+                                    result['nodes_dirty'][assoc] = self.get_node(assoc).get_data(include_links=include_links)
 
                 elif uid not in result['nodespaces_deleted'] and self.is_nodespace(uid):
                     if self.get_nodespace(uid).last_changed >= since_step:

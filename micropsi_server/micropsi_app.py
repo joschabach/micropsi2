@@ -768,7 +768,7 @@ def get_nodes(nodenet_uid, nodespaces=[], include_links=True):
 
 
 @rpc("new_nodenet")
-def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadapter=None, world_uid=None, use_modulators=None):
+def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadapter=None, world_uid=None, use_modulators=None, worldadapter_config={}):
     if owner is None:
         owner, _, _ = get_request_data()
     return runtime.new_nodenet(
@@ -778,7 +778,8 @@ def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadap
         template=template,
         owner=owner,
         world_uid=world_uid,
-        use_modulators=use_modulators)
+        use_modulators=use_modulators,
+        worldadapter_config=worldadapter_config)
 
 
 @rpc("get_calculation_state")

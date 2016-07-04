@@ -35,6 +35,13 @@ class NodenetPlot(object):
     >>> image.add_activation_plot(netapi.get_activations(ns1, group1))
     >>> image.add_linkweights_plot(netapi.get_link_weights(ns1, group1, ns2, group2))
     >>> image.save_to_file('/tmp/plot.png')
+
+    If you provide a name for the plots, you can later update them:
+    >>> image = NodenetPlot(cols=2)
+    >>> image.add_activation_plot(np.random.rand(10), name="group_activation_plot")
+    >>> new_data = np.random.rand(10)
+    >>> image.update_plot('group_activation_plot', new_data)
+
     """
 
     def __init__(self, plotsize=(6.0, 6.0), rows=1, cols=1, wspace=0.1, hspace=0.1):
@@ -50,18 +57,44 @@ class NodenetPlot(object):
         """
         plt.close()  # attempt to close old instance
         self.figure = plt.figure(figsize=plotsize)
+        self.plots = {}
         self.plotindex = 0
         self.rows = rows
         self.cols = cols
         self.grid = gridspec.GridSpec(rows, cols, wspace=wspace, hspace=hspace)
 
-    def add_activation_plot(self, activations, rows=-1, cols=-1, vmin=None, vmax=None):
+    def update_plot(self, name, new_data):
+        """ update a named plot in this Image with the new data
+        returns True on success, False otherwise.
+        Parameters:
+            name - the name you gave when adding the plot
+            new_data - the new data for the plot
+        """
+        if name in self.plots:
+            plot, shape = self.plots[name]
+            if new_data.shape != shape:
+                new_data = new_data.reshape(shape)
+            if type(plot) == list:
+                # 4d plot
+                row, col, inner_row, inner_col = shape
+                for r in range(row):
+                    row_data = new_data[r, :]
+                    for c in range(col):
+                        plot[r+c].set_data(row_data[c, :])
+            else:
+                # 2d plot
+                plot.set_data(new_data)
+            return True
+        return False
+
+    def add_activation_plot(self, activations, name=None, rows=-1, cols=-1, vmin=None, vmax=None):
         """ Adds a plot of node-activations to the figure.
         Per default, the plot will attempt to render the activations into a square image
         If you have non-quadratic data, you have to give numbers for rows and cols so that the
         numbers can be reshaped accordingly
         Parameters:
             activations - array of activations
+            name - optional identification for later updates
             rows - number of rows, defaults to sqrt()
             cols - number of cols, defaults to sqrt()
             vmin - minimal value, defaults to 0
@@ -74,12 +107,13 @@ class NodenetPlot(object):
             sz = int(np.ceil(np.sqrt(data.shape[0])))
             matrix = data.reshape((sz, sz))
 
-        self.add_2d_matrix_plot(matrix, vmin=vmin, vmax=vmax)
+        self.add_2d_matrix_plot(matrix, name=name, vmin=vmin, vmax=vmax)
 
-    def add_linkweights_plot(self, linkweights, wspace=0.1, hspace=0.1, rows_outer=0, cols_outer=0, rows_inner=0, cols_inner=0):
+    def add_linkweights_plot(self, linkweights, name=None, wspace=0.1, hspace=0.1, rows_outer=0, cols_outer=0, rows_inner=0, cols_inner=0):
         """ Adds a plot of linkweights to the figure.
         Parameters:
             linkweights - output of netapi.get_link_weights
+            name - optional identification for later updates
             wspace - vertical spacing, defaults to 0.1
             hspace - horizontal spacing, defaults to 0.1
             rows_outer - number of rows of linkweight-plots, defaults to sqrt()
@@ -88,7 +122,7 @@ class NodenetPlot(object):
             cols_inner - number of pixel-cols per linkweight-plot, defaults to sqrt()
         """
         data = np.array(linkweights)
-        (r, c) = data.shape
+        r, c = data.shape
         outer_sqrt = int(np.ceil(np.sqrt(r)))
         inner_sqrt = int(np.ceil(np.sqrt(c)))
         matrix = data.reshape((
@@ -97,9 +131,9 @@ class NodenetPlot(object):
             rows_inner or inner_sqrt,
             cols_inner or inner_sqrt
         ))
-        self.add_4d_matrix_plot(matrix, wspace=wspace, hspace=hspace)
+        result = self.add_4d_matrix_plot(matrix, name=name, wspace=wspace, hspace=hspace)
 
-    def add_2d_matrix_plot(self, matrix, vmin=None, vmax=None):
+    def add_2d_matrix_plot(self, matrix, name=None, vmin=None, vmax=None):
         """ General plotter function to add a two-dimensional plot. The shape
         of the passed matrix determins the layout in rows and cols of the
         plot
@@ -111,11 +145,13 @@ class NodenetPlot(object):
         ax = plt.Subplot(self.figure, self.grid[self.plotindex])
         ax.set_xticks([])
         ax.set_yticks([])
-        ax.imshow(matrix, cmap=matplotlib.cm.gray, vmin=vmin, vmax=vmax)
+        thing = ax.imshow(matrix, cmap=matplotlib.cm.gray, vmin=vmin, vmax=vmax)
         self.figure.add_subplot(ax)
         self.plotindex += 1
+        if name is not None:
+            self.plots[name] = thing, matrix.shape
 
-    def add_4d_matrix_plot(self, data, wspace=0, hspace=0, vmin=None, vmax=None):
+    def add_4d_matrix_plot(self, data, name=None, wspace=0, hspace=0, vmin=None, vmax=None):
         """ General plotter function to add a grid of several two-dimensional plots
         The shape of the passed matrix determins the layout in rows and cols of the
         plot
@@ -127,17 +163,20 @@ class NodenetPlot(object):
             vmax - maximal value
         """
         # compute rows & cols
-        (row, col, inner_row, inner_col) = data.shape
+        row, col, inner_row, inner_col = data.shape
         grid = gridspec.GridSpecFromSubplotSpec(row, col, subplot_spec=self.grid[self.plotindex], wspace=wspace, hspace=hspace)
+        plots = []
         for r in range(row):
             row_data = data[r, :]
             for c in range(col):
                 ax = plt.Subplot(self.figure, grid[(r * col + c)])
                 ax.set_xticks([])
                 ax.set_yticks([])
-                ax.imshow(row_data[c, :], cmap=matplotlib.cm.gray, vmin=vmin, vmax=vmax)
+                plots.append(ax.imshow(row_data[c, :], cmap=matplotlib.cm.gray, vmin=vmin, vmax=vmax))
                 self.figure.add_subplot(ax)
         self.plotindex += 1
+        if name is not None:
+            self.plots[name] = plots, data.shape
 
     def save_to_file(self, filename, format="png", **params):
         """ saves the generated figure to the given file

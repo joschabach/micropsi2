@@ -185,8 +185,13 @@ function toggleButtons(on){
 function get_available_worlds(){
     api.call('get_available_worlds', {}, success=function(data){
         var html = '<option value="">None</option>';
+        worlds = [];
         for(var uid in data){
-            html += '<option value="'+uid+'">'+data[uid].name+'</option>';
+            worlds.push([uid, data[uid].name]);
+        }
+        worlds.sort(function(a, b){return a[1] - b[1]});
+        for(var i in worlds){
+            html += '<option value="'+worlds[i][0]+'">'+worlds[i][1]+'</option>';
         }
         $('#nodenet_world').html(html);
         if(currentNodenet && nodenet_data){
@@ -604,6 +609,7 @@ function get_nodenet_diff_params(){
     return {
         'nodespaces': [currentNodeSpace],
         'step': window.currentSimulationStep,
+        'include_links': nodespaceProperties[currentNodeSpace].renderlinks == 'always'
     }
 }
 
@@ -843,7 +849,7 @@ function addLink(link) {
             slot = true;
         }
         if((sourceNode.uid && !gate) || (targetNode.uid && !slot)){
-            console.error('Incompatible slots and gates');
+            console.error('Incompatible slots and gates: gate:'+ link.gateName + ' / slot:'+link.slotName);
             return;
         }
         // check if link is visible

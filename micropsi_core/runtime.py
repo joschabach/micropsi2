@@ -465,7 +465,7 @@ def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=No
                 'modulators': nodenet_obj.construct_modulators_dict()
             }
             if activations['has_changes']:
-                data['nodenet_diff']['changes'] = nodenet_obj.get_nodespace_changes(nodenet_diff.get('nodespaces', []), nodenet_diff['step'])
+                data['nodenet_diff']['changes'] = nodenet_obj.get_nodespace_changes(nodenet_diff.get('nodespaces', []), nodenet_diff['step'], include_links=nodenet_diff.get('include_links', True))
         if nodenet_obj.user_prompt:
             data['user_prompt'] = nodenet_obj.user_prompt
             nodenet_obj.user_prompt = None

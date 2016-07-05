@@ -223,12 +223,18 @@ class TheanoNode(Node):
                 element = self._partition.allocated_node_offsets[self._id] + numeric_slot
                 from_elements = inlinks[0].get_value(borrow=True)
                 to_elements = inlinks[1].get_value(borrow=True)
-                weights = inlinks[2].get_value(borrow=True)
                 if element in to_elements:
+                    inlink_type = inlinks[4]
                     from_partition = self._nodenet.partitions[partition_from_spid]
                     element_index = np.where(to_elements == element)[0][0]
-                    slotrow = weights[element_index]
-                    links_indices = np.nonzero(slotrow)[0]
+
+                    if inlink_type == "dense":
+                        weights = inlinks[2].get_value(borrow=True)
+                        slotrow = weights[element_index]
+                        links_indices = np.nonzero(slotrow)[0]
+                    elif inlink_type == "identity":
+                        links_indices = [element_index]
+
                     for link_index in links_indices:
                         source_id = from_partition.allocated_elements_to_nodes[from_elements[link_index]]
                         ids.append(node_to_id(source_id, from_partition.pid))
@@ -241,11 +247,18 @@ class TheanoNode(Node):
                     inlinks = to_partition.inlinks[self._partition.spid]
                     from_elements = inlinks[0].get_value(borrow=True)
                     to_elements = inlinks[1].get_value(borrow=True)
-                    weights = inlinks[2].get_value(borrow=True)
+                    inlink_type = inlinks[4]
+
                     if element in from_elements:
                         element_index = np.where(from_elements == element)[0][0]
-                        gatecolumn = weights[:, element_index]
-                        links_indices = np.nonzero(gatecolumn)[0]
+
+                        if inlink_type == "dense":
+                            weights = inlinks[2].get_value(borrow=True)
+                            gatecolumn = weights[:, element_index]
+                            links_indices = np.nonzero(gatecolumn)[0]
+                        elif inlink_type == "identity":
+                            links_indices = [element_index]
+
                         for link_index in links_indices:
                             target_id = to_partition.allocated_elements_to_nodes[to_elements[link_index]]
                             ids.append(node_to_id(target_id, to_partition.pid))
@@ -513,11 +526,16 @@ class TheanoGate(Gate):
                     inlinks = to_partition.inlinks[self.__partition.spid]
                     from_elements = inlinks[0].get_value(borrow=True)
                     to_elements = inlinks[1].get_value(borrow=True)
-                    weights = inlinks[2].get_value(borrow=True)
                     if element in from_elements:
                         element_index = np.where(from_elements == element)[0][0]
-                        gatecolumn = weights[:, element_index]
-                        links_indices = np.nonzero(gatecolumn)[0]
+                        inlink_type = inlinks[4]
+                        if inlink_type == "dense":
+                            weights = inlinks[2].get_value(borrow=True)
+                            gatecolumn = weights[:, element_index]
+                            links_indices = np.nonzero(gatecolumn)[0]
+                        elif inlink_type == "identity":
+                            links_indices[element_index]
+
                         for link_index in links_indices:
                             target_id = to_partition.allocated_elements_to_nodes[to_elements[link_index]]
                             target_type = to_partition.allocated_nodes[target_id]
@@ -614,12 +632,17 @@ class TheanoSlot(Slot):
             for partition_from_spid, inlinks in self.__partition.inlinks.items():
                 from_elements = inlinks[0].get_value(borrow=True)
                 to_elements = inlinks[1].get_value(borrow=True)
-                weights = inlinks[2].get_value(borrow=True)
                 if element in to_elements:
-                    from_partition = self.__nodenet.partitions[partition_from_spid]
                     element_index = np.where(to_elements == element)[0][0]
-                    slotrow = weights[element_index]
-                    links_indices = np.nonzero(slotrow)[0]
+                    inlink_type = inlinks[4]
+                    if inlink_type == "dense":
+                        weights = inlinks[2].get_value(borrow=True)
+                        from_partition = self.__nodenet.partitions[partition_from_spid]
+                        slotrow = weights[element_index]
+                        links_indices = np.nonzero(slotrow)[0]
+                    elif inlink_type == "identity":
+                        links_indices = [element_index]
+
                     for link_index in links_indices:
                         source_id = from_partition.allocated_elements_to_nodes[from_elements[link_index]]
                         source_type = from_partition.allocated_nodes[source_id]

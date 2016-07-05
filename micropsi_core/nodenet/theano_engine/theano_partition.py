@@ -578,6 +578,10 @@ class TheanoPartition():
         a_in = T.inc_subtensor(self.a_in[to_elements], propagated_a, inplace=True, tolerate_inplace_aliasing=True)
         return theano.function([], None, updates=[(self.a_in, a_in)], accept_inplace=True)
 
+    def get_compiled_propagate_identity_inlinks(self, from_partition, from_elements, to_elements):
+        a_in = T.inc_subtensor(self.a_in[to_elements], from_elements, inplace=True, tolerate_inplace_aliasing=True)
+        return theano.function([], None, updates=[(self.a_in, a_in)], accept_inplace=True)
+
     def calculate(self):
 
         self.t.set_value(np.int32(self.nodenet.current_step))
@@ -744,38 +748,17 @@ class TheanoPartition():
 
         sizeinformation = [self.NoN, self.NoE, self.NoNS]
 
-        inlink_from_element_count = 0
-        inlink_to_element_count = 0
-        weight_count = 0
         for spid, inlinks in self.inlinks.items():
-            inlink_from_element_count += len(inlinks[0].get_value(borrow=True))
-            inlink_to_element_count += len(inlinks[1].get_value(borrow=True))
-            weight_count += len(inlinks[0].get_value(borrow=True)) * len(inlinks[1].get_value(borrow=True))
-        inlinks_pids = np.zeros(len(self.inlinks), dtype=np.int16)
-        inlink_from_lengths = np.zeros(len(self.inlinks), dtype=np.int32)
-        inlink_to_lengths = np.zeros(len(self.inlinks), dtype=np.int32)
-        inlink_from_elements = np.zeros(inlink_from_element_count, dtype=np.int32)
-        inlink_to_elements = np.zeros(inlink_to_element_count, dtype=np.int32)
-        inlink_weights = np.zeros(weight_count, dtype=self.nodenet.numpyfloatX)
-
-        from_offset = 0
-        to_offset = 0
-        weight_offset = 0
-        for i, spid in enumerate(self.inlinks.keys()):
-            inlinks_pids[i] = int(spid)
-            from_elements = self.inlinks[spid][0].get_value(borrow=True)
-            to_elements = self.inlinks[spid][1].get_value(borrow=True)
-            weights = self.inlinks[spid][2].get_value(borrow=True)
-            from_length = len(from_elements)
-            to_length = len(to_elements)
-            inlink_from_lengths[i] = from_length
-            inlink_to_lengths[i] = to_length
-            inlink_from_elements[from_offset:from_offset+from_length] = from_elements
-            inlink_to_elements[to_offset:to_offset+to_length] = to_elements
-            inlink_weights[weight_offset:weight_offset+(from_length*to_length)] = np.ravel(weights)
-            weight_offset += from_length * to_length
-            from_offset += from_length
-            to_offset += to_length
+            filename = os.path.join(os.path.dirname(datafilename), "%s-inlinks-%s-from-%s" % (self.nodenet.uid, self.spid, spid))
+            from_ids = inlinks[0].get_value(borrow=True)
+            to_ids = inlinks[1].get_value(borrow=True)
+            weights = inlinks[2].get_value(borrow=True) if inlinks[2] else None
+            np.savez(filename,
+                from_partition_id=spid,
+                from_ids=from_ids,
+                to_ids=to_ids,
+                weights=weights,
+                inlink_type=inlinks[4])
 
         np.savez(datafilename,
                  allocated_nodes=allocated_nodes,
@@ -806,13 +789,7 @@ class TheanoPartition():
                  allocated_nodespaces_sur_activators=allocated_nodespaces_sur_activators,
                  allocated_nodespaces_cat_activators=allocated_nodespaces_cat_activators,
                  allocated_nodespaces_exp_activators=allocated_nodespaces_exp_activators,
-                 allocated_nodespaces_sampling_activators=allocated_nodespaces_sampling_activators,
-                 inlink_pids=inlinks_pids,
-                 inlink_from_lengths=inlink_from_lengths,
-                 inlink_to_lengths=inlink_to_lengths,
-                 inlink_from_elements=inlink_from_elements,
-                 inlink_to_elements=inlink_to_elements,
-                 inlink_weights=inlink_weights)
+                 allocated_nodespaces_sampling_activators=allocated_nodespaces_sampling_activators)
 
     def load_data(self, datafilename, nodes_data):
         """Load the node net from a file"""
@@ -1037,53 +1014,22 @@ class TheanoPartition():
             self.__calculate_g_factors()
 
     def load_inlinks(self, datafilename):
-        datafile = None
-        if os.path.isfile(datafilename):
-            try:
-                datafile = np.load(datafilename)
-            except ValueError:  # pragma: no cover
-                self.logger.warning("Could not read nodenet data from file %s" % datafile)
-                return False
-            except IOError:  # pragma: no cover
-                self.logger.warning("Could not open nodenet file %s" % datafile)
-                return False
-
-        if not datafile:
-            return
-
-        if 'inlink_pids' in datafile and \
-            'inlink_from_lengths' in datafile and \
-            'inlink_to_lengths' in datafile and \
-            'inlink_from_elements' in datafile and \
-            'inlink_to_elements' in datafile and \
-            'inlink_weights' in datafile:
-
-            inlink_pids = datafile['inlink_pids']
-            inlink_from_lengths = datafile['inlink_from_lengths']
-            inlink_to_lengths = datafile['inlink_to_lengths']
-
-            inlink_from_offset = 0
-            inlink_to_offset = 0
-            weight_offset = 0
-
-            for i, pid in enumerate(inlink_pids):
-
-                inlink_from_elements = datafile['inlink_from_elements'][inlink_from_offset:inlink_from_offset+inlink_from_lengths[i]]
-                inlink_to_elements = datafile['inlink_to_elements'][inlink_to_offset:inlink_to_offset+inlink_to_lengths[i]]
-                inlink_weights = datafile['inlink_weights'][weight_offset:weight_offset+(inlink_from_lengths[i]*inlink_to_lengths[i])]
+        base = os.path.dirname(datafilename)
+        for spid in self.nodenet.partitions:
+            filename = os.path.join(base, "%s-inlinks-%s-from-%s.npz" % (self.nodenet.uid, self.spid, spid))
+            if os.path.isfile(filename):
+                datafile = np.load(filename)
+                
+                if str(datafile['inlink_type']) == 'identity':
+                    weights = 1
+                else:
+                    weights = datafile['weights']
 
                 self.set_inlink_weights(
-                    "%03i" % pid,
-                    inlink_from_elements.astype(np.int32),
-                    inlink_to_elements.astype(np.int32),
-                    np.reshape(inlink_weights, (inlink_to_lengths[i], inlink_from_lengths[i]))
-                )
-
-                weight_offset += inlink_from_lengths[i]*inlink_to_lengths[i]
-                inlink_from_offset += inlink_from_lengths[i]
-                inlink_to_offset += inlink_to_lengths[i]
-        else:
-            self.logger.warning("no or incomplete inlink information in file, no inter-partition links will be loaded")  # pragma: no cover
+                    str(datafile['from_partition_id']),
+                    datafile['from_ids'],
+                    datafile['to_ids'],
+                    weights)
 
     def grow_number_of_nodespaces(self, growby):
 
@@ -1827,8 +1773,15 @@ class TheanoPartition():
         self.por_ret_dirty = self.has_pipes
 
     def set_inlink_weights(self, partition_from_spid, new_from_elements, new_to_elements, new_weights):
+
+        inlink_type = None
+
         from_partition = self.nodenet.partitions[partition_from_spid]
         if partition_from_spid in self.inlinks:
+            inlink_type = self.inlinks[partition_from_spid][4]
+            if inlink_type != "dense":
+                raise NotImplementedError("Update of non-dense partition connections not yet implemented: "+inlink_type)
+
             theano_from_elements = self.inlinks[partition_from_spid][0]
             theano_to_elements = self.inlinks[partition_from_spid][1]
             theano_weights = self.inlinks[partition_from_spid][2]
@@ -1862,13 +1815,24 @@ class TheanoPartition():
             toname = "in_to_%s_%s" % (partition_from_spid, self.spid)
             theano_from_elements = theano.shared(value=new_from_elements, name=fromname, borrow=True)
             theano_to_elements = theano.shared(value=new_to_elements, name=toname, borrow=True)
-            theano_weights = theano.shared(value=new_weights.astype(T.config.floatX), name=weightsname, borrow=True)
 
-            propagation_function = self.get_compiled_propagate_inlinks(
-                from_partition,
-                theano_from_elements,
-                theano_to_elements,
-                theano_weights)
+            if np.isscalar(new_weights) and new_weights == 1:
+                if len(new_from_elements) != len(new_to_elements):
+                    raise ValueError("from_elements and to_elements need to have equal lengths for identity links")
+                inlink_type = "identity"
+                theano_weights = None
+                propagation_function = self.get_compiled_propagate_identity_inlinks(
+                    from_partition,
+                    theano_from_elements,
+                    theano_to_elements)
+            else:
+                inlink_type = "dense"
+                theano_weights = theano.shared(value=new_weights.astype(T.config.floatX), name=weightsname, borrow=True)
+                propagation_function = self.get_compiled_propagate_inlinks(
+                    from_partition,
+                    theano_from_elements,
+                    theano_to_elements,
+                    theano_weights)
 
         for id in from_partition.allocated_elements_to_nodes[theano_from_elements.get_value()]:
             from_partition.nodes_last_changed[id] = self.nodenet.current_step
@@ -1881,7 +1845,8 @@ class TheanoPartition():
             theano_from_elements,
             theano_to_elements,
             theano_weights,
-            propagation_function)
+            propagation_function,
+            inlink_type)
 
     def has_nodespace_changes(self, nodespace_uid, since_step):
         ns_id = nodespace_from_id(nodespace_uid)
@@ -2083,8 +2048,15 @@ class TheanoPartition():
                     inlinks = to_partition.inlinks[self.spid]
                     from_elements = inlinks[0].get_value(borrow=True)
                     to_elements = inlinks[1].get_value(borrow=True)
-                    w = inlinks[2].get_value(borrow=True)
-                    slots, gates = np.nonzero(w)
+
+                    inlink_type = inlinks[4]
+                    if inlink_type == "dense":
+                        w = inlinks[2].get_value(borrow=True)
+                        slots, gates = np.nonzero(w)
+                    elif inlink_type == "identity":
+                        slots = np.arange(len(from_elements))
+                        gates = np.arange(len(from_elements))
+
                     for index, gate_index in enumerate(gates):
                         source_id = self.allocated_elements_to_nodes[from_elements[gate_index]]
                         source_uid = node_to_id(source_id, self.pid)
@@ -2111,7 +2083,13 @@ class TheanoPartition():
                             target_slot_type = target_slot_type.rstrip('0123456789')
                             if target_slot_type in target_nodetype.dimensionality['slots']:
                                 target_slot_type = target_slot_type + '0'
-                        linkdict = {"weight": float(w[slot_index, gate_index]),
+
+                        if inlink_type == "dense":
+                            weight = float(w[slot_index, gate_index])
+                        elif inlink_type == "identity":
+                            weight = 1.
+
+                        linkdict = {"weight": weight,
                                     "certainty": 1,
                                     "target_slot_name": target_slot_type,
                                     "target_node_uid": target_uid}
@@ -2128,8 +2106,15 @@ class TheanoPartition():
                 from_partition = self.nodenet.partitions[from_partition_id]
                 from_elements = inlinks[0].get_value(borrow=True)
                 to_elements = inlinks[1].get_value(borrow=True)
-                w = inlinks[2].get_value(borrow=True)
-                slots, gates = np.nonzero(w)
+
+                inlink_type = inlinks[4]
+                if inlink_type == "dense":
+                    w = inlinks[2].get_value(borrow=True)
+                    slots, gates = np.nonzero(w)
+                elif inlink_type == "identity":
+                    slots = np.arange(len(from_elements))
+                    gates = np.arange(len(from_elements))
+
                 for index, gate_index in enumerate(gates):
                     source_id = from_partition.allocated_elements_to_nodes[from_elements[gate_index]]
                     source_uid = node_to_id(source_id, from_partition.pid)

@@ -16,7 +16,6 @@ def test_plot_activations(test_nodenet):
     plot.add_activation_plot(activations)
     res = plot.to_base64(format="png")
     assert len(res) > 1000
-    assert res.endswith('\n')
 
 
 def test_plot_linkweights(test_nodenet):
@@ -30,7 +29,6 @@ def test_plot_linkweights(test_nodenet):
     plot.add_linkweights_plot(linkweights)
     res = plot.to_base64(format="png")
     assert len(res) > 1000
-    assert res.endswith('\n')
 
 
 def test_save_file(test_nodenet, resourcepath):

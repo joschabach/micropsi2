@@ -579,7 +579,7 @@ class TheanoPartition():
         return theano.function([], None, updates=[(self.a_in, a_in)], accept_inplace=True)
 
     def get_compiled_propagate_identity_inlinks(self, from_partition, from_elements, to_elements):
-        a_in = T.inc_subtensor(self.a_in[to_elements], from_elements, inplace=True, tolerate_inplace_aliasing=True)
+        a_in = T.inc_subtensor(self.a_in[to_elements], from_partition.a[from_elements], inplace=True, tolerate_inplace_aliasing=True)
         return theano.function([], None, updates=[(self.a_in, a_in)], accept_inplace=True)
 
     def calculate(self):

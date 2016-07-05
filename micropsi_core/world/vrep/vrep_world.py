@@ -251,7 +251,8 @@ class VrepRGBVision(WorldAdapterMixin):
 
         # import ipdb; ipdb.set_trace()
         # plt.imshow(scaled_image)
-        # plt.savefig('/tmp/upsi/vision_worldadapter.png')
+        # plt.savefig('/tmp/upsi/vision_worldadapter{}.png'.format(self.world.current_step))
+        # plt.close('all')
 
         self._set_datasource_values('px_000_000_0', scaled_image.flatten())
         self.image.set_data(scaled_image)
@@ -674,7 +675,6 @@ class Objects6D(VrepRGBVision, ArrayWorldAdapter, VrepCallMixin):
 
         self.fetch_sensor_and_feedback_values_from_simulation(None)
 
-        # print("update: self.datasource_values=", self.datasource_values)
 
 
     def reset_simulation_state(self):
@@ -710,4 +710,4 @@ class Objects6D(VrepRGBVision, ArrayWorldAdapter, VrepCallMixin):
             self._set_datasource_value("%s-gamma" % name, tgamma)
 
             # if name == 'fork':
-            #     print('fetch: i={}, name={}, handle={}\nx={} y={} z={}\nalpha={} beta={} gamma={}\n'.format(i, name, handle, tx, ty, tz, talpha, tbeta, tgamma))
+            #     print('fetch: step={}, object {}, name={}, handle={}\nx={} y={} z={}\nalpha={} beta={} gamma={}\n'.format(self.world.current_step, i, name, handle, tx, ty, tz, talpha, tbeta, tgamma))

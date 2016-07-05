@@ -255,7 +255,6 @@ class VrepRGBVision(WorldAdapterMixin):
 
         self._set_datasource_values('px_000_000_0', scaled_image.flatten())
         self.image.set_data(scaled_image)
-        print('nvrep vision image sum', np.sum(abs(scaled_image)))
 
 
 # class VrepRGBDVision(WorldAdapterMixin):

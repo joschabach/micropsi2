@@ -410,20 +410,6 @@ class Nodenet(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
-    @abstractmethod
-    def get_nodespace_data(self, nodespace_uid, include_links):
-        """
-        Returns a data dict of the nodenet state for the given nodespace.
-
-        Implementations are expected to fill the following keys:
-        'nodes' - map of nodes it the given rectangle
-        'links' - map of links ending or originating in the given rectangle
-        'nodespaces' - map of nodespaces positioned in the given rectangle
-        'monitors' - result of self.construct_monitors_dict()
-        'user_prompt' - self.user_prompt if set, should be cleared then
-        """
-        pass  # pragma: no cover
-
     def get_activation_data(self, nodespace_uids=[], rounded=1):
         """
         Returns a dict of uids to lists of activation values.

@@ -1199,26 +1199,6 @@ class TheanoNodenet(Nodenet):
                 uid=uid,
                 parameters=data['parameters'])
 
-    def get_nodespace_data(self, nodespace_uid, include_links=True):
-        partition = self.get_partition(nodespace_uid)
-        data = {
-            'nodes': self.construct_nodes_dict(nodespace_uid, 1000, include_links=include_links),
-            'nodespaces': self.construct_nodespaces_dict(nodespace_uid),
-            'monitors': self.construct_monitors_dict(),
-            'modulators': self.construct_modulators_dict()
-        }
-        if include_links:
-            followupnodes = []
-            for uid in data['nodes']:
-                followupnodes.extend(self.get_node(uid).get_associated_node_uids())
-
-            for uid in followupnodes:
-                followup_partition = self.get_partition(uid)
-                if followup_partition.pid != partition.pid or (partition.allocated_node_parents[node_from_id(uid)] != nodespace_from_id(nodespace_uid)):
-                    data['nodes'][uid] = self.get_node(uid).get_data(complete=False, include_links=include_links)
-
-        return data
-
     def get_activation_data(self, nodespace_uids=[], rounded=1):
         if rounded is not None:
             mult = math.pow(10, rounded)

@@ -318,29 +318,9 @@ class TheanoNodenet(Nodenet):
                 data['nodespaces'].update(self.construct_nodespaces_dict(nodespace_uid))
                 nodespaces_by_partition[self.get_partition(nodespace_uid).spid].append(nodespace_from_id(nodespace_uid))
 
-            followupuids = []
             for spid in nodespaces_by_partition:
                 if nodespaces_by_partition[spid]:
-                    nodes, followups = self.partitions[spid].get_node_data(nodespace_ids=nodespaces_by_partition[spid], include_links=include_links)
-                    data['nodes'].update(nodes)
-                    followupuids.extend(followups)
-
-            followups_by_partition = dict((spid, []) for spid in self.partitions)
-            for uid in followupuids:
-                followups_by_partition[self.get_partition(uid).spid].append(node_from_id(uid))
-
-            for spid in followups_by_partition:
-                if followups_by_partition[spid]:
-                    nodes, _ = self.partitions[spid].get_node_data(ids=followups_by_partition[spid])
-                    for uid in nodes:
-                        for gate in list(nodes[uid]['links'].keys()):
-                            links = nodes[uid]['links'][gate]
-                            for idx, l in enumerate(links):
-                                p = self.get_partition(l['target_node_uid'])
-                                if p.allocated_node_parents[node_from_id(l['target_node_uid'])] not in nodespaces_by_partition.get(p.spid, []):
-                                    del links[idx]
-                            if len(nodes[uid]['links'][gate]) == 0:
-                                del nodes[uid]['links'][gate]
+                    nodes = self.partitions[spid].get_node_data(nodespace_ids=nodespaces_by_partition[spid], include_links=include_links)
                     data['nodes'].update(nodes)
 
         else:
@@ -1670,7 +1650,7 @@ class TheanoNodenet(Nodenet):
                     result['nodespaces_deleted'].extend(self.deleted_items[i].get('nodespaces_deleted', []))
                     result['nodes_deleted'].extend(self.deleted_items[i].get('nodes_deleted', []))
             changed_nodes, changed_nodespaces = partition.get_nodespace_changes(nodespace.uid, since_step)
-            result['nodes_dirty'].update(partition.get_node_data(ids=changed_nodes, include_links=include_links, include_followupnodes=False)[0])
+            result['nodes_dirty'].update(partition.get_node_data(ids=changed_nodes, include_links=include_links))
             for uid in changed_nodespaces:
                 uid = nodespace_to_id(uid, partition.pid)
                 result['nodespaces_dirty'][uid] = self.get_nodespace(uid).get_data()

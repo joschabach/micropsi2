@@ -635,9 +635,9 @@ class TheanoSlot(Slot):
                 if element in to_elements:
                     element_index = np.where(to_elements == element)[0][0]
                     inlink_type = inlinks[4]
+                    from_partition = self.__nodenet.partitions[partition_from_spid]
                     if inlink_type == "dense":
                         weights = inlinks[2].get_value(borrow=True)
-                        from_partition = self.__nodenet.partitions[partition_from_spid]
                         slotrow = weights[element_index]
                         links_indices = np.nonzero(slotrow)[0]
                     elif inlink_type == "identity":

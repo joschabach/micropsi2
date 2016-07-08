@@ -326,7 +326,7 @@ class TheanoNodenet(Nodenet):
         else:
             data['nodespaces'] = self.construct_nodespaces_dict(None, transitive=True)
             for partition in self.partitions.values():
-                nodes, _ = partition.get_node_data(include_links=include_links, include_followupnodes=False)
+                nodes = partition.get_node_data(include_links=include_links)
                 data['nodes'].update(nodes)
 
         return data

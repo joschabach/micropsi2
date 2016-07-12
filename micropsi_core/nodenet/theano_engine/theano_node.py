@@ -439,8 +439,18 @@ class TheanoNode(Node):
             else:
                 raise
 
-    def get_slot_activations(self):
-        return self.slot_fat_snapshot
+    def get_slot_activations(self, slot_type=None):
+        """ Returns a numpy array of the slot activations of a highdimensional
+        native module. You can optional give a high-level gatetype to recieve
+        only activations of an highdimensional slot type """
+        if self.slot_fat_snapshot is None:
+            self.take_slot_activation_snapshot()
+        if slot_type:
+            offset = self.nodetype.slotindexes[slot_type]
+            length = self.nodetype.dimensionality['slots'].get(slot_type, 1)
+            return self.slot_fat_snapshot[offset:offset + length]
+        else:
+            return self.slot_fat_snapshot
 
     def set_gate_activations(self, new_activations):
         start = self._partition.allocated_node_offsets[node_from_id(self.uid)]

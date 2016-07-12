@@ -534,7 +534,7 @@ class TheanoGate(Gate):
                             gatecolumn = weights[:, element_index]
                             links_indices = np.nonzero(gatecolumn)[0]
                         elif inlink_type == "identity":
-                            links_indices[element_index]
+                            links_indices = [element_index]
 
                         for link_index in links_indices:
                             target_id = to_partition.allocated_elements_to_nodes[to_elements[link_index]]

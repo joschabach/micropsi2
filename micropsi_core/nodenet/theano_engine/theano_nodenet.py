@@ -313,20 +313,22 @@ class TheanoNodenet(Nodenet):
             nodespace_uids = [self.get_nodespace(uid).uid for uid in nodespace_uids]
 
         if nodespace_uids:
-            nodespaces_by_partition = dict((spid, []) for spid in self.partitions)
+            nodespaces_by_partition = {}
             for nodespace_uid in nodespace_uids:
+                spid = self.get_partition(nodespace_uid).spid
                 data['nodespaces'].update(self.construct_nodespaces_dict(nodespace_uid))
-                nodespaces_by_partition[self.get_partition(nodespace_uid).spid].append(nodespace_from_id(nodespace_uid))
+                if spid not in nodespaces_by_partition:
+                    nodespaces_by_partition[spid] = []
+                nodespaces_by_partition[spid].append(nodespace_from_id(nodespace_uid))
 
             for spid in nodespaces_by_partition:
-                if nodespaces_by_partition[spid]:
-                    nodes = self.partitions[spid].get_node_data(nodespace_ids=nodespaces_by_partition[spid], include_links=include_links)
-                    data['nodes'].update(nodes)
+                nodes = self.partitions[spid].get_node_data(nodespaces_by_partition=nodespaces_by_partition, include_links=include_links)
+                data['nodes'].update(nodes)
 
         else:
             data['nodespaces'] = self.construct_nodespaces_dict(None, transitive=True)
             for partition in self.partitions.values():
-                nodes = partition.get_node_data(include_links=include_links)
+                nodes = partition.get_node_data(nodespaces_by_partition=None, include_links=include_links)
                 data['nodes'].update(nodes)
 
         return data

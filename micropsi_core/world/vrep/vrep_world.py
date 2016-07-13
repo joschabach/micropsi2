@@ -207,7 +207,7 @@ class VrepGreyscaleVision(WorldAdapterMixin):
         print('vrep vision image sum', np.sum(abs(y_image)))
 
 
-class VrepRGBVision(WorldAdapterMixin):
+class VrepRGBVisionMixin(WorldAdapterMixin):
 
     downscale_factor = 2**2  # rescale the image before sending it to the toolkit. use a power of two.
 
@@ -323,7 +323,7 @@ class VrepOneBallGame(WorldAdapterMixin):
             self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, self.ball_handle, self.robot_handle, [rx, ry], vrep.simx_opmode_blocking])
 
 
-class Vrep6DObjects(WorldAdapterMixin):
+class Vrep6DObjectsMixin(WorldAdapterMixin):
 
     @staticmethod
     def get_config_options():
@@ -656,7 +656,7 @@ class OneBallRobot(Robot, VrepGreyscaleVision, VrepCollisions, VrepOneBallGame):
         return parameters
 
 
-class Objects6D(VrepRGBVision, ArrayWorldAdapter, Vrep6DObjects, VrepCallMixin):
+class Objects6D(VrepRGBVisionMixin, Vrep6DObjectsMixin, VrepCallMixin, ArrayWorldAdapter):
     """ worldadapter to observe and control 6D poses of arbitrary objects in a vrep scene
     (i.e. their positons and orientations)"""
     block_runner_if_connection_lost = True
@@ -664,8 +664,8 @@ class Objects6D(VrepRGBVision, ArrayWorldAdapter, Vrep6DObjects, VrepCallMixin):
     @staticmethod
     def get_config_options():
         parameters = []
-        parameters.extend(VrepGreyscaleVision.get_config_options())
-        parameters.extend(Vrep6DObjects.get_config_options())
+        parameters.extend(VrepRGBVisionMixin.get_config_options())
+        parameters.extend(Vrep6DObjectsMixin.get_config_options())
         return parameters
 
     def __init__(self, world, uid=None, **data):

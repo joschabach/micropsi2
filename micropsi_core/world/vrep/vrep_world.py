@@ -86,7 +86,7 @@ class VREPWorld(World):
         - simExtRemoteApiStart(19999) has to have been run
         - the simulation must have been started
     """
-    supported_worldadapters = ['Robot', 'OneBallRobot', 'Objects6D']
+    supported_worldadapters = ['Robot', 'OneBallRobot', 'Objects6D', 'IKRobotWithGreyscaleVision']
 
     assets = {
         'template': 'vrep/vrep.tpl',
@@ -204,7 +204,7 @@ class VrepGreyscaleVisionMixin(WorldAdapterMixin):
 
         self._set_datasource_values('px_000_000', y_image.flatten())
         self.image.set_data(y_image)
-        print('vrep vision image sum', np.sum(abs(y_image)))
+        # print('vrep vision image sum', np.sum(abs(y_image)))
 
 
 class VrepRGBVisionMixin(WorldAdapterMixin):
@@ -686,7 +686,7 @@ class OneBallRobot(Robot, VrepGreyscaleVisionMixin, VrepCollisionsMixin, VrepOne
         return parameters
 
 
-class IKRobotWithGreyscaleVision(Robot, VrepGreyscaleVisionMixin):
+class IKRobotWithGreyscaleVision(Robot, VrepGreyscaleVisionMixin, Vrep6DObjectsMixin):
     """ A Worldadapter to control a robot with IK, based on a greyscale vision stream """
 
     @classmethod
@@ -695,6 +695,7 @@ class IKRobotWithGreyscaleVision(Robot, VrepGreyscaleVisionMixin):
         parameters = []
         parameters.extend(Robot.get_config_options())
         parameters.extend(VrepGreyscaleVisionMixin.get_config_options())
+        parameters.extend(Vrep6DObjectsMixin.get_config_options())
         return parameters
 
 

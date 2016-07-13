@@ -1586,6 +1586,8 @@ def parse_recipe_or_operations_file(path, reload=False, category_overwrite=False
         # importlib.reload(sys.modules[pyname])
     except SyntaxError as e:
         return "%s in %s file %s, line %d" % (e.__class__.__name__, mode, relpath, e.lineno)
+    except ImportError as e:
+        return "%s in %s file %s: %s" % (e.__class__.__name__, mode, relpath, e.msg)
 
     for name, module in inspect.getmembers(recipes, inspect.ismodule):
         if hasattr(module, '__file__') and module.__file__.startswith(RESOURCE_PATH):
@@ -1639,7 +1641,6 @@ def parse_recipe_or_operations_file(path, reload=False, category_overwrite=False
 def reload_nodefunctions_file(path):
     import importlib
     import inspect
-
     try:
         loader = importlib.machinery.SourceFileLoader("nodefunctions", path)
         nodefuncs = loader.load_module()
@@ -1650,6 +1651,9 @@ def reload_nodefunctions_file(path):
     except SyntaxError as e:
         relpath = os.path.relpath(path, start=RESOURCE_PATH)
         return "%s in nodefunction file %s, line %d" % (e.__class__.__name__, relpath, e.lineno)
+    except ImportError as e:
+        relpath = os.path.relpath(path, start=RESOURCE_PATH)
+        return "%s in nodfunction file %s: %s" % (e.__class__.__name__, relpath, e.msg)
 
 
 def reload_native_modules():

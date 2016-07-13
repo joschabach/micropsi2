@@ -57,6 +57,7 @@ def get_worldadapters(world_uid, nodenet_uid=None):
     supported_worldadapters = get_world_class_from_name(worlddata.get('world_type', 'World')).get_supported_worldadapters()
     for name, worldadapter in supported_worldadapters.items():
         data[name] = {
+            'name': worldadapter.__name__,
             'description': worldadapter.__doc__,
             'config_options': worldadapter.get_config_options()
         }

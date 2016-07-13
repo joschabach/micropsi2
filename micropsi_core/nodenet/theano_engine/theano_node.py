@@ -439,8 +439,18 @@ class TheanoNode(Node):
             else:
                 raise
 
-    def get_slot_activations(self):
-        return self.slot_fat_snapshot
+    def get_slot_activations(self, slot_type=None):
+        """ Returns a numpy array of the slot activations of a highdimensional
+        native module. You can optional give a high-level gatetype to recieve
+        only activations of an highdimensional slot type """
+        if self.slot_fat_snapshot is None:
+            self.take_slot_activation_snapshot()
+        if slot_type:
+            offset = self.nodetype.slotindexes[slot_type]
+            length = self.nodetype.dimensionality['slots'].get(slot_type, 1)
+            return self.slot_fat_snapshot[offset:offset + length]
+        else:
+            return self.slot_fat_snapshot
 
     def set_gate_activations(self, new_activations):
         start = self._partition.allocated_node_offsets[node_from_id(self.uid)]
@@ -534,7 +544,7 @@ class TheanoGate(Gate):
                             gatecolumn = weights[:, element_index]
                             links_indices = np.nonzero(gatecolumn)[0]
                         elif inlink_type == "identity":
-                            links_indices[element_index]
+                            links_indices = [element_index]
 
                         for link_index in links_indices:
                             target_id = to_partition.allocated_elements_to_nodes[to_elements[link_index]]
@@ -635,9 +645,9 @@ class TheanoSlot(Slot):
                 if element in to_elements:
                     element_index = np.where(to_elements == element)[0][0]
                     inlink_type = inlinks[4]
+                    from_partition = self.__nodenet.partitions[partition_from_spid]
                     if inlink_type == "dense":
                         weights = inlinks[2].get_value(borrow=True)
-                        from_partition = self.__nodenet.partitions[partition_from_spid]
                         slotrow = weights[element_index]
                         links_indices = np.nonzero(slotrow)[0]
                     elif inlink_type == "identity":

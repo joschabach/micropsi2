@@ -207,7 +207,6 @@ class VrepGreyscaleVision(WorldAdapterMixin):
         print('vrep vision image sum', np.sum(abs(y_image)))
 
 
-
 class VrepRGBVision(WorldAdapterMixin):
 
     downscale_factor = 2**2  # rescale the image before sending it to the toolkit. use a power of two.
@@ -322,6 +321,86 @@ class VrepOneBallGame(WorldAdapterMixin):
             ry = r*np.sin(a)
 
             self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, self.ball_handle, self.robot_handle, [rx, ry], vrep.simx_opmode_blocking])
+
+
+class Vrep6DObjects(WorldAdapterMixin):
+
+    @staticmethod
+    def get_config_options():
+        parameters = [{'name': 'objects',
+                      'description': 'comma-separated names of objects in the vrep scene',
+                      'default': 'fork,ghost_fork'}]
+        parameters.extend(VrepGreyscaleVision.get_config_options())
+        return parameters
+
+    def initialize(self):
+        super().initialize()
+
+        self.object_names = [name.strip() for name in self.objects.split(',')]
+        self.object_handles = []
+        for name in self.object_names:
+            handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, name, vrep.simx_opmode_blocking])
+            if handle < 1:
+                self.logger.critical("There seems to be no object with the name %s in the v-rep simulation." % self.name)
+            else:
+                self.object_handles.append(handle)
+                self.logger.info("Found object %s" % name)
+
+                # position:
+                self.add_datasource("%s-x" % name)
+                self.add_datasource("%s-y" % name)
+                self.add_datasource("%s-z" % name)
+                # angle:
+                self.add_datasource("%s-alpha" % name)
+                self.add_datasource("%s-beta" % name)
+                self.add_datasource("%s-gamma" % name)
+
+                # target position:
+                self.add_datatarget("%s-x" % name)
+                self.add_datatarget("%s-y" % name)
+                self.add_datatarget("%s-z" % name)
+                # target angle:
+                self.add_datatarget("%s-alpha" % name)
+                self.add_datatarget("%s-beta" % name)
+                self.add_datatarget("%s-gamma" % name)
+
+    def update_data_sources_and_targets(self):
+        # self.datatarget_feedback_values = np.zeros_like(self.datatarget_values)
+        super().update_data_sources_and_targets()
+
+        execute = self._get_datatarget_value('execute') > 0.9
+
+        if execute:
+            self.call_vrep(vrep.simxPauseCommunication, [self.clientID, True], empty_result_ok=True)
+            for i, (name, handle) in enumerate(zip(self.object_names, self.object_handles)):
+                # set position:
+                tx = self._get_datatarget_value("%s-x" % name)
+                ty = self._get_datatarget_value("%s-y" % name)
+                tz = self._get_datatarget_value("%s-z" % name)
+                self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, handle, -1, [tx, ty, tz], vrep.simx_opmode_oneshot], empty_result_ok=True)
+                # set angles:
+                talpha = self._get_datatarget_value("%s-alpha" % name)
+                tbeta = self._get_datatarget_value("%s-beta" % name)
+                tgamma = self._get_datatarget_value("%s-gamma" % name)
+                self.call_vrep(vrep.simxSetObjectOrientation, [self.clientID, handle, -1, [talpha, tbeta, tgamma], vrep.simx_opmode_oneshot], empty_result_ok=True)
+            self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
+
+        for i, (name, handle) in enumerate(zip(self.object_names, self.object_handles)):
+            tx, ty, tz = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, handle, -1, vrep.simx_opmode_oneshot], empty_result_ok=True)
+            self._set_datasource_value("%s-x" % name, tx)
+            self._set_datasource_value("%s-y" % name, ty)
+            self._set_datasource_value("%s-z" % name, tz)
+
+            talpha, tbeta, tgamma = self.call_vrep(vrep.simxGetObjectOrientation, [self.clientID, handle, -1, vrep.simx_opmode_oneshot], empty_result_ok=True)
+            self._set_datasource_value("%s-alpha" % name, talpha)
+            self._set_datasource_value("%s-beta" % name, tbeta)
+            self._set_datasource_value("%s-gamma" % name, tgamma)
+
+            # if name == 'fork':
+            #     print('fetch: step={}, object {}, name={}, handle={}\nx={} y={} z={}\nalpha={} beta={} gamma={}\n'.format(self.world.current_step, i, name, handle, tx, ty, tz, talpha, tbeta, tgamma))
+
+    def reset_simulation_state(self):
+        pass
 
 
 class VrepCallMixin():
@@ -577,17 +656,16 @@ class OneBallRobot(Robot, VrepGreyscaleVision, VrepCollisions, VrepOneBallGame):
         return parameters
 
 
-class Objects6D(VrepRGBVision, ArrayWorldAdapter, VrepCallMixin):
+class Objects6D(VrepRGBVision, ArrayWorldAdapter, Vrep6DObjects, VrepCallMixin):
     """ worldadapter to observe and control 6D poses of arbitrary objects in a vrep scene
     (i.e. their positons and orientations)"""
     block_runner_if_connection_lost = True
 
     @staticmethod
     def get_config_options():
-        parameters = [{'name': 'objects',
-                      'description': 'comma-separated names of objects in the vrep scene',
-                      'default': 'fork,ghost_fork'}]
+        parameters = []
         parameters.extend(VrepGreyscaleVision.get_config_options())
+        parameters.extend(Vrep6DObjects.get_config_options())
         return parameters
 
     def __init__(self, world, uid=None, **data):
@@ -605,34 +683,6 @@ class Objects6D(VrepRGBVision, ArrayWorldAdapter, VrepCallMixin):
         self.datatarget_feedback_values = np.zeros(0)
 
         super().initialize()
-
-        self.object_names = [name.strip() for name in self.objects.split(',')]
-        self.object_handles = []
-        for name in self.object_names:
-            handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, name, vrep.simx_opmode_blocking])
-            if handle < 1:
-                self.logger.critical("There seems to be no object with the name %s in the v-rep simulation." % self.name)
-            else:
-                self.object_handles.append(handle)
-                self.logger.info("Found object %s" % name)
-
-                # position:
-                self.add_datasource("%s-x" % name)
-                self.add_datasource("%s-y" % name)
-                self.add_datasource("%s-z" % name)
-                # angle:
-                self.add_datasource("%s-alpha" % name)
-                self.add_datasource("%s-beta" % name)
-                self.add_datasource("%s-gamma" % name)
-
-                # target position:
-                self.add_datatarget("%s-x" % name)
-                self.add_datatarget("%s-y" % name)
-                self.add_datatarget("%s-z" % name)
-                # target angle:
-                self.add_datatarget("%s-alpha" % name)
-                self.add_datatarget("%s-beta" % name)
-                self.add_datatarget("%s-gamma" % name)
 
         self.add_datatarget("restart")
         self.add_datatarget("execute")
@@ -675,8 +725,6 @@ class Objects6D(VrepRGBVision, ArrayWorldAdapter, VrepCallMixin):
 
         self.fetch_sensor_and_feedback_values_from_simulation(None)
 
-
-
     def reset_simulation_state(self):
         self.call_vrep(vrep.simxStopSimulation, [self.clientID, vrep.simx_opmode_oneshot], empty_result_ok=True)
         time.sleep(0.3)
@@ -697,17 +745,3 @@ class Objects6D(VrepRGBVision, ArrayWorldAdapter, VrepCallMixin):
 
         if self.world.connection_daemon.clientID != self.clientID:
             self.initialize()
-
-        for i, (name, handle) in enumerate(zip(self.object_names, self.object_handles)):
-            tx, ty, tz = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, handle, -1, vrep.simx_opmode_oneshot], empty_result_ok=True)
-            self._set_datasource_value("%s-x" % name, tx)
-            self._set_datasource_value("%s-y" % name, ty)
-            self._set_datasource_value("%s-z" % name, tz)
-
-            talpha, tbeta, tgamma = self.call_vrep(vrep.simxGetObjectOrientation, [self.clientID, handle, -1, vrep.simx_opmode_oneshot], empty_result_ok=True)
-            self._set_datasource_value("%s-alpha" % name, talpha)
-            self._set_datasource_value("%s-beta" % name, tbeta)
-            self._set_datasource_value("%s-gamma" % name, tgamma)
-
-            # if name == 'fork':
-            #     print('fetch: step={}, object {}, name={}, handle={}\nx={} y={} z={}\nalpha={} beta={} gamma={}\n'.format(self.world.current_step, i, name, handle, tx, ty, tz, talpha, tbeta, tgamma))

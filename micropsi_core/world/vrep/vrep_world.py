@@ -146,7 +146,7 @@ class VREPWorld(World):
         ]
 
 
-class VrepCollisions(WorldAdapterMixin):
+class VrepCollisionsMixin(WorldAdapterMixin):
 
     @staticmethod
     def get_config_options():
@@ -261,7 +261,7 @@ class VrepRGBVisionMixin(WorldAdapterMixin):
 #    ...
 
 
-class VrepOneBallGame(WorldAdapterMixin):
+class VrepOneBallGameMixin(WorldAdapterMixin):
 
     @staticmethod
     def get_config_options():
@@ -672,7 +672,7 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
                                                                                   vrep.simx_opmode_blocking])
 
 
-class OneBallRobot(Robot, VrepGreyscaleVisionMixin, VrepCollisions, VrepOneBallGame):
+class OneBallRobot(Robot, VrepGreyscaleVisionMixin, VrepCollisionsMixin, VrepOneBallGameMixin):
     """ A Worldadapter to play the one-ball-reaching-task """
 
     @classmethod
@@ -680,9 +680,21 @@ class OneBallRobot(Robot, VrepGreyscaleVisionMixin, VrepCollisions, VrepOneBallG
         """ I've found no way around this yet """
         parameters = []
         parameters.extend(Robot.get_config_options())
-        parameters.extend(VrepCollisions.get_config_options())
+        parameters.extend(VrepCollisionsMixin.get_config_options())
         parameters.extend(VrepGreyscaleVisionMixin.get_config_options())
-        parameters.extend(VrepOneBallGame.get_config_options())
+        parameters.extend(VrepOneBallGameMixin.get_config_options())
+        return parameters
+
+
+class IKRobotWithGreyscaleVision(Robot, VrepGreyscaleVisionMixin):
+    """ A Worldadapter to control a robot with IK, based on a greyscale vision stream """
+
+    @classmethod
+    def get_config_options(cls):
+        """ I've found no way around this yet """
+        parameters = []
+        parameters.extend(Robot.get_config_options())
+        parameters.extend(VrepGreyscaleVisionMixin.get_config_options())
         return parameters
 
 

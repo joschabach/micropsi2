@@ -3914,7 +3914,10 @@ function scrollToNode(node, doShowNodeForm){
             canvas_container.scrollLeft(x);
             selectNode(node.uid);
             view.draw();
-            if(node.uid in nodes && doShowNodeForm) showNodeForm(node.uid);
+            if(node.uid in nodes && doShowNodeForm) {
+                loadLinksForSelection();
+                showNodeForm(node.uid);
+            }
         });
     } else {
         deselectAll();
@@ -4090,8 +4093,8 @@ function showNodeForm(nodeUid, refresh){
         }
         $('#node_slots').html(link_list || "<tr><td>None</td></tr>");
         content = '<tr><td colspan="2">'+nodes[nodeUid].outlinks+' links to outside nodespaces</td></tr>';
-        link_list = "";
         for(name in nodes[nodeUid].gates){
+            link_list = "";
             for(id in nodes[nodeUid].gates[name].outgoing){
                 if(links[id].targetNodeUid in nodes){
                     var n = nodes[links[id].targetNodeUid];

@@ -430,10 +430,10 @@ def get_nodenet_activation_data(nodenet_uid, nodespaces=[], last_call_step=-1):
     return data
 
 
-def get_nodes(nodenet_uid, nodespaces=[], include_links=True):
+def get_nodes(nodenet_uid, nodespaces=[], include_links=True, links_to_nodespaces=[]):
     """Return data for the given nodespaces"""
     nodenet = get_nodenet(nodenet_uid)
-    return nodenet.get_nodes(nodespaces, include_links)
+    return nodenet.get_nodes(nodespaces, include_links, links_to_nodespaces=links_to_nodespaces)
 
 
 def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None, recorders=None):
@@ -457,7 +457,7 @@ def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=No
         if nodenet is not None:
             if not type(nodenet) == dict:
                 nodenet = {}
-            data['nodenet'] = get_nodes(nodenet_uid, nodespaces=nodenet.get('nodespaces', []), include_links=nodenet.get('include_links', True))
+            data['nodenet'] = get_nodes(nodenet_uid, nodespaces=nodenet.get('nodespaces', []), include_links=nodenet.get('include_links', True), links_to_nodespaces=nodenet.get('links_to_nodespaces', []))
         if nodenet_diff is not None:
             activations = get_nodenet_activation_data(nodenet_uid, last_call_step=nodenet_diff['step'], nodespaces=nodenet_diff.get('nodespaces', []))
             data['nodenet_diff'] = {

@@ -1860,7 +1860,7 @@ class TheanoPartition():
         nodespace_ids = nodespace_ids[np.where(self.allocated_nodespaces[nodespace_ids] == ns_id)[0]]
         return node_ids, nodespace_ids
 
-    def get_node_data(self, ids=None, nodespaces_by_partition=None, complete=False, include_links=True):
+    def get_node_data(self, ids=None, nodespaces_by_partition=None, complete=False, include_links=True, linked_nodespaces_by_partition=[]):
         a = self.a.get_value(borrow=True)
         g_threshold_array = self.g_threshold.get_value(borrow=True)
         g_amplification_array = self.g_amplification.get_value(borrow=True)
@@ -1882,6 +1882,7 @@ class TheanoPartition():
 
         nodes = {}
         highdim_nodes = []
+        additional_links = []
 
         for id in node_ids:
             uid = node_to_id(id, self.pid)
@@ -2014,13 +2015,16 @@ class TheanoPartition():
                 target_uid = node_to_id(target_id, self.pid)
 
                 if not fetchall:
-                    if source_uid not in nodes:
-                        if target_uid in nodes:
+                    if source_uid not in nodes and target_uid in nodes:
+                        if self.allocated_node_parents[source_id] not in linked_nodespaces_by_partition[self.spid]:
                             nodes[target_uid]['inlinks'] += 1
-                        continue
-                    if target_uid not in nodes:
-                        if source_uid in nodes:
+                            continue
+                    elif target_uid not in nodes and source_uid in nodes:
+                        if self.allocated_node_parents[target_id] not in linked_nodespaces_by_partition[self.spid]:
                             nodes[source_uid]['outlinks'] += 1
+                            continue
+                    elif source_uid not in nodes or target_uid not in nodes:
+                        self.logger.warn("This should not happen. Please file a ticket for Doik, and if possible save the current state of the net, and which configuration of nodespaces you wanted to display in the client. thanks.")
                         continue
 
                 source_type = self.allocated_nodes[source_id]
@@ -2044,13 +2048,19 @@ class TheanoPartition():
                             "certainty": 1,
                             "target_slot_name": target_slot_type,
                             "target_node_uid": target_uid}
-                if source_gate_type not in nodes[source_uid]["links"]:
-                    nodes[source_uid]["links"][source_gate_type] = []
-                if source_uid in highdim_nodes:
-                    if linkdict not in nodes[source_uid]['links'][source_gate_type]:
+
+                if source_uid in nodes:
+                    if source_gate_type not in nodes[source_uid]["links"]:
+                        nodes[source_uid]["links"][source_gate_type] = []
+                    if source_uid in highdim_nodes:
+                        if linkdict not in nodes[source_uid]['links'][source_gate_type]:
+                            nodes[source_uid]["links"][source_gate_type].append(linkdict)  # Doik: why is this check needed? possibly expensive. /Doik
+                    else:
                         nodes[source_uid]["links"][source_gate_type].append(linkdict)
                 else:
-                    nodes[source_uid]["links"][source_gate_type].append(linkdict)
+                    linkdict['source_node_uid'] = source_uid
+                    linkdict['source_gate_name'] = source_gate_type
+                    additional_links.append(linkdict)
 
             # outgoing cross-partition links
             for partition_to_spid, to_partition in self.nodenet.partitions.items():
@@ -2058,7 +2068,7 @@ class TheanoPartition():
                     inlinks = to_partition.inlinks[self.spid]
                     from_elements = inlinks[0].get_value(borrow=True)
 
-                    if not fetchall and partition_to_spid not in nodespaces_by_partition:
+                    if not fetchall and partition_to_spid not in nodespaces_by_partition and linked_nodespaces_by_partition[partition_to_spid] == []:
                         nids = self.allocated_elements_to_nodes[from_elements]
                         if inlinks[4] == 'identity':
                             for nid in nids:
@@ -2124,7 +2134,7 @@ class TheanoPartition():
             if not fetchall:
                 # incoming cross-partition links
                 for from_partition_id, inlinks in self.inlinks.items():
-                    if from_partition_id not in nodespaces_by_partition:
+                    if from_partition_id not in nodespaces_by_partition and linked_nodespaces_by_partition[from_partition_id] == []:
                         to_elements = inlinks[1].get_value(borrow=True)
                         nids = self.allocated_elements_to_nodes[to_elements]
                         if inlinks[4] == 'identity':
@@ -2138,8 +2148,50 @@ class TheanoPartition():
                                 uid = node_to_id(self.allocated_elements_to_nodes[el], self.pid)
                                 if uid in nodes:
                                     nodes[uid]['inlinks'] += np.count_nonzero(w[idx])
+                    else:
+                        from_partition = self.nodenet.partitions[from_partition_id]
+                        from_elements = inlinks[0].get_value(borrow=True)
+                        to_elements = inlinks[1].get_value(borrow=True)
 
-        return nodes
+                        inlink_type = inlinks[4]
+                        if inlink_type == "dense":
+                            w = inlinks[2].get_value(borrow=True)
+                            slots, gates = np.nonzero(w)
+                        elif inlink_type == "identity":
+                            slots = np.arange(len(from_elements))
+                            gates = np.arange(len(from_elements))
+
+                        for index, gate_index in enumerate(gates):
+                            source_id = from_partition.allocated_elements_to_nodes[from_elements[gate_index]]
+                            source_uid = node_to_id(source_id, from_partition.pid)
+
+                            source_type = from_partition.allocated_nodes[source_id]
+                            source_nodetype = from_partition.nodenet.get_nodetype(get_string_node_type(source_type, from_partition.nodenet.native_modules))
+                            source_gate_numerical = from_elements[gate_index] - from_partition.allocated_node_offsets[source_id]
+                            source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
+
+                            slot_index = slots[index]
+                            target_id = self.allocated_elements_to_nodes[to_elements[slot_index]]
+                            target_uid = node_to_id(target_id, self.pid)
+
+                            target_type = self.allocated_nodes[target_id]
+                            target_nodetype = self.nodenet.get_nodetype(get_string_node_type(target_type, self.nodenet.native_modules))
+                            target_slot_numerical = to_elements[slot_index] - self.allocated_node_offsets[target_id]
+                            target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
+
+                            if inlink_type == 'dense':
+                                weight = w[slot_index][gate_index]
+                            elif inlink_type == 'identity':
+                                weight = 1
+
+                            additional_links.append({"weight": weight,
+                                        "certainty": 1,
+                                        "target_slot_name": target_slot_type,
+                                        "target_node_uid": target_uid,
+                                        "source_node_uid": source_uid,
+                                        "source_gate_name": source_gate_type})
+
+        return nodes, additional_links
 
     def integrity_check(self):
 

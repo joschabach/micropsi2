@@ -805,7 +805,7 @@ class DictNodenet(Nodenet):
             to_node = to_nodes[row]
             for column in range(len(from_nodes)):
                 from_node = from_nodes[column]
-                weight = new_w[row][column]
+                weight = new_w[row][column] if type(new_w) != int else 1
                 if weight != 0:
                     self.set_link_weight(from_node.uid, from_gate, to_node.uid, to_slot, weight)
                 else:

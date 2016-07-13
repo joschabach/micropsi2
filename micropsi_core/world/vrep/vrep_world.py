@@ -172,7 +172,7 @@ class VrepCollisions(WorldAdapterMixin):
             self._set_datasource_value("collision", 1 if collision_state else 0)
 
 
-class VrepGreyscaleVision(WorldAdapterMixin):
+class VrepGreyscaleVisionMixin(WorldAdapterMixin):
 
     def initialize(self):
         super().initialize()
@@ -330,7 +330,7 @@ class Vrep6DObjectsMixin(WorldAdapterMixin):
         parameters = [{'name': 'objects',
                       'description': 'comma-separated names of objects in the vrep scene',
                       'default': 'fork,ghost_fork'}]
-        parameters.extend(VrepGreyscaleVision.get_config_options())
+        parameters.extend(VrepGreyscaleVisionMixin.get_config_options())
         return parameters
 
     def initialize(self):
@@ -459,7 +459,7 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
             {'name': 'control_type',
              'description': 'The type of input sent to the robot',
              'default': 'force/torque',
-             'options': ["force/torque", "force/torque-sync", "angles", "movements"]},
+             'options': ["force/torque", "force/torque-sync", "ik", "angles", "movements"]},
             {'name': 'randomize_arm',
              'description': 'Initialize the robot arm randomly',
              'default': 'False',
@@ -498,6 +498,10 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
 
         self.logger.info("Found robot with %d joints" % len(self.joints))
 
+        if self.control_type == "ik":
+            self.ik_target_handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, "ik_target", vrep.simx_opmode_blocking])
+            self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.ik_target_handle, -1, vrep.simx_opmode_streaming], empty_result_ok=True)
+
         self.add_datasource("tip-x")
         self.add_datasource("tip-y")
         self.add_datasource("tip-z")
@@ -507,10 +511,15 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
 
         for i in range(len(self.joints)):
             self.add_datasource("joint_angle_%s" % str(i + 1))
-            self.add_datatarget("joint_%s" % str(i + 1))
-
-        for i in range(len(self.joints)):
             self.add_datasource("joint_force_%s" % str(i + 1))
+
+        if self.control_type != "ik":
+            for i in range(len(self.joints)):
+                self.add_datatarget("joint_%s" % str(i + 1))
+        else:
+            self.add_datatarget("ik_x")
+            self.add_datatarget("ik_y")
+            self.add_datatarget("ik_z")
 
         self.last_restart = 0
 
@@ -539,21 +548,42 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
 
         # execute movement, send new target angles
         if execute:
-            tvals = [0] * len(self.datatarget_values)
-            self.current_angle_target_values = np.array(self._get_datatarget_values('joint_1', len(self.joints)))
+
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, True], empty_result_ok=True)
-            joint_angle_offset = self.get_datasource_index("joint_angle_1")
-            for i, joint_handle in enumerate(self.joints):
-                tval = self.current_angle_target_values[i] * math.pi
-                if self.control_type == "force/torque" or self.control_type == "force/torque-sync":
-                    tval += (old_datasource_values[joint_angle_offset + i]) * math.pi
-                    tvals[i] = tval
-                    self.call_vrep(vrep.simxSetJointTargetPosition, [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot], empty_result_ok=True)
-                elif self.control_type == "angles":
-                    self.call_vrep(vrep.simxSetJointPosition, [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot], empty_result_ok=True)
-                elif self.control_type == "movements":
-                    tval += (old_datasource_values[joint_angle_offset + i]) * math.pi
-                    self.call_vrep(vrep.simxSetJointPosition, [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot], empty_result_ok=True)
+
+            if self.control_type != "ik":
+                tvals = [0] * len(self.datatarget_values)
+                self.current_angle_target_values = np.array(self._get_datatarget_values('joint_1', len(self.joints)))
+                joint_angle_offset = self.get_datasource_index("joint_angle_1")
+                for i, joint_handle in enumerate(self.joints):
+                    tval = self.current_angle_target_values[i] * math.pi
+                    if self.control_type == "force/torque" or self.control_type == "force/torque-sync":
+                        tval += (old_datasource_values[joint_angle_offset + i]) * math.pi
+                        tvals[i] = tval
+                        self.call_vrep(vrep.simxSetJointTargetPosition,
+                                       [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot],
+                                       empty_result_ok=True)
+                    elif self.control_type == "angles":
+                        self.call_vrep(vrep.simxSetJointPosition,
+                                       [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot],
+                                       empty_result_ok=True)
+                    elif self.control_type == "movements":
+                        tval += (old_datasource_values[joint_angle_offset + i]) * math.pi
+                        self.call_vrep(vrep.simxSetJointPosition,
+                                       [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot],
+                                       empty_result_ok=True)
+
+            else:
+                tpos = self.call_vrep(vrep.simxGetObjectPosition,
+                                           [self.clientID, self.ik_target_handle, -1,
+                                            vrep.simx_opmode_streaming])
+
+                tx = tpos[0] + self._get_datatarget_value("ik_x")
+                ty = tpos[1] + self._get_datatarget_value("ik_y")
+                tz = tpos[2] + self._get_datatarget_value("ik_z")
+                self.call_vrep(vrep.simxSetObjectPosition,
+                               [self.clientID, self.ik_target_handle, -1, [tx, ty, tz],
+                                vrep.simx_opmode_oneshot], empty_result_ok=True)
 
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 
@@ -642,7 +672,7 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
                                                                                   vrep.simx_opmode_blocking])
 
 
-class OneBallRobot(Robot, VrepGreyscaleVision, VrepCollisions, VrepOneBallGame):
+class OneBallRobot(Robot, VrepGreyscaleVisionMixin, VrepCollisions, VrepOneBallGame):
     """ A Worldadapter to play the one-ball-reaching-task """
 
     @classmethod
@@ -651,7 +681,7 @@ class OneBallRobot(Robot, VrepGreyscaleVision, VrepCollisions, VrepOneBallGame):
         parameters = []
         parameters.extend(Robot.get_config_options())
         parameters.extend(VrepCollisions.get_config_options())
-        parameters.extend(VrepGreyscaleVision.get_config_options())
+        parameters.extend(VrepGreyscaleVisionMixin.get_config_options())
         parameters.extend(VrepOneBallGame.get_config_options())
         return parameters
 

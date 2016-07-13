@@ -363,6 +363,8 @@ class Vrep6DObjectsMixin(WorldAdapterMixin):
                 self.add_datatarget("%s-alpha" % name)
                 self.add_datatarget("%s-beta" % name)
                 self.add_datatarget("%s-gamma" % name)
+                # execution target
+                self.add_datatarget("execute-%s" % name)
 
     def update_data_sources_and_targets(self):
         # self.datatarget_feedback_values = np.zeros_like(self.datatarget_values)
@@ -370,9 +372,9 @@ class Vrep6DObjectsMixin(WorldAdapterMixin):
 
         execute = self._get_datatarget_value('execute') > 0.9
 
-        if execute:
-            self.call_vrep(vrep.simxPauseCommunication, [self.clientID, True], empty_result_ok=True)
-            for i, (name, handle) in enumerate(zip(self.object_names, self.object_handles)):
+        self.call_vrep(vrep.simxPauseCommunication, [self.clientID, True], empty_result_ok=True)
+        for i, (name, handle) in enumerate(zip(self.object_names, self.object_handles)):
+            if self._get_datatarget_value('execute-%s' % name) > 0.9:
                 # set position:
                 tx = self._get_datatarget_value("%s-x" % name)
                 ty = self._get_datatarget_value("%s-y" % name)
@@ -383,7 +385,7 @@ class Vrep6DObjectsMixin(WorldAdapterMixin):
                 tbeta = self._get_datatarget_value("%s-beta" % name)
                 tgamma = self._get_datatarget_value("%s-gamma" % name)
                 self.call_vrep(vrep.simxSetObjectOrientation, [self.clientID, handle, -1, [talpha, tbeta, tgamma], vrep.simx_opmode_oneshot], empty_result_ok=True)
-            self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
+        self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 
         for i, (name, handle) in enumerate(zip(self.object_names, self.object_handles)):
             tx, ty, tz = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, handle, -1, vrep.simx_opmode_oneshot], empty_result_ok=True)

@@ -701,27 +701,10 @@ class Objects6D(VrepRGBVisionMixin, Vrep6DObjectsMixin, VrepCallMixin, ArrayWorl
         super().update_data_sources_and_targets()
 
         restart = self._get_datatarget_value('restart') > 0.9 and self.world.current_step - self.last_restart >= 5
-        execute = self._get_datatarget_value('execute') > 0.9
 
         # simulation restart
         if restart:
             return self.reset_simulation_state()
-
-        # send new target positions and angles
-        if execute:
-            self.call_vrep(vrep.simxPauseCommunication, [self.clientID, True], empty_result_ok=True)
-            for i, (name, handle) in enumerate(zip(self.object_names, self.object_handles)):
-                # set position:
-                tx = self._get_datatarget_value("%s-x" % name)
-                ty = self._get_datatarget_value("%s-y" % name)
-                tz = self._get_datatarget_value("%s-z" % name)
-                self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, handle, -1, [tx, ty, tz], vrep.simx_opmode_oneshot], empty_result_ok=True)
-                # set angles:
-                talpha = self._get_datatarget_value("%s-alpha" % name)
-                tbeta = self._get_datatarget_value("%s-beta" % name)
-                tgamma = self._get_datatarget_value("%s-gamma" % name)
-                self.call_vrep(vrep.simxSetObjectOrientation, [self.clientID, handle, -1, [talpha, tbeta, tgamma], vrep.simx_opmode_oneshot], empty_result_ok=True)
-            self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 
         self.fetch_sensor_and_feedback_values_from_simulation(None)
 

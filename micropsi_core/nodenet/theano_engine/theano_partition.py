@@ -2099,6 +2099,11 @@ class TheanoPartition():
                                     "target_node_uid": target_uid}
                         if source_gate_type not in nodes[source_uid]["links"]:
                             nodes[source_uid]["links"][source_gate_type] = []
+                        if target_nodetype.is_highdimensional:
+                            target_slot_type = target_slot_type.rstrip('0123456789')
+                            if target_slot_type in target_nodetype.dimensionality['slots']:
+                                target_slot_type = target_slot_type + '0'
+
                         nodes[source_uid]["links"][source_gate_type].append(linkdict)
                         followupuids.add(target_uid)
 

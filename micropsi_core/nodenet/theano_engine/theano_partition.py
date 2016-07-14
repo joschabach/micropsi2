@@ -1757,9 +1757,13 @@ class TheanoPartition():
         #if len(self.nodegroups[nodespace_to_uid][group_to]) != new_w.shape[0]:
         #    raise ValueError("group_to %s has length %i, but new_w.shape[0] is %i" % (group_to, len(self.nodegroups[nodespace_to_uid][group_to]), new_w.shape[0]))
 
-        w_matrix = self.w.get_value(borrow=True)
         grp_from = self.nodegroups[nodespace_from_uid][group_from]
         grp_to = self.nodegroups[nodespace_to_uid][group_to]
+        if np.isscalar(new_w) and new_w == 1:
+            if len(grp_from) != len(grp_to):
+                raise ValueError("from_elements and to_elements need to have equal lengths for identity links")
+            new_w = np.eye(len(grp_from))
+        w_matrix = self.w.get_value(borrow=True)
         cols, rows = np.meshgrid(grp_from, grp_to)
         w_matrix[rows, cols] = new_w
         self.w.set_value(w_matrix, borrow=True)

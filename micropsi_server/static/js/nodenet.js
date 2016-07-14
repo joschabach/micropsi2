@@ -4076,7 +4076,7 @@ function showNodeForm(nodeUid, refresh){
         var link_list = "";
         var inlink_types = {};
         if(nodes[nodeUid].slotIndexes.length){
-            link_list += '<tr><td colspan="2">'+nodes[nodeUid].inlinks+' links from outside nodespaces</td></tr>';
+            link_list += '<tr><td colspan="2">'+nodes[nodeUid].inlinks+' invisible links from outside nodespaces</td></tr>';
             for(key in nodes[nodeUid].slots){
                 link_list += "<tr><td>" + key + "</td><td><ul>";
                 for(id in nodes[nodeUid].slots[key].incoming){
@@ -4092,7 +4092,7 @@ function showNodeForm(nodeUid, refresh){
             }
         }
         $('#node_slots').html(link_list || "<tr><td>None</td></tr>");
-        content = '<tr><td colspan="2">'+nodes[nodeUid].outlinks+' links to outside nodespaces</td></tr>';
+        content = '<tr><td colspan="2">'+nodes[nodeUid].outlinks+' invisible links to outside nodespaces</td></tr>';
         for(name in nodes[nodeUid].gates){
             link_list = "";
             for(id in nodes[nodeUid].gates[name].outgoing){

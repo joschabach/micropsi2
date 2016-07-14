@@ -200,7 +200,7 @@ class DictNodenet(Nodenet):
         data['links'] = self.construct_links_list()
         return data
 
-    def get_nodes(self, nodespace_uids=[], include_links=True):
+    def get_nodes(self, nodespace_uids=[], include_links=True, links_to_nodespaces=[]):
         """
         Returns a dict with contents for the given nodespaces
         """

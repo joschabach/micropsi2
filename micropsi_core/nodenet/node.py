@@ -671,18 +671,29 @@ class Nodetype(object):
             self.dimensionality = dimensionality
             gates = []
             slots = []
+            index = 0
+            self.slotindexes = {}
+            self.gateindexes = {}
             for g in self.gatetypes:
+                self.gateindexes[g] = index
                 if dimensionality['gates'].get(g, 1)  > 1:
                     group = ["%s%d" % (g, i) for i in range(dimensionality['gates'][g])]
                     gates.extend(group)
+                    index += dimensionality['gates'][g]
                 else:
                     gates.append(g)
+                    index += 1
+
+            index = 0
             for s in self.slottypes:
+                self.slotindexes[s] = index
                 if dimensionality['slots'].get(s, 1)  > 1:
                     group = ["%s%d" % (s, i) for i in range(dimensionality['slots'][s])]
                     slots.extend(group)
+                    index += dimensionality['slots'][s]
                 else:
                     slots.append(s)
+                    index += 1
             self.gatetypes = gates
             self.slottypes = slots
 

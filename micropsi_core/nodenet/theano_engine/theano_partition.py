@@ -2193,6 +2193,15 @@ class TheanoPartition():
                             elif inlink_type == 'identity':
                                 weight = 1
 
+                            if target_nodetype.is_highdimensional:
+                                target_slot_type = target_slot_type.rstrip('0123456789')
+                                if target_slot_type in target_nodetype.dimensionality['slots']:
+                                    target_slot_type = target_slot_type + '0'
+                            if source_nodetype.is_highdimensional:
+                                source_gate_type = source_gate_type.rstrip('0123456789')
+                                if source_gate_type in source_nodetype.dimensionality['gates']:
+                                    source_gate_type = source_gate_type + '0'
+
                             additional_links.append({"weight": weight,
                                         "certainty": 1,
                                         "target_slot_name": target_slot_type,

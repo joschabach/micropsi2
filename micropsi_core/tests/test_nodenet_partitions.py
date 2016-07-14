@@ -273,20 +273,27 @@ def test_partition_get_node_data(test_nodenet):
     nodespace, source, register = prepare(netapi)
 
     nodes = []
+    # 10 nodes, first five in root, other five in new nodespace
     for i in range(10):
         n = netapi.create_node("Pipe", nodespace.uid if i > 4 else None, "node %d" % i)
         nodes.append(n)
 
+    # 4 links from root to new nodespace
     for i in range(4):
         netapi.link(nodes[i], 'gen', nodes[5], 'gen', weight=((i + 2) / 10))
+
+    # 1 link back
     netapi.link(nodes[9], 'gen', nodes[4], 'gen', 0.375)
 
+    # 3rd nodespace, with a node linked from root
     third_ns = netapi.create_nodespace(None, "third")
     third = netapi.create_node("Register", third_ns.uid, "third")
     netapi.link(nodes[4], 'gen', third, 'gen')
 
     node_data = nodenet.get_nodes(nodespace_uids=[None])['nodes']
-    assert set(node_data.keys()) == set([n.uid for n in nodes[:5]] + [source.uid, register.uid, third.uid] + [nodes[9].uid, nodes[5].uid])
+
+    # assert only root-nodespace nodes are delivered
+    assert set(node_data.keys()) == set([n.uid for n in nodes[:5]] + [source.uid])
 
     node_data = nodenet.get_nodes()['nodes']
     n1, n3, n4, n9 = nodes[1], nodes[3], nodes[4], nodes[9]
@@ -296,6 +303,5 @@ def test_partition_get_node_data(test_nodenet):
     # assert node_data[n4.uid]['links'] == {}
 
     node_data = nodenet.get_nodes(nodespace_uids=[nodespace.uid])['nodes']
-    assert len(node_data.keys()) == 12
-    assert node_data[n4.uid]['links'] == {}
+    assert len(node_data.keys()) == 6
     assert third.uid not in node_data

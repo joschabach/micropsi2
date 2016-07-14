@@ -267,10 +267,12 @@ def test_sensor_actuator_indices(test_nodenet):
     assert set(nodenet.rootpartition.sensor_indices) == {-1}
 
 
+@pytest.mark.engine("theano_engine")
 def test_partition_get_node_data(test_nodenet):
     nodenet = micropsi.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
     nodespace, source, register = prepare(netapi)
+    root_ns = netapi.get_nodespace(None).uid
 
     nodes = []
     # 10 nodes, first five in root, other five in new nodespace
@@ -290,18 +292,30 @@ def test_partition_get_node_data(test_nodenet):
     third = netapi.create_node("Register", third_ns.uid, "third")
     netapi.link(nodes[4], 'gen', third, 'gen')
 
-    node_data = nodenet.get_nodes(nodespace_uids=[None])['nodes']
+    n1, n3, n4, n5, n9 = nodes[1], nodes[3], nodes[4], nodes[5], nodes[9]
 
-    # assert only root-nodespace nodes are delivered
+    node_data = nodenet.get_nodes(nodespace_uids=[None])['nodes']
     assert set(node_data.keys()) == set([n.uid for n in nodes[:5]] + [source.uid])
+    assert node_data[n1.uid]['outlinks'] == 1
+    assert node_data[n4.uid]['outlinks'] == 1
+    assert node_data[n4.uid]['links'] == {}
 
     node_data = nodenet.get_nodes()['nodes']
-    n1, n3, n4, n9 = nodes[1], nodes[3], nodes[4], nodes[9]
     assert round(node_data[n1.uid]['links']['gen'][0]['weight'], 3) == 0.3
     assert round(node_data[n3.uid]['links']['gen'][0]['weight'], 3) == 0.5
     assert round(node_data[n9.uid]['links']['gen'][0]['weight'], 3) == 0.375
-    # assert node_data[n4.uid]['links'] == {}
 
     node_data = nodenet.get_nodes(nodespace_uids=[nodespace.uid])['nodes']
     assert len(node_data.keys()) == 6
     assert third.uid not in node_data
+    assert node_data[n5.uid]['inlinks'] == 4
+    assert node_data[n5.uid]['links'] == {}
+    assert node_data[n9.uid]['outlinks'] == 1
+    assert node_data[n9.uid]['links'] == {}
+
+    data = nodenet.get_nodes(nodespace_uids=[nodespace.uid], links_to_nodespaces=[root_ns])
+    assert 'links' in data
+    source_uids = [l['source_node_uid'] for l in data['links']]
+    # source->register + our 4 links:
+    assert set(source_uids) == set(['n0001', 'n0002', 'n0003', 'n0004', 'n0005'])
+    assert data['nodes'][n9.uid]['links']['gen'][0]['target_node_uid'] == n4.uid

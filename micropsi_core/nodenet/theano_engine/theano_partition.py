@@ -2028,7 +2028,7 @@ class TheanoPartition():
                             nodes[source_uid]['outlinks'] += 1
                             continue
                     elif source_uid not in nodes or target_uid not in nodes:
-                        self.logger.warn("This should not happen. Please file a ticket for Doik, and if possible save the current state of the net, and which configuration of nodespaces you wanted to display in the client. thanks.")
+                        # links between two nodes outside this nodespace.
                         continue
 
                 source_type = self.allocated_nodes[source_id]

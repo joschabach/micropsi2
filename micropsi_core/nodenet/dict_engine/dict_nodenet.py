@@ -825,15 +825,29 @@ class DictNodenet(Nodenet):
         to_slot = self.nodegroups[nodespace_to_uid][group_to][1]
         from_nodes = self.nodegroups[nodespace_from_uid][group_from][0]
         from_gate = self.nodegroups[nodespace_from_uid][group_from][1]
-        for row in range(len(to_nodes)):
-            to_node = to_nodes[row]
-            for column in range(len(from_nodes)):
-                from_node = from_nodes[column]
-                weight = new_w[row][column]
-                if weight != 0:
-                    self.set_link_weight(from_node.uid, from_gate, to_node.uid, to_slot, weight)
-                else:
-                    self.delete_link(from_node.uid, from_gate, to_node.uid, to_slot)
+
+        if type(new_w) == int and new_w == 1:
+            if len(from_nodes) != len(to_nodes):
+                raise ValueError("from_elements and to_elements need to have equal lengths for identity links")
+            for i in range(len(to_nodes)):
+                self.set_link_weight(
+                    from_nodes[i].uid,
+                    from_gate,
+                    to_nodes[i].uid,
+                    to_slot,
+                    1
+                )
+
+        else:
+            for row in range(len(to_nodes)):
+                to_node = to_nodes[row]
+                for column in range(len(from_nodes)):
+                    from_node = from_nodes[column]
+                    weight = new_w[row][column]
+                    if weight != 0:
+                        self.set_link_weight(from_node.uid, from_gate, to_node.uid, to_slot, weight)
+                    else:
+                        self.delete_link(from_node.uid, from_gate, to_node.uid, to_slot)
 
     def get_available_gatefunctions(self):
         """

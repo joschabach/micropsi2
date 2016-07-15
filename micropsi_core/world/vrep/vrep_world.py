@@ -604,7 +604,7 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
         while state() != vrep.sim_simulation_stopped:
             time.sleep(0.01)
 
-        self.call_vrep(vrep.simxStartSimulation, [self.clientID, vrep.simx_opmode_oneshot], debugprint=True)
+        self.call_vrep(vrep.simxStartSimulation, [self.clientID, vrep.simx_opmode_oneshot], debugprint=False)
 
         while state() != vrep.sim_simulation_advancing_running:
             time.sleep(0.01)

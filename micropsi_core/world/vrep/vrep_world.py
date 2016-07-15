@@ -388,12 +388,12 @@ class Vrep6DObjectsMixin(WorldAdapterMixin):
         self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 
         for i, (name, handle) in enumerate(zip(self.object_names, self.object_handles)):
-            tx, ty, tz = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, handle, -1, vrep.simx_opmode_oneshot], empty_result_ok=True)
+            tx, ty, tz = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, handle, -1, vrep.simx_opmode_oneshot], empty_result_ok=False)
             self._set_datasource_value("%s-x" % name, tx)
             self._set_datasource_value("%s-y" % name, ty)
             self._set_datasource_value("%s-z" % name, tz)
 
-            talpha, tbeta, tgamma = self.call_vrep(vrep.simxGetObjectOrientation, [self.clientID, handle, -1, vrep.simx_opmode_oneshot], empty_result_ok=True)
+            talpha, tbeta, tgamma = self.call_vrep(vrep.simxGetObjectOrientation, [self.clientID, handle, -1, vrep.simx_opmode_oneshot], empty_result_ok=False)
             self._set_datasource_value("%s-alpha" % name, talpha)
             self._set_datasource_value("%s-beta" % name, tbeta)
             self._set_datasource_value("%s-gamma" % name, tgamma)
@@ -413,9 +413,11 @@ class VrepCallMixin():
         """ is called by the world, if a connection was established """
         self.initialize()
 
-    def call_vrep(self, method, params, empty_result_ok=False):
+    def call_vrep(self, method, params, empty_result_ok=False, debugprint=False):
         """ error handling wrapper for calls to the vrep API """
         result = method(*params)
+        if debugprint:
+            print(self.world.current_step, ' vrep wrap called', method, 'with parameters', params, '. result was', result)
         code = result if type(result) == int else result[0]
         if code != vrep.simx_return_ok:
             if (code == vrep.simx_return_novalue_flag or code == vrep.simx_return_split_progress_flag) and not empty_result_ok:
@@ -597,10 +599,19 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
         self.fetch_sensor_and_feedback_values_from_simulation(tvals, True)
 
     def reset_simulation_state(self):
-        self.call_vrep(vrep.simxStopSimulation, [self.clientID, vrep.simx_opmode_oneshot], empty_result_ok=True)
-        time.sleep(0.3)
-        self.call_vrep(vrep.simxStartSimulation, [self.clientID, vrep.simx_opmode_oneshot])
-        time.sleep(0.5)
+        self.call_vrep(vrep.simxStopSimulation, [self.clientID, vrep.simx_opmode_oneshot], debugprint=True)
+        state = lambda: vrep.simxCallScriptFunction(self.clientID, "Open_Port", vrep.sim_scripttype_customizationscript, 'getsimulationstate', [], [], [], bytearray(), vrep.simx_opmode_blocking)[1][0]
+        while state() != vrep.sim_simulation_stopped:
+            print('waiting to stop')
+            time.sleep(0.01)
+
+        self.call_vrep(vrep.simxStartSimulation, [self.clientID, vrep.simx_opmode_oneshot], debugprint=True)
+
+        while state() != vrep.sim_simulation_advancing_running:
+            print('still not running! huh?')
+            time.sleep(0.01)
+
+
         super().reset_simulation_state()
         if self.randomize_arm == "True":
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, True], empty_result_ok=True)
@@ -757,15 +768,14 @@ class Objects6D(VrepRGBVisionMixin, Vrep6DObjectsMixin, VrepCallMixin, ArrayWorl
 
         self.fetch_sensor_and_feedback_values_from_simulation(None)
 
-    def reset_simulation_state(self):
-        self.call_vrep(vrep.simxStopSimulation, [self.clientID, vrep.simx_opmode_oneshot], empty_result_ok=True)
-        time.sleep(0.3)
-        self.call_vrep(vrep.simxStartSimulation, [self.clientID, vrep.simx_opmode_oneshot])
-        time.sleep(0.5)
-        super().reset_simulation_state()
+    # def reset_simulation_state(self):
+    #     self.call_vrep(vrep.simxStopSimulation, [self.clientID, vrep.simx_opmode_blocking])
+    #     self.call_vrep(vrep.simxGetPingTime, [self.clientID])
+    #     self.call_vrep(vrep.simxStartSimulation, [self.clientID, vrep.simx_opmode_oneshot])
+    #     super().reset_simulation_state()
 
-        self.fetch_sensor_and_feedback_values_from_simulation(None)
-        self.last_restart = self.world.current_step
+    #     self.fetch_sensor_and_feedback_values_from_simulation(None)
+    #     self.last_restart = self.world.current_step
 
     def fetch_sensor_and_feedback_values_from_simulation(self, targets, include_feedback=False):
         if not self.world.connection_daemon.is_connected:

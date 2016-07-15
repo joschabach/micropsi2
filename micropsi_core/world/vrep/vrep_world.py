@@ -502,7 +502,9 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
 
         if self.control_type == "ik":
             self.ik_target_handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, "ik_target", vrep.simx_opmode_blocking])
+            self.ik_follower_handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, "ik_follower", vrep.simx_opmode_blocking])
             self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.ik_target_handle, -1, vrep.simx_opmode_streaming], empty_result_ok=True)
+            self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.ik_follower_handle, -1, vrep.simx_opmode_streaming], empty_result_ok=True)
 
         self.add_datasource("tip-x")
         self.add_datasource("tip-y")
@@ -577,7 +579,7 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
 
             else:
                 tpos = self.call_vrep(vrep.simxGetObjectPosition,
-                                           [self.clientID, self.ik_target_handle, -1,
+                                           [self.clientID, self.ik_follower_handle, -1,
                                             vrep.simx_opmode_streaming])
 
                 tx = tpos[0] + self._get_datatarget_value("ik_x")

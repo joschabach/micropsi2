@@ -525,6 +525,8 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
             self.add_datatarget("ik_y")
             self.add_datatarget("ik_z")
 
+        self.call_vrep(vrep.simxGetObjectGroupData, [self.clientID, vrep.sim_object_joint_type, 15, vrep.simx_opmode_streaming], empty_result_ok=True)
+
         self.last_restart = 0
 
         self.current_angle_target_values = np.zeros_like(self.joints)
@@ -633,7 +635,7 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
         self._set_datasource_value('tip-y', joint_pos[1] - self.robot_position[1])
         self._set_datasource_value('tip-z', joint_pos[2] - self.robot_position[2])
 
-        joint_ids, something, data, se = self.call_vrep(vrep.simxGetObjectGroupData, [self.clientID, vrep.sim_object_joint_type, 15, vrep.simx_opmode_blocking])
+        joint_ids, something, data, se = self.call_vrep(vrep.simxGetObjectGroupData, [self.clientID, vrep.sim_object_joint_type, 15, vrep.simx_opmode_streaming])
 
         movement_finished = False
         count = 0
@@ -673,7 +675,7 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
                 time.sleep(0.1)
                 joint_ids, something, data, se = self.call_vrep(vrep.simxGetObjectGroupData, [self.clientID,
                                                                                   vrep.sim_object_joint_type, 15,
-                                                                                  vrep.simx_opmode_blocking])
+                                                                                  vrep.simx_opmode_streaming])
 
 
 class OneBallRobot(Robot, VrepGreyscaleVisionMixin, VrepCollisionsMixin, VrepOneBallGameMixin):

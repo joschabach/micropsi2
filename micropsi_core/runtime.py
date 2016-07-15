@@ -1247,18 +1247,8 @@ def get_links_for_nodes(nodenet_uid, node_uids):
     """ Returns a list of links connected to the given nodes,
     and their connected nodes, if they are not in the same nodespace"""
     nodenet = get_nodenet(nodenet_uid)
-    source_nodes = [nodenet.get_node(uid) for uid in node_uids]
-    links = {}
-    nodes = {}
-    for node in source_nodes:
-        nodelinks = node.get_associated_links()
-        for l in nodelinks:
-            links[l.signature] = l.get_data(complete=True)
-            if l.source_node.parent_nodespace != node.parent_nodespace:
-                nodes[l.source_node.uid] = l.source_node.get_data(include_links=False)
-            if l.target_node.parent_nodespace != node.parent_nodespace:
-                nodes[l.target_node.uid] = l.target_node.get_data(include_links=False)
-    return {'links': list(links.values()), 'nodes': nodes}
+    links, nodes = nodenet.get_links_for_nodes(node_uids)
+    return {'links': links, 'nodes': nodes}
 
 
 def delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type):

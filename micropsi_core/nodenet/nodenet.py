@@ -218,6 +218,14 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
+    def get_links_for_nodes(self, node_uids):
+        """
+        Returns a tuple consisting of links from/to the given node
+        and the nodes that are connected via these links
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
     def save(self, filename):
         """
         Saves the nodenet to the given main metadata json file.

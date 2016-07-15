@@ -341,6 +341,27 @@ class TheanoNodenet(Nodenet):
 
         return data
 
+    def get_links_for_nodes(self, node_uids):
+        source_nodes = [self.get_node(uid) for uid in node_uids]
+        links = {}
+        nodes = {}
+        for node in source_nodes:
+            nodelinks = node.get_associated_links()
+            for l in nodelinks:
+                ldata = l.get_data(complete=True)
+                if l.source_node.is_highdimensional:
+                    if l.source_gate.type.rstrip('0123456789') in l.source_node.nodetype.dimensionality['gates']:
+                        ldata['source_gate_name'] = ldata['source_gate_name'].rstrip('0123456789') + '0'
+                if l.target_node.is_highdimensional:
+                    if l.target_slot.type.rstrip('0123456789') in l.target_node.nodetype.dimensionality['slots']:
+                        ldata['target_slot_name'] = ldata['target_slot_name'].rstrip('0123456789') + '0'
+                if l.source_node.parent_nodespace != node.parent_nodespace:
+                    nodes[l.source_node.uid] = l.source_node.get_data(include_links=False)
+                if l.target_node.parent_nodespace != node.parent_nodespace:
+                    nodes[l.target_node.uid] = l.target_node.get_data(include_links=False)
+                links[l.signature] = ldata
+        return list(links.values()), nodes
+
     def initialize_stepoperators(self):
         self.stepoperators = [
             TheanoPropagate(),

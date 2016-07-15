@@ -1864,7 +1864,7 @@ class TheanoPartition():
         nodespace_ids = nodespace_ids[np.where(self.allocated_nodespaces[nodespace_ids] == ns_id)[0]]
         return node_ids, nodespace_ids
 
-    def get_node_data(self, ids=None, nodespaces_by_partition=None, complete=False, include_links=True, linked_nodespaces_by_partition=[]):
+    def get_node_data(self, ids=None, nodespaces_by_partition=None, complete=False, include_links=True, linked_nodespaces_by_partition={}):
         a = self.a.get_value(borrow=True)
         g_threshold_array = self.g_threshold.get_value(borrow=True)
         g_amplification_array = self.g_amplification.get_value(borrow=True)
@@ -2037,7 +2037,7 @@ class TheanoPartition():
                 source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
                 if source_uid in highdim_nodes:
                     source_gate_type = source_gate_type.rstrip('0123456789')
-                    if source_gate_type in source_nodetype.dimensionality['gates']:
+                    if source_gate_type.rstrip('0123456789') in source_nodetype.dimensionality['gates']:
                         source_gate_type = source_gate_type + '0'
 
                 target_type = self.allocated_nodes[target_id]
@@ -2045,9 +2045,8 @@ class TheanoPartition():
                 target_slot_numerical = slot_index - self.allocated_node_offsets[target_id]
                 target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
                 if target_uid in highdim_nodes:
-                    target_slot_type = target_slot_type.rstrip('0123456789')
-                    if target_slot_type in target_nodetype.dimensionality['slots']:
-                        target_slot_type = target_slot_type + '0'
+                    if target_slot_type.rstrip('0123456789') in target_nodetype.dimensionality['slots']:
+                        target_slot_type = target_slot_type.rstrip('0123456789') + '0'
                 linkdict = {"weight": float(w[slot_index, gate_index]),
                             "certainty": 1,
                             "target_slot_name": target_slot_type,
@@ -2061,7 +2060,7 @@ class TheanoPartition():
                             nodes[source_uid]["links"][source_gate_type].append(linkdict)  # Doik: why is this check needed? possibly expensive. /Doik
                     else:
                         nodes[source_uid]["links"][source_gate_type].append(linkdict)
-                else:
+                elif target_uid in nodes:
                     linkdict['source_node_uid'] = source_uid
                     linkdict['source_gate_name'] = source_gate_type
                     additional_links.append(linkdict)
@@ -2105,9 +2104,8 @@ class TheanoPartition():
                         source_gate_numerical = from_elements[gate_index] - self.allocated_node_offsets[source_id]
                         source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
                         if source_uid in highdim_nodes:
-                            source_gate_type = source_gate_type.rstrip('0123456789')
-                            if source_gate_type in source_nodetype.dimensionality['gates']:
-                                source_gate_type = source_gate_type + '0'
+                            if source_gate_type.rstrip('0123456789') in source_nodetype.dimensionality['gates']:
+                                source_gate_type = source_gate_type.rstrip('0123456789') + '0'
 
                         slot_index = slots[index]
                         target_id = to_partition.allocated_elements_to_nodes[to_elements[slot_index]]
@@ -2117,9 +2115,8 @@ class TheanoPartition():
                         target_slot_numerical = to_elements[slot_index] - to_partition.allocated_node_offsets[target_id]
                         target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
                         if target_uid in highdim_nodes:
-                            target_slot_type = target_slot_type.rstrip('0123456789')
-                            if target_slot_type in target_nodetype.dimensionality['slots']:
-                                target_slot_type = target_slot_type + '0'
+                            if target_slot_type.rstrip('0123456789') in target_nodetype.dimensionality['slots']:
+                                target_slot_type = target_slot_type.rstrip('0123456789') + '0'
 
                         if inlink_type == "dense":
                             weight = float(w[slot_index, gate_index])
@@ -2134,7 +2131,7 @@ class TheanoPartition():
                             nodes[source_uid]["links"][source_gate_type] = []
                         if target_nodetype.is_highdimensional:
                             target_slot_type = target_slot_type.rstrip('0123456789')
-                            if target_slot_type in target_nodetype.dimensionality['slots']:
+                            if target_slot_type.rstrip('0123456789') in target_nodetype.dimensionality['slots']:
                                 target_slot_type = target_slot_type + '0'
 
                         nodes[source_uid]["links"][source_gate_type].append(linkdict)
@@ -2194,13 +2191,11 @@ class TheanoPartition():
                                 weight = 1
 
                             if target_nodetype.is_highdimensional:
-                                target_slot_type = target_slot_type.rstrip('0123456789')
-                                if target_slot_type in target_nodetype.dimensionality['slots']:
-                                    target_slot_type = target_slot_type + '0'
+                                if target_slot_type.rstrip('0123456789') in target_nodetype.dimensionality['slots']:
+                                    target_slot_type = target_slot_type.rstrip('0123456789') + '0'
                             if source_nodetype.is_highdimensional:
-                                source_gate_type = source_gate_type.rstrip('0123456789')
-                                if source_gate_type in source_nodetype.dimensionality['gates']:
-                                    source_gate_type = source_gate_type + '0'
+                                if source_gate_type.rstrip('0123456789') in source_nodetype.dimensionality['gates']:
+                                    source_gate_type = source_gate_type.rstrip('0123456789') + '0'
 
                             additional_links.append({"weight": weight,
                                         "certainty": 1,

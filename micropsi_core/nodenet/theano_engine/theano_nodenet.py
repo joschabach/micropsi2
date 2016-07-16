@@ -782,7 +782,8 @@ class TheanoNodenet(Nodenet):
                         # save new weight matrix
                         partition.inlinks[partition_from_spid][2].set_value(new_weights)
                     elif inlink_type == "identity":
-                        pass
+                        element_index = np.where(to_elements == element)[0][0]
+                        zero_columns = element_index
 
                     # remove this element
                     partition.inlinks[partition_from_spid][1].set_value(np.delete(to_elements, element_index))
@@ -823,7 +824,8 @@ class TheanoNodenet(Nodenet):
                             to_partition.inlinks[partition.spid][2].set_value(new_weights)
 
                         elif inlink_type == "identity":
-                            pass
+                            element_index = np.where(from_elements == element)[0][0]
+                            zero_columns = element_index
 
                         # remove this element
                         to_partition.inlinks[partition.spid][0].set_value(np.delete(from_elements, element_index))

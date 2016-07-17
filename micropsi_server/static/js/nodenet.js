@@ -47,7 +47,8 @@ var viewProperties = {
     yMax: 13500,
     xMax: 13500,
     copyPasteOffset: 50,
-    snap_to_grid: false
+    snap_to_grid: false,
+    load_link_threshold: 1000
 };
 
 var nodenetscope = paper;
@@ -2513,14 +2514,14 @@ function updateSelection(event){
     }
 }
 
-function loadLinksForSelection(callback){
+function loadLinksForSelection(callback, force_load){
     if(nodespaceProperties[currentNodeSpace].renderlinks == 'none'){
         return;
     }
     var uids = [];
     var load_links = false;
     for(var uid in selection){
-        if(uid in nodes && nodes[uid].type != 'Nodespace'){
+        if(uid in nodes && nodes[uid].type != 'Nodespace' && (force_load || nodes[uid].inlinks < viewProperties.load_link_threshold && nodes[uid].outlinks < viewProperties.load_link_threshold)){
             uids.push(uid)
         }
         if(nodes[uid].inlinks > 0 || nodes[uid].outlinks > 0){
@@ -2535,6 +2536,11 @@ function loadLinksForSelection(callback){
             {'nodenet_uid': currentNodenet,
              'node_uids': uids },
               function(data){
+                for(var i=0; i < uids.length; i++){
+                    // all links loaded
+                    nodes[uids[i]].outlinks = 0
+                    nodes[uids[i]].inlinks = 0
+                }
                 if(callback){
                     callback(data);
                 } else {
@@ -4076,7 +4082,11 @@ function showNodeForm(nodeUid, refresh){
         var link_list = "";
         var inlink_types = {};
         if(nodes[nodeUid].slotIndexes.length){
-            link_list += '<tr><td colspan="2">'+nodes[nodeUid].inlinks+' invisible links from outside nodespaces</td></tr>';
+            if(nodes[nodeUid].inlinks > viewProperties.load_link_threshold){
+                link_list += '<tr><td colspan="2">'+nodes[nodeUid].inlinks+' invisible links from outside nodespaces. <a href="#loadlinks" class="loadLinks">Load all links</a></td></tr>';
+            } else if (nodes[nodeUid].inlinks > 0) {
+                link_list += '<tr><td colspan="2">'+nodes[nodeUid].inlinks+' invisible links from outside nodespaces</td></tr>';
+            }
             for(key in nodes[nodeUid].slots){
                 link_list += "<tr><td>" + key + "</td><td><ul>";
                 for(id in nodes[nodeUid].slots[key].incoming){
@@ -4092,7 +4102,11 @@ function showNodeForm(nodeUid, refresh){
             }
         }
         $('#node_slots').html(link_list || "<tr><td>None</td></tr>");
-        content = '<tr><td colspan="2">'+nodes[nodeUid].outlinks+' invisible links to outside nodespaces</td></tr>';
+        if(nodes[nodeUid].outlinks > viewProperties.load_link_threshold){
+            link_list += '<tr><td colspan="2">'+nodes[nodeUid].outlinks+' invisible links to outside nodespaces. <a href="#loadlinks" class="loadLinks">Load all links</a></td></tr>';
+        } else if(nodes[nodeUid].outlinks > 0){
+            content = '<tr><td colspan="2">'+nodes[nodeUid].outlinks+' invisible links to outside nodespaces</td></tr>';
+        }
         for(name in nodes[nodeUid].gates){
             link_list = "";
             for(id in nodes[nodeUid].gates[name].outgoing){
@@ -4111,6 +4125,10 @@ function showNodeForm(nodeUid, refresh){
             }
             content += "</tr>";
         }
+        $('a.loadLinks', form).on('click', function(evt){
+            evt.preventDefault();
+            loadLinksForSelection(null, true);
+        })
         $('#node_gates').html(content || "<tr><td>None</td></tr>");
         $('a.followlink').on('click', followlink);
         $('a.follownode').on('click', follownode);

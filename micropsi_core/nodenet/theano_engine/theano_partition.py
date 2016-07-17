@@ -2036,9 +2036,8 @@ class TheanoPartition():
                 source_gate_numerical = gate_index - self.allocated_node_offsets[source_id]
                 source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
                 if source_uid in highdim_nodes:
-                    source_gate_type = source_gate_type.rstrip('0123456789')
                     if source_gate_type.rstrip('0123456789') in source_nodetype.dimensionality['gates']:
-                        source_gate_type = source_gate_type + '0'
+                        source_gate_type = source_gate_type.rstrip('0123456789') + '0'
 
                 target_type = self.allocated_nodes[target_id]
                 target_nodetype = self.nodenet.get_nodetype(get_string_node_type(target_type, self.nodenet.native_modules))

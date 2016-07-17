@@ -342,25 +342,178 @@ class TheanoNodenet(Nodenet):
         return data
 
     def get_links_for_nodes(self, node_uids):
-        source_nodes = [self.get_node(uid) for uid in node_uids]
-        links = {}
+
         nodes = {}
-        for node in source_nodes:
-            nodelinks = node.get_associated_links()
-            for l in nodelinks:
-                ldata = l.get_data(complete=True)
-                if l.source_node.is_highdimensional:
-                    if l.source_gate.type.rstrip('0123456789') in l.source_node.nodetype.dimensionality['gates']:
-                        ldata['source_gate_name'] = ldata['source_gate_name'].rstrip('0123456789') + '0'
-                if l.target_node.is_highdimensional:
-                    if l.target_slot.type.rstrip('0123456789') in l.target_node.nodetype.dimensionality['slots']:
-                        ldata['target_slot_name'] = ldata['target_slot_name'].rstrip('0123456789') + '0'
-                if l.source_node.parent_nodespace != node.parent_nodespace:
-                    nodes[l.source_node.uid] = l.source_node.get_data(include_links=False)
-                if l.target_node.parent_nodespace != node.parent_nodespace:
-                    nodes[l.target_node.uid] = l.target_node.get_data(include_links=False)
-                links[l.signature] = ldata
-        return list(links.values()), nodes
+        links = []
+
+        def linkid(linkdict):
+            return "%s:%s:%s:%s" % (linkdict['source_node_uid'], linkdict['source_gate_name'], linkdict['target_slot_name'], linkdict['target_node_uid'])
+
+        innerlinks = {}
+        for uid in node_uids:
+            nid = node_from_id(uid)
+            partition = self.get_partition(uid)
+
+            ntype = partition.allocated_nodes[nid]
+            nofel = get_elements_per_type(ntype, self.native_modules)
+            offset = partition.allocated_node_offsets[nid]
+
+            elrange = np.asarray(range(offset, offset + nofel))
+            weights = None
+
+            num_nodetype = partition.allocated_nodes[nid]
+            str_nodetype = get_string_node_type(num_nodetype, self.native_modules)
+            obj_nodetype = self.get_nodetype(str_nodetype)
+
+            # inner partition links:
+            w_matrix = partition.w.get_value(borrow=True)
+
+            node_ids = []
+            for i, el in enumerate(elrange):
+                from_els = np.nonzero(w_matrix[el, :])[1]
+                to_els = np.nonzero(w_matrix[:, el])[0]
+                if len(from_els):
+                    slot_numerical = el - partition.allocated_node_offsets[nid]
+                    slot_type = get_string_slot_type(slot_numerical, obj_nodetype)
+                    if obj_nodetype.is_highdimensional:
+                        if slot_type.rstrip('0123456789') in obj_nodetype.dimensionality['slots']:
+                            slot_type = slot_type.rstrip('0123456789') + '0'
+                    from_nids = partition.allocated_elements_to_nodes[from_els]
+                    node_ids.extend(from_nids)
+
+                    for j, from_el in enumerate(from_els):
+                        source_uid = node_to_id(from_nids[j], partition.pid)
+                        from_nodetype = partition.allocated_nodes[from_nids[j]]
+                        from_obj_nodetype = self.get_nodetype(get_string_node_type(from_nodetype, self.native_modules))
+                        gate_numerical = from_el - partition.allocated_node_offsets[from_nids[j]]
+                        gate_type = get_string_gate_type(gate_numerical, from_obj_nodetype)
+                        if from_obj_nodetype.is_highdimensional:
+                            if source_gate_type.rstrip('0123456789') in from_obj_nodetype.dimensionality['gates']:
+                                gate_type = source_gate_type.rstrip('0123456789') + '0'
+                        ldict = {
+                            'source_node_uid': source_uid,
+                            'source_gate_name': gate_type,
+                            'target_node_uid': uid,
+                            'target_slot_name': slot_type,
+                            'weight': w_matrix[el, from_el]
+                        }
+                        innerlinks[linkid(ldict)] = ldict
+
+                if len(to_els):
+                    gate_numerical = el - partition.allocated_node_offsets[nid]
+                    gate_type = get_string_gate_type(gate_numerical, obj_nodetype)
+                    if obj_nodetype.is_highdimensional:
+                        if gate_type.rstrip('0123456789') in obj_nodetype.dimensionality['gates']:
+                            gate_type = gate_type.rstrip('0123456789') + '0'
+                    to_nids = partition.allocated_elements_to_nodes[to_els]
+                    node_ids.extend(to_nids)
+                    for j, to_el in enumerate(to_els):
+                        target_uid = node_to_id(to_nids[j], partition.pid)
+                        to_nodetype = partition.allocated_nodes[to_nids[j]]
+                        to_obj_nodetype = self.get_nodetype(get_string_node_type(to_nodetype, self.native_modules))
+                        slot_numerical = to_el - partition.allocated_node_offsets[to_nids[j]]
+                        slot_type = get_string_slot_type(slot_numerical, to_obj_nodetype)
+                        if to_obj_nodetype.is_highdimensional:
+                            if source_slot_type.rstrip('0123456789') in to_obj_nodetype.dimensionality['slots']:
+                                slot_type = source_slot_type.rstrip('0123456789') + '0'
+                        ldict = {
+                            'source_node_uid': uid,
+                            'source_gate_name': gate_type,
+                            'target_node_uid': target_uid,
+                            'target_slot_name': slot_type,
+                            'weight': float(w_matrix[to_el, el])
+                        }
+                        innerlinks[linkid(ldict)] = ldict
+
+            links = list(innerlinks.values())
+            nodes.update(partition.get_node_data(ids=[x for x in node_ids if x != nid], include_links=False)[0])
+
+            # search links originating from this node
+            for to_partition in self.partitions.values():
+                if partition.spid in to_partition.inlinks:
+                    inlinks = to_partition.inlinks[partition.spid]
+                    from_elements = inlinks[0].get_value(borrow=True)
+                    linked_els = np.intersect1d(elrange, from_elements)
+                    if len(linked_els):
+                        to_elements = inlinks[1].get_value(borrow=True)
+                        if inlinks[4] == 'identity':
+                            indexes = np.where(np.in1d(linked_els, from_elements))
+                            to_elements = to_elements[indexes]
+                            weights = 1
+                        elif inlinks[4] == 'dense':
+                            w = inlinks[2].get_value(borrow=True).transpose()
+                            indexes = np.nonzero(w[linked_els])
+                            to_elements = to_elements[indexes]
+                            weights = w[linked_els][to_elements]
+                        node_ids = to_partition.allocated_elements_to_nodes[to_elements]
+                        nodes.update(to_partition.get_node_data(ids=node_ids, include_links=False)[0])
+                        for index, el in enumerate(linked_els):
+                            gate_numerical = el - partition.allocated_node_offsets[nid]
+                            gate_type = get_string_gate_type(gate_numerical, obj_nodetype)
+                            target_nid = node_ids[index]
+                            to_nodetype = to_partition.allocated_nodes[target_nid]
+                            to_obj_nodetype = self.get_nodetype(get_string_node_type(to_nodetype, self.native_modules))
+                            slot_numerical = to_elements[index] - to_partition.allocated_node_offsets[target_nid]
+                            slot_type = get_string_slot_type(slot_numerical, to_obj_nodetype)
+                            if to_obj_nodetype.is_highdimensional:
+                                if slot_type.rstrip('0123456789') in to_obj_nodetype.dimensionality['slots']:
+                                    slot_type = slot_type.rstrip('0123456789') + '0'
+                            if obj_nodetype.is_highdimensional:
+                                if gate_type.rstrip('0123456789') in obj_nodetype.dimensionality['gates']:
+                                    gate_type = gate_type.rstrip('0123456789') + '0'
+
+                            links.append({
+                                'source_node_uid': uid,
+                                'source_gate_name': gate_type,
+                                'target_node_uid': node_to_id(target_nid, to_partition.pid),
+                                'target_slot_name': slot_type,
+                                'weight': 1 if weights == 1 else float(weights[index])
+                            })
+
+            # search for links terminating at this node
+            for from_spid in partition.inlinks:
+                inlinks = partition.inlinks[from_spid]
+                from_partition = self.partitions[from_spid]
+                to_elements = inlinks[1].get_value(borrow=True)
+                linked_els = np.intersect1d(elrange, to_elements)
+                if len(linked_els):
+                    from_elements = inlinks[0].get_value(borrow=True)
+                    indexes = np.where(np.in1d(to_elements, linked_els))[0]
+                    if inlinks[4] == 'identity':
+                        from_elements = from_elements[indexes]
+                        weights = 1
+                    elif inlinks[4] == 'dense':
+                        w = inlinks[2].get_value(borrow=True)
+                        from_indexes = np.nonzero(w[indexes][0])[0]
+                        from_elements = from_elements[from_indexes]
+                        weights = w[indexes, from_indexes]
+                    node_ids = from_partition.allocated_elements_to_nodes[from_elements]
+                    nodes.update(from_partition.get_node_data(ids=node_ids, include_links=False)[0])
+                    for index, el in enumerate(linked_els):
+                        source_nid = node_ids[index]
+                        source_uid = node_to_id(source_nid, from_partition.pid)
+                        from_nodetype = from_partition.allocated_nodes[node_ids[index]]
+                        from_obj_nodetype = self.get_nodetype(get_string_node_type(from_nodetype, self.native_modules))
+                        gate_numerical = from_elements[index] - from_partition.allocated_node_offsets[source_nid]
+                        gate_type = get_string_gate_type(gate_numerical, from_obj_nodetype)
+                        slot_numerical = el - partition.allocated_node_offsets[nid]
+                        slot_type = get_string_slot_type(slot_numerical, obj_nodetype)
+                        if from_obj_nodetype.is_highdimensional:
+                            if source_gate_type.rstrip('0123456789') in from_obj_nodetype.dimensionality['gates']:
+                                gate_type = source_gate_type.rstrip('0123456789') + '0'
+                        if obj_nodetype.is_highdimensional:
+                            if slot_type.rstrip('0123456789') in obj_nodetype.dimensionality['slots']:
+                                slot_type = slot_type.rstrip('0123456789') + '0'
+
+                        links.append({
+                            'source_node_uid': source_uid,
+                            'source_gate_name': gate_type,
+                            'target_node_uid': uid,
+                            'target_slot_name': slot_type,
+                            'weight': 1 if np.isscalar(weights) and weights == 1 else float(weights[index])
+                        })
+
+        return links, nodes
 
     def initialize_stepoperators(self):
         self.stepoperators = [

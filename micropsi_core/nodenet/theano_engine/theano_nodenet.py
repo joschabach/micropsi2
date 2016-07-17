@@ -395,7 +395,7 @@ class TheanoNodenet(Nodenet):
                             'source_gate_name': gate_type,
                             'target_node_uid': uid,
                             'target_slot_name': slot_type,
-                            'weight': w_matrix[el, from_el]
+                            'weight': float(w_matrix[el, from_el])
                         }
                         innerlinks[linkid(ldict)] = ldict
 

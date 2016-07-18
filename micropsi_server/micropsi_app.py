@@ -131,7 +131,20 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                     response.status = 500
                     import traceback
                     logging.getLogger('system').error("Error: " + str(err) + " \n " + traceback.format_exc())
-                    return {'status': 'error', 'data': str(err), 'traceback': traceback.format_exc()}
+
+                    # either drop to debugger in the offending stack frame, or just display a message and the trace.
+                    on_exception = cfg['micropsi2'].get('on_exception', None)
+                    if on_exception == 'debug':
+                        import sys
+                        # use the nice ipdb if it is there, but don't throw a fit if it isnt:
+                        try:
+                            import ipdb as pdb
+                        except ImportError:
+                            import pdb
+                        _, _, tb = sys.exc_info()
+                        pdb.post_mortem(tb)
+                    else:
+                        return {'status': 'error', 'data': str(err), 'traceback': traceback.format_exc()}
 
                 # except TypeError as err:
                 #     response.status = 400

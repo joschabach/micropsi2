@@ -2075,12 +2075,14 @@ class TheanoPartition():
                         if inlinks[4] == 'identity':
                             for nid in nids:
                                 uid = node_to_id(nid, self.pid)
-                                nodes[uid]['outlinks'] += 1
+                                if uid in nodes:
+                                    nodes[uid]['outlinks'] += 1
                         elif inlinks[4] == 'dense':
                             w = inlinks[2].get_value(borrow=True).transpose()
                             for idx, el in enumerate(from_elements):
                                 uid = node_to_id(self.allocated_elements_to_nodes[el], self.pid)
-                                nodes[uid]['outlinks'] += np.count_nonzero(w[idx])
+                                if uid in nodes:
+                                    nodes[uid]['outlinks'] += np.count_nonzero(w[idx])
                         continue
 
                     to_elements = inlinks[1].get_value(borrow=True)
@@ -2185,7 +2187,7 @@ class TheanoPartition():
                             target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
 
                             if inlink_type == 'dense':
-                                weight = w[slot_index][gate_index]
+                                weight = float(w[slot_index][gate_index])
                             elif inlink_type == 'identity':
                                 weight = 1
 

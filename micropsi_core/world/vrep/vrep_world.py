@@ -600,7 +600,9 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
 
     def reset_simulation_state(self):
         self.call_vrep(vrep.simxStopSimulation, [self.clientID, vrep.simx_opmode_oneshot], debugprint=False)
-        state = lambda: vrep.simxCallScriptFunction(self.clientID, "Open_Port", vrep.sim_scripttype_customizationscript, 'getsimstate', [], [], [], bytearray(), vrep.simx_opmode_blocking)[1][0]
+        state = lambda: self.call_vrep(vrep.simxCallScriptFunction,
+                                       [self.clientID, "Open_Port", vrep.sim_scripttype_customizationscript, 'getsimstate', [], [], [], bytearray(), vrep.simx_opmode_blocking])[0][0]
+
         while state() != vrep.sim_simulation_stopped:
             time.sleep(0.01)
 

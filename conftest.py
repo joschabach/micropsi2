@@ -27,6 +27,8 @@ cfg['paths']['usermanager_path'] = os.path.join(testpath, 'user-db.json')
 cfg['micropsi2']['single_agent_mode'] = ''
 if 'theano' in cfg:
     cfg['theano']['initial_number_of_nodes'] = '50'
+if 'on_exception' in cfg['micropsi2']:
+    cfg['micropsi2']['on_exception'] = ''
 
 
 world_uid = 'WorldOfPain'

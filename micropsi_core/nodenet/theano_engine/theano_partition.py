@@ -2000,7 +2000,7 @@ class TheanoPartition():
                     "gate_functions": gate_functions,
                     "is_highdimensional": nodetype.is_highdimensional}
             if complete:
-                data['index'] = id
+                data['index'] = int(id)
             if include_links:
                 data['links'] = {}
                 data['outlinks'] = 0

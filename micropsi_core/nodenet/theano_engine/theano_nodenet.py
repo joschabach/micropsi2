@@ -433,27 +433,28 @@ class TheanoNodenet(Nodenet):
                 if partition.spid in to_partition.inlinks:
                     inlinks = to_partition.inlinks[partition.spid]
                     from_elements = inlinks[0].get_value(borrow=True)
-                    linked_els = np.intersect1d(elrange, from_elements)
-                    if len(linked_els):
+                    node_gates = np.intersect1d(elrange, from_elements)
+                    if len(node_gates):
                         to_elements = inlinks[1].get_value(borrow=True)
                         if inlinks[4] == 'identity':
-                            indexes = np.where(np.in1d(linked_els, from_elements))
-                            to_elements = to_elements[indexes]
+                            slots = np.arange(len(from_elements))
+                            gates = np.arange(len(from_elements))
                             weights = 1
                         elif inlinks[4] == 'dense':
-                            w = inlinks[2].get_value(borrow=True).transpose()
-                            indexes = np.nonzero(w[linked_els])
-                            to_elements = to_elements[indexes]
-                            weights = w[linked_els][to_elements]
-                        node_ids = to_partition.allocated_elements_to_nodes[to_elements]
-                        nodes.update(to_partition.get_node_data(ids=node_ids, include_links=False)[0])
-                        for index, el in enumerate(linked_els):
-                            gate_numerical = el - partition.allocated_node_offsets[nid]
+                            weights = inlinks[2].get_value(borrow=True)
+                            slots, gates = np.nonzero(weights)
+                        node_ids = set()
+                        for index, gate_index in enumerate(gates):
+                            if from_elements[gate_index] not in elrange:
+                                continue
+                            gate_numerical = from_elements[gate_index] - partition.allocated_node_offsets[nid]
                             gate_type = get_string_gate_type(gate_numerical, obj_nodetype)
-                            target_nid = node_ids[index]
+                            slot_index = slots[index]
+                            target_nid = to_partition.allocated_elements_to_nodes[to_elements[slot_index]]
+                            node_ids.add(target_nid)
                             to_nodetype = to_partition.allocated_nodes[target_nid]
                             to_obj_nodetype = self.get_nodetype(get_string_node_type(to_nodetype, self.native_modules))
-                            slot_numerical = to_elements[index] - to_partition.allocated_node_offsets[target_nid]
+                            slot_numerical = to_elements[slot_index] - to_partition.allocated_node_offsets[target_nid]
                             slot_type = get_string_slot_type(slot_numerical, to_obj_nodetype)
                             if to_obj_nodetype.is_highdimensional:
                                 if slot_type.rstrip('0123456789') in to_obj_nodetype.dimensionality['slots']:
@@ -467,37 +468,39 @@ class TheanoNodenet(Nodenet):
                                 'source_gate_name': gate_type,
                                 'target_node_uid': node_to_id(target_nid, to_partition.pid),
                                 'target_slot_name': slot_type,
-                                'weight': 1 if weights == 1 else float(weights[index])
+                                'weight': 1 if np.isscalar(weights) else float(weights[slot_index, gate_index])
                             })
+                        nodes.update(to_partition.get_node_data(ids=list(node_ids), include_links=False)[0])
+
 
             # search for links terminating at this node
             for from_spid in partition.inlinks:
                 inlinks = partition.inlinks[from_spid]
                 from_partition = self.partitions[from_spid]
                 to_elements = inlinks[1].get_value(borrow=True)
-                linked_els = np.intersect1d(elrange, to_elements)
-                if len(linked_els):
+                node_slots = np.intersect1d(elrange, to_elements)
+                if len(node_slots):
                     from_elements = inlinks[0].get_value(borrow=True)
-                    indexes = np.where(np.in1d(to_elements, linked_els))[0]
                     if inlinks[4] == 'identity':
-                        from_elements = from_elements[indexes]
+                        slots = np.arange(len(from_elements))
+                        gates = np.arange(len(from_elements))
                         weights = 1
                     elif inlinks[4] == 'dense':
-                        w = inlinks[2].get_value(borrow=True)
-                        from_indexes = np.nonzero(w[indexes][0])[0]
-                        from_elements = from_elements[from_indexes]
-                        weights = w[indexes, from_indexes]
-                    node_ids = from_partition.allocated_elements_to_nodes[from_elements]
-                    nodes.update(from_partition.get_node_data(ids=node_ids, include_links=False)[0])
-                    for index, el in enumerate(linked_els):
-                        source_nid = node_ids[index]
-                        source_uid = node_to_id(source_nid, from_partition.pid)
-                        from_nodetype = from_partition.allocated_nodes[node_ids[index]]
+                        weights = inlinks[2].get_value(borrow=True)
+                        slots, gates = np.nonzero(weights)
+                    node_ids = set()
+                    for index, slot_index in enumerate(slots):
+                        if to_elements[slot_index] not in elrange:
+                            continue
+                        slot_numerical = to_elements[slot_index] - partition.allocated_node_offsets[nid]
+                        slot_type = get_string_slot_type(slot_numerical, obj_nodetype)
+                        gate_index = gates[index]
+                        source_nid = from_partition.allocated_elements_to_nodes[from_elements[gate_index]]
+                        node_ids.add(source_id)
+                        from_nodetype = from_partition.allocated_nodes[source_nid]
                         from_obj_nodetype = self.get_nodetype(get_string_node_type(from_nodetype, self.native_modules))
                         gate_numerical = from_elements[index] - from_partition.allocated_node_offsets[source_nid]
                         gate_type = get_string_gate_type(gate_numerical, from_obj_nodetype)
-                        slot_numerical = el - partition.allocated_node_offsets[nid]
-                        slot_type = get_string_slot_type(slot_numerical, obj_nodetype)
                         if from_obj_nodetype.is_highdimensional:
                             if source_gate_type.rstrip('0123456789') in from_obj_nodetype.dimensionality['gates']:
                                 gate_type = source_gate_type.rstrip('0123456789') + '0'
@@ -506,12 +509,14 @@ class TheanoNodenet(Nodenet):
                                 slot_type = slot_type.rstrip('0123456789') + '0'
 
                         links.append({
-                            'source_node_uid': source_uid,
+                            'source_node_uid': node_to_id(source_nid, from_partition.pid),
                             'source_gate_name': gate_type,
                             'target_node_uid': uid,
                             'target_slot_name': slot_type,
-                            'weight': 1 if np.isscalar(weights) and weights == 1 else float(weights[index])
+                            'weight': 1 if np.isscalar(weights) and weights == 1 else float(weights[slot_index, gate_index])
                         })
+
+                    nodes.update(from_partition.get_node_data(ids=list(node_ids), include_links=False)[0])
 
         return links, nodes
 

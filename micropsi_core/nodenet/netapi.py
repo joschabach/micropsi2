@@ -377,7 +377,7 @@ class NetAPI(object):
                 'label': 'Where should I go next?',
                 'values': {'north': 'North', 'east': 'East', 'south': 'South', 'west': 'west'}
             }, {
-                'key': 'wait':
+                'key': 'wait',
                 'label': 'How long should I wait until I go there?',
                 'type': 'textarea'
             }]

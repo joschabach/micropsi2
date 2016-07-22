@@ -721,7 +721,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
     this.placeholder = {};
     this.parent = nodeSpaceUid; // parent nodespace, default is root
     this.fillColor = null;
-    this.parameters = parameters || {};
+    this.parameters = parameters || [];
     this.bounds = null; // current bounding box (after scaling)
     this.slotIndexes = [];
     this.gateIndexes = [];

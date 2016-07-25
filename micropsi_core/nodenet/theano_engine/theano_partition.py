@@ -1019,7 +1019,7 @@ class TheanoPartition():
             filename = os.path.join(base, "%s-inlinks-%s-from-%s.npz" % (self.nodenet.uid, self.spid, spid))
             if os.path.isfile(filename):
                 datafile = np.load(filename)
-                
+
                 if str(datafile['inlink_type']) == 'identity':
                     weights = 1
                 else:
@@ -1757,9 +1757,13 @@ class TheanoPartition():
         #if len(self.nodegroups[nodespace_to_uid][group_to]) != new_w.shape[0]:
         #    raise ValueError("group_to %s has length %i, but new_w.shape[0] is %i" % (group_to, len(self.nodegroups[nodespace_to_uid][group_to]), new_w.shape[0]))
 
-        w_matrix = self.w.get_value(borrow=True)
         grp_from = self.nodegroups[nodespace_from_uid][group_from]
         grp_to = self.nodegroups[nodespace_to_uid][group_to]
+        if np.isscalar(new_w) and new_w == 1:
+            if len(grp_from) != len(grp_to):
+                raise ValueError("from_elements and to_elements need to have equal lengths for identity links")
+            new_w = np.eye(len(grp_from))
+        w_matrix = self.w.get_value(borrow=True)
         cols, rows = np.meshgrid(grp_from, grp_to)
         w_matrix[rows, cols] = new_w
         self.w.set_value(w_matrix, borrow=True)
@@ -1860,7 +1864,7 @@ class TheanoPartition():
         nodespace_ids = nodespace_ids[np.where(self.allocated_nodespaces[nodespace_ids] == ns_id)[0]]
         return node_ids, nodespace_ids
 
-    def get_node_data(self, ids=None, nodespace_ids=None, complete=False, include_links=True, include_followupnodes=True):
+    def get_node_data(self, ids=None, nodespaces_by_partition=None, complete=False, include_links=True, linked_nodespaces_by_partition={}):
         a = self.a.get_value(borrow=True)
         g_threshold_array = self.g_threshold.get_value(borrow=True)
         g_amplification_array = self.g_amplification.get_value(borrow=True)
@@ -1870,9 +1874,11 @@ class TheanoPartition():
         g_function_selector = self.g_function_selector.get_value(borrow=True)
         w = self.w.get_value(borrow=True)
 
-        if nodespace_ids is not None:
-            node_ids = np.where(self.allocated_node_parents == nodespace_ids)[0]
+        if nodespaces_by_partition is not None:
+            fetchall = False
+            node_ids = np.where(self.allocated_node_parents == nodespaces_by_partition[self.spid])[0]
         else:
+            fetchall = True
             node_ids = np.nonzero(self.allocated_nodes)[0]
 
         if ids is not None:
@@ -1880,7 +1886,7 @@ class TheanoPartition():
 
         nodes = {}
         highdim_nodes = []
-        followupuids = set()
+        additional_links = []
 
         for id in node_ids:
             uid = node_to_id(id, self.pid)
@@ -1994,9 +2000,11 @@ class TheanoPartition():
                     "gate_functions": gate_functions,
                     "is_highdimensional": nodetype.is_highdimensional}
             if complete:
-                data['index'] = id
+                data['index'] = int(id)
             if include_links:
                 data['links'] = {}
+                data['outlinks'] = 0
+                data['inlinks'] = 0
 
             nodes[uid] = data
 
@@ -2006,49 +2014,78 @@ class TheanoPartition():
             for index, gate_index in enumerate(gates):
                 source_id = self.allocated_elements_to_nodes[gate_index]
                 source_uid = node_to_id(source_id, self.pid)
-                if source_uid not in nodes:
-                    continue
+                slot_index = slots[index]
+                target_id = self.allocated_elements_to_nodes[slot_index]
+                target_uid = node_to_id(target_id, self.pid)
+
+                if not fetchall:
+                    if source_uid not in nodes and target_uid in nodes:
+                        if self.allocated_node_parents[source_id] not in linked_nodespaces_by_partition[self.spid]:
+                            nodes[target_uid]['inlinks'] += 1
+                            continue
+                    elif target_uid not in nodes and source_uid in nodes:
+                        if self.allocated_node_parents[target_id] not in linked_nodespaces_by_partition[self.spid]:
+                            nodes[source_uid]['outlinks'] += 1
+                            continue
+                    elif source_uid not in nodes or target_uid not in nodes:
+                        # links between two nodes outside this nodespace.
+                        continue
 
                 source_type = self.allocated_nodes[source_id]
                 source_nodetype = self.nodenet.get_nodetype(get_string_node_type(source_type, self.nodenet.native_modules))
                 source_gate_numerical = gate_index - self.allocated_node_offsets[source_id]
                 source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
                 if source_uid in highdim_nodes:
-                    source_gate_type = source_gate_type.rstrip('0123456789')
-                    if source_gate_type in source_nodetype.dimensionality['gates']:
-                        source_gate_type = source_gate_type + '0'
+                    if source_gate_type.rstrip('0123456789') in source_nodetype.dimensionality['gates']:
+                        source_gate_type = source_gate_type.rstrip('0123456789') + '0'
 
-                slot_index = slots[index]
-                target_id = self.allocated_elements_to_nodes[slot_index]
-                target_uid = node_to_id(target_id, self.pid)
                 target_type = self.allocated_nodes[target_id]
                 target_nodetype = self.nodenet.get_nodetype(get_string_node_type(target_type, self.nodenet.native_modules))
                 target_slot_numerical = slot_index - self.allocated_node_offsets[target_id]
                 target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
                 if target_uid in highdim_nodes:
-                    target_slot_type = target_slot_type.rstrip('0123456789')
-                    if target_slot_type in target_nodetype.dimensionality['slots']:
-                        target_slot_type = target_slot_type + '0'
+                    if target_slot_type.rstrip('0123456789') in target_nodetype.dimensionality['slots']:
+                        target_slot_type = target_slot_type.rstrip('0123456789') + '0'
                 linkdict = {"weight": float(w[slot_index, gate_index]),
                             "certainty": 1,
                             "target_slot_name": target_slot_type,
                             "target_node_uid": target_uid}
-                if source_gate_type not in nodes[source_uid]["links"]:
-                    nodes[source_uid]["links"][source_gate_type] = []
-                if source_uid in highdim_nodes:
-                    if linkdict not in nodes[source_uid]['links'][source_gate_type]:
+
+                if source_uid in nodes:
+                    if source_gate_type not in nodes[source_uid]["links"]:
+                        nodes[source_uid]["links"][source_gate_type] = []
+                    if source_uid in highdim_nodes:
+                        if linkdict not in nodes[source_uid]['links'][source_gate_type]:
+                            nodes[source_uid]["links"][source_gate_type].append(linkdict)  # Doik: why is this check needed? possibly expensive. /Doik
+                    else:
                         nodes[source_uid]["links"][source_gate_type].append(linkdict)
-                else:
-                    nodes[source_uid]["links"][source_gate_type].append(linkdict)
-                followupuids.add(target_uid)
+                elif target_uid in nodes:
+                    linkdict['source_node_uid'] = source_uid
+                    linkdict['source_gate_name'] = source_gate_type
+                    additional_links.append(linkdict)
 
             # outgoing cross-partition links
             for partition_to_spid, to_partition in self.nodenet.partitions.items():
                 if self.spid in to_partition.inlinks:
                     inlinks = to_partition.inlinks[self.spid]
                     from_elements = inlinks[0].get_value(borrow=True)
-                    to_elements = inlinks[1].get_value(borrow=True)
 
+                    if not fetchall and partition_to_spid not in nodespaces_by_partition and linked_nodespaces_by_partition[partition_to_spid] == []:
+                        nids = self.allocated_elements_to_nodes[from_elements]
+                        if inlinks[4] == 'identity':
+                            for nid in nids:
+                                uid = node_to_id(nid, self.pid)
+                                if uid in nodes:
+                                    nodes[uid]['outlinks'] += 1
+                        elif inlinks[4] == 'dense':
+                            w = inlinks[2].get_value(borrow=True).transpose()
+                            for idx, el in enumerate(from_elements):
+                                uid = node_to_id(self.allocated_elements_to_nodes[el], self.pid)
+                                if uid in nodes:
+                                    nodes[uid]['outlinks'] += np.count_nonzero(w[idx])
+                        continue
+
+                    to_elements = inlinks[1].get_value(borrow=True)
                     inlink_type = inlinks[4]
                     if inlink_type == "dense":
                         w = inlinks[2].get_value(borrow=True)
@@ -2068,9 +2105,8 @@ class TheanoPartition():
                         source_gate_numerical = from_elements[gate_index] - self.allocated_node_offsets[source_id]
                         source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
                         if source_uid in highdim_nodes:
-                            source_gate_type = source_gate_type.rstrip('0123456789')
-                            if source_gate_type in source_nodetype.dimensionality['gates']:
-                                source_gate_type = source_gate_type + '0'
+                            if source_gate_type.rstrip('0123456789') in source_nodetype.dimensionality['gates']:
+                                source_gate_type = source_gate_type.rstrip('0123456789') + '0'
 
                         slot_index = slots[index]
                         target_id = to_partition.allocated_elements_to_nodes[to_elements[slot_index]]
@@ -2080,9 +2116,8 @@ class TheanoPartition():
                         target_slot_numerical = to_elements[slot_index] - to_partition.allocated_node_offsets[target_id]
                         target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
                         if target_uid in highdim_nodes:
-                            target_slot_type = target_slot_type.rstrip('0123456789')
-                            if target_slot_type in target_nodetype.dimensionality['slots']:
-                                target_slot_type = target_slot_type + '0'
+                            if target_slot_type.rstrip('0123456789') in target_nodetype.dimensionality['slots']:
+                                target_slot_type = target_slot_type.rstrip('0123456789') + '0'
 
                         if inlink_type == "dense":
                             weight = float(w[slot_index, gate_index])
@@ -2095,37 +2130,82 @@ class TheanoPartition():
                                     "target_node_uid": target_uid}
                         if source_gate_type not in nodes[source_uid]["links"]:
                             nodes[source_uid]["links"][source_gate_type] = []
+                        if target_nodetype.is_highdimensional:
+                            target_slot_type = target_slot_type.rstrip('0123456789')
+                            if target_slot_type.rstrip('0123456789') in target_nodetype.dimensionality['slots']:
+                                target_slot_type = target_slot_type + '0'
+
                         nodes[source_uid]["links"][source_gate_type].append(linkdict)
-                        followupuids.add(target_uid)
 
-            # incoming cross-partition links need to be checked for followup nodes in the other partition
-            # even though we're not interested in the links themselves as they will be delivered with the nodes
-            # in the other partition.
-            # having to deliver followupnodes for links that aren't even our business is really annoying.
-            for from_partition_id, inlinks in self.inlinks.items():
-                from_partition = self.nodenet.partitions[from_partition_id]
-                from_elements = inlinks[0].get_value(borrow=True)
-                to_elements = inlinks[1].get_value(borrow=True)
+            # incoming cross-partition-links:
+            if not fetchall:
+                # incoming cross-partition links
+                for from_partition_id, inlinks in self.inlinks.items():
+                    if from_partition_id not in nodespaces_by_partition and linked_nodespaces_by_partition[from_partition_id] == []:
+                        to_elements = inlinks[1].get_value(borrow=True)
+                        nids = self.allocated_elements_to_nodes[to_elements]
+                        if inlinks[4] == 'identity':
+                            for nid in nids:
+                                uid = node_to_id(nid, self.pid)
+                                if uid in nodes:
+                                    nodes[uid]['inlinks'] += 1
+                        elif inlinks[4] == 'dense':
+                            w = inlinks[2].get_value(borrow=True)
+                            for idx, el in enumerate(to_elements):
+                                uid = node_to_id(self.allocated_elements_to_nodes[el], self.pid)
+                                if uid in nodes:
+                                    nodes[uid]['inlinks'] += np.count_nonzero(w[idx])
+                    else:
+                        from_partition = self.nodenet.partitions[from_partition_id]
+                        from_elements = inlinks[0].get_value(borrow=True)
+                        to_elements = inlinks[1].get_value(borrow=True)
 
-                inlink_type = inlinks[4]
-                if inlink_type == "dense":
-                    w = inlinks[2].get_value(borrow=True)
-                    slots, gates = np.nonzero(w)
-                elif inlink_type == "identity":
-                    slots = np.arange(len(from_elements))
-                    gates = np.arange(len(from_elements))
+                        inlink_type = inlinks[4]
+                        if inlink_type == "dense":
+                            w = inlinks[2].get_value(borrow=True)
+                            slots, gates = np.nonzero(w)
+                        elif inlink_type == "identity":
+                            slots = np.arange(len(from_elements))
+                            gates = np.arange(len(from_elements))
 
-                for index, gate_index in enumerate(gates):
-                    source_id = from_partition.allocated_elements_to_nodes[from_elements[gate_index]]
-                    source_uid = node_to_id(source_id, from_partition.pid)
+                        for index, gate_index in enumerate(gates):
+                            source_id = from_partition.allocated_elements_to_nodes[from_elements[gate_index]]
+                            source_uid = node_to_id(source_id, from_partition.pid)
 
-                    slot_index = slots[index]
-                    target_id = self.allocated_elements_to_nodes[to_elements[slot_index]]
-                    target_uid = node_to_id(target_id, self.pid)
-                    if target_uid in nodes:
-                        followupuids.add(source_uid)
+                            source_type = from_partition.allocated_nodes[source_id]
+                            source_nodetype = from_partition.nodenet.get_nodetype(get_string_node_type(source_type, from_partition.nodenet.native_modules))
+                            source_gate_numerical = from_elements[gate_index] - from_partition.allocated_node_offsets[source_id]
+                            source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
 
-        return nodes, followupuids
+                            slot_index = slots[index]
+                            target_id = self.allocated_elements_to_nodes[to_elements[slot_index]]
+                            target_uid = node_to_id(target_id, self.pid)
+
+                            target_type = self.allocated_nodes[target_id]
+                            target_nodetype = self.nodenet.get_nodetype(get_string_node_type(target_type, self.nodenet.native_modules))
+                            target_slot_numerical = to_elements[slot_index] - self.allocated_node_offsets[target_id]
+                            target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
+
+                            if inlink_type == 'dense':
+                                weight = float(w[slot_index][gate_index])
+                            elif inlink_type == 'identity':
+                                weight = 1
+
+                            if target_nodetype.is_highdimensional:
+                                if target_slot_type.rstrip('0123456789') in target_nodetype.dimensionality['slots']:
+                                    target_slot_type = target_slot_type.rstrip('0123456789') + '0'
+                            if source_nodetype.is_highdimensional:
+                                if source_gate_type.rstrip('0123456789') in source_nodetype.dimensionality['gates']:
+                                    source_gate_type = source_gate_type.rstrip('0123456789') + '0'
+
+                            additional_links.append({"weight": weight,
+                                        "certainty": 1,
+                                        "target_slot_name": target_slot_type,
+                                        "target_node_uid": target_uid,
+                                        "source_node_uid": source_uid,
+                                        "source_gate_name": source_gate_type})
+
+        return nodes, additional_links
 
     def integrity_check(self):
 

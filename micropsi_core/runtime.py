@@ -430,10 +430,10 @@ def get_nodenet_activation_data(nodenet_uid, nodespaces=[], last_call_step=-1):
     return data
 
 
-def get_nodes(nodenet_uid, nodespaces=[], include_links=True):
+def get_nodes(nodenet_uid, nodespaces=[], include_links=True, links_to_nodespaces=[]):
     """Return data for the given nodespaces"""
     nodenet = get_nodenet(nodenet_uid)
-    return nodenet.get_nodes(nodespaces, include_links)
+    return nodenet.get_nodes(nodespaces, include_links, links_to_nodespaces=links_to_nodespaces)
 
 
 def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None, recorders=None):
@@ -457,7 +457,7 @@ def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=No
         if nodenet is not None:
             if not type(nodenet) == dict:
                 nodenet = {}
-            data['nodenet'] = get_nodes(nodenet_uid, nodespaces=nodenet.get('nodespaces', []), include_links=nodenet.get('include_links', True))
+            data['nodenet'] = get_nodes(nodenet_uid, nodespaces=nodenet.get('nodespaces', []), include_links=nodenet.get('include_links', True), links_to_nodespaces=nodenet.get('links_to_nodespaces', []))
         if nodenet_diff is not None:
             activations = get_nodenet_activation_data(nodenet_uid, last_call_step=nodenet_diff['step'], nodespaces=nodenet_diff.get('nodespaces', []))
             data['nodenet_diff'] = {
@@ -1264,18 +1264,8 @@ def get_links_for_nodes(nodenet_uid, node_uids):
     """ Returns a list of links connected to the given nodes,
     and their connected nodes, if they are not in the same nodespace"""
     nodenet = get_nodenet(nodenet_uid)
-    source_nodes = [nodenet.get_node(uid) for uid in node_uids]
-    links = {}
-    nodes = {}
-    for node in source_nodes:
-        nodelinks = node.get_associated_links()
-        for l in nodelinks:
-            links[l.signature] = l.get_data(complete=True)
-            if l.source_node.parent_nodespace != node.parent_nodespace:
-                nodes[l.source_node.uid] = l.source_node.get_data(include_links=False)
-            if l.target_node.parent_nodespace != node.parent_nodespace:
-                nodes[l.target_node.uid] = l.target_node.get_data(include_links=False)
-    return {'links': list(links.values()), 'nodes': nodes}
+    links, nodes = nodenet.get_links_for_nodes(node_uids)
+    return {'links': links, 'nodes': nodes}
 
 
 def delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type):

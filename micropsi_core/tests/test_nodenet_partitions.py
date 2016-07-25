@@ -267,35 +267,55 @@ def test_sensor_actuator_indices(test_nodenet):
     assert set(nodenet.rootpartition.sensor_indices) == {-1}
 
 
+@pytest.mark.engine("theano_engine")
 def test_partition_get_node_data(test_nodenet):
     nodenet = micropsi.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
     nodespace, source, register = prepare(netapi)
+    root_ns = netapi.get_nodespace(None).uid
 
     nodes = []
+    # 10 nodes, first five in root, other five in new nodespace
     for i in range(10):
         n = netapi.create_node("Pipe", nodespace.uid if i > 4 else None, "node %d" % i)
         nodes.append(n)
 
+    # 4 links from root to new nodespace
     for i in range(4):
         netapi.link(nodes[i], 'gen', nodes[5], 'gen', weight=((i + 2) / 10))
+
+    # 1 link back
     netapi.link(nodes[9], 'gen', nodes[4], 'gen', 0.375)
 
+    # 3rd nodespace, with a node linked from root
     third_ns = netapi.create_nodespace(None, "third")
     third = netapi.create_node("Register", third_ns.uid, "third")
     netapi.link(nodes[4], 'gen', third, 'gen')
 
+    n1, n3, n4, n5, n9 = nodes[1], nodes[3], nodes[4], nodes[5], nodes[9]
+
     node_data = nodenet.get_nodes(nodespace_uids=[None])['nodes']
-    assert set(node_data.keys()) == set([n.uid for n in nodes[:5]] + [source.uid, register.uid, third.uid] + [nodes[9].uid, nodes[5].uid])
+    assert set(node_data.keys()) == set([n.uid for n in nodes[:5]] + [source.uid])
+    assert node_data[n1.uid]['outlinks'] == 1
+    assert node_data[n4.uid]['outlinks'] == 1
+    assert node_data[n4.uid]['links'] == {}
 
     node_data = nodenet.get_nodes()['nodes']
-    n1, n3, n4, n9 = nodes[1], nodes[3], nodes[4], nodes[9]
     assert round(node_data[n1.uid]['links']['gen'][0]['weight'], 3) == 0.3
     assert round(node_data[n3.uid]['links']['gen'][0]['weight'], 3) == 0.5
     assert round(node_data[n9.uid]['links']['gen'][0]['weight'], 3) == 0.375
-    # assert node_data[n4.uid]['links'] == {}
 
     node_data = nodenet.get_nodes(nodespace_uids=[nodespace.uid])['nodes']
-    assert len(node_data.keys()) == 12
-    assert node_data[n4.uid]['links'] == {}
+    assert len(node_data.keys()) == 6
     assert third.uid not in node_data
+    assert node_data[n5.uid]['inlinks'] == 4
+    assert node_data[n5.uid]['links'] == {}
+    assert node_data[n9.uid]['outlinks'] == 1
+    assert node_data[n9.uid]['links'] == {}
+
+    data = nodenet.get_nodes(nodespace_uids=[nodespace.uid], links_to_nodespaces=[root_ns])
+    assert 'links' in data
+    source_uids = [l['source_node_uid'] for l in data['links']]
+    # source->register + our 4 links:
+    assert set(source_uids) == set(['n0001', 'n0002', 'n0003', 'n0004', 'n0005'])
+    assert data['nodes'][n9.uid]['links']['gen'][0]['target_node_uid'] == n4.uid

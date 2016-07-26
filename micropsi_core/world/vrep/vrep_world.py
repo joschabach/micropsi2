@@ -115,7 +115,8 @@ class VREPWatchdog(threading.Thread):
 
     def spawn_vrep(self):
         notify = self.process is not None
-        self.process = subprocess.Popen(self.args)
+        fp = open('/tmp/vrep.log', 'a')
+        self.process = subprocess.Popen(self.args, stdout=fp)
         if notify:
             for item in self.vrep_listeners:
                 item.on_vrep_respawn()

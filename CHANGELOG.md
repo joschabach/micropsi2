@@ -1,6 +1,11 @@
 
 0.9-alpha7 (unreleased)
 ==========
+ 
+ * Recorders for theano_engine
+ * High-dimensional native modules for theano_engine
+ * VREP world
+ * Configurable Worldadapters
 
 
 0.8-alpha6 (2016-04-22)

@@ -32,7 +32,7 @@ class VREPConnection(threading.Thread):
         self.port = port
         self.clientID = -1
         self.daemon = True
-        self.stop  = threading.Event()
+        self.stop = threading.Event()
         self.is_connected = False
         self.logger = logging.getLogger("world")
         self.state = threading.Condition()
@@ -79,6 +79,61 @@ class VREPConnection(threading.Thread):
     def terminate(self):
         self.stop.set()
 
+import os
+import shlex
+import subprocess
+
+
+class VREPWatchdog(threading.Thread):
+
+    def __init__(self, binary, flags, scene, listeners):
+        threading.Thread.__init__(self)
+        self.binary_path = os.path.expanduser(binary)
+        self.scene_path = os.path.expanduser(scene)
+        self.flags = flags
+        self.args = shlex.split(self.binary_path + flags + self.scene_path)
+        self.daemon = True
+        self.stop = threading.Event()
+        self.is_connected = False
+        self.logger = logging.getLogger("world")
+        self.state = threading.Condition()
+        self.is_active = True
+        self.vrep_listeners = listeners
+        self.process = None
+        self.start()
+
+    def run(self):
+        self.spawn_vrep()
+        while self.is_active:
+            if self.process is not None:
+                if self.process.poll() is None:
+                    # poll returns None if still running.
+                    self.logger.info("Vrep process gone, respawning.")
+                    self.spawn_vrep()
+            time.sleep(1)
+        self.process.kill()
+
+    def spawn_vrep(self):
+        notify = self.process is not None
+        self.process = subprocess.Popen(self.args)
+        if notify:
+            for item in self.vrep_listeners:
+                item.on_vrep_respawn()
+
+    def resume(self):
+        with self.state:
+            self.paused = False
+            self.state.notify()
+
+    def pause(self):
+        with self.state:
+            self.paused = True
+
+    def terminate(self):
+        self.is_active = False
+        self.stop.set()
+        self.process.kill()
+
 
 class VREPWorld(World):
     """ A vrep robot simulator environment
@@ -95,6 +150,13 @@ class VREPWorld(World):
 
     def __init__(self, filename, world_type="VREPWorld", name="", owner="", engine=None, uid=None, version=1, config={}):
         World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version, config=config)
+
+        if config['vrep_host'] == 'localhost' or config['vrep_host'] == '127.0.0.1':
+            flags = " -h -s -gREMOTEAPISERVERSERVICE_%s_TRUE_TRUE " % config['vrep_port']
+            self.logger.info("Spawning local vrep process")
+            self.vrep_watchdog = VREPWatchdog(config['vrep_binary'], flags, config['vrep_scene'], listeners=[self])
+        else:
+            self.vrep_watchdog = None
 
         self.connection_daemon = VREPConnection(config['vrep_host'], int(config['vrep_port']), connection_listeners=[self])
 
@@ -124,6 +186,9 @@ class VREPWorld(World):
         for uid in self.agents:
             self.agents[uid].on_vrep_connect()
 
+    def on_vrep_respawn(self):
+        self.connection_daemon.resume()
+
     def kill_vrep_connection(self, *args):
         if hasattr(self, "connection_daemon"):
             self.connection_daemon.is_active = False
@@ -132,6 +197,10 @@ class VREPWorld(World):
                 self.connection_daemon.terminate()
                 self.connection_daemon.join()
                 vrep.simxFinish(-1)
+            if self.vrep_watchdog is not None:
+                self.vrep_watchdog.is_active = False
+                self.vrep_watchdog.terminate()
+                self.vrep_watchdog.join()
 
     def __del__(self):
         self.kill_vrep_connection()
@@ -139,6 +208,12 @@ class VREPWorld(World):
     @staticmethod
     def get_config_options():
         return [
+            {'name': 'vrep_binary',
+             'default': '~/Applications/vrep/vrep.app/Contents/MacOS/vrep',
+             'description': 'path to the vrep binary'},
+            {'name': 'vrep_scene',
+             'default': '~/micropsi-nodenets/vrep-scenes/iiwa-scene-ik.ttt',
+             'description': 'path to the vrep scene file'},
             {'name': 'vrep_host',
              'default': '127.0.0.1'},
             {'name': 'vrep_port',

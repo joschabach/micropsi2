@@ -3968,7 +3968,7 @@ function initializeSidebarForms(){
                 param += '<option>' + op.options.join("</option><option>") + '<option>';
                 param += '</select></td>';
             } else {
-                param += '<td><input type="text id="nodenet_wa_'+op.name+'"></td>';
+                param += '<td><input type="text" id="nodenet_wa_'+op.name+'"></td>';
             }
             html.push(param +'</tr>')
         }

@@ -106,8 +106,8 @@ class VREPWatchdog(threading.Thread):
         self.spawn_vrep()
         while self.is_active:
             if self.process is not None:
-                if self.process.poll() is None:
-                    # poll returns None if still running.
+                if self.process.poll():
+                    # poll returns nothing if still running.
                     self.logger.info("Vrep process gone, respawning.")
                     self.spawn_vrep()
             time.sleep(1)

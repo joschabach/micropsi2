@@ -26,17 +26,18 @@ class VREPConnection(threading.Thread):
     current_try = 0
     ping_interval = 1
 
-    def __init__(self, host, port, connection_listeners=[]):
+    def __init__(self, host, port, synchronous_mode=False, connection_listeners=[]):
         threading.Thread.__init__(self)
         self.host = host
         self.port = port
         self.clientID = -1
         self.daemon = True
-        self.stop  = threading.Event()
+        self.stop = threading.Event()
         self.is_connected = False
         self.logger = logging.getLogger("world")
         self.state = threading.Condition()
         self.is_active = True
+        self.synchronous_mode = synchronous_mode
         self.connection_listeners = connection_listeners
         self.start()
 
@@ -63,6 +64,10 @@ class VREPConnection(threading.Thread):
             else:
                 self.is_connected = True
                 self.logger.info("Connected to local V-REP at port %d" % self.port)
+                if self.synchronous_mode:
+                    result = vrep.simxSynchronous(self.clientID, True)
+                    if result == vrep.simx_return_ok:
+                        self.logger.info("VREP set to synchronous mode")
                 for item in self.connection_listeners:
                     item.on_vrep_connect()
         self.pause()
@@ -80,7 +85,51 @@ class VREPConnection(threading.Thread):
         self.stop.set()
 
 
-class VREPWorld(World):
+class VrepCallMixin():
+
+    block_runner_if_connection_lost = True
+
+    def on_vrep_connect(self):
+        """ is called by the world, if a connection was established """
+        self.initialize()
+
+    def call_vrep(self, method, params, empty_result_ok=False, debugprint=False):
+        """ error handling wrapper for calls to the vrep API """
+        result = method(*params)
+        if debugprint:
+            print(self.world.current_step, ' vrep wrap called', method, 'with parameters', params, '. result was', result)
+        code = result if type(result) == int else result[0]
+        if code != vrep.simx_return_ok:
+            if (code == vrep.simx_return_novalue_flag or code == vrep.simx_return_split_progress_flag) and not empty_result_ok:
+                    # streaming mode did not return data. wait a bit, try again
+                    self.logger.debug("Did not receive data from vrep when calling %s, trying again in 500 ms" % method.__name__)
+                    time.sleep(0.5)
+                    result = method(*params)
+                    code = result if type(result) == int else result[0]
+            if code == vrep.simx_return_illegal_opmode_flag:
+                self.logger.error("Illegal opmode for VREP call %s" % method.__name)
+            if code == vrep.simx_return_remote_error_flag:
+                self.logger.error("VREP internal error when calling %s. Invalid handle specified?" % method.__name__)
+            elif code == vrep.simx_return_local_error_flag:
+                self.logger.error("Client error for VREP call %s" % method.__name)
+            elif code == vrep.simx_return_initialize_error_flag:
+                self.logger.error("VREP Simulation is not running")
+            elif code == vrep.simx_return_timeout_flag or ((code == vrep.simx_return_novalue_flag or code == vrep.simx_return_split_progress_flag) and not empty_result_ok):
+                self.logger.warning("Vrep returned code %d when calling %s, attempting a reconnect" % (code, method.__name__))
+                self.world.connection_daemon.resume()
+                self.initialized = False
+                while not self.world.connection_daemon.is_connected or not self.initialized:
+                    time.sleep(0.2)
+                return self.call_vrep(method, params)
+        if type(result) == int:
+            return True
+        if len(result) == 2:
+            return result[1]
+        else:
+            return result[1:]
+
+
+class VREPWorld(World, VrepCallMixin):
     """ A vrep robot simulator environment
         In V-REP, the following setup has to be performed:
         - simExtRemoteApiStart(19999) has to have been run
@@ -96,12 +145,18 @@ class VREPWorld(World):
     def __init__(self, filename, world_type="VREPWorld", name="", owner="", engine=None, uid=None, version=1, config={}):
         World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version, config=config)
 
-        self.connection_daemon = VREPConnection(config['vrep_host'], int(config['vrep_port']), connection_listeners=[self])
+        self.simulation_speed = float(config['simulation_speed'])
+        self.synchronous_mode = self.simulation_speed > 0
+        self.world = self  # sorry. VrepCallMixin expects a member variable named world.
+        self.connection_daemon = VREPConnection(config['vrep_host'], int(config['vrep_port']), synchronous_mode=self.synchronous_mode, connection_listeners=[self])
 
         time.sleep(1)  # wait for the daemon to get started before continuing.
 
         from micropsi_core.runtime import add_signal_handler
         add_signal_handler(self.kill_vrep_connection)
+
+    def initialize(self):
+        pass
 
     def get_world_view(self, step):
         data = {
@@ -124,6 +179,23 @@ class VREPWorld(World):
         for uid in self.agents:
             self.agents[uid].on_vrep_connect()
 
+    def step(self):
+        if self.simulation_speed == 0:
+            super().step()
+        else:
+            if self.simulation_speed < 1:
+                self.logger.debug("Synchronous Mode: Advancing vrep %d steps" % int(1 / self.simulation_speed))
+                for i in range(int(1 / self.simulation_speed)):
+                    self.call_vrep(vrep.simxSynchronousTrigger, [self.connection_daemon.clientID])
+                super().step()
+            else:
+                if self.current_step % self.simulation_speed == 0:
+                    self.logger.debug("Synchronous Mode: Stepping Vrep")
+                    self.call_vrep(vrep.simxSynchronousTrigger, [self.connection_daemon.clientID])
+                    super().step()
+                else:
+                    self.current_step += 1
+
     def kill_vrep_connection(self, *args):
         if hasattr(self, "connection_daemon"):
             self.connection_daemon.is_active = False
@@ -142,7 +214,11 @@ class VREPWorld(World):
             {'name': 'vrep_host',
              'default': '127.0.0.1'},
             {'name': 'vrep_port',
-             'default': 19999}
+             'default': 19999},
+            {'name': 'simulation_speed',
+             'default': '0',
+             'description': 'nodenet steps per vrep step. 0 for vrep realtime'
+            }
         ]
 
 
@@ -405,50 +481,6 @@ class Vrep6DObjectsMixin(WorldAdapterMixin):
         pass
 
 
-class VrepCallMixin():
-
-    block_runner_if_connection_lost = True
-
-    def on_vrep_connect(self):
-        """ is called by the world, if a connection was established """
-        self.initialize()
-
-    def call_vrep(self, method, params, empty_result_ok=False, debugprint=False):
-        """ error handling wrapper for calls to the vrep API """
-        result = method(*params)
-        if debugprint:
-            print(self.world.current_step, ' vrep wrap called', method, 'with parameters', params, '. result was', result)
-        code = result if type(result) == int else result[0]
-        if code != vrep.simx_return_ok:
-            if (code == vrep.simx_return_novalue_flag or code == vrep.simx_return_split_progress_flag) and not empty_result_ok:
-                    # streaming mode did not return data. wait a bit, try again
-                    self.logger.debug("Did not receive data from vrep when calling %s, trying again in 500 ms" % method.__name__)
-                    time.sleep(0.5)
-                    result = method(*params)
-                    code = result if type(result) == int else result[0]
-            if code == vrep.simx_return_illegal_opmode_flag:
-                self.logger.error("Illegal opmode for VREP call %s" % method.__name)
-            if code == vrep.simx_return_remote_error_flag:
-                self.logger.error("VREP internal error when calling %s. Invalid handle specified?" % method.__name__)
-            elif code == vrep.simx_return_local_error_flag:
-                self.logger.error("Client error for VREP call %s" % method.__name)
-            elif code == vrep.simx_return_initialize_error_flag:
-                self.logger.error("VREP Simulation is not running")
-            elif code == vrep.simx_return_timeout_flag or ((code == vrep.simx_return_novalue_flag or code == vrep.simx_return_split_progress_flag) and not empty_result_ok):
-                self.logger.warning("Vrep returned code %d when calling %s, attempting a reconnect" % (code, method.__name__))
-                self.world.connection_daemon.resume()
-                self.initialized = False
-                while not self.world.connection_daemon.is_connected or not self.initialized:
-                    time.sleep(0.2)
-                return self.call_vrep(method, params)
-        if type(result) == int:
-            return True
-        if len(result) == 2:
-            return result[1]
-        else:
-            return result[1:]
-
-
 class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
     """ The basic worldadapter to control a robot in vrep.
     Combine this with the Vrep Mixins for a useful robot simulation"""
@@ -613,11 +645,17 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
         while state() != vrep.sim_simulation_stopped:
             time.sleep(0.01)
 
+        if self.world.synchronous_mode:
+            self.call_vrep(vrep.simxSynchronous, [self.clientID, True])
+
         self.call_vrep(vrep.simxStartSimulation, [self.clientID, vrep.simx_opmode_oneshot], debugprint=False)
 
-        while state() != vrep.sim_simulation_advancing_running:
-            time.sleep(0.01)
-
+        if self.world.synchronous_mode:
+            while state() != vrep.sim_simulation_advancing:
+                time.sleep(0.01)
+        else:
+            while state() != vrep.sim_simulation_advancing_running:
+                time.sleep(0.01)
 
         super().reset_simulation_state()
         if self.randomize_arm == "True":

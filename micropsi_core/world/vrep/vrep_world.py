@@ -84,6 +84,62 @@ class VREPConnection(threading.Thread):
     def terminate(self):
         self.stop.set()
 
+import os
+import shlex
+import subprocess
+
+
+class VREPWatchdog(threading.Thread):
+
+    def __init__(self, binary, flags, scene, listeners):
+        threading.Thread.__init__(self)
+        self.binary_path = os.path.expanduser(binary)
+        self.scene_path = os.path.expanduser(scene)
+        self.flags = flags
+        self.args = shlex.split(self.binary_path + flags + self.scene_path)
+        self.daemon = True
+        self.stop = threading.Event()
+        self.is_connected = False
+        self.logger = logging.getLogger("world")
+        self.state = threading.Condition()
+        self.is_active = True
+        self.vrep_listeners = listeners
+        self.process = None
+        self.start()
+
+    def run(self):
+        self.spawn_vrep()
+        while self.is_active:
+            if self.process is not None:
+                if self.process.poll():
+                    # poll returns nothing if still running.
+                    self.logger.info("Vrep process gone, respawning.")
+                    self.spawn_vrep()
+            time.sleep(1)
+        self.process.kill()
+
+    def spawn_vrep(self):
+        notify = self.process is not None
+        fp = open('/tmp/vrep.log', 'a')
+        self.process = subprocess.Popen(self.args, stdout=fp)
+        if notify:
+            for item in self.vrep_listeners:
+                item.on_vrep_respawn()
+
+    def resume(self):
+        with self.state:
+            self.paused = False
+            self.state.notify()
+
+    def pause(self):
+        with self.state:
+            self.paused = True
+
+    def terminate(self):
+        self.is_active = False
+        self.stop.set()
+        self.process.kill()
+
 
 class VrepCallMixin():
 
@@ -148,6 +204,14 @@ class VREPWorld(World, VrepCallMixin):
         self.simulation_speed = float(config['simulation_speed'])
         self.synchronous_mode = self.simulation_speed > 0
         self.world = self  # sorry. VrepCallMixin expects a member variable named world.
+
+        if config['vrep_host'] == 'localhost' or config['vrep_host'] == '127.0.0.1':
+            flags = " -h -s -gREMOTEAPISERVERSERVICE_%s_TRUE_TRUE " % config['vrep_port']
+            self.logger.info("Spawning local vrep process")
+            self.vrep_watchdog = VREPWatchdog(config['vrep_binary'], flags, config['vrep_scene'], listeners=[self])
+        else:
+            self.vrep_watchdog = None
+
         self.connection_daemon = VREPConnection(config['vrep_host'], int(config['vrep_port']), synchronous_mode=self.synchronous_mode, connection_listeners=[self])
 
         time.sleep(1)  # wait for the daemon to get started before continuing.
@@ -196,6 +260,9 @@ class VREPWorld(World, VrepCallMixin):
                 else:
                     self.current_step += 1
 
+    def on_vrep_respawn(self):
+        self.connection_daemon.resume()
+
     def kill_vrep_connection(self, *args):
         if hasattr(self, "connection_daemon"):
             self.connection_daemon.is_active = False
@@ -204,6 +271,10 @@ class VREPWorld(World, VrepCallMixin):
                 self.connection_daemon.terminate()
                 self.connection_daemon.join()
                 vrep.simxFinish(-1)
+            if self.vrep_watchdog is not None:
+                self.vrep_watchdog.is_active = False
+                self.vrep_watchdog.terminate()
+                self.vrep_watchdog.join()
 
     def __del__(self):
         self.kill_vrep_connection()
@@ -211,6 +282,12 @@ class VREPWorld(World, VrepCallMixin):
     @staticmethod
     def get_config_options():
         return [
+            {'name': 'vrep_binary',
+             'default': '~/Applications/vrep/vrep.app/Contents/MacOS/vrep',
+             'description': 'path to the vrep binary'},
+            {'name': 'vrep_scene',
+             'default': '~/micropsi-nodenets/vrep-scenes/iiwa-scene-ik.ttt',
+             'description': 'path to the vrep scene file'},
             {'name': 'vrep_host',
              'default': '127.0.0.1'},
             {'name': 'vrep_port',

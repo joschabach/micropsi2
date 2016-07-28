@@ -299,7 +299,7 @@ class TheanoNodenet(Nodenet):
         data['links'] = self.construct_links_list()
         return data
 
-    def get_nodes(self, nodespace_uids=[], include_links=True):
+    def get_nodes(self, nodespace_uids=[], include_links=True, links_to_nodespaces=[]):
         """
         Returns a dict with contents for the given nodespaces
         """
@@ -313,43 +313,212 @@ class TheanoNodenet(Nodenet):
             nodespace_uids = [self.get_nodespace(uid).uid for uid in nodespace_uids]
 
         if nodespace_uids:
-            nodespaces_by_partition = dict((spid, []) for spid in self.partitions)
+            nodespaces_by_partition = {}
             for nodespace_uid in nodespace_uids:
+                spid = self.get_partition(nodespace_uid).spid
                 data['nodespaces'].update(self.construct_nodespaces_dict(nodespace_uid))
-                nodespaces_by_partition[self.get_partition(nodespace_uid).spid].append(nodespace_from_id(nodespace_uid))
+                if spid not in nodespaces_by_partition:
+                    nodespaces_by_partition[spid] = []
+                nodespaces_by_partition[spid].append(nodespace_from_id(nodespace_uid))
 
-            followupuids = []
+            linked_nodespaces_by_partition = dict((spid, []) for spid in self.partitions)
+            if links_to_nodespaces:
+                # group by partition:
+                for uid in links_to_nodespaces:
+                    spid = self.get_partition(uid).spid
+                    linked_nodespaces_by_partition[spid].append(nodespace_from_id(uid))
+
             for spid in nodespaces_by_partition:
-                if nodespaces_by_partition[spid]:
-                    nodes, followups = self.partitions[spid].get_node_data(nodespace_ids=nodespaces_by_partition[spid], include_links=include_links)
-                    data['nodes'].update(nodes)
-                    followupuids.extend(followups)
-
-            followups_by_partition = dict((spid, []) for spid in self.partitions)
-            for uid in followupuids:
-                followups_by_partition[self.get_partition(uid).spid].append(node_from_id(uid))
-
-            for spid in followups_by_partition:
-                if followups_by_partition[spid]:
-                    nodes, _ = self.partitions[spid].get_node_data(ids=followups_by_partition[spid])
-                    for uid in nodes:
-                        for gate in list(nodes[uid]['links'].keys()):
-                            links = nodes[uid]['links'][gate]
-                            for idx, l in enumerate(links):
-                                p = self.get_partition(l['target_node_uid'])
-                                if p.allocated_node_parents[node_from_id(l['target_node_uid'])] not in nodespaces_by_partition.get(p.spid, []):
-                                    del links[idx]
-                            if len(nodes[uid]['links'][gate]) == 0:
-                                del nodes[uid]['links'][gate]
-                    data['nodes'].update(nodes)
+                nodes, links = self.partitions[spid].get_node_data(nodespaces_by_partition=nodespaces_by_partition, include_links=include_links, linked_nodespaces_by_partition=linked_nodespaces_by_partition)
+                data['nodes'].update(nodes)
+                data['links'] = links
 
         else:
             data['nodespaces'] = self.construct_nodespaces_dict(None, transitive=True)
             for partition in self.partitions.values():
-                nodes, _ = partition.get_node_data(include_links=include_links, include_followupnodes=False)
+                nodes, _ = partition.get_node_data(nodespaces_by_partition=None, include_links=include_links)
                 data['nodes'].update(nodes)
 
         return data
+
+    def get_links_for_nodes(self, node_uids):
+
+        nodes = {}
+        links = []
+
+        def linkid(linkdict):
+            return "%s:%s:%s:%s" % (linkdict['source_node_uid'], linkdict['source_gate_name'], linkdict['target_slot_name'], linkdict['target_node_uid'])
+
+        innerlinks = {}
+        for uid in node_uids:
+            nid = node_from_id(uid)
+            partition = self.get_partition(uid)
+
+            ntype = partition.allocated_nodes[nid]
+            nofel = get_elements_per_type(ntype, self.native_modules)
+            offset = partition.allocated_node_offsets[nid]
+
+            elrange = np.asarray(range(offset, offset + nofel))
+            weights = None
+
+            num_nodetype = partition.allocated_nodes[nid]
+            str_nodetype = get_string_node_type(num_nodetype, self.native_modules)
+            obj_nodetype = self.get_nodetype(str_nodetype)
+
+            # inner partition links:
+            w_matrix = partition.w.get_value(borrow=True)
+
+            node_ids = []
+            for i, el in enumerate(elrange):
+                from_els = np.nonzero(w_matrix[el, :])[1]
+                to_els = np.nonzero(w_matrix[:, el])[0]
+                if len(from_els):
+                    slot_numerical = el - partition.allocated_node_offsets[nid]
+                    slot_type = get_string_slot_type(slot_numerical, obj_nodetype)
+                    if obj_nodetype.is_highdimensional:
+                        if slot_type.rstrip('0123456789') in obj_nodetype.dimensionality['slots']:
+                            slot_type = slot_type.rstrip('0123456789') + '0'
+                    from_nids = partition.allocated_elements_to_nodes[from_els]
+                    node_ids.extend(from_nids)
+
+                    for j, from_el in enumerate(from_els):
+                        source_uid = node_to_id(from_nids[j], partition.pid)
+                        from_nodetype = partition.allocated_nodes[from_nids[j]]
+                        from_obj_nodetype = self.get_nodetype(get_string_node_type(from_nodetype, self.native_modules))
+                        gate_numerical = from_el - partition.allocated_node_offsets[from_nids[j]]
+                        gate_type = get_string_gate_type(gate_numerical, from_obj_nodetype)
+                        if from_obj_nodetype.is_highdimensional:
+                            if source_gate_type.rstrip('0123456789') in from_obj_nodetype.dimensionality['gates']:
+                                gate_type = source_gate_type.rstrip('0123456789') + '0'
+                        ldict = {
+                            'source_node_uid': source_uid,
+                            'source_gate_name': gate_type,
+                            'target_node_uid': uid,
+                            'target_slot_name': slot_type,
+                            'weight': float(w_matrix[el, from_el])
+                        }
+                        innerlinks[linkid(ldict)] = ldict
+
+                if len(to_els):
+                    gate_numerical = el - partition.allocated_node_offsets[nid]
+                    gate_type = get_string_gate_type(gate_numerical, obj_nodetype)
+                    if obj_nodetype.is_highdimensional:
+                        if gate_type.rstrip('0123456789') in obj_nodetype.dimensionality['gates']:
+                            gate_type = gate_type.rstrip('0123456789') + '0'
+                    to_nids = partition.allocated_elements_to_nodes[to_els]
+                    node_ids.extend(to_nids)
+                    for j, to_el in enumerate(to_els):
+                        target_uid = node_to_id(to_nids[j], partition.pid)
+                        to_nodetype = partition.allocated_nodes[to_nids[j]]
+                        to_obj_nodetype = self.get_nodetype(get_string_node_type(to_nodetype, self.native_modules))
+                        slot_numerical = to_el - partition.allocated_node_offsets[to_nids[j]]
+                        slot_type = get_string_slot_type(slot_numerical, to_obj_nodetype)
+                        if to_obj_nodetype.is_highdimensional:
+                            if source_slot_type.rstrip('0123456789') in to_obj_nodetype.dimensionality['slots']:
+                                slot_type = source_slot_type.rstrip('0123456789') + '0'
+                        ldict = {
+                            'source_node_uid': uid,
+                            'source_gate_name': gate_type,
+                            'target_node_uid': target_uid,
+                            'target_slot_name': slot_type,
+                            'weight': float(w_matrix[to_el, el])
+                        }
+                        innerlinks[linkid(ldict)] = ldict
+
+            links = list(innerlinks.values())
+            nodes.update(partition.get_node_data(ids=[x for x in node_ids if x != nid], include_links=False)[0])
+
+            # search links originating from this node
+            for to_partition in self.partitions.values():
+                if partition.spid in to_partition.inlinks:
+                    inlinks = to_partition.inlinks[partition.spid]
+                    from_elements = inlinks[0].get_value(borrow=True)
+                    node_gates = np.intersect1d(elrange, from_elements)
+                    if len(node_gates):
+                        to_elements = inlinks[1].get_value(borrow=True)
+                        if inlinks[4] == 'identity':
+                            slots = np.arange(len(from_elements))
+                            gates = np.arange(len(from_elements))
+                            weights = 1
+                        elif inlinks[4] == 'dense':
+                            weights = inlinks[2].get_value(borrow=True)
+                            slots, gates = np.nonzero(weights)
+                        node_ids = set()
+                        for index, gate_index in enumerate(gates):
+                            if from_elements[gate_index] not in elrange:
+                                continue
+                            gate_numerical = from_elements[gate_index] - partition.allocated_node_offsets[nid]
+                            gate_type = get_string_gate_type(gate_numerical, obj_nodetype)
+                            slot_index = slots[index]
+                            target_nid = to_partition.allocated_elements_to_nodes[to_elements[slot_index]]
+                            node_ids.add(target_nid)
+                            to_nodetype = to_partition.allocated_nodes[target_nid]
+                            to_obj_nodetype = self.get_nodetype(get_string_node_type(to_nodetype, self.native_modules))
+                            slot_numerical = to_elements[slot_index] - to_partition.allocated_node_offsets[target_nid]
+                            slot_type = get_string_slot_type(slot_numerical, to_obj_nodetype)
+                            if to_obj_nodetype.is_highdimensional:
+                                if slot_type.rstrip('0123456789') in to_obj_nodetype.dimensionality['slots']:
+                                    slot_type = slot_type.rstrip('0123456789') + '0'
+                            if obj_nodetype.is_highdimensional:
+                                if gate_type.rstrip('0123456789') in obj_nodetype.dimensionality['gates']:
+                                    gate_type = gate_type.rstrip('0123456789') + '0'
+
+                            links.append({
+                                'source_node_uid': uid,
+                                'source_gate_name': gate_type,
+                                'target_node_uid': node_to_id(target_nid, to_partition.pid),
+                                'target_slot_name': slot_type,
+                                'weight': 1 if np.isscalar(weights) else float(weights[slot_index, gate_index])
+                            })
+                        nodes.update(to_partition.get_node_data(ids=list(node_ids), include_links=False)[0])
+
+
+            # search for links terminating at this node
+            for from_spid in partition.inlinks:
+                inlinks = partition.inlinks[from_spid]
+                from_partition = self.partitions[from_spid]
+                to_elements = inlinks[1].get_value(borrow=True)
+                node_slots = np.intersect1d(elrange, to_elements)
+                if len(node_slots):
+                    from_elements = inlinks[0].get_value(borrow=True)
+                    if inlinks[4] == 'identity':
+                        slots = np.arange(len(from_elements))
+                        gates = np.arange(len(from_elements))
+                        weights = 1
+                    elif inlinks[4] == 'dense':
+                        weights = inlinks[2].get_value(borrow=True)
+                        slots, gates = np.nonzero(weights)
+                    node_ids = set()
+                    for index, slot_index in enumerate(slots):
+                        if to_elements[slot_index] not in elrange:
+                            continue
+                        slot_numerical = to_elements[slot_index] - partition.allocated_node_offsets[nid]
+                        slot_type = get_string_slot_type(slot_numerical, obj_nodetype)
+                        gate_index = gates[index]
+                        source_nid = from_partition.allocated_elements_to_nodes[from_elements[gate_index]]
+                        node_ids.add(source_id)
+                        from_nodetype = from_partition.allocated_nodes[source_nid]
+                        from_obj_nodetype = self.get_nodetype(get_string_node_type(from_nodetype, self.native_modules))
+                        gate_numerical = from_elements[index] - from_partition.allocated_node_offsets[source_nid]
+                        gate_type = get_string_gate_type(gate_numerical, from_obj_nodetype)
+                        if from_obj_nodetype.is_highdimensional:
+                            if source_gate_type.rstrip('0123456789') in from_obj_nodetype.dimensionality['gates']:
+                                gate_type = source_gate_type.rstrip('0123456789') + '0'
+                        if obj_nodetype.is_highdimensional:
+                            if slot_type.rstrip('0123456789') in obj_nodetype.dimensionality['slots']:
+                                slot_type = slot_type.rstrip('0123456789') + '0'
+
+                        links.append({
+                            'source_node_uid': node_to_id(source_nid, from_partition.pid),
+                            'source_gate_name': gate_type,
+                            'target_node_uid': uid,
+                            'target_slot_name': slot_type,
+                            'weight': 1 if np.isscalar(weights) and weights == 1 else float(weights[slot_index, gate_index])
+                        })
+
+                    nodes.update(from_partition.get_node_data(ids=list(node_ids), include_links=False)[0])
+
+        return links, nodes
 
     def initialize_stepoperators(self):
         self.stepoperators = [
@@ -1201,26 +1370,6 @@ class TheanoNodenet(Nodenet):
                 uid=uid,
                 parameters=data['parameters'])
 
-    def get_nodespace_data(self, nodespace_uid, include_links=True):
-        partition = self.get_partition(nodespace_uid)
-        data = {
-            'nodes': self.construct_nodes_dict(nodespace_uid, 1000, include_links=include_links),
-            'nodespaces': self.construct_nodespaces_dict(nodespace_uid),
-            'monitors': self.construct_monitors_dict(),
-            'modulators': self.construct_modulators_dict()
-        }
-        if include_links:
-            followupnodes = []
-            for uid in data['nodes']:
-                followupnodes.extend(self.get_node(uid).get_associated_node_uids())
-
-            for uid in followupnodes:
-                followup_partition = self.get_partition(uid)
-                if followup_partition.pid != partition.pid or (partition.allocated_node_parents[node_from_id(uid)] != nodespace_from_id(nodespace_uid)):
-                    data['nodes'][uid] = self.get_node(uid).get_data(complete=False, include_links=include_links)
-
-        return data
-
     def get_activation_data(self, nodespace_uids=[], rounded=1):
         if rounded is not None:
             mult = math.pow(10, rounded)
@@ -1692,7 +1841,8 @@ class TheanoNodenet(Nodenet):
                     result['nodespaces_deleted'].extend(self.deleted_items[i].get('nodespaces_deleted', []))
                     result['nodes_deleted'].extend(self.deleted_items[i].get('nodes_deleted', []))
             changed_nodes, changed_nodespaces = partition.get_nodespace_changes(nodespace.uid, since_step)
-            result['nodes_dirty'].update(partition.get_node_data(ids=changed_nodes, include_links=include_links, include_followupnodes=False)[0])
+            nodes, _ = partition.get_node_data(ids=changed_nodes, include_links=include_links)
+            result['nodes_dirty'].update(nodes)
             for uid in changed_nodespaces:
                 uid = nodespace_to_id(uid, partition.pid)
                 result['nodespaces_dirty'][uid] = self.get_nodespace(uid).get_data()

@@ -110,6 +110,10 @@ class TheanoNode(Node):
         a_array[self._partition.allocated_node_offsets[self._id] + GEN] = activation
         self._partition.a.set_value(a_array, borrow=True)
 
+    def get_data(self, complete=False, include_links=True):
+        data = self._partition.get_node_data(ids=[self._id], complete=complete, include_links=include_links)[0][self.uid]
+        return data
+
     def get_gate(self, type):
         if type not in self.__gatecache:
             if type not in self.get_gate_types():

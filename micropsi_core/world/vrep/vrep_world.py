@@ -158,7 +158,7 @@ class VrepCallMixin():
         if code != vrep.simx_return_ok:
             if (code == vrep.simx_return_novalue_flag or code == vrep.simx_return_split_progress_flag) and not empty_result_ok:
                     # streaming mode did not return data. wait a bit, try again
-                    self.logger.debug("Did not receive data from vrep when calling %s, trying again in 500 ms" % method.__name__)
+                    self.logger.info("Did not receive data from vrep when calling %s, trying again in 500 ms" % method.__name__)
                     time.sleep(0.5)
                     result = method(*params)
                     code = result if type(result) == int else result[0]

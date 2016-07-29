@@ -87,6 +87,13 @@ class VREPConnection(threading.Thread):
 import os
 import shlex
 import subprocess
+import signal
+
+
+def preexec_function():
+    # Ignore the SIGINT signal by setting the handler to the standard
+    # signal handler SIG_IGN.
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 
 class VREPWatchdog(threading.Thread):
@@ -115,13 +122,13 @@ class VREPWatchdog(threading.Thread):
                     # poll returns nothing if still running.
                     self.logger.info("Vrep process gone, respawning.")
                     self.spawn_vrep()
-            time.sleep(1)
-        self.process.kill()
+            self.stop.wait(1)
+        self.pause()
 
     def spawn_vrep(self):
         notify = self.process is not None
         fp = open('/tmp/vrep.log', 'a')
-        self.process = subprocess.Popen(self.args, stdout=fp)
+        self.process = subprocess.Popen(self.args, stdout=fp, preexec_fn=preexec_function)
         if notify:
             for item in self.vrep_listeners:
                 item.on_vrep_respawn()
@@ -265,14 +272,16 @@ class VREPWorld(World, VrepCallMixin):
 
     def kill_vrep_connection(self, *args):
         if hasattr(self, "connection_daemon"):
-            self.connection_daemon.is_active = False
+            if self.connection_daemon:
+                self.connection_daemon.is_active = False
+            if self.vrep_watchdog is not None:
+                self.vrep_watchdog.is_active = False
             if self.connection_daemon:
                 self.connection_daemon.resume()
                 self.connection_daemon.terminate()
                 self.connection_daemon.join()
-                vrep.simxFinish(-1)
             if self.vrep_watchdog is not None:
-                self.vrep_watchdog.is_active = False
+                self.vrep_watchdog.resume()
                 self.vrep_watchdog.terminate()
                 self.vrep_watchdog.join()
 

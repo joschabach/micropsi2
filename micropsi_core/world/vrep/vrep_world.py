@@ -722,14 +722,19 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
     def reset_simulation_state(self):
         self.call_vrep(vrep.simxStopSimulation, [self.clientID, vrep.simx_opmode_oneshot], debugprint=False)
 
-        def state():
+        def state(attempt_nr=1):
             call_result = self.call_vrep(vrep.simxCallScriptFunction, [self.clientID, "Open_Port", vrep.sim_scripttype_customizationscript, 'getsimstate', [], [], [], bytearray(), vrep.simx_opmode_blocking])
             try:
                 return call_result[0][0]
             except:
                 print('couldnt get simulation state. got this instead:', call_result, ' (trying again in 0.5 s)')
+                if attempt_nr > 10:
+                    print('killing vrep before trying again. (waiting 5 seconds for respawn)')
+                    self.world.vrep_watchdog.process.kill()
+                    time.sleep(4.5)
+                    attempt_nr = 0
                 time.sleep(0.5)
-                return state()
+                return state(attempt_nr+1)
 
         while state() != vrep.sim_simulation_stopped:
             time.sleep(0.01)

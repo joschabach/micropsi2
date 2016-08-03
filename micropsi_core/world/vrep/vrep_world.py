@@ -572,9 +572,6 @@ class Vrep6DObjectsMixin(WorldAdapterMixin):
             # if name == 'fork':
             #     print('fetch: step={}, object {}, name={}, handle={}\nx={} y={} z={}\nalpha={} beta={} gamma={}\n'.format(self.world.current_step, i, name, handle, tx, ty, tz, talpha, tbeta, tgamma))
 
-    def reset_simulation_state(self):
-        pass
-
 
 class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
     """ The basic worldadapter to control a robot in vrep.

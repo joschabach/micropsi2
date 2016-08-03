@@ -156,7 +156,7 @@ class VrepCallMixin():
         """ is called by the world, if a connection was established """
         self.initialize()
 
-    def call_vrep(self, method, params, empty_result_ok=False, debugprint=True):
+    def call_vrep(self, method, params, empty_result_ok=False, debugprint=False):
         """ error handling wrapper for calls to the vrep API """
         result = method(*params)
         if debugprint:
@@ -654,12 +654,9 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
         self.reset_simulation_state()
 
     def update_data_sources_and_targets(self):
-        self.logger.debug("----------------WRITE TO WORLD----------------")
         self.write_to_world()
         if self.world.synchronous_mode:
-            self.logger.debug("----------------STEPPING----------------")
             self.call_vrep(vrep.simxSynchronousTrigger, [self.clientID])
-        self.logger.debug("----------------READ FROM WORLD----------------")
         self.read_from_world()
 
     def write_to_world(self):

@@ -127,6 +127,12 @@ class VREPWatchdog(threading.Thread):
 
     def spawn_vrep(self):
         notify = self.process is not None
+        if self.process is not None:
+            try:
+                self.process.kill()
+            except:
+                pass
+
         fp = open('/tmp/vrep.log', 'a')
         self.process = subprocess.Popen(self.args, stdout=fp, preexec_fn=preexec_function)
         if notify:
@@ -145,7 +151,10 @@ class VREPWatchdog(threading.Thread):
     def terminate(self):
         self.is_active = False
         self.stop.set()
-        self.process.kill()
+        try:
+            self.process.kill()
+        except:
+            pass
 
 
 class VrepCallMixin():
@@ -557,9 +566,6 @@ class Vrep6DObjectsMixin(WorldAdapterMixin):
 
             # if name == 'fork':
             #     print('fetch: step={}, object {}, name={}, handle={}\nx={} y={} z={}\nalpha={} beta={} gamma={}\n'.format(self.world.current_step, i, name, handle, tx, ty, tz, talpha, tbeta, tgamma))
-
-    def reset_simulation_state(self):
-        pass
 
 
 class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):

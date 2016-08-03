@@ -201,7 +201,7 @@ class VrepCallMixin():
             return result[1:]
 
 
-class VREPWorld(World, VrepCallMixin):
+class VREPWorld(World):
     """ A vrep robot simulator environment
         In V-REP, the following setup has to be performed:
         - simExtRemoteApiStart(19999) has to have been run
@@ -219,7 +219,6 @@ class VREPWorld(World, VrepCallMixin):
 
         self.simulation_speed = float(config['simulation_speed'])
         self.synchronous_mode = self.simulation_speed > 0
-        self.world = self  # sorry. VrepCallMixin expects a member variable named world.
 
         if config['vrep_host'] == 'localhost' or config['vrep_host'] == '127.0.0.1':
             flags = " -h -s -gREMOTEAPISERVERSERVICE_%s_TRUE_TRUE " % config['vrep_port']
@@ -234,9 +233,6 @@ class VREPWorld(World, VrepCallMixin):
 
         from micropsi_core.runtime import add_signal_handler
         add_signal_handler(self.kill_vrep_connection)
-
-    def initialize(self):
-        pass
 
     def get_world_view(self, step):
         data = {

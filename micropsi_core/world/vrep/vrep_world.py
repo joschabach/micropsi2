@@ -156,7 +156,7 @@ class VrepCallMixin():
         """ is called by the world, if a connection was established """
         self.initialize()
 
-    def call_vrep(self, method, params, empty_result_ok=False, debugprint=False):
+    def call_vrep(self, method, params, empty_result_ok=False, debugprint=True):
         """ error handling wrapper for calls to the vrep API """
         result = method(*params)
         if debugprint:
@@ -251,21 +251,14 @@ class VREPWorld(World, VrepCallMixin):
             self.agents[uid].on_vrep_connect()
 
     def step(self):
-        if self.simulation_speed == 0:
+        if not self.synchronous_mode:
             super().step()
         else:
-            if self.simulation_speed < 1:
-                self.logger.debug("Synchronous Mode: Advancing vrep %d steps" % int(1 / self.simulation_speed))
-                for i in range(int(1 / self.simulation_speed)):
-                    self.call_vrep(vrep.simxSynchronousTrigger, [self.connection_daemon.clientID])
+            if self.current_step % self.simulation_speed == 0:
+                self.logger.debug("Stepping World")
                 super().step()
             else:
-                if self.current_step % self.simulation_speed == 0:
-                    self.logger.debug("Synchronous Mode: Stepping Vrep")
-                    self.call_vrep(vrep.simxSynchronousTrigger, [self.connection_daemon.clientID])
-                    super().step()
-                else:
-                    self.current_step += 1
+                self.current_step += 1
 
     def on_vrep_respawn(self):
         self.connection_daemon.resume()
@@ -326,8 +319,8 @@ class VrepCollisionsMixin(WorldAdapterMixin):
                 self.call_vrep(vrep.simxReadCollision, [self.clientID, self.collision_handle, vrep.simx_opmode_streaming], empty_result_ok=True)
             self.add_datasource("collision")
 
-    def update_data_sources_and_targets(self):
-        super().update_data_sources_and_targets()
+    def read_from_world(self):
+        super().read_from_world()
         if self.collision_name:
             collision_state = self.call_vrep(vrep.simxReadCollision, [self.clientID, self.collision_handle,
                                                           vrep.simx_opmode_buffer])
@@ -356,8 +349,8 @@ class VrepGreyscaleVisionMixin(WorldAdapterMixin):
         self.image.norm.vmin = 0
         self.image.norm.vmax = 1
 
-    def update_data_sources_and_targets(self):
-        super().update_data_sources_and_targets()
+    def read_from_world(self):
+        super().read_from_world()
         resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_buffer])
         rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (self.vision_resolution[0] * self.vision_resolution[1], 3)).astype(np.float32)
         rgb_image /= 255.
@@ -397,8 +390,7 @@ class VrepRGBVisionMixin(WorldAdapterMixin):
         self.image.norm.vmin = 0
         self.image.norm.vmax = 1
 
-    def update_data_sources_and_targets(self):
-        super().update_data_sources_and_targets()
+    def read_from_world(self):
         resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_buffer])
         rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (
                                self.vision_resolution[0]*self.downscale_factor, self.vision_resolution[1]*self.downscale_factor, 3)).astype(np.float32)
@@ -448,8 +440,16 @@ class VrepOneBallGameMixin(WorldAdapterMixin):
         self.add_datatarget("sphere_x")
         self.add_datatarget("sphere_y")
 
-    def update_data_sources_and_targets(self):
-        super().update_data_sources_and_targets()
+    def write_to_world(self):
+        super().write_to_world()
+        if self.ball_handle > 0:
+            # position the transparent sphere:
+            rx = self._get_datatarget_value('sphere_x')
+            ry = self._get_datatarget_value('sphere_y')
+            self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, self.sphere_handle, self.robot_handle, [-rx, -ry], vrep.simx_opmode_oneshot], empty_result_ok=True)
+
+    def read_from_world(self):
+        super().read_from_world()
         if self.ball_handle > 0:
             ball_pos = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.ball_handle, -1, vrep.simx_opmode_buffer])
             joint_pos = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.joints[len(self.joints)-1], -1, vrep.simx_opmode_streaming])
@@ -462,10 +462,6 @@ class VrepOneBallGameMixin(WorldAdapterMixin):
             self._set_datasource_value('ball-distance', dist)
             self._set_datasource_value('ball-x', relative_pos[0])
             self._set_datasource_value('ball-y', relative_pos[1])
-            # position the transparent sphere:
-            rx = self._get_datatarget_value('sphere_x')
-            ry = self._get_datatarget_value('sphere_y')
-            self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, self.sphere_handle, self.robot_handle, [-rx, -ry], vrep.simx_opmode_oneshot], empty_result_ok=True)
 
     def reset_simulation_state(self):
         super().reset_simulation_state()
@@ -528,12 +524,8 @@ class Vrep6DObjectsMixin(WorldAdapterMixin):
                 # execution target
                 self.add_datatarget("execute-%s" % name)
 
-    def update_data_sources_and_targets(self):
-        # self.datatarget_feedback_values = np.zeros_like(self.datatarget_values)
-        super().update_data_sources_and_targets()
-
-        execute = self._get_datatarget_value('execute') > 0.9
-
+    def write_to_world(self):
+        super().write_to_world()
         self.call_vrep(vrep.simxPauseCommunication, [self.clientID, True], empty_result_ok=True)
         for i, (name, handle) in enumerate(zip(self.object_names, self.object_handles)):
             if self._get_datatarget_value('execute-%s' % name) > 0.9:
@@ -548,6 +540,9 @@ class Vrep6DObjectsMixin(WorldAdapterMixin):
                 tgamma = self._get_datatarget_value("%s-gamma" % name)
                 self.call_vrep(vrep.simxSetObjectOrientation, [self.clientID, handle, -1, [talpha, tbeta, tgamma], vrep.simx_opmode_oneshot], empty_result_ok=True)
         self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
+
+    def read_from_world(self):
+        execute = self._get_datatarget_value('execute') > 0.9
 
         for i, (name, handle) in enumerate(zip(self.object_names, self.object_handles)):
             tx, ty, tz = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, handle, -1, vrep.simx_opmode_oneshot], empty_result_ok=False)
@@ -593,6 +588,7 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
         self.initialize()
 
     def initialize(self):
+        self.tvals = None
 
         self.clientID = self.world.connection_daemon.clientID
 
@@ -658,12 +654,20 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
         self.reset_simulation_state()
 
     def update_data_sources_and_targets(self):
+        self.logger.debug("----------------WRITE TO WORLD----------------")
+        self.write_to_world()
+        if self.world.synchronous_mode:
+            self.logger.debug("----------------STEPPING----------------")
+            self.call_vrep(vrep.simxSynchronousTrigger, [self.clientID])
+        self.logger.debug("----------------READ FROM WORLD----------------")
+        self.read_from_world()
+
+    def write_to_world(self):
         old_datasource_values = np.array(self.datasource_values)
         self.datatarget_feedback_values = [0] * len(self.datatarget_values)
         self.datasource_values = [0] * len(self.datasource_values)
-        super().update_data_sources_and_targets()
 
-        tvals = None
+        self.tvals = None
 
         restart = self._get_datatarget_value('restart') > 0.9 and self.world.current_step - self.last_restart >= 5
         execute = self._get_datatarget_value('execute') > 0.9
@@ -672,20 +676,21 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
         if restart:
             return self.reset_simulation_state()
 
+        super().write_to_world()
         # execute movement, send new target angles
         if execute:
 
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, True], empty_result_ok=True)
 
             if self.control_type != "ik":
-                tvals = [0] * len(self.datatarget_values)
+                self.tvals = [0] * len(self.datatarget_values)
                 self.current_angle_target_values = np.array(self._get_datatarget_values('joint_1', len(self.joints)))
                 joint_angle_offset = self.get_datasource_index("joint_angle_1")
                 for i, joint_handle in enumerate(self.joints):
                     tval = self.current_angle_target_values[i] * math.pi
                     if self.control_type == "force/torque" or self.control_type == "force/torque-sync":
                         tval += (old_datasource_values[joint_angle_offset + i]) * math.pi
-                        tvals[i] = tval
+                        self.tvals[i] = tval
                         self.call_vrep(vrep.simxSetJointTargetPosition,
                                        [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot],
                                        empty_result_ok=True)
@@ -713,8 +718,9 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
 
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 
-        # read joint angle and force values
-        self.fetch_sensor_and_feedback_values_from_simulation(tvals, True)
+    def read_from_world(self):
+        super().read_from_world()
+        self.fetch_sensor_and_feedback_values_from_simulation(self.tvals, include_feedback=True)
 
     def reset_simulation_state(self):
         self.call_vrep(vrep.simxStopSimulation, [self.clientID, vrep.simx_opmode_oneshot], debugprint=False)
@@ -886,27 +892,12 @@ class Objects6D(VrepRGBVisionMixin, Vrep6DObjectsMixin, VrepCallMixin, ArrayWorl
         # print('objects6D initialize: self.datasources=',self.datasources)
         self.reset_simulation_state()
 
-    def update_data_sources_and_targets(self):
-        # self.datatarget_feedback_values = np.zeros_like(self.datatarget_values)
-        self.datasource_values = np.zeros_like(self.datasource_values, dtype='float64')  # need to override self.datasource_values' dtype to float. why?
-        super().update_data_sources_and_targets()
-
+    def write_to_world(self):
         restart = self._get_datatarget_value('restart') > 0.9 and self.world.current_step - self.last_restart >= 5
-
         # simulation restart
         if restart:
             return self.reset_simulation_state()
-
-        self.fetch_sensor_and_feedback_values_from_simulation(None)
-
-    # def reset_simulation_state(self):
-    #     self.call_vrep(vrep.simxStopSimulation, [self.clientID, vrep.simx_opmode_blocking])
-    #     self.call_vrep(vrep.simxGetPingTime, [self.clientID])
-    #     self.call_vrep(vrep.simxStartSimulation, [self.clientID, vrep.simx_opmode_oneshot])
-    #     super().reset_simulation_state()
-
-    #     self.fetch_sensor_and_feedback_values_from_simulation(None)
-    #     self.last_restart = self.world.current_step
+        super().write_to_world()
 
     def fetch_sensor_and_feedback_values_from_simulation(self, targets, include_feedback=False):
         if not self.world.connection_daemon.is_connected:

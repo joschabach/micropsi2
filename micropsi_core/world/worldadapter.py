@@ -52,6 +52,12 @@ class WorldAdapterMixin(object):
     def update_datasources_and_targets(self):
         pass
 
+    def write_to_world(self):
+        pass
+
+    def read_from_world(self):
+        pass
+
 
 class WorldAdapter(WorldObject, metaclass=ABCMeta):
     """Transmits data between agent and environment.

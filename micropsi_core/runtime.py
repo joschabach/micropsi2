@@ -163,16 +163,12 @@ class MicropsiRunner(threading.Thread):
                             nodenet.is_active = False
                             continue
                         log = True
+                        if self.profiler:
+                            self.profiler.enable()
                         try:
-                            if self.profiler:
-                                self.profiler.enable()
                             nodenet.timed_step()
-                            if self.profiler:
-                                self.profiler.disable()
                             nodenet.update_monitors_and_recorders()
                         except:
-                            if self.profiler:
-                                self.profiler.disable()
                             nodenet.is_active = False
                             logging.getLogger("agent.%s" % uid).error("Exception in NodenetRunner:", exc_info=1)
                             MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
@@ -183,6 +179,8 @@ class MicropsiRunner(threading.Thread):
                                 nodenet.is_active = False
                                 logging.getLogger("world").error("Exception in WorldRunner:", exc_info=1)
                                 MicropsiRunner.last_world_exception[nodenets[uid].world] = sys.exc_info()
+                        if self.profiler:
+                            self.profiler.disable()
 
             elapsed = datetime.now() - start
             if log:
@@ -198,7 +196,7 @@ class MicropsiRunner(threading.Thread):
                         s = io.StringIO()
                         sortby = 'cumtime'
                         ps = pstats.Stats(self.profiler, stream=s).sort_stats(sortby)
-                        ps.print_stats('nodenet')
+                        ps.print_stats('micropsi_')
                         logging.getLogger("system").debug(s.getvalue())
 
                     logging.getLogger("system").debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_duration))
@@ -679,7 +677,7 @@ def step_nodenet(nodenet_uid):
         s = io.StringIO()
         sortby = 'cumtime'
         ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
-        ps.print_stats('nodenet')
+        ps.print_stats('micropsi_')
         logging.getLogger("agent.%s" % nodenet_uid).debug(s.getvalue())
 
     nodenet.update_monitors_and_recorders()

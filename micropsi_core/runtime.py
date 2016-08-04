@@ -154,7 +154,7 @@ class MicropsiRunner(threading.Thread):
 
             start = datetime.now()
             log = False
-            uids = list(nodenets.keys())
+            uids = [uid for uid in nodenets if nodenets[uid].is_active]
             for uid in uids:
                 if uid in nodenets:
                     nodenet = nodenets[uid]
@@ -213,6 +213,8 @@ class MicropsiRunner(threading.Thread):
             left = step - elapsed
             if left.total_seconds() > 0:
                 time.sleep(left.total_seconds())
+            if len(uids) == 0:
+                self.pause()
 
     def resume(self):
         with self.state:

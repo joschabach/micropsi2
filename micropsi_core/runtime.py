@@ -1699,6 +1699,23 @@ def initialize(persistency_path=None, resource_path=None):
     for e in errors:
         logging.getLogger("system").error(e)
 
+    # discover available worlds:
+    import importlib
+    basedir = os.path.join(os.path.dirname(__file__), 'world')
+    dirs = os.listdir(basedir)
+    #  look into each folder in world/
+    for d in dirs:
+        worlddir = os.path.join(basedir, d)
+        if os.path.isdir(worlddir) and not d.startswith('__'):
+            try:
+                init = importlib.import_module(".%s" % d, package='micropsi_core.world')
+                # import all modules defined in __init__.__all__
+                for world in init.__all__:
+                    importlib.import_module(".%s" % world, package='micropsi_core.world.%s' % d)
+                    logging.getLogger("system").debug("Found %s world" % world)
+            except ImportError:
+                logging.getLogger("system").debug("Error importing %s world" % world)
+
     # initialize runners
     # Initialize the threads for the continuous calculation of nodenets and worlds
     if 'runner_timestep' not in configs:

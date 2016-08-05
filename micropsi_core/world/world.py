@@ -348,38 +348,3 @@ class World(object):
 
 class DefaultWorld(World):
     supported_worldadapters = ['Default']
-
-# imports of individual world types:
-try:
-    from micropsi_core.world.island import island
-except ImportError as e:
-    sys.stdout.write("Could not import island world.\nError: %s \n\n" % e.msg)
-
-try:
-    from micropsi_core.world.island.structured_objects import structured_objects
-except ImportError as e:
-    sys.stdout.write("Could not import island world / structured objects.\nError: %s \n\n" % e.msg)
-
-try:
-    from micropsi_core.world.minecraft import minecraft
-except ImportError as e:
-    if e.msg == "No module named 'spock'":
-        # ignore silently
-        pass
-    else:
-        sys.stdout.write("Could not import minecraft world.\nError: %s \n\n" % e.msg)
-
-try:
-    from micropsi_core.world.timeseries import timeseries
-except ImportError as e:
-    if e.msg == "No module named 'numpy'":
-        # ignore silently
-        pass
-    else:
-        sys.stdout.write("Could not import timeseries world.\nError: %s \n\n" % e.msg)
-
-
-try:
-    from micropsi_core.world.vrep import vrep_world
-except ImportError as e:
-    sys.stdout.write("Could not import vrep world.\nError: %s \n\n" % e.msg)

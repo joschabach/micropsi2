@@ -1,7 +1,7 @@
 __author__ = 'rvuine'
 
 import logging
-from micropsi_core.world.island import island
+from micropsi_core.world.island import utils
 from micropsi_core.world.island.structured_objects.objects import *
 from micropsi_core.world.island.structured_objects.scene import Scene
 from micropsi_core.world.worldadapter import WorldAdapter
@@ -68,7 +68,7 @@ class StructuredObjects(WorldAdapter):
         nearest_worldobject = None
         for key, worldobject in self.world.objects.items():
             # TODO: use a proper 2D geometry library
-            distance = island._2d_distance_squared(self.position, worldobject.position)
+            distance = utils._2d_distance_squared(self.position, worldobject.position)
             if distance < lowest_distance_to_worldobject:
                 lowest_distance_to_worldobject = distance
                 nearest_worldobject = worldobject

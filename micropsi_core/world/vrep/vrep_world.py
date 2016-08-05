@@ -96,9 +96,6 @@ class VREPWorld(World):
 
         time.sleep(1)  # wait for the daemon to get started before continuing.
 
-        from micropsi_core.runtime import add_signal_handler
-        add_signal_handler(self.kill_vrep_connection)
-
     def get_world_view(self, step):
         data = {
             'objects': self.get_world_objects(),
@@ -120,7 +117,7 @@ class VREPWorld(World):
         for uid in self.agents:
             self.agents[uid].on_vrep_connect()
 
-    def kill_vrep_connection(self, *args):
+    def signal_handler(self, *args):
         if hasattr(self, "connection_daemon"):
             self.connection_daemon.is_active = False
             if self.connection_daemon:
@@ -130,7 +127,7 @@ class VREPWorld(World):
                 vrep.simxFinish(-1)
 
     def __del__(self):
-        self.kill_vrep_connection()
+        self.signal_handler()
 
     @staticmethod
     def get_config_options():

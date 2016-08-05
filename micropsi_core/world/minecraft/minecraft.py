@@ -41,8 +41,6 @@ class Minecraft(World):
         """
         Initializes spock client including MicropsiPlugin, starts minecraft communication thread.
         """
-        from micropsi_core.runtime import add_signal_handler
-
         self.instances = {
             'spock': None,
             'thread': None
@@ -86,7 +84,6 @@ class Minecraft(World):
             thread.start()
             self.instances['thread'] = thread
             #
-            add_signal_handler(self.kill_minecraft_thread)
 
         # once MicropsiPlugin is instantiated and running, initialize micropsi world
         World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
@@ -123,9 +120,8 @@ class Minecraft(World):
         }
         return settings
 
-    def kill_minecraft_thread(self, *args):
-        """
-        """
+    def signal_handler(self, *args):
+        """ kill spock eventloop"""
         if hasattr(self, 'spockplugin'):
             self.spockplugin.event.kill()
             self.instances['thread'].join()
@@ -133,7 +129,7 @@ class Minecraft(World):
 
     def __del__(self):
         from importlib import reload
-        self.kill_minecraft_thread()
+        self.signal_handler()
         reload(spockplugins)
 
 

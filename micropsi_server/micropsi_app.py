@@ -1003,10 +1003,10 @@ def set_worldagent_properties(world_uid, uid, position=None, orientation=None, n
 
 
 @rpc("new_world", permission_required="manage worlds")
-def new_world(world_name, world_type, owner=None):
+def new_world(world_name, world_type, owner=None, config={}):
     if owner is None:
         owner, _, _ = get_request_data()
-    return runtime.new_world(world_name, world_type, owner)
+    return runtime.new_world(world_name, world_type, owner, config)
 
 
 @rpc("get_available_world_types")

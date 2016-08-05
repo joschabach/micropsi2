@@ -337,8 +337,12 @@ class World(object):
         the user to set certain properties of this world"""
         pass
 
+    def signal_handler(self, *args):
+        """ stuff to do on sigint, sigabrt, etc"""
+        pass
+
     def __del__(self):
-        """Empty destructor"""
+        """ Empty destructor """
         pass
 
 

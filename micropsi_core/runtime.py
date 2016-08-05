@@ -36,7 +36,6 @@ from .micropsi_logger import MicropsiLogger
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
 
-signal_handler_registry = []
 runner = {'timestep': 1000, 'runner': None, 'factor': 1}
 
 nodenet_lock = threading.Lock()
@@ -110,15 +109,11 @@ class NetapiShell(InteractiveConsole):
         return True, out.strip()
 
 
-def add_signal_handler(handler):
-    signal_handler_registry.append(handler)
-
-
 def signal_handler(signal, frame):
     logging.getLogger('system').info("Shutting down")
     kill_runners()
-    for handler in signal_handler_registry:
-        handler(signal, frame)
+    for uid in worlds:
+        worlds[uid].signal_handler(signal, frame)
     sys.exit(0)
 
 
@@ -154,7 +149,7 @@ class MicropsiRunner(threading.Thread):
 
             start = datetime.now()
             log = False
-            uids = list(nodenets.keys())
+            uids = [uid for uid in nodenets if nodenets[uid].is_active]
             for uid in uids:
                 if uid in nodenets:
                     nodenet = nodenets[uid]
@@ -211,6 +206,8 @@ class MicropsiRunner(threading.Thread):
             left = step - elapsed
             if left.total_seconds() > 0:
                 time.sleep(left.total_seconds())
+            if len(uids) == 0:
+                self.pause()
 
     def resume(self):
         with self.state:
@@ -1724,4 +1721,5 @@ def initialize(persistency_path=None, resource_path=None):
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGABRT, signal_handler)
     initialized = True

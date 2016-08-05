@@ -5,6 +5,7 @@ from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.worldobject import WorldObject
 from micropsi_core.world.island import png
+from micropsi_core.world.island import utils
 
 
 class Island(World):
@@ -80,7 +81,7 @@ class Island(World):
                 # adapted from micropsi1
                 pos = self.objects[key].position
                 diff = (pos[0] - position[0], pos[1] - position[1])
-                dist = _2d_vector_norm(diff) + 1
+                dist = utils._2d_vector_norm(diff) + 1
                 lightness = self.objects[key].get_intensity()
                 brightness += (lightness /dist /dist)
         return brightness
@@ -96,11 +97,11 @@ class Island(World):
 
         # make sure we don't bump into stuff
         target_position = None
-        while target_position is None and _2d_distance_squared((0, 0), movement_vector) > 0.01:
-            target_position = _2d_translate(start_position, movement_vector)
+        while target_position is None and utils._2d_distance_squared((0, 0), movement_vector) > 0.01:
+            target_position = utils._2d_translate(start_position, movement_vector)
 
             for i in self.objects.values():
-                if _2d_distance_squared(target_position, i.position) < (diameter + i.diameter) / 2:
+                if utils._2d_distance_squared(target_position, i.position) < (diameter + i.diameter) / 2:
                     movement_vector = (movement_vector[0] * 0.5, movement_vector[1] * 0.5)  # should be collision point
                     target_position = None
                     break
@@ -337,7 +338,7 @@ class Survivor(WorldAdapter):
         nearest_worldobject = None
         for key, worldobject in self.world.objects.items():
             # TODO: use a proper 2D geometry library
-            distance = _2d_distance_squared(self.position, worldobject.position)
+            distance = utils._2d_distance_squared(self.position, worldobject.position)
             if distance < lowest_distance_to_worldobject:
                 lowest_distance_to_worldobject = distance
                 nearest_worldobject = worldobject
@@ -446,45 +447,20 @@ class Braitenberg(WorldAdapter):
         rotation = math.degrees((self.radius * l_wheel_speed - self.radius * r_wheel_speed) / self.diameter)
         self.orientation += rotation
         avg_velocity = (self.radius * r_wheel_speed + self.radius * l_wheel_speed) / 2
-        translation = _2d_rotate((0, avg_velocity), self.orientation + rotation)
+        translation = utils._2d_rotate((0, avg_velocity), self.orientation + rotation)
 
         # you may decide how far you want to go, but it is up the world to decide how far you make it
         self.position = self.world.get_movement_result(self.position, translation, self.diameter)
 
         # sense light sources
-        brightness_l_position = _2d_translate(_2d_rotate(self.brightness_l_offset, self.orientation), self.position)
-        brightness_r_position = _2d_translate(_2d_rotate(self.brightness_r_offset, self.orientation), self.position)
+        brightness_l_position = utils._2d_translate(utils._2d_rotate(self.brightness_l_offset, self.orientation), self.position)
+        brightness_r_position = utils._2d_translate(utils._2d_rotate(self.brightness_r_offset, self.orientation), self.position)
 
         brightness_l = self.world.get_brightness_at(brightness_l_position)
         brightness_r = self.world.get_brightness_at(brightness_r_position)
 
         self.datasources['brightness_l'] = brightness_l
         self.datasources['brightness_r'] = brightness_r
-
-
-def _2d_rotate(position, angle_degrees):
-    """rotate a 2d vector around an angle (in degrees)"""
-    radians = math.radians(angle_degrees)
-    # take the negative of the angle because the orientation circle works clockwise in this world
-    cos = math.cos(-radians)
-    sin = math.sin(-radians)
-    x, y = position
-    return x * cos - y * sin, - (x * sin + y * cos)
-
-
-def _2d_distance_squared(position1, position2):
-    """calculate the square of the distance bwtween two 2D coordinate tuples"""
-    return (position1[0] - position2[0]) ** 2 + (position1[1] - position2[1]) ** 2
-
-
-def _2d_translate(position1, position2):
-    """add two 2d vectors"""
-    return (position1[0] + position2[0], position1[1] + position2[1])
-
-
-def _2d_vector_norm(vector):
-    """Calculates the length /norm of a given vector."""
-    return math.sqrt(sum(i**2 for i in vector))
 
 
 # the indices of ground types correspond to the color numbers in the groundmap png

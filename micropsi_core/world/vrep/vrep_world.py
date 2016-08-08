@@ -11,6 +11,7 @@ from io import BytesIO
 import base64
 import random
 import math
+import sys
 
 
 from scipy.misc import toimage, fromimage
@@ -105,10 +106,12 @@ class VREPWatchdog(threading.Thread):
         self.flags = flags
         self.args = shlex.split(self.binary_path + flags + self.scene_path)
         self.daemon = True
+        self.paused = False
         self.stop = threading.Event()
         self.is_connected = False
         self.logger = logging.getLogger("world")
         self.state = threading.Condition()
+        self.pid = None
         self.is_active = True
         self.vrep_listeners = listeners
         self.process = None
@@ -117,27 +120,59 @@ class VREPWatchdog(threading.Thread):
     def run(self):
         self.spawn_vrep()
         while self.is_active:
+            with self.state:
+                if self.paused:
+                    self.state.wait()
             if self.process is not None:
                 if self.process.poll():
                     # poll returns nothing if still running.
                     self.logger.info("Vrep process gone, respawning.")
+                    self.kill_vrep()
                     self.spawn_vrep()
             self.stop.wait(1)
         self.pause()
 
     def spawn_vrep(self):
         notify = self.process is not None
-        if self.process is not None:
-            try:
-                self.process.kill()
-            except:
-                pass
-
         fp = open('/tmp/vrep.log', 'a')
         self.process = subprocess.Popen(self.args, stdout=fp, preexec_fn=preexec_function)
+        self.escalate = None
         if notify:
             for item in self.vrep_listeners:
                 item.on_vrep_respawn()
+
+    def kill_vrep(self):
+        print("killfunc")
+        if self.process is not None:
+            print("process found. poll says " + str(self.process.poll()))
+            while self.process.poll() is None or self.process.poll() > -1:
+                if self.escalate is not None:
+                    time.sleep(5)
+                try:
+                    if self.escalate is None:
+                        self.logger.info("Terminating vrep process")
+                        self.process.terminate()
+                        self.escalate = 'terminate'
+                    elif self.escalate == 'terminate':
+                        self.logger.info("Killing vrep process")
+                        self.process.kill()
+                        self.escalate = 'kill'
+                    elif self.escalate == 'kill':
+                        self.logger.info("Killing vrep process via system.kill()")
+                        os.kill(self.pid, signal.SIGILL)
+                        self.escalate = 'experiment'
+                    elif self.escalate == 'experiment':
+                        self.logger.info("Killing Vrep with SIGSYS?")
+                        os.kill(self.pid, signal.SIGSYS)
+                        self.escalate = 'nuke'
+                    elif self.escalate == 'nuke':
+                        self.logger.info("ok, vrep just does not want to go away. no idea what we can do other than restarting the whole toolkit.")
+                        self.terminate()
+                        import _thread
+                        _thread.interrupt_main()
+                except Exception:
+                    self.logger.info("Exception: ", sys.exc_info()[0])
+                time.sleep(5)
 
     def resume(self):
         with self.state:
@@ -729,8 +764,10 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
                 print('couldnt get simulation state. got this instead:', call_result, ' (trying again in 0.5 s)')
                 if attempt_nr > 10:
                     print('killing vrep before trying again. (waiting 5 seconds for respawn)')
-                    self.world.vrep_watchdog.process.kill()
-                    time.sleep(4.5)
+                    self.world.vrep_watchdog.pause()
+                    self.world.vrep_watchdog.kill_vrep()
+                    self.world.vrep_watchdog.resume()
+                    time.sleep(5)
                     attempt_nr = 0
                 time.sleep(0.5)
                 return state(attempt_nr+1)

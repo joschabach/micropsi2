@@ -112,6 +112,7 @@ class VREPWatchdog(threading.Thread):
         self.logger = logging.getLogger("world")
         self.state = threading.Condition()
         self.pid = None
+        self.escalate = None
         self.is_active = True
         self.vrep_listeners = listeners
         self.process = None

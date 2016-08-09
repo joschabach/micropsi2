@@ -6,13 +6,15 @@ import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
+import os
+import shlex
+import subprocess
+import signal
 import threading
-from io import BytesIO
 import base64
 import random
-import math
 import sys
-
+from io import BytesIO
 
 from scipy.misc import toimage, fromimage
 from PIL import Image
@@ -20,6 +22,8 @@ from PIL import Image
 import vrep
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import ArrayWorldAdapter, WorldAdapterMixin
+
+from micropsi_core.tools import pid_exists
 
 
 class VREPConnection(threading.Thread):
@@ -85,11 +89,6 @@ class VREPConnection(threading.Thread):
     def terminate(self):
         self.stop.set()
 
-import os
-import shlex
-import subprocess
-import signal
-
 
 def preexec_function():
     # Ignore the SIGINT signal by setting the handler to the standard
@@ -108,9 +107,9 @@ class VREPWatchdog(threading.Thread):
         self.daemon = True
         self.paused = False
         self.stop = threading.Event()
-        self.is_connected = False
-        self.logger = logging.getLogger("world")
         self.state = threading.Condition()
+        self.logger = logging.getLogger("world")
+        self.initial_spawn = True
         self.pid = None
         self.escalate = None
         self.is_active = True
@@ -124,56 +123,66 @@ class VREPWatchdog(threading.Thread):
             with self.state:
                 if self.paused:
                     self.state.wait()
-            if self.process is not None:
-                if self.process.poll():
-                    # poll returns nothing if still running.
-                    self.logger.info("Vrep process gone, respawning.")
-                    self.kill_vrep()
-                    self.spawn_vrep()
-            self.stop.wait(1)
+
+            if self.process and self.process.poll():
+                self.kill_vrep()
+                self.stop.wait(5)
+            if self.process is None:
+                self.logger.info("Vrep process gone, respawning.")
+                self.spawn_vrep()
+                self.stop.wait(1)
         self.pause()
 
     def spawn_vrep(self):
-        notify = self.process is not None
         fp = open('/tmp/vrep.log', 'a')
         self.process = subprocess.Popen(self.args, stdout=fp, preexec_fn=preexec_function)
         self.escalate = None
-        if notify:
+        self.pid = self.process.pid
+        self.logger.info("VREP PID is " + str(self.pid))
+        if not self.initial_spawn:
             for item in self.vrep_listeners:
                 item.on_vrep_respawn()
+        self.initial_spawn = False
 
     def kill_vrep(self):
         print("killfunc")
         if self.process is not None:
-            print("process found. poll says " + str(self.process.poll()))
-            while self.process.poll() is None or self.process.poll() > -1:
-                if self.escalate is not None:
-                    time.sleep(5)
+            while self.pid is not None and pid_exists(self.pid):
+                print("pid " + str(self.pid) + " still exists")
+                print("escalate says " + str(self.escalate))
                 try:
                     if self.escalate is None:
-                        self.logger.info("Terminating vrep process")
-                        self.process.terminate()
+                        self.logger.info("sending SIGTERM")
+                        os.kill(self.pid, signal.SIGTERM)
                         self.escalate = 'terminate'
                     elif self.escalate == 'terminate':
-                        self.logger.info("Killing vrep process")
-                        self.process.kill()
+                        self.logger.info("sending SIGINT")
+                        os.kill(self.pid, signal.SIGINT)
                         self.escalate = 'kill'
                     elif self.escalate == 'kill':
-                        self.logger.info("Killing vrep process via system.kill()")
-                        os.kill(self.pid, signal.SIGILL)
+                        self.logger.info("sending SIGKILL")
+                        os.kill(self.pid, signal.SIGKILL)
                         self.escalate = 'experiment'
                     elif self.escalate == 'experiment':
-                        self.logger.info("Killing Vrep with SIGSYS?")
+                        self.logger.info("sending SIGSYS")
                         os.kill(self.pid, signal.SIGSYS)
                         self.escalate = 'nuke'
                     elif self.escalate == 'nuke':
                         self.logger.info("ok, vrep just does not want to go away. no idea what we can do other than restarting the whole toolkit.")
+                        self.pid = None
                         self.terminate()
                         import _thread
                         _thread.interrupt_main()
+                        sys.exit(1)
                 except Exception:
-                    self.logger.info("Exception: ", sys.exc_info()[0])
-                time.sleep(5)
+                    self.logger.info("Exception: %s" % sys.exc_info()[0])
+                print("waiting max 10 sec for vrep to quit")
+                try:
+                    self.process.wait(10)
+                except subprocess.TimeoutExpired:
+                    pass
+            self.process = None
+            self.pid = None
 
     def resume(self):
         with self.state:
@@ -293,7 +302,6 @@ class VREPWorld(World):
             super().step()
         else:
             if self.current_step % self.simulation_speed == 0:
-                self.logger.debug("Stepping World")
                 super().step()
             else:
                 self.current_step += 1
@@ -757,23 +765,36 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
     def reset_simulation_state(self):
         self.call_vrep(vrep.simxStopSimulation, [self.clientID, vrep.simx_opmode_oneshot], debugprint=False)
 
-        def state(attempt_nr=1):
-            call_result = self.call_vrep(vrep.simxCallScriptFunction, [self.clientID, "Open_Port", vrep.sim_scripttype_customizationscript, 'getsimstate', [], [], [], bytearray(), vrep.simx_opmode_blocking])
-            try:
-                return call_result[0][0]
-            except:
-                print('couldnt get simulation state. got this instead:', call_result, ' (trying again in 0.5 s)')
-                if attempt_nr > 10:
-                    print('killing vrep before trying again. (waiting 5 seconds for respawn)')
-                    self.world.vrep_watchdog.pause()
-                    self.world.vrep_watchdog.kill_vrep()
-                    self.world.vrep_watchdog.resume()
-                    time.sleep(5)
-                    attempt_nr = 0
-                time.sleep(0.5)
-                return state(attempt_nr+1)
+        def state():
+            returnvalue = None
+            attempt_nr = 1
+            while returnvalue is None:
+                call_result = self.call_vrep(vrep.simxCallScriptFunction, [self.clientID, "Open_Port", vrep.sim_scripttype_customizationscript, 'getsimstate', [], [], [], bytearray(), vrep.simx_opmode_blocking])
+                try:
+                    returnvalue = call_result[0][0]
+                except:
+                    print('couldnt get simulation state. got this instead:', call_result, ' (trying again in 0.5 s)')
+                    if attempt_nr > 10:
+                        print('killing vrep before trying again.')
+                        self.world.vrep_watchdog.pause()
+                        print("state() paused watchdog")
+                        self.world.vrep_watchdog.kill_vrep()
+                        print("state() called kill, waiting 5 secs, then resuming")
+                        time.sleep(5)  # wait a bit before resuming watchdog.
+                        self.world.vrep_watchdog.resume()
+                        print("state() resumed watchdog")
+                        print("stopping simulation reset")
+                        return None
+                    else:
+                        attempt_nr += 1
+                        time.sleep(0.5)
+            return returnvalue
 
-        while state() != vrep.sim_simulation_stopped:
+        _state = None
+        while _state != vrep.sim_simulation_stopped:
+            _state = state()
+            if _state is None:
+                return
             time.sleep(0.01)
 
         if self.world.synchronous_mode:
@@ -781,12 +802,13 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
 
         self.call_vrep(vrep.simxStartSimulation, [self.clientID, vrep.simx_opmode_oneshot], debugprint=False)
 
-        if self.world.synchronous_mode:
-            while state() != vrep.sim_simulation_advancing:
-                time.sleep(0.01)
-        else:
-            while state() != vrep.sim_simulation_advancing_running:
-                time.sleep(0.01)
+        _state = None
+        readystate = vrep.sim_simulation_advancing if self.world.synchronous_mode else vrep.sim_simulation_advancing_running
+        while _state != readystate:
+            _state = state()
+            if _state is None:
+                return
+            time.sleep(0.01)
 
         super().reset_simulation_state()
         if self.randomize_arm == "True":

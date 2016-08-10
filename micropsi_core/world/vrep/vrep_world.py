@@ -790,25 +790,25 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
                         time.sleep(0.5)
             return returnvalue
 
-        _state = None
+        _state = state()
         while _state != vrep.sim_simulation_stopped:
-            _state = state()
             if _state is None:
                 return
             time.sleep(0.01)
+            _state = state()
 
         if self.world.synchronous_mode:
             self.call_vrep(vrep.simxSynchronous, [self.clientID, True])
 
         self.call_vrep(vrep.simxStartSimulation, [self.clientID, vrep.simx_opmode_oneshot], debugprint=False)
 
-        _state = None
+        _state = state()
         readystate = vrep.sim_simulation_advancing if self.world.synchronous_mode else vrep.sim_simulation_advancing_running
         while _state != readystate:
-            _state = state()
             if _state is None:
                 return
             time.sleep(0.01)
+            _state = state()
 
         super().reset_simulation_state()
         if self.randomize_arm == "True":

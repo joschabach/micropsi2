@@ -182,7 +182,10 @@ class Nodenet(metaclass=ABCMeta):
         self.native_modules = {}
         for type, data in native_modules.items():
             if data.get('engine', self.engine) == self.engine:
-                self.native_modules[type] = Nodetype(nodenet=self, **data)
+                try:
+                    self.native_modules[type] = Nodetype(nodenet=self, **data)
+                except ImportError:
+                    pass
 
         self._modulators = {}
         if use_modulators:

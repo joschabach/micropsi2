@@ -252,7 +252,7 @@ class VREPWorld(World):
         - simExtRemoteApiStart(19999) has to have been run
         - the simulation must have been started
     """
-    supported_worldadapters = ['Robot', 'OneBallRobot', 'Objects6D', 'IKRobotWithGreyscaleVision']
+    supported_worldadapters = ['Robot', 'OneBallRobot', 'Objects6D', 'IKRobotWithGreyscaleVision', 'IKRobot']
 
     assets = {
         'template': 'vrep/vrep.tpl',
@@ -902,7 +902,7 @@ class OneBallRobot(Robot, VrepGreyscaleVisionMixin, VrepCollisionsMixin, VrepOne
 
 
 class IKRobotWithGreyscaleVision(Robot, VrepGreyscaleVisionMixin, Vrep6DObjectsMixin):
-    """ A Worldadapter to control a robot with IK, based on a greyscale vision stream """
+    """ A Worldadapter to control a robot with IK + arbitrary scene objects, based on a greyscale vision stream """
 
     @classmethod
     def get_config_options(cls):
@@ -910,6 +910,17 @@ class IKRobotWithGreyscaleVision(Robot, VrepGreyscaleVisionMixin, Vrep6DObjectsM
         parameters = []
         parameters.extend(Robot.get_config_options())
         parameters.extend(VrepGreyscaleVisionMixin.get_config_options())
+        parameters.extend(Vrep6DObjectsMixin.get_config_options())
+        return parameters
+
+class IKRobot(Robot, Vrep6DObjectsMixin):
+    """ A Worldadapter to control a robot with IK + arbitrary scene objects """
+
+    @classmethod
+    def get_config_options(cls):
+        """ I've found no way around this yet """
+        parameters = []
+        parameters.extend(Robot.get_config_options())
         parameters.extend(Vrep6DObjectsMixin.get_config_options())
         return parameters
 

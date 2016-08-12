@@ -1,5 +1,7 @@
 
 import numpy as np
+
+
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import ArrayWorldAdapter
 
@@ -12,7 +14,7 @@ class RLlabWorld(World):
 
     supported_worldadapters = ['RllabAdapter']
 
-    def __init__(self, filename, world_type="Island", name="", owner="", engine=None, uid=None, version=1, config={}):
+    def __init__(self, filename, world_type="RLlabWorld", name="", owner="", engine=None, uid=None, version=1, config={}):
         World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
         self.env = normalize(CartpoleEnv())
 
@@ -26,15 +28,18 @@ class RllabAdapter(ArrayWorldAdapter):
         super().__init__(world, uid, **data)
 
         for state_dim in range(self.world.n_dim_state):
-            self.add_datasource("s%d" % str(state_dim))
+            self.add_datasource("s%d" % state_dim)
 
         for action_dim in range(self.world.n_dim_action):
-            self.add_datatarget("a%d" % str(action_dim))
+            self.add_datatarget("a%d" % action_dim)
+
+        self.add_datasource("reward")
+        self.add_datasource("is_terminal")
 
     def update_data_sources_and_targets(self):
         action = self.datatarget_values
 
-        observation, reward, terminal = self.world.env.step(action)
-        state = np.concatenate([observation, reward, terminal])
+        result = self.world.env.step(action)
+        state = np.concatenate([result.observation, [result.reward], [1 if result.done else 0]])
 
         self.datasource_values = state

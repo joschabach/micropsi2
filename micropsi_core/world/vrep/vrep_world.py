@@ -704,8 +704,8 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
 
     def write_to_world(self):
         old_datasource_values = np.array(self.datasource_values)
-        self.datatarget_feedback_values = [0] * len(self.datatarget_values)
-        self.datasource_values = [0] * len(self.datasource_values)
+        self.datatarget_feedback_values = np.zeros_like(self.datatarget_values)
+        self.datasource_values = np.zeros_like(self.datasource_values)
 
         self.tvals = None
 

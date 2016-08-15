@@ -196,10 +196,7 @@ class VREPWatchdog(threading.Thread):
     def terminate(self):
         self.is_active = False
         self.stop.set()
-        try:
-            self.process.kill()
-        except:
-            pass
+        self.kill_vrep()
 
 
 class VrepCallMixin():
@@ -313,13 +310,11 @@ class VREPWorld(World):
         if hasattr(self, "connection_daemon"):
             if self.connection_daemon:
                 self.connection_daemon.is_active = False
-            if self.vrep_watchdog is not None:
-                self.vrep_watchdog.is_active = False
-            if self.connection_daemon:
                 self.connection_daemon.resume()
                 self.connection_daemon.terminate()
                 self.connection_daemon.join()
             if self.vrep_watchdog is not None:
+                self.vrep_watchdog.is_active = False
                 self.vrep_watchdog.resume()
                 self.vrep_watchdog.terminate()
                 self.vrep_watchdog.join()

@@ -815,7 +815,7 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
             # /hack
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 
-        self.fetch_sensor_and_feedback_values_from_simulation(None)
+        self.read_from_world()
         self.last_restart = self.world.current_step
 
     def fetch_sensor_and_feedback_values_from_simulation(self, targets, include_feedback=False):

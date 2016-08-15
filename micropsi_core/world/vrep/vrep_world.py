@@ -262,7 +262,10 @@ class VREPWorld(World):
         self.synchronous_mode = self.simulation_speed > 0
 
         if config['vrep_host'] == 'localhost' or config['vrep_host'] == '127.0.0.1':
-            flags = " -h -s -gREMOTEAPISERVERSERVICE_%s_TRUE_TRUE " % config['vrep_port']
+            if config.get('run_headless', 'true') == 'true':
+                flags = " -h -s -gREMOTEAPISERVERSERVICE_%s_TRUE_TRUE " % config['vrep_port']
+            else:
+                flags = " -s -gREMOTEAPISERVERSERVICE_%s_TRUE_TRUE " % config['vrep_port']
             self.logger.info("Spawning local vrep process")
             self.vrep_watchdog = VREPWatchdog(config['vrep_binary'], flags, config['vrep_scene'], listeners=[self])
         else:
@@ -324,20 +327,23 @@ class VREPWorld(World):
     @staticmethod
     def get_config_options():
         return [
-            {'name': 'vrep_binary',
-             'default': '~/Applications/vrep/vrep.app/Contents/MacOS/vrep',
-             'description': 'path to the vrep binary'},
-            {'name': 'vrep_scene',
-             'default': '~/micropsi-nodenets/vrep-scenes/iiwa-scene-ik.ttt',
-             'description': 'path to the vrep scene file'},
             {'name': 'vrep_host',
              'default': '127.0.0.1'},
             {'name': 'vrep_port',
              'default': 19999},
             {'name': 'simulation_speed',
              'default': '0',
-             'description': 'nodenet steps per vrep step. 0 for vrep realtime'
-            }
+             'description': 'nodenet steps per vrep step. 0 for vrep realtime'},
+            {'name': 'vrep_binary',
+             'default': '~/Applications/vrep/vrep.app/Contents/MacOS/vrep',
+             'description': 'path to the vrep binary. leave empty if you launch vrep yourself.'},
+            {'name': 'vrep_scene',
+             'default': '~/micropsi-nodenets/vrep-scenes/iiwa-scene-ik.ttt',
+             'description': 'path to the vrep scene file. leave empty if you launch vrep yourself'},
+            {'name': 'run_headless',
+             'default': 'true',
+             'options': ['true', 'false'],
+             'description': 'launch vrep without GUI (only if you gave binary & scene)'}
         ]
 
 

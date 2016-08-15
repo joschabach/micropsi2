@@ -147,6 +147,7 @@ class VREPWatchdog(threading.Thread):
     def kill_vrep(self):
         if self.process is not None:
             while self.pid is not None and pid_exists(self.pid):
+                self.logger.info("killing vrep with pid " + str(self.pid))
                 try:
                     if self.escalate is None:
                         self.logger.info("sending SIGTERM to vrep")
@@ -178,6 +179,7 @@ class VREPWatchdog(threading.Thread):
                     self.process.wait(10)
                 except subprocess.TimeoutExpired:
                     pass
+            self.logger.debug("vrep with pid %s should be dead" % str(self.pid))
             self.process = None
             self.pid = None
 

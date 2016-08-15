@@ -537,7 +537,7 @@ class Vrep6DObjectsMixin(WorldAdapterMixin):
         for name in self.object_names:
             handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, name, vrep.simx_opmode_blocking])
             if handle < 1:
-                self.logger.critical("There seems to be no object with the name %s in the v-rep simulation." % self.name)
+                self.logger.critical("There seems to be no object with the name %s in the v-rep simulation." % name)
             else:
                 self.object_handles.append(handle)
                 self.logger.info("Found object %s" % name)

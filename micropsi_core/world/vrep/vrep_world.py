@@ -145,26 +145,23 @@ class VREPWatchdog(threading.Thread):
         self.initial_spawn = False
 
     def kill_vrep(self):
-        print("killfunc")
         if self.process is not None:
             while self.pid is not None and pid_exists(self.pid):
-                print("pid " + str(self.pid) + " still exists")
-                print("escalate says " + str(self.escalate))
                 try:
                     if self.escalate is None:
-                        self.logger.info("sending SIGTERM")
+                        self.logger.info("sending SIGTERM to vrep")
                         os.kill(self.pid, signal.SIGTERM)
                         self.escalate = 'terminate'
                     elif self.escalate == 'terminate':
-                        self.logger.info("sending SIGINT")
+                        self.logger.info("sending SIGINT to vrep")
                         os.kill(self.pid, signal.SIGINT)
                         self.escalate = 'kill'
                     elif self.escalate == 'kill':
-                        self.logger.info("sending SIGKILL")
+                        self.logger.info("sending SIGKILL to vrep")
                         os.kill(self.pid, signal.SIGKILL)
                         self.escalate = 'experiment'
                     elif self.escalate == 'experiment':
-                        self.logger.info("sending SIGSYS")
+                        self.logger.info("sending SIGSYS to vrep")
                         os.kill(self.pid, signal.SIGSYS)
                         self.escalate = 'nuke'
                     elif self.escalate == 'nuke':
@@ -176,7 +173,7 @@ class VREPWatchdog(threading.Thread):
                         sys.exit(1)
                 except Exception:
                     self.logger.info("Exception: %s" % sys.exc_info()[0])
-                print("waiting max 10 sec for vrep to quit")
+                self.logger.info("waiting max 10 sec for vrep to quit")
                 try:
                     self.process.wait(10)
                 except subprocess.TimeoutExpired:
@@ -271,7 +268,7 @@ class VREPWorld(World):
 
         self.connection_daemon = VREPConnection(config['vrep_host'], int(config['vrep_port']), synchronous_mode=self.synchronous_mode, connection_listeners=[self])
 
-        time.sleep(1)  # wait for the daemon to get started before continuing.
+        time.sleep(2)  # wait for the daemon to get started before continuing.
 
     def get_world_view(self, step):
         data = {

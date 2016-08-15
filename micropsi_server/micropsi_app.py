@@ -776,8 +776,8 @@ def get_nodenet_metadata(nodenet_uid, nodespace='Root', include_links=True):
 
 
 @rpc("get_nodes")
-def get_nodes(nodenet_uid, nodespaces=[], include_links=True):
-    return True, runtime.get_nodes(nodenet_uid, nodespaces, include_links)
+def get_nodes(nodenet_uid, nodespaces=[], include_links=True, links_to_nodespaces=[]):
+    return True, runtime.get_nodes(nodenet_uid, nodespaces, include_links, links_to_nodespaces=links_to_nodespaces)
 
 
 @rpc("new_nodenet")

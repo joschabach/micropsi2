@@ -47,7 +47,8 @@ var viewProperties = {
     yMax: 13500,
     xMax: 13500,
     copyPasteOffset: 50,
-    snap_to_grid: false
+    snap_to_grid: false,
+    load_link_threshold: 1000
 };
 
 var nodenetscope = paper;
@@ -407,7 +408,7 @@ function setNodespaceData(data, changed){
         }
         var links_data = {}
         for(uid in data.nodes){
-            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions, data.nodes[uid].is_highdimensional);
+            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions, data.nodes[uid].is_highdimensional, data.nodes[uid].inlinks, data.nodes[uid].outlinks);
             if(uid in nodes){
                 if(nodeRedrawNeeded(item)) {
                     nodes[uid].update(item);
@@ -440,7 +441,7 @@ function setNodespaceData(data, changed){
             }
         }
 
-        if(nodespaceProperties[currentNodeSpace].renderlinks == 'selection'){
+        if(nodespaceProperties[currentNodeSpace].renderlinks != 'none'){
             loadLinksForSelection(function(data){
                 for(var uid in links) {
                     if(!(uid in data)) {
@@ -449,7 +450,7 @@ function setNodespaceData(data, changed){
                 }
                 addLinks(data.links);
             });
-        } else {
+
             for(var uid in links) {
                 if(!(uid in links_data)) {
                     removeLink(links[uid]);
@@ -495,7 +496,7 @@ function setNodespaceDiffData(data, changed){
             links_data = {}
             for(var uid in data.changes.nodes_dirty){
                 var nodedata = data.changes.nodes_dirty[uid];
-                item = new Node(uid, nodedata['position'][0], nodedata['position'][1], nodedata.parent_nodespace, nodedata.name, nodedata.type, nodedata.sheaves, nodedata.state, nodedata.parameters, nodedata.gate_activations, nodedata.gate_parameters, nodedata.gate_functions, nodedata.is_highdimensional);
+                item = new Node(uid, nodedata['position'][0], nodedata['position'][1], nodedata.parent_nodespace, nodedata.name, nodedata.type, nodedata.sheaves, nodedata.state, nodedata.parameters, nodedata.gate_activations, nodedata.gate_parameters, nodedata.gate_functions, nodedata.is_highdimensional, nodedata.inlinks, nodedata.outlinks);
                 if(uid in nodes){
                     for (var gateName in nodes[uid].gates) {
                         for (linkUid in nodes[uid].gates[gateName].outgoing) {
@@ -705,7 +706,7 @@ function updateModulators(data){
 
 
 // data structure for net entities
-function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, gate_activations, gate_parameters, gatefunctions, is_highdim) {
+function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, gate_activations, gate_parameters, gatefunctions, is_highdim, inlinks, outlinks) {
 	this.uid = uid;
 	this.x = x;
 	this.y = y;
@@ -729,6 +730,8 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
     this.gate_activations = gate_activations || {};
     this.gatefunctions = gatefunctions || {};
     this.is_highdim = is_highdim;
+    this.inlinks = inlinks || 0;
+    this.outlinks = outlinks || 0;
 	if(type == "Nodespace") {
         this.symbol = "NS";
     } else {
@@ -2435,7 +2438,7 @@ function onMouseUp(event) {
         selectionRectangle.width = selectionRectangle.height = 1;
         selectionBox.setBounds(selectionRectangle);
     }
-    if(currentNodenet && nodenet_data && nodespaceProperties[currentNodeSpace].renderlinks == 'selection'){
+    if(currentNodenet && nodenet_data){
         loadLinksForSelection();
     }
 }
@@ -2511,23 +2514,38 @@ function updateSelection(event){
     }
 }
 
-function loadLinksForSelection(callback){
+function loadLinksForSelection(callback, force_load){
+    if(nodespaceProperties[currentNodeSpace].renderlinks == 'none'){
+        return;
+    }
     var uids = [];
+    var load_links = false;
     for(var uid in selection){
-        if(uid in nodes && nodes[uid].type != 'Nodespace'){
+        if(uid in nodes && nodes[uid].type != 'Nodespace' && (force_load || nodes[uid].inlinks < viewProperties.load_link_threshold && nodes[uid].outlinks < viewProperties.load_link_threshold)){
             uids.push(uid)
         }
+        if(nodes[uid].inlinks > 0 || nodes[uid].outlinks > 0){
+            load_links = true;
+        }
+    }
+    if(nodespaceProperties[currentNodeSpace].renderlinks == 'always' && !load_links){
+        return;
     }
     if(uids.length){
         api.call('get_links_for_nodes',
             {'nodenet_uid': currentNodenet,
              'node_uids': uids },
               function(data){
+                for(var i=0; i < uids.length; i++){
+                    // all links loaded
+                    nodes[uids[i]].outlinks = 0
+                    nodes[uids[i]].inlinks = 0
+                }
                 if(callback){
                     callback(data);
                 } else {
                     for(var uid in data.nodes){
-                        addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions));
+                        addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions, data.nodes[uid].is_highdimensional, data.nodes[uid].inlinks, data.nodes[uid].outlinks));
                     }
                     var linkdict = {};
                     for(var i = 0; i < data.links.length; i++){
@@ -3419,7 +3437,7 @@ function createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot){
                     'nodenet_uid': currentNodenet,
                     'node_uid': targetUid
                 }, function(data){
-                    nodes[targetUid] = new Node(data.uid, data.position[0], data.position[1], data.parent_nodespace, data.name, data.type, data.sheaves, data.state, data.parameters, data.gate_activations, data.gate_parameters);
+                    nodes[targetUid] = new Node(data.uid, data.position[0], data.position[1], data.parent_nodespace, data.name, data.type, data.sheaves, data.state, data.parameters, data.gate_activations, data.gate_parameters, data.is_highdimensional, data.inlinks, data.outlinks);
                     createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot);
                 });
             } else {
@@ -3437,7 +3455,7 @@ function createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot){
                             'nodenet_uid': currentNodenet,
                             'node_uid': targetUid
                         }, function(data){
-                            nodes[targetUid] = data;
+                            nodes[targetUid] = new Node(data.uid, data.position[0], data.position[1], data.parent_nodespace, data.name, data.type, data.sheaves, data.state, data.parameters, data.gate_activations, data.gate_parameters, data.is_highdimensional, data.inlinks, data.outlinks);
                             nodes[targetUid].linksFromOutside.push(uid);
                         });
                     } else if(nodes[targetUid].parent != currentNodeSpace){
@@ -3902,7 +3920,10 @@ function scrollToNode(node, doShowNodeForm){
             canvas_container.scrollLeft(x);
             selectNode(node.uid);
             view.draw();
-            if(node.uid in nodes && doShowNodeForm) showNodeForm(node.uid);
+            if(node.uid in nodes && doShowNodeForm) {
+                loadLinksForSelection();
+                showNodeForm(node.uid);
+            }
         });
     } else {
         deselectAll();
@@ -4012,7 +4033,7 @@ function showNodeForm(nodeUid, refresh){
             nodenet_uid:currentNodenet,
             node_uid: nodeUid
         }, function(data){
-            item = new Node(nodeUid, data['position'][0], data['position'][1], data.parent_nodespace, data.name, data.type, data.sheaves, data.state, data.parameters, data.gate_activations, data.gate_parameters, data.gate_functions);
+            item = new Node(nodeUid, data['position'][0], data['position'][1], data.parent_nodespace, data.name, data.type, data.sheaves, data.state, data.parameters, data.gate_activations, data.gate_parameters, data.gate_functions, data.is_highdimensional, data.inlinks, data.outlinks);
             redrawNode(item);
             nodes[nodeUid].update(item);
             if(clickType == 'gate'){
@@ -4061,6 +4082,11 @@ function showNodeForm(nodeUid, refresh){
         var link_list = "";
         var inlink_types = {};
         if(nodes[nodeUid].slotIndexes.length){
+            if(nodes[nodeUid].inlinks > viewProperties.load_link_threshold){
+                link_list += '<tr><td colspan="2">'+nodes[nodeUid].inlinks+' invisible links from outside nodespaces. <a href="#loadlinks" class="loadLinks">Load all links</a></td></tr>';
+            } else if (nodes[nodeUid].inlinks > 0) {
+                link_list += '<tr><td colspan="2">'+nodes[nodeUid].inlinks+' invisible links from outside nodespaces</td></tr>';
+            }
             for(key in nodes[nodeUid].slots){
                 link_list += "<tr><td>" + key + "</td><td><ul>";
                 for(id in nodes[nodeUid].slots[key].incoming){
@@ -4076,7 +4102,11 @@ function showNodeForm(nodeUid, refresh){
             }
         }
         $('#node_slots').html(link_list || "<tr><td>None</td></tr>");
-        content = "";
+        if(nodes[nodeUid].outlinks > viewProperties.load_link_threshold){
+            link_list += '<tr><td colspan="2">'+nodes[nodeUid].outlinks+' invisible links to outside nodespaces. <a href="#loadlinks" class="loadLinks">Load all links</a></td></tr>';
+        } else if(nodes[nodeUid].outlinks > 0){
+            content = '<tr><td colspan="2">'+nodes[nodeUid].outlinks+' invisible links to outside nodespaces</td></tr>';
+        }
         for(name in nodes[nodeUid].gates){
             link_list = "";
             for(id in nodes[nodeUid].gates[name].outgoing){
@@ -4095,6 +4125,10 @@ function showNodeForm(nodeUid, refresh){
             }
             content += "</tr>";
         }
+        $('a.loadLinks', form).on('click', function(evt){
+            evt.preventDefault();
+            loadLinksForSelection(null, true);
+        })
         $('#node_gates').html(content || "<tr><td>None</td></tr>");
         $('a.followlink').on('click', followlink);
         $('a.follownode').on('click', follownode);

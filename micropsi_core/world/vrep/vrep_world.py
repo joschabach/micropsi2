@@ -580,24 +580,24 @@ class Vrep6DObjectsMixin(WorldAdapterMixin):
                 tx = self._get_datatarget_value("%s-x" % name)
                 ty = self._get_datatarget_value("%s-y" % name)
                 tz = self._get_datatarget_value("%s-z" % name)
-                self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, handle, -1, [tx, ty, tz], vrep.simx_opmode_oneshot], empty_result_ok=True)
+                self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, handle, -1, [tx, ty, tz], vrep.simx_opmode_streaming], empty_result_ok=True)
                 # set angles:
                 talpha = self._get_datatarget_value("%s-alpha" % name)
                 tbeta = self._get_datatarget_value("%s-beta" % name)
                 tgamma = self._get_datatarget_value("%s-gamma" % name)
-                self.call_vrep(vrep.simxSetObjectOrientation, [self.clientID, handle, -1, [talpha, tbeta, tgamma], vrep.simx_opmode_oneshot], empty_result_ok=True)
+                self.call_vrep(vrep.simxSetObjectOrientation, [self.clientID, handle, -1, [talpha, tbeta, tgamma], vrep.simx_opmode_streaming], empty_result_ok=True)
         self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 
     def read_from_world(self):
         execute = self._get_datatarget_value('execute') > 0.9
 
         for i, (name, handle) in enumerate(zip(self.object_names, self.object_handles)):
-            tx, ty, tz = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, handle, -1, vrep.simx_opmode_oneshot], empty_result_ok=False)
+            tx, ty, tz = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, handle, -1, vrep.simx_opmode_streaming], empty_result_ok=False)
             self._set_datasource_value("%s-x" % name, tx)
             self._set_datasource_value("%s-y" % name, ty)
             self._set_datasource_value("%s-z" % name, tz)
 
-            talpha, tbeta, tgamma = self.call_vrep(vrep.simxGetObjectOrientation, [self.clientID, handle, -1, vrep.simx_opmode_oneshot], empty_result_ok=False)
+            talpha, tbeta, tgamma = self.call_vrep(vrep.simxGetObjectOrientation, [self.clientID, handle, -1, vrep.simx_opmode_streaming], empty_result_ok=False)
             self._set_datasource_value("%s-alpha" % name, talpha)
             self._set_datasource_value("%s-beta" % name, tbeta)
             self._set_datasource_value("%s-gamma" % name, tgamma)
@@ -827,6 +827,9 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
             self.call_vrep(vrep.simxSetJointPosition, [self.clientID, self.joints[-2], math.pi/2, vrep.simx_opmode_oneshot], empty_result_ok=True)
             # /hack
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
+
+        if self.world.synchronous_mode:
+            self.call_vrep(vrep.simxSynchronousTrigger, [self.clientID])
 
         self.read_from_world()
         self.last_restart = self.world.current_step

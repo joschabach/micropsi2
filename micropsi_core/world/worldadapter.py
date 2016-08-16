@@ -297,7 +297,7 @@ try:
 
         def _set_datatarget_values(self, start_key, values):
             idx = self.get_datatarget_index(start_key)
-            self.datatarget_feedback_values[idx:idx + len(values)] = values
+            self.datatarget_values[idx:idx + len(values)] = values
 
         @abstractmethod
         def update_data_sources_and_targets(self):

@@ -262,12 +262,13 @@ class VREPWorld(World):
         self.synchronous_mode = self.simulation_speed > 0
 
         if config['vrep_host'] == 'localhost' or config['vrep_host'] == '127.0.0.1':
-            if config.get('run_headless', 'true') == 'true':
-                flags = " -h -s -gREMOTEAPISERVERSERVICE_%s_TRUE_TRUE " % config['vrep_port']
-            else:
-                flags = " -s -gREMOTEAPISERVERSERVICE_%s_TRUE_TRUE " % config['vrep_port']
-            self.logger.info("Spawning local vrep process")
-            self.vrep_watchdog = VREPWatchdog(config['vrep_binary'], flags, config['vrep_scene'], listeners=[self])
+            if config.get('vrep_binary') and config.get('vrep_scene'):
+                if config.get('run_headless', 'true') == 'true':
+                    flags = " -h -s -gREMOTEAPISERVERSERVICE_%s_TRUE_TRUE " % config['vrep_port']
+                else:
+                    flags = " -s -gREMOTEAPISERVERSERVICE_%s_TRUE_TRUE " % config['vrep_port']
+                self.logger.info("Spawning local vrep process")
+                self.vrep_watchdog = VREPWatchdog(config['vrep_binary'], flags, config['vrep_scene'], listeners=[self])
         else:
             self.vrep_watchdog = None
 

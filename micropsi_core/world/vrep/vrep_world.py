@@ -273,7 +273,7 @@ class VREPWorld(World):
 
         self.connection_daemon = VREPConnection(config['vrep_host'], int(config['vrep_port']), synchronous_mode=self.synchronous_mode, connection_listeners=[self])
 
-        time.sleep(2)  # wait for the daemon to get started before continuing.
+        time.sleep(5)  # wait for the daemon to get started before continuing.
 
     def get_world_view(self, step):
         data = {
@@ -747,14 +747,15 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
             else:
                 tpos = self.call_vrep(vrep.simxGetObjectPosition,
                                            [self.clientID, self.ik_follower_handle, -1,
-                                            vrep.simx_opmode_streaming])
+                                            vrep.simx_opmode_buffer])
 
                 tx = tpos[0] + self._get_datatarget_value("ik_x")
                 ty = tpos[1] + self._get_datatarget_value("ik_y")
                 tz = tpos[2] + self._get_datatarget_value("ik_z")
+
                 self.call_vrep(vrep.simxSetObjectPosition,
                                [self.clientID, self.ik_target_handle, -1, [tx, ty, tz],
-                                vrep.simx_opmode_oneshot], empty_result_ok=True)
+                                vrep.simx_opmode_oneshot], empty_result_ok=True, debugprint=False)
 
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 

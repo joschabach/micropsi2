@@ -701,6 +701,7 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
         self.write_to_world()
         if self.world.synchronous_mode:
             self.call_vrep(vrep.simxSynchronousTrigger, [self.clientID])
+            self.call_vrep(vrep.simxGetPingTime, [self.clientID])
         self.read_from_world()
 
     def write_to_world(self):

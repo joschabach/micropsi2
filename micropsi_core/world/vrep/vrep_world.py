@@ -261,6 +261,8 @@ class VREPWorld(World):
         self.simulation_speed = float(config['simulation_speed'])
         self.synchronous_mode = self.simulation_speed > 0
 
+        self.vrep_watchdog = None
+
         if config['vrep_host'] == 'localhost' or config['vrep_host'] == '127.0.0.1':
             if config.get('vrep_binary') and config.get('vrep_scene'):
                 if config.get('run_headless', 'true') == 'true':
@@ -269,8 +271,6 @@ class VREPWorld(World):
                     flags = " -s -gREMOTEAPISERVERSERVICE_%s_TRUE_TRUE " % config['vrep_port']
                 self.logger.info("Spawning local vrep process")
                 self.vrep_watchdog = VREPWatchdog(config['vrep_binary'], flags, config['vrep_scene'], listeners=[self])
-        else:
-            self.vrep_watchdog = None
 
         self.connection_daemon = VREPConnection(config['vrep_host'], int(config['vrep_port']), synchronous_mode=self.synchronous_mode, connection_listeners=[self])
 
@@ -777,15 +777,18 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
                 except:
                     print('couldnt get simulation state. got this instead:', call_result, ' (trying again in 0.5 s)')
                     if attempt_nr > 10:
-                        print('killing vrep before trying again.')
-                        self.world.vrep_watchdog.pause()
-                        print("state() paused watchdog")
-                        self.world.vrep_watchdog.kill_vrep()
-                        print("state() called kill, waiting 5 secs, then resuming")
-                        time.sleep(5)  # wait a bit before resuming watchdog.
-                        self.world.vrep_watchdog.resume()
-                        print("state() resumed watchdog")
-                        print("stopping simulation reset")
+                        if self.world.vrep_watchdog is not None:
+                            print('killing vrep before trying again.')
+                            self.world.vrep_watchdog.pause()
+                            print("state() paused watchdog")
+                            self.world.vrep_watchdog.kill_vrep()
+                            print("state() called kill, waiting 5 secs, then resuming")
+                            time.sleep(5)  # wait a bit before resuming watchdog.
+                            self.world.vrep_watchdog.resume()
+                            print("state() resumed watchdog")
+                            print("stopping simulation reset")
+                        else:
+                            self.logger.error("VREP does not react. Please restart")
                         return None
                     else:
                         attempt_nr += 1

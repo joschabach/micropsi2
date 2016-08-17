@@ -571,7 +571,7 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
         assert worldadapter in world_obj.supported_worldadapters
         nodenet.world = world_uid
         nodenet.worldadapter = worldadapter
-        result, wa_instance = world_obj.register_nodenet(worldadapter, nodenet.uid, nodenet_name=nodenet.name)
+        result, wa_instance = world_obj.register_nodenet(worldadapter, nodenet.uid, nodenet_name=nodenet.name, config=worldadapter_config)
         if result:
             nodenet.worldadapter_instance = wa_instance
     if nodenet_name:

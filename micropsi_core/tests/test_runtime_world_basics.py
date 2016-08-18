@@ -30,6 +30,13 @@ def test_new_world(resourcepath, test_world):
     assert world_uid in myworlds
     assert test_world not in myworlds
 
+    world = micropsi.worlds[world_uid]
+    assert world.name == "Waterworld"
+    assert world.owner == "tester"
+    assert world.__class__.get_config_options() == []
+    assert world.get_available_worldadapters()['Default'].__name__ == "Default"
+    assert world.config == {}
+
     # delete_world
     micropsi.delete_world(world_uid)
     assert world_uid not in micropsi.get_available_worlds()
@@ -58,6 +65,8 @@ def test_add_worldobject(test_world):
     runtime.add_worldobject(test_world, "Default", (10, 10), uid='foobar', name='foobar', parameters={})
     assert "foobar" in world.data['objects']
     assert "foobar" in world.objects
+    result, uid = runtime.add_worldobject(test_world, "Spam", (10, 10))
+    assert not result  # spam is not supported
     runtime.save_world(test_world)
     runtime.revert_world(test_world)
     assert "foobar" in world.data['objects']
@@ -76,6 +85,10 @@ def test_get_worldobjects(test_world):
     world = runtime.load_world(test_world)
     runtime.add_worldobject(test_world, "Default", (10, 10), uid='foobar', name='foobar', parameters={})
     objects = runtime.get_world_objects(test_world)
+    assert 'foobar' in objects
+    objects = runtime.get_world_objects(test_world, type="Spam")
+    assert not objects
+    objects = runtime.get_world_objects(test_world, type="Default")
     assert 'foobar' in objects
     runtime.save_world(test_world)
     runtime.revert_world(test_world)
@@ -99,19 +112,30 @@ def test_register_agent(test_world, test_nodenet):
 
 def test_set_object_properties(test_world):
     world = runtime.load_world(test_world)
-    runtime.add_worldobject(test_world, "Default", (10, 10), uid='foobar', name='foobar', parameters={})
-    runtime.set_worldobject_properties(test_world, "foobar", position=(5, 5))
+    runtime.add_worldobject(test_world, "Default", (10, 10), uid='foobar', name='foobar', parameters={"foo": "bar"})
+    runtime.set_worldobject_properties(test_world, "foobar", name="foobaz", position=(5, 5), orientation=270, parameters={"foo": "baz"})
     assert world.objects["foobar"].position == (5, 5)
     assert world.data['objects']['foobar']['position'] == (5, 5)
+    assert world.objects['foobar'].parameters["foo"] == "baz"
+    assert world.data['objects']['foobar']['parameters']["foo"] == "baz"
+    assert world.objects["foobar"].name == "foobaz"
+    assert world.data['objects']['foobar']['name'] == "foobaz"
+    assert world.objects["foobar"].orientation == 270
+    assert world.data['objects']['foobar']['orientation'] == 270
+
     assert runtime.get_world_view(test_world, -1)['objects']['foobar']['position'] == (5, 5)
 
 
 def test_set_agent_properties(test_world, test_nodenet):
     world = runtime.load_world(test_world)
     runtime.set_nodenet_properties(test_nodenet, worldadapter='Braitenberg', world_uid=test_world)
-    runtime.set_worldagent_properties(test_world, test_nodenet, position=(5, 5))
+    runtime.set_worldagent_properties(test_world, test_nodenet, position=(5, 5), orientation=180, parameters={'foo': 'bar'})
     assert world.agents[test_nodenet].position == (5, 5)
     assert world.data['agents'][test_nodenet]['position'] == (5, 5)
+    assert world.agents[test_nodenet].orientation == 180
+    assert world.data['agents'][test_nodenet]['orientation'] == 180
+    assert world.agents[test_nodenet].parameters == {'foo': 'bar'}
+    assert world.data['agents'][test_nodenet]['parameters'] == {'foo': 'bar'}
 
 
 def test_agent_dying_unregisters_agent(test_world, test_nodenet):

@@ -327,11 +327,11 @@ class World(object):
     def set_user_data(self, data):
         """ Sets some data from the user. Implement this in your worldclass to allow
         the user to set certain properties of this world"""
-        pass
+        pass  # pragma: no cover
 
     def signal_handler(self, *args):
         """ stuff to do on sigint, sigabrt, etc"""
-        pass
+        pass  # pragma: no cover
 
     def __del__(self):
         """ Empty destructor """

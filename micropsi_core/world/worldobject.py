@@ -38,6 +38,14 @@ class WorldObject(object):
         self.data['name'] = name
 
     @property
+    def parameters(self):
+        return self.data.get('parameters', {})
+
+    @parameters.setter
+    def parameters(self, parameters={}):
+        self.data['parameters'] = parameters
+
+    @property
     def uid(self):
         return self.data['uid']
 

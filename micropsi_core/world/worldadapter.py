@@ -43,20 +43,20 @@ class WorldAdapterMixin(object):
 
     def initialize(self):
         """ Called after a reset of the simulation """
-        pass
+        pass  # pragma: no cover
 
     def reset_simulation_state(self):
         """ Called on reset """
-        pass
+        pass  # pragma: no cover
 
     def update_datasources_and_targets(self):
-        pass
+        pass  # pragma: no cover
 
     def write_to_world(self):
-        pass
+        pass  # pragma: no cover
 
     def read_from_world(self):
-        pass
+        pass  # pragma: no cover
 
 
 class WorldAdapter(WorldObject, metaclass=ABCMeta):
@@ -141,7 +141,7 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
     @abstractmethod
     def update_data_sources_and_targets(self):
         """must be implemented by concrete world adapters to read datatargets and fill datasources"""
-        pass
+        pass  # pragma: no cover
 
     def is_alive(self):
         """called by the world to check whether the agent has died and should be removed"""
@@ -348,8 +348,8 @@ try:
             get_available_datatargets().
             Values of the superclass' dict objects will be bypassed and ignored.
             """
-            pass
+            pass  # pragma: no cover
 
 
-except ImportError:
+except ImportError: # pragma: no cover
     pass

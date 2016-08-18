@@ -149,6 +149,7 @@ def default_world(request):
     """
     for uid in micropsi.world_data:
         if micropsi.world_data[uid].get('world_type', 'DefaultWorld') == 'DefaultWorld':
+            micropsi.load_world(uid)
             return uid
 
 

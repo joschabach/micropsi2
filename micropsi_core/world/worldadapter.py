@@ -88,13 +88,7 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
             setattr(self, key, config[key])
 
     def initialize_worldobject(self, data):
-        for key in self.datasources:
-            if key in data.get('datasources', {}):
-                self.datasources[key] = data['datasources'][key]
-        for key in self.datatargets:
-            if key in data.get('datatargets', {}):
-                self.datatargets[key] = data['datatargets'][key]
-                self.datatarget_feedback[key] = 0
+        pass
 
     def get_available_datasources(self):
         """returns a list of identifiers of the datasources available for this world adapter"""

@@ -58,14 +58,6 @@ class World(object):
         self.data['current_step'] = current_step
 
     @property
-    def is_active(self):
-        return self.data.get("is_active", False)
-
-    @is_active.setter
-    def is_active(self, is_active):
-        self.data['is_active'] = is_active
-
-    @property
     def config(self):
         return self.data['config']
 

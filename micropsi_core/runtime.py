@@ -645,10 +645,7 @@ def stop_nodenetrunner(nodenet_uid):
     nodenet.is_active = False
     test = {nodenets[uid].is_active for uid in nodenets}
     if True not in test:
-        test = {worlds[uid].is_active for uid in worlds}
-        if True not in test:
-            runner['runner'].pause()
-
+        runner['runner'].pause()
     return True
 
 

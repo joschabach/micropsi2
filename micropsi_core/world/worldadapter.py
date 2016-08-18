@@ -81,6 +81,9 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
         self.logger = logging.getLogger('agent.%s' % self.uid)
         if data.get('name'):
             self.data['name'] = data['name']
+        for item in self.__class__.get_config_options():
+            if item['name'] not in config:
+                config[item['name']] = item.get('default')
         for key in config:
             setattr(self, key, config[key])
 

@@ -371,7 +371,7 @@ class VrepCollisionsMixin(WorldAdapterMixin):
         if self.collision_name:
             collision_state = self.call_vrep(vrep.simxReadCollision, [self.clientID, self.collision_handle,
                                                           vrep.simx_opmode_buffer])
-            self._set_datasource_value("collision", 1 if collision_state else 0)
+            self.set_datasource_value("collision", 1 if collision_state else 0)
 
 
 class VrepGreyscaleVisionMixin(WorldAdapterMixin):
@@ -404,7 +404,7 @@ class VrepGreyscaleVisionMixin(WorldAdapterMixin):
         luminance = np.sum(rgb_image * np.asarray([.2126, .7152, .0722]), axis=1)
         y_image = luminance.astype(np.float32).reshape((self.vision_resolution[0], self.vision_resolution[1]))[::-1,:]   # todo: npyify and make faster
 
-        self._set_datasource_values('px_000_000', y_image.flatten())
+        self.set_datasource_values('px_000_000', y_image.flatten())
         self.image.set_data(y_image)
         # print('vrep vision image sum', np.sum(abs(y_image)))
 
@@ -454,7 +454,7 @@ class VrepRGBVisionMixin(WorldAdapterMixin):
         # plt.savefig('/tmp/upsi/vision_worldadapter{}.png'.format(self.world.current_step))
         # plt.close('all')
 
-        self._set_datasource_values('px_000_000_0', scaled_image.flatten())
+        self.set_datasource_values('px_000_000_0', scaled_image.flatten())
         self.image.set_data(scaled_image)
 
 
@@ -491,8 +491,8 @@ class VrepOneBallGameMixin(WorldAdapterMixin):
         super().write_to_world()
         if self.ball_handle > 0:
             # position the transparent sphere:
-            rx = self._get_datatarget_value('sphere_x')
-            ry = self._get_datatarget_value('sphere_y')
+            rx = self.get_datatarget_value('sphere_x')
+            ry = self.get_datatarget_value('sphere_y')
             self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, self.sphere_handle, self.robot_handle, [-rx, -ry], vrep.simx_opmode_oneshot], empty_result_ok=True)
 
     def read_from_world(self):
@@ -506,9 +506,9 @@ class VrepOneBallGameMixin(WorldAdapterMixin):
             relative_pos[1] = ball_pos[1] - self.robot_position[1]
 
             dist = np.linalg.norm(np.array(ball_pos) - np.array(joint_pos))
-            self._set_datasource_value('ball-distance', dist)
-            self._set_datasource_value('ball-x', relative_pos[0])
-            self._set_datasource_value('ball-y', relative_pos[1])
+            self.set_datasource_value('ball-distance', dist)
+            self.set_datasource_value('ball-x', relative_pos[0])
+            self.set_datasource_value('ball-y', relative_pos[1])
 
     def reset_simulation_state(self):
         super().reset_simulation_state()
@@ -575,32 +575,32 @@ class Vrep6DObjectsMixin(WorldAdapterMixin):
         super().write_to_world()
         self.call_vrep(vrep.simxPauseCommunication, [self.clientID, True], empty_result_ok=True)
         for i, (name, handle) in enumerate(zip(self.object_names, self.object_handles)):
-            if self._get_datatarget_value('execute-%s' % name) > 0.9:
+            if self.get_datatarget_value('execute-%s' % name) > 0.9:
                 # set position:
-                tx = self._get_datatarget_value("%s-x" % name)
-                ty = self._get_datatarget_value("%s-y" % name)
-                tz = self._get_datatarget_value("%s-z" % name)
+                tx = self.get_datatarget_value("%s-x" % name)
+                ty = self.get_datatarget_value("%s-y" % name)
+                tz = self.get_datatarget_value("%s-z" % name)
                 self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, handle, -1, [tx, ty, tz], vrep.simx_opmode_oneshot], empty_result_ok=True)
                 # set angles:
-                talpha = self._get_datatarget_value("%s-alpha" % name)
-                tbeta = self._get_datatarget_value("%s-beta" % name)
-                tgamma = self._get_datatarget_value("%s-gamma" % name)
+                talpha = self.get_datatarget_value("%s-alpha" % name)
+                tbeta = self.get_datatarget_value("%s-beta" % name)
+                tgamma = self.get_datatarget_value("%s-gamma" % name)
                 self.call_vrep(vrep.simxSetObjectOrientation, [self.clientID, handle, -1, [talpha, tbeta, tgamma], vrep.simx_opmode_oneshot], empty_result_ok=True)
         self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 
     def read_from_world(self):
-        execute = self._get_datatarget_value('execute') > 0.9
+        execute = self.get_datatarget_value('execute') > 0.9
 
         for i, (name, handle) in enumerate(zip(self.object_names, self.object_handles)):
             tx, ty, tz = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, handle, -1, vrep.simx_opmode_oneshot], empty_result_ok=False)
-            self._set_datasource_value("%s-x" % name, tx)
-            self._set_datasource_value("%s-y" % name, ty)
-            self._set_datasource_value("%s-z" % name, tz)
+            self.set_datasource_value("%s-x" % name, tx)
+            self.set_datasource_value("%s-y" % name, ty)
+            self.set_datasource_value("%s-z" % name, tz)
 
             talpha, tbeta, tgamma = self.call_vrep(vrep.simxGetObjectOrientation, [self.clientID, handle, -1, vrep.simx_opmode_oneshot], empty_result_ok=False)
-            self._set_datasource_value("%s-alpha" % name, talpha)
-            self._set_datasource_value("%s-beta" % name, tbeta)
-            self._set_datasource_value("%s-gamma" % name, tgamma)
+            self.set_datasource_value("%s-alpha" % name, talpha)
+            self.set_datasource_value("%s-beta" % name, tbeta)
+            self.set_datasource_value("%s-gamma" % name, tgamma)
 
             # if name == 'fork':
             #     print('fetch: step={}, object {}, name={}, handle={}\nx={} y={} z={}\nalpha={} beta={} gamma={}\n'.format(self.world.current_step, i, name, handle, tx, ty, tz, talpha, tbeta, tgamma))
@@ -710,8 +710,8 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
 
         self.tvals = None
 
-        restart = self._get_datatarget_value('restart') > 0.9 and self.world.current_step - self.last_restart >= 5
-        execute = self._get_datatarget_value('execute') > 0.9
+        restart = self.get_datatarget_value('restart') > 0.9 and self.world.current_step - self.last_restart >= 5
+        execute = self.get_datatarget_value('execute') > 0.9
 
         # simulation restart
         if restart:
@@ -725,7 +725,7 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
 
             if self.control_type != "ik":
                 self.tvals = [0] * len(self.datatarget_values)
-                self.current_angle_target_values = np.array(self._get_datatarget_values('joint_1', len(self.joints)))
+                self.current_angle_target_values = np.array(self.get_datatarget_values('joint_1', len(self.joints)))
                 joint_angle_offset = self.get_datasource_index("joint_angle_1")
                 for i, joint_handle in enumerate(self.joints):
                     tval = self.current_angle_target_values[i] * math.pi
@@ -750,9 +750,9 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
                                            [self.clientID, self.ik_follower_handle, -1,
                                             vrep.simx_opmode_buffer])
 
-                tx = tpos[0] + self._get_datatarget_value("ik_x")
-                ty = tpos[1] + self._get_datatarget_value("ik_y")
-                tz = tpos[2] + self._get_datatarget_value("ik_z")
+                tx = tpos[0] + self.get_datatarget_value("ik_x")
+                ty = tpos[1] + self.get_datatarget_value("ik_y")
+                tz = tpos[2] + self.get_datatarget_value("ik_z")
 
                 self.call_vrep(vrep.simxSetObjectPosition,
                                [self.clientID, self.ik_target_handle, -1, [tx, ty, tz],
@@ -819,8 +819,8 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
         if self.randomize_arm == "True":
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, True], empty_result_ok=True)
             for i, joint_handle in enumerate(self.joints):
-                self._set_datatarget_value("joint_%d" % (i + 1), random.uniform(-0.8, 0.8))
-                self.current_angle_target_values[i] = self._get_datatarget_value("joint_%d" % (i + 1))
+                self.set_datatarget_value("joint_%d" % (i + 1), random.uniform(-0.8, 0.8))
+                self.current_angle_target_values[i] = self.get_datatarget_value("joint_%d" % (i + 1))
                 tval = self.current_angle_target_values[i] * math.pi
                 self.call_vrep(vrep.simxSetJointPosition, [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot], empty_result_ok=True)
             # hack: noeppel down
@@ -845,9 +845,9 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
 
         joint_pos = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.joints[len(self.joints)-1], -1, vrep.simx_opmode_streaming])
 
-        self._set_datasource_value('tip-x', joint_pos[0] - self.robot_position[0])
-        self._set_datasource_value('tip-y', joint_pos[1] - self.robot_position[1])
-        self._set_datasource_value('tip-z', joint_pos[2] - self.robot_position[2])
+        self.set_datasource_value('tip-x', joint_pos[0] - self.robot_position[0])
+        self.set_datasource_value('tip-y', joint_pos[1] - self.robot_position[1])
+        self.set_datasource_value('tip-z', joint_pos[2] - self.robot_position[2])
 
         joint_ids, something, data, se = self.call_vrep(vrep.simxGetObjectGroupData, [self.clientID, vrep.sim_object_joint_type, 15, vrep.simx_opmode_streaming])
 
@@ -864,15 +864,15 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
                     if targets is not None:
                         target_angle = targets[i]
                         if abs(abs(angle) - abs(target_angle)) < .001 and include_feedback:
-                            self._set_datatarget_feedback_value("joint_%s" % (i + 1), 1)
+                            self.set_datatarget_feedback_value("joint_%s" % (i + 1), 1)
                         else:
                             allgood = False
                 elif self.control_type == "angles":
                     angle = data[i * 2]
                 elif self.control_type == "movements":
                     angle = data[i * 2]
-                self._set_datasource_value("joint_angle_%s" % (i + 1), angle / math.pi)
-                self._set_datasource_value("joint_force_%s" % (i + 1), force)
+                self.set_datasource_value("joint_angle_%s" % (i + 1), angle / math.pi)
+                self.set_datasource_value("joint_force_%s" % (i + 1), force)
 
             movement_finished = allgood
             if not movement_finished:
@@ -970,7 +970,7 @@ class Objects6D(VrepRGBVisionMixin, Vrep6DObjectsMixin, VrepCallMixin, ArrayWorl
         self.reset_simulation_state()
 
     def write_to_world(self):
-        restart = self._get_datatarget_value('restart') > 0.9 and self.world.current_step - self.last_restart >= 5
+        restart = self.get_datatarget_value('restart') > 0.9 and self.world.current_step - self.last_restart >= 5
         # simulation restart
         if restart:
             return self.reset_simulation_state()

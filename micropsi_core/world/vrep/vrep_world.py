@@ -725,7 +725,7 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
 
             if self.control_type != "ik":
                 self.tvals = [0] * len(self.datatarget_values)
-                self.current_angle_target_values = np.array(self.get_datatarget_values('joint_1', len(self.joints)))
+                self.current_angle_target_values = np.array(self.get_datatarget_range('joint_1', len(self.joints)))
                 joint_angle_offset = self.get_datasource_index("joint_angle_1")
                 for i, joint_handle in enumerate(self.joints):
                     tval = self.current_angle_target_values[i] * math.pi

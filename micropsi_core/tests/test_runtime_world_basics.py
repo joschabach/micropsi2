@@ -189,6 +189,7 @@ def test_set_world_properties(test_nodenet):
     nodenet.world = world_uid
     runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world_uid)
     assert test_nodenet in runtime.worlds[world_uid].agents
+    assert runtime.nodenets[test_nodenet].worldadapter == "Braitenberg"
     old_wa = nodenet.worldadapter_instance
     runtime.set_world_properties(world_uid, world_name='renamedworld', config={'foo': 'dings', '42': '5'})
     assert runtime.worlds[world_uid].name == 'renamedworld'

@@ -165,12 +165,23 @@ def set_world_properties(world_uid, world_name=None, owner=None, config=None):
     if owner is not None:
         micropsi_core.runtime.worlds[world_uid].owner = owner
     if config is not None:
-        micropsi_core.runtime.world_data[world_uid].name = world_name
-        micropsi_core.runtime.world_data[world_uid].config.update(config)
+        agent_data = {}
+        for uid, net in micropsi_core.runtime.nodenets.items():
+            agent_data[uid] = {
+                'nodenet_name': net.name,
+                'worldadapter': net.worldadapter,
+                'config': net.metadata['worldadapter_config']
+            }
+        micropsi_core.runtime.world_data[world_uid]['config'].update(config)
+        micropsi_core.runtime.world_data[world_uid]['name'] = world_name
         filename = os.path.join(micropsi_core.runtime.PERSISTENCY_PATH, micropsi_core.runtime.WORLD_DIRECTORY, world_uid)
         with open(filename + '.json', 'w+') as fp:
             fp.write(json.dumps(micropsi_core.runtime.world_data[world_uid], sort_keys=True, indent=4))
         micropsi_core.runtime.revert_world(world_uid)
+        # re-register all agents:
+        for uid, data in agent_data.items():
+            result, worldadapter_instance = micropsi_core.runtime.worlds[world_uid].register_nodenet(data.pop('worldadapter'), uid, **data)
+            micropsi_core.runtime.nodenets[uid].worldadapter_instance = worldadapter_instance
     return True
 
 

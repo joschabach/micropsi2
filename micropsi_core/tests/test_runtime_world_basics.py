@@ -183,6 +183,21 @@ def test_worlds_are_configurable():
     assert runtime.worlds[uid].data['config']['42'] == '23'
 
 
+def test_set_world_properties(test_nodenet):
+    res, world_uid = runtime.new_world('testworld', 'Island', config={'foo': 'bar', '42': '23'})
+    nodenet = runtime.get_nodenet(test_nodenet)
+    nodenet.world = world_uid
+    runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world_uid)
+    assert test_nodenet in runtime.worlds[world_uid].agents
+    old_wa = nodenet.worldadapter_instance
+    runtime.set_world_properties(world_uid, world_name='renamedworld', config={'foo': 'dings', '42': '5'})
+    assert runtime.worlds[world_uid].name == 'renamedworld'
+    assert runtime.worlds[world_uid].data['config']['foo'] == 'dings'
+    assert runtime.worlds[world_uid].data['config']['42'] == '5'
+    assert test_nodenet in runtime.worlds[world_uid].agents
+    assert nodenet.worldadapter_instance is not None and nodenet.worldadapter_instance is not old_wa
+
+
 """
 def test_get_world_view(micropsi, test_world):
     assert 0

@@ -16,8 +16,9 @@ import random
 import sys
 from io import BytesIO
 
-from scipy.misc import toimage, fromimage
+from scipy.misc import toimage, fromimage, imresize
 from PIL import Image
+
 
 import vrep
 from micropsi_core.world.world import World
@@ -376,6 +377,12 @@ class VrepCollisionsMixin(WorldAdapterMixin):
 
 class VrepGreyscaleVisionMixin(WorldAdapterMixin):
 
+    @staticmethod
+    def get_config_options():
+        return [{'name': 'downscale',
+             'description': 'shrink the image by a factor of 2^k, using anti aliasing. specify `1` to halve the image in each dimension, `2` to quarter it, `0` to leave it unscaled (default)',
+             'default': 0}]
+
     def initialize(self):
         super().initialize()
         self.observer_handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, "Observer", vrep.simx_opmode_blocking])
@@ -383,11 +390,14 @@ class VrepGreyscaleVisionMixin(WorldAdapterMixin):
             self.logger.warn("Could not get handle for Observer vision sensor, vision will not be available.")
         else:
             resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_streaming]) # _split+4000)
-            self.vision_resolution = resolution
             if len(resolution) != 2:
                 self.logger.error("Could not determine vision resolution.")
-            else:
+            elif self.downscale == 0:
+                self.vision_resolution = resolution
                 self.logger.info("Vision resolution is %s, greyscale" % str(self.vision_resolution))
+            else:
+                self.vision_resolution = (int(resolution[0] / 2**self.downscale), int(resolution[1] / 2**self.downscale))
+                self.logger.info("Vision resolution is {} (greyscale) after downscaling by 2**{}".format(self.vision_resolution, self.downscale))
         for y in range(self.vision_resolution[1]):
             for x in range(self.vision_resolution[0]):
                 self.add_datasource("px_%03d_%03d" % (x, y))
@@ -399,10 +409,15 @@ class VrepGreyscaleVisionMixin(WorldAdapterMixin):
     def read_from_world(self):
         super().read_from_world()
         resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_buffer])
-        rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (self.vision_resolution[0] * self.vision_resolution[1], 3)).astype(np.float32)
-        rgb_image /= 255.
+        rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (resolution[0] * resolution[1], 3)).astype(np.float32)
+
         luminance = np.sum(rgb_image * np.asarray([.2126, .7152, .0722]), axis=1)
-        y_image = luminance.astype(np.float32).reshape((self.vision_resolution[0], self.vision_resolution[1]))[::-1,:]   # todo: npyify and make faster
+        y_image = luminance.astype(np.float32).reshape((resolution[0], resolution[1]))[::-1, :]   # todo: npyify and make faster
+
+        if self.downscale != 0:
+            y_image = imresize(y_image*255, size=1./(2**self.downscale), interp='bilinear')  # for greyscale images, scipy.misc.imresize is enough.
+
+        y_image = y_image/255.0
 
         self._set_datasource_values('px_000_000', y_image.flatten())
         self.image.set_data(y_image)

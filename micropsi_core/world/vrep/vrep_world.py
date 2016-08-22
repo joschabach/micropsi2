@@ -404,7 +404,7 @@ class VrepGreyscaleVisionMixin(WorldAdapterMixin):
         luminance = np.sum(rgb_image * np.asarray([.2126, .7152, .0722]), axis=1)
         y_image = luminance.astype(np.float32).reshape((self.vision_resolution[0], self.vision_resolution[1]))[::-1,:]   # todo: npyify and make faster
 
-        self.set_datasource_values('px_000_000', y_image.flatten())
+        self.set_datasource_range('px_000_000', y_image.flatten())
         self.image.set_data(y_image)
         # print('vrep vision image sum', np.sum(abs(y_image)))
 
@@ -438,6 +438,7 @@ class VrepRGBVisionMixin(WorldAdapterMixin):
         self.image.norm.vmax = 1
 
     def read_from_world(self):
+        super().read_from_world()
         resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_buffer])
         rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (
                                self.vision_resolution[0]*self.downscale_factor, self.vision_resolution[1]*self.downscale_factor, 3)).astype(np.float32)
@@ -454,7 +455,7 @@ class VrepRGBVisionMixin(WorldAdapterMixin):
         # plt.savefig('/tmp/upsi/vision_worldadapter{}.png'.format(self.world.current_step))
         # plt.close('all')
 
-        self.set_datasource_values('px_000_000_0', scaled_image.flatten())
+        self.set_datasource_range('px_000_000_0', scaled_image.flatten())
         self.image.set_data(scaled_image)
 
 
@@ -505,7 +506,7 @@ class VrepOneBallGameMixin(WorldAdapterMixin):
             relative_pos[0] = ball_pos[0] - self.robot_position[0]
             relative_pos[1] = ball_pos[1] - self.robot_position[1]
 
-            dist = np.linalg.norm(np.array(ball_pos) - np.array(joint_pos))
+            dist = np.linalg.norm(np.array(ball_pos) - np.array(joint_pos[:2]))
             self.set_datasource_value('ball-distance', dist)
             self.set_datasource_value('ball-x', relative_pos[0])
             self.set_datasource_value('ball-y', relative_pos[1])
@@ -589,6 +590,7 @@ class Vrep6DObjectsMixin(WorldAdapterMixin):
         self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 
     def read_from_world(self):
+        super().read_from_world()
         execute = self.get_datatarget_value('execute') > 0.9
 
         for i, (name, handle) in enumerate(zip(self.object_names, self.object_handles)):
@@ -596,7 +598,6 @@ class Vrep6DObjectsMixin(WorldAdapterMixin):
             self.set_datasource_value("%s-x" % name, tx)
             self.set_datasource_value("%s-y" % name, ty)
             self.set_datasource_value("%s-z" % name, tz)
-
             talpha, tbeta, tgamma = self.call_vrep(vrep.simxGetObjectOrientation, [self.clientID, handle, -1, vrep.simx_opmode_oneshot], empty_result_ok=False)
             self.set_datasource_value("%s-alpha" % name, talpha)
             self.set_datasource_value("%s-beta" % name, tbeta)
@@ -969,12 +970,20 @@ class Objects6D(VrepRGBVisionMixin, Vrep6DObjectsMixin, VrepCallMixin, ArrayWorl
         # print('objects6D initialize: self.datasources=',self.datasources)
         self.reset_simulation_state()
 
+    def update_data_sources_and_targets(self):
+        self.write_to_world()
+        self.read_from_world()
+
     def write_to_world(self):
         restart = self.get_datatarget_value('restart') > 0.9 and self.world.current_step - self.last_restart >= 5
         # simulation restart
         if restart:
             return self.reset_simulation_state()
         super().write_to_world()
+
+    def read_from_world(self):
+        super().read_from_world()
+        self.fetch_sensor_and_feedback_values_from_simulation(None)
 
     def fetch_sensor_and_feedback_values_from_simulation(self, targets, include_feedback=False):
         if not self.world.connection_daemon.is_connected:

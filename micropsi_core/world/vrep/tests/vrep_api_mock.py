@@ -1,3 +1,5 @@
+
+import numpy as np
 import vrepConst
 import random
 
@@ -10,27 +12,31 @@ class VREPMock(object):
 
     def __init__(self, objects=[], joints=[], vision=[], collision=[]):
         self.objects = [None] + [ob for ob in objects]
-        self.joint_threshold = len(objects)
+        self.joint_threshold = len(objects) + 1
         self.objects.extend([j for j in joints])
         self.vision = [None] + [v for v in vision]
-        self.positions = [None] + [[0, 0, 0] for ob in self.objects]
-        self.orientations = [None] + [[0, 0, 0] for ob in self.objects]
+        self.positions = [None] + [[rand(), rand(), rand()] for ob in self.objects]
+        self.orientations = [None] + [[rand(), rand(), rand()] for ob in self.objects]
         self.collisions = [None] + [c for c in collision]
+        self.collision_states = [None] + [False for c in collision]
         self.is_synchronous = False
         for var in dir(vrepConst):
             if not var.startswith('__'):
                 setattr(self, var, getattr(vrepConst, var))
         self.simstate = self.sim_simulation_paused
+        self.initialized = False
 
+    def mock_collision(self, collision_handle, state):
+        self.collision_states[collision_handle] = state
 
     def simxGetJointPosition(self, clientID, jointHandle, operationMode):
-        return 0, self.positions[jointHandle]
+        return self.simx_return_ok, self.positions[jointHandle]
 
     def simxSetJointPosition(self, clientID, jointHandle, position, operationMode):
         if type(position) != list:
-            position = [position, rand(), rand()]
-        self.positions[jointHandle] = position
-        return 0
+            position = [position, position, position]
+        self.positions[jointHandle] = [sum(x) for x in zip(self.positions[jointHandle], position)]
+        return self.simx_return_ok
 
     # def simxGetJointMatrix(self, clientID, jointHandle, operationMode):
     #     pass
@@ -43,9 +49,9 @@ class VREPMock(object):
 
     def simxSetJointTargetPosition(self, clientID, jointHandle, targetPosition, operationMode):
         if type(targetPosition) != list:
-            targetPosition = [targetPosition, rand(), rand()]
-        self.positions[jointHandle] = targetPosition
-        return 0
+            targetPosition = [targetPosition, targetPosition, targetPosition]
+        self.positions[jointHandle] = [sum(x) for x in zip(self.positions[jointHandle], targetPosition)]
+        return self.simx_return_ok
 
     # def simxJointGetForce(self, clientID, jointHandle, operationMode):
     #     pass
@@ -67,12 +73,19 @@ class VREPMock(object):
 
     def simxGetObjectHandle(self, clientID, objectName, operationMode):
         try:
-            return 0, self.objects.index(objectName)
+            return self.simx_return_ok, self.objects.index(objectName)
         except:
-            return 0, -1
+            pass
+        try:
+            return self.simx_return_ok, self.vision.index(objectName)
+        except:
+            pass
+        return self.simx_return_ok, -1
 
     def simxGetVisionSensorImage(self, clientID, sensorHandle, options, operationMode):
-        return 0, self.vision[sensorHandle]
+        if self.vision[sensorHandle]:
+            return self.simx_return_ok, [16, 16], np.empty((16, 16, 3))
+        return self.simx_return_remote_error_flag
 
     # def simxSetVisionSensorImage(self, clientID, sensorHandle, image, options, operationMode):
     #     pass
@@ -103,15 +116,15 @@ class VREPMock(object):
             self.simstate = self.sim_simulation_advancing
         else:
             self.simstate = self.sim_simulation_advancing_running
-        return 0
+        return self.simx_return_ok
 
     def simxPauseSimulation(self, clientID, operationMode):
         self.simstate = self.sim_simulation_paused
-        return 0
+        return self.simx_return_ok
 
     def simxStopSimulation(self, clientID, operationMode):
         self.simstate = self.sim_simulation_stopped
-        return 0
+        return self.simx_return_ok
 
     # def simxGetUIHandle(self, clientID, uiName, operationMode):
     #     pass
@@ -147,20 +160,20 @@ class VREPMock(object):
     #     pass
 
     def simxGetObjectOrientation(self, clientID, objectHandle, relativeToObjectHandle, operationMode):
-        return 0, self.orientations[objectHandle]
+        return self.simx_return_ok, self.orientations[objectHandle]
 
     def simxGetObjectPosition(self, clientID, objectHandle, relativeToObjectHandle, operationMode):
-        return 0, self.positions[objectHandle]
+        return self.simx_return_ok, self.positions[objectHandle]
 
     def simxSetObjectOrientation(self, clientID, objectHandle, relativeToObjectHandle, eulerAngles, operationMode):
         self.orientations[objectHandle] = eulerAngles
-        return 0
+        return self.simx_return_ok
 
     def simxSetObjectPosition(self, clientID, objectHandle, relativeToObjectHandle, position, operationMode):
         if type(position) != list:
-            position = [position, rand(), rand()]
+            position = [position, position, position]
         self.positions[objectHandle] = position
-        return 0
+        return self.simx_return_ok
 
     # def simxSetObjectParent(self, clientID, objectHandle, parentObject, keepInPlace, operationMode):
     #     pass
@@ -200,9 +213,9 @@ class VREPMock(object):
 
     def simxGetCollisionHandle(self, clientID, collisionObjectName, operationMode):
         try:
-            return 0, self.collisions.index(collisionObjectName)
+            return self.simx_return_ok, self.collisions.index(collisionObjectName)
         except:
-            return 0, -1
+            return self.simx_return_ok, -1
 
     # def simxGetCollectionHandle(self, clientID, collectionName, operationMode):
     #     pass
@@ -211,7 +224,7 @@ class VREPMock(object):
     #     pass
 
     def simxReadCollision(self, clientID, collisionObjectHandle, operationMode):
-        return False
+        return self.simx_return_ok, self.collision_states[collisionObjectHandle]
 
     # def simxReadDistance(self, clientID, distanceObjectHandle, operationMode):
     #     pass
@@ -230,9 +243,9 @@ class VREPMock(object):
 
     def simxGetObjects(self, clientID, objectType, operationMode):
         if objectType == self.sim_object_joint_type:
-            return 0, list([idx for idx, name in enumerate(self.objects) if idx >= self.joint_threshold])
+            return self.simx_return_ok, list([idx for idx, name in enumerate(self.objects) if idx >= self.joint_threshold])
         else:
-            return 0, list([idx for idx, name in enumerate(self.objects) if idx < self.joint_threshold and name is not None])
+            return self.simx_return_ok, list([idx for idx, name in enumerate(self.objects) if idx < self.joint_threshold and name is not None])
 
     # def simxDisplayDialog(self, clientID, titleText, mainText, dialogType, initialText, titleColors, dialogColors, operationMode):
     #     pass
@@ -313,26 +326,28 @@ class VREPMock(object):
     #     pass
 
     def simxStart(self, connectionAddress, connectionPort, waitUntilConnected, doNotReconnectOnceDisconnected, timeOutInMs, commThreadCycleInMs):
+        self.initialized = True
         return 1
 
     def simxFinish(self, clientID):
+        self.initialized = False
         return 1
 
     def simxGetPingTime(self, clientID):
-        return 0, 1
+        return self.simx_return_ok, 1
 
     def simxGetLastCmdTime(self, clientID):
-        return 0, 1
+        return self.simx_return_ok, 1
 
     def simxSynchronousTrigger(self, clientID):
-        return 0
+        return self.simx_return_ok
 
     def simxSynchronous(self, clientID, enable):
         self.is_synchronous = enable
-        return 0
+        return self.simx_return_ok
 
     def simxPauseCommunication(self, clientID, enable):
-        return 0
+        return self.simx_return_ok
 
     # def simxGetInMessageInfo(self, clientID, infoType):
     #     pass
@@ -368,11 +383,11 @@ class VREPMock(object):
                 handles = list([idx for idx, name in enumerate(self.objects) if idx >= self.joint_threshold])
                 pos = [self.positions[h] for h in handles]
                 pos = [item for sublist in pos for item in sublist]
-                return 0, handles, [], pos, []
+                return self.simx_return_ok, handles, [], pos, []
 
     def simxCallScriptFunction(self, clientID, scriptDescription, options, functionName, inputInts, inputFloats, inputStrings, inputBuffer, operationMode):
         if functionName == 'getsimstate':
-            return 0, [self.simstate], [], []
+            return self.simx_return_ok, [self.simstate], [], []
         else:
             raise
 

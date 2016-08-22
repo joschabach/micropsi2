@@ -1702,9 +1702,10 @@ def initialize(persistency_path=None, resource_path=None):
             try:
                 init = importlib.import_module(".%s" % d, package='micropsi_core.world')
                 # import all modules defined in __init__.__all__
-                for world in init.__all__:
-                    importlib.import_module(".%s" % world, package='micropsi_core.world.%s' % d)
-                    logging.getLogger("system").debug("Found %s world" % world)
+                if init and hasattr(init, '__all__'):
+                    for world in init.__all__:
+                        importlib.import_module(".%s" % world, package='micropsi_core.world.%s' % d)
+                        logging.getLogger("system").debug("Found %s world" % world)
             except ImportError:
                 logging.getLogger("system").debug("Error importing %s world" % world)
 

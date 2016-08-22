@@ -6,6 +6,7 @@ Runtime API: operations for creating and maintaining worlds (environments for no
 
 import json
 import os
+import logging
 import micropsi_core
 from micropsi_core import tools
 from micropsi_core.tools import Bunch
@@ -165,12 +166,28 @@ def set_world_properties(world_uid, world_name=None, owner=None, config=None):
     if owner is not None:
         micropsi_core.runtime.worlds[world_uid].owner = owner
     if config is not None:
-        micropsi_core.runtime.world_data[world_uid].name = world_name
-        micropsi_core.runtime.world_data[world_uid].config.update(config)
+        agent_data = {}
+        for uid, net in micropsi_core.runtime.nodenets.items():
+            if net.world == world_uid:
+                agent_data[uid] = {
+                    'nodenet_name': net.name,
+                    'worldadapter': net.worldadapter,
+                    'config': net.metadata['worldadapter_config']
+                }
+        micropsi_core.runtime.world_data[world_uid]['config'].update(config)
+        micropsi_core.runtime.world_data[world_uid]['name'] = world_name
         filename = os.path.join(micropsi_core.runtime.PERSISTENCY_PATH, micropsi_core.runtime.WORLD_DIRECTORY, world_uid)
         with open(filename + '.json', 'w+', encoding="utf-8") as fp:
             fp.write(json.dumps(micropsi_core.runtime.world_data[world_uid], sort_keys=True, indent=4))
         micropsi_core.runtime.revert_world(world_uid)
+        # re-register all agents:
+        for uid, data in agent_data.items():
+            result, worldadapter_instance = micropsi_core.runtime.worlds[world_uid].register_nodenet(data.pop('worldadapter'), uid, **data)
+            if result:
+                micropsi_core.runtime.nodenets[uid].worldadapter_instance = worldadapter_instance
+            else:
+                micropsi_core.runtime.nodenets[uid].worldadapter_instance = None
+                logging.getLogger("system").warning("Could not spawn agent %s in world %s" % (uid, world_uid))
     return True
 
 

@@ -93,7 +93,7 @@ class UserManager(object):
 
         self.user_file_name = userfile_path  # todo: make this work without a file system
         try:
-            with open(self.user_file_name) as file:
+            with open(self.user_file_name, encoding="utf-8") as file:
                 self.users = json.load(file)
         except ValueError:
             logging.getLogger('system').warning("Invalid user data")
@@ -154,7 +154,7 @@ class UserManager(object):
 
     def save_users(self):
         """stores the user data to a file"""
-        with open(self.user_file_name, mode='w+') as file:
+        with open(self.user_file_name, mode='w+', encoding="utf-8") as file:
             json.dump(self.users, file, indent=4)
 
     def list_users(self):

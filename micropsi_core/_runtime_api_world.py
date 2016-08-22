@@ -119,7 +119,7 @@ def new_world(world_name, world_type, owner="", uid=None, config={}):
     micropsi_core.runtime.world_data[uid] = Bunch(uid=uid, name=world_name, world_type=world_type, filename=filename,
                                                   version=1,
                                                   owner=owner, config=config)
-    with open(filename, 'w+') as fp:
+    with open(filename, 'w+', encoding="utf-8") as fp:
         fp.write(json.dumps(micropsi_core.runtime.world_data[uid], sort_keys=True, indent=4))
     try:
         kwargs = micropsi_core.runtime.world_data[uid]
@@ -168,7 +168,7 @@ def set_world_properties(world_uid, world_name=None, owner=None, config=None):
         micropsi_core.runtime.world_data[world_uid].name = world_name
         micropsi_core.runtime.world_data[world_uid].config.update(config)
         filename = os.path.join(micropsi_core.runtime.PERSISTENCY_PATH, micropsi_core.runtime.WORLD_DIRECTORY, world_uid)
-        with open(filename + '.json', 'w+') as fp:
+        with open(filename + '.json', 'w+', encoding="utf-8") as fp:
             fp.write(json.dumps(micropsi_core.runtime.world_data[world_uid], sort_keys=True, indent=4))
         micropsi_core.runtime.revert_world(world_uid)
     return True
@@ -199,7 +199,7 @@ def save_world(world_uid):
     """Stores the world state on the server."""
     data = micropsi_core.runtime.worlds[world_uid].data
     filename = os.path.join(micropsi_core.runtime.PERSISTENCY_PATH, micropsi_core.runtime.WORLD_DIRECTORY, world_uid)
-    with open(filename + '.json', 'w+') as fp:
+    with open(filename + '.json', 'w+', encoding="utf-8") as fp:
         fp.write(json.dumps(data, sort_keys=True, indent=4))
     return True
 
@@ -221,7 +221,7 @@ def import_world(worlddata, owner=None):
         data['owner'] = owner
     filename = os.path.join(micropsi_core.runtime.PERSISTENCY_PATH, micropsi_core.runtime.WORLD_DIRECTORY, data['uid'] + '.json')
     data['filename'] = filename
-    with open(filename, 'w+') as fp:
+    with open(filename, 'w+', encoding="utf-8") as fp:
         fp.write(json.dumps(data))
     micropsi_core.runtime.world_data[data['uid']] = micropsi_core.runtime.parse_definition(data, filename)
     micropsi_core.runtime.worlds[data['uid']] = get_world_class_from_name(

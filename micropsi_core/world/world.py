@@ -150,7 +150,7 @@ class World(object):
                 return False
         else:
             try:
-                with open(self.filename) as file:
+                with open(self.filename, encoding="utf-8") as file:
                     self.data.update(json.load(file))
             except ValueError:
                 self.logger.warning("Could not read world data")

@@ -531,7 +531,7 @@ class TheanoNodenet(Nodenet):
     def save(self, filename):
 
         # write json metadata, which will be used by runtime to manage the net
-        with open(filename, 'w+') as fp:
+        with open(filename, 'w+', encoding="utf-8") as fp:
             metadata = self.metadata
             metadata['positions'] = self.positions
             metadata['names'] = self.names
@@ -561,7 +561,7 @@ class TheanoNodenet(Nodenet):
             if os.path.isfile(filename):
                 try:
                     self.logger.info("Loading nodenet %s metadata from file %s", self.name, filename)
-                    with open(filename) as file:
+                    with open(filename, encoding="utf-8") as file:
                         initfrom.update(json.load(file))
                 except ValueError:  # pragma: no cover
                     self.logger.warning("Could not read nodenet metadata from file %s", filename)

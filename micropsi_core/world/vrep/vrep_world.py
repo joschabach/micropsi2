@@ -244,8 +244,9 @@ class VrepCallMixin():
             return rval
         else:
             rval = result[1:]
-            if np.any(np.isnan(np.array(rval, dtype=float))):
-                raise Exception('VREP returned invalid value')
+            for arr in rval:
+                if np.any(np.isnan(np.array(arr, dtype=float))):
+                    raise Exception('VREP returned invalid value')
             return rval
 
 

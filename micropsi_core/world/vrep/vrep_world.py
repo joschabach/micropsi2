@@ -240,13 +240,13 @@ class VrepCallMixin():
         if len(result) == 2:
             rval = result[1]
             if np.any(np.isnan(np.array(rval, dtype=float))):
-                raise Exception('VREP returned invalid value')
+                self.logger.error('VREP returned invalid value calling {} with params {}'.format(method, params))
             return rval
         else:
             rval = result[1:]
             for arr in rval:
                 if np.any(np.isnan(np.array(arr, dtype=float))):
-                    raise Exception('VREP returned invalid value')
+                    self.logger.error('VREP returned invalid value calling {} with params {}'.format(method, params))
             return rval
 
 

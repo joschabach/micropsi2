@@ -25,9 +25,21 @@ class VREPMock(object):
                 setattr(self, var, getattr(vrepConst, var))
         self.simstate = self.sim_simulation_paused
         self.initialized = False
+        self.repeat_error_call = 1
 
     def mock_collision(self, collision_handle, state):
         self.collision_states[collision_handle] = state
+
+    def mock_error_response(self, errcode=1):
+        return errcode
+
+    def mock_repeat_error_response(self, errcode=1):
+        if self.repeat_error_call > 0:
+            self.repeat_error_call -= 1
+            return errcode
+        else:
+            self.repeat_error_call = 1
+            return self.simx_return_ok
 
     def simxGetJointPosition(self, clientID, jointHandle, operationMode):
         return self.simx_return_ok, self.positions[jointHandle]

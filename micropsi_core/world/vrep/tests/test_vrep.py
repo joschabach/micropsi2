@@ -332,12 +332,56 @@ while True:
     world.vrep_watchdog.resume()
 
     with mock.patch.object(worldadapter, 'initialize') as initmock:
-        sleep(1)  # give the watch dog a moment to spawn
-        # world.connection_daemon.resume()
-        # sleep(1)  # give the reconnect thread a moment to do its thing
+        sleep(2)  # give the watchdog and connection_daemon a moment
         assert world.vrep_watchdog.process is not None
         assert world.connection_daemon.is_connected
-        assert initmock.called_once()
+        initmock.assert_called_once()
 
     runtime.delete_world(world_uid)
     assert not apimock.initialized
+
+
+def test_vrep_error_handling():
+    robotmock = VREPMock(objects=["MTB_Robot"], joints=["joint1", "joint2"])
+    domock(robotmock)
+    success, world_uid = runtime.new_world("vrep", "VREPWorld", owner="tester", config=worldconfig)
+
+    world = runtime.worlds[world_uid]
+
+    waconfig = {
+        'robot_name': 'MTB_Robot',
+        'control_type': 'movements',
+        'randomize_arm': 'True'
+    }
+
+    result, worldadapter = world.register_nodenet('Robot', 'test', nodenet_name='test', config=waconfig)
+
+    def sideeffect(**_):
+        worldadapter.initialized = True
+
+    with mock.patch.object(worldadapter, 'initialize', side_effect=sideeffect) as initmock:
+        # timeouts, and emtpy responses we can recover from:
+        # one empty call is simpy repeated.
+        robotmock.repeat_error_call = 1
+        assert worldadapter.call_vrep(robotmock.mock_repeat_error_response, [1]) is True
+        initmock.assert_not_called()
+
+        # two empty calls lead to reconnect
+        robotmock.repeat_error_call = 2
+        assert worldadapter.call_vrep(robotmock.mock_repeat_error_response, [2]) is True
+        initmock.assert_called_once()
+
+        # this is the same as 1:
+        robotmock.repeat_error_call = 1
+        assert worldadapter.call_vrep(robotmock.mock_repeat_error_response, [3]) is True
+        initmock.assert_not_called()
+
+        # as is this
+        robotmock.repeat_error_call = 1
+        assert worldadapter.call_vrep(robotmock.mock_repeat_error_response, [16]) is True
+
+        # we can not recover from these:
+        assert worldadapter.call_vrep(robotmock.mock_error_response, [4]) is False
+        assert worldadapter.call_vrep(robotmock.mock_error_response, [8]) is False
+        assert worldadapter.call_vrep(robotmock.mock_error_response, [32]) is False
+        assert worldadapter.call_vrep(robotmock.mock_error_response, [64]) is False

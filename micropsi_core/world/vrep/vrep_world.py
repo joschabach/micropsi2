@@ -209,25 +209,31 @@ class VrepCallMixin():
     def call_vrep(self, method, params, empty_result_ok=False, debugprint=False):
         """ error handling wrapper for calls to the vrep API """
         result = method(*params)
-        if debugprint:
+        if debugprint:  # pragma: no cover
             print(self.world.current_step, ' vrep wrap called', method, 'with parameters', params, '. result was', result)
         code = result if type(result) == int else result[0]
         if code != vrep.simx_return_ok:
-            if (code == vrep.simx_return_novalue_flag or code == vrep.simx_return_split_progress_flag) and not empty_result_ok:
+            if (code & vrep.simx_return_novalue_flag or code & vrep.simx_return_split_progress_flag) and not empty_result_ok:
                     # streaming mode did not return data. wait a bit, try again
                     self.logger.info("Did not receive data from vrep when calling %s, trying again in 500 ms" % method.__name__)
                     time.sleep(0.5)
                     result = method(*params)
                     code = result if type(result) == int else result[0]
-            if code == vrep.simx_return_illegal_opmode_flag:
-                self.logger.error("Illegal opmode for VREP call %s" % method.__name)
-            if code == vrep.simx_return_remote_error_flag:
+
+            if code & vrep.simx_return_illegal_opmode_flag:
+                self.logger.error("Illegal opmode for VREP call %s" % method.__name__)
+                return False
+            if code & vrep.simx_return_remote_error_flag:
                 self.logger.error("VREP internal error when calling %s. Invalid handle specified?" % method.__name__)
-            elif code == vrep.simx_return_local_error_flag:
-                self.logger.error("Client error for VREP call %s" % method.__name)
-            elif code == vrep.simx_return_initialize_error_flag:
+                return False
+            if code & vrep.simx_return_local_error_flag:
+                self.logger.error("Client error for VREP call %s" % method.__name__)
+                return False
+            if code & vrep.simx_return_initialize_error_flag:
                 self.logger.error("VREP Simulation is not running")
-            elif code == vrep.simx_return_timeout_flag or ((code == vrep.simx_return_novalue_flag or code == vrep.simx_return_split_progress_flag) and not empty_result_ok):
+                return False
+
+            if code & vrep.simx_return_timeout_flag or ((code & vrep.simx_return_novalue_flag or code & vrep.simx_return_split_progress_flag) and not empty_result_ok):
                 self.logger.warning("Vrep returned code %d when calling %s, attempting a reconnect" % (code, method.__name__))
                 self.world.connection_daemon.resume()
                 self.initialized = False

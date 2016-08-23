@@ -93,7 +93,7 @@ class VREPConnection(threading.Thread):
 def preexec_function():
     # Ignore the SIGINT signal by setting the handler to the standard
     # signal handler SIG_IGN.
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    signal.signal(signal.SIGINT, signal.SIG_IGN)  # pramga: no cover
 
 
 class VREPWatchdog(threading.Thread):

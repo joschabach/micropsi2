@@ -81,8 +81,9 @@ def test_vrep_robot_worldadapter():
 def test_vrep_iiwa_ik_worldadapter_synchmode():
     robotmock = VREPMock(objects=["LBR_iiwa_7_R800"], joints=["joint%d" % (i + 1) for i in range(7)])
     domock(robotmock)
-    worldconfig['simulation_speed'] = 3
-    success, world_uid = runtime.new_world("vrep", "VREPWorld", owner="tester", config=worldconfig)
+    wconf = worldconfig.copy()
+    wconf['simulation_speed'] = 3
+    success, world_uid = runtime.new_world("vrep", "VREPWorld", owner="tester", config=wconf)
 
     world = runtime.worlds[world_uid]
 
@@ -122,8 +123,9 @@ def test_vrep_iiwa_ik_worldadapter_synchmode():
 def test_vrep_oneballrobot():
     robotmock = VREPMock(objects=["MTB_Robot", "Ball"], vision=["Observer"], collision=['Collision'], joints=["joint%d" % (i + 1) for i in range(2)])
     domock(robotmock)
-    worldconfig['simulation_speed'] = 1
-    success, world_uid = runtime.new_world("vrep", "VREPWorld", owner="tester", config=worldconfig)
+    wconf = worldconfig.copy()
+    wconf['simulation_speed'] = 1
+    success, world_uid = runtime.new_world("vrep", "VREPWorld", owner="tester", config=wconf)
 
     waconfig = {
         'robot_name': 'MTB_Robot',
@@ -181,8 +183,9 @@ def test_vrep_oneballrobot():
 def test_vrep_objects6d():
     robotmock = VREPMock(objects=["fork", "ghost-fork"], vision=["Observer"])
     domock(robotmock)
-    worldconfig['simulation_speed'] = 1
-    success, world_uid = runtime.new_world("vrep", "VREPWorld", owner="tester", config=worldconfig)
+    wconf = worldconfig.copy()
+    wconf['simulation_speed'] = 1
+    success, world_uid = runtime.new_world("vrep", "VREPWorld", owner="tester", config=wconf)
 
     waconfig = {
         "objects": "fork,ghost-fork"
@@ -289,10 +292,10 @@ def test_vrep_ikrobotwithgrayscalevision():
     # what to assert?
 
 
-def test_vrep_with_internal_process(resourcepath):
+def test_vrep_with_internal_process(resourcepath, test_nodenet):
     import stat
     from time import sleep
-    apimock = VREPMock()
+    apimock = VREPMock(objects=["MTB_Robot"], joints=["joint1", "joint2"])
     domock(apimock)
     dummyexecutable = os.path.join(resourcepath, 'vrep_dummy')
     with open(dummyexecutable, 'w') as fp:
@@ -302,13 +305,21 @@ while True:
     sleep(2)  # we are just idle waiting""")
     os.chmod(dummyexecutable, stat.S_IXUSR | stat.S_IWUSR | stat.S_IRUSR)
 
-    worldconfig['vrep_binary'] = dummyexecutable
-    worldconfig['vrep_scene'] = 'doesntmatter.ttt'
-    worldconfig['simulation_speed'] = 0
+    wconf = worldconfig.copy()
+    wconf['vrep_binary'] = dummyexecutable
+    wconf['vrep_scene'] = 'doesntmatter.ttt'
+    wconf['simulation_speed'] = 0
 
-    success, world_uid = runtime.new_world("vrep", "VREPWorld", owner="tester", config=worldconfig)
+    waconfig = {
+        'robot_name': 'MTB_Robot',
+        'control_type': 'force/torque',
+        'randomize_arm': 'True'
+    }
 
+    success, world_uid = runtime.new_world("vrep", "VREPWorld", owner="tester", config=wconf)
     world = runtime.worlds[world_uid]
+    result, worldadapter = world.register_nodenet("Robot", test_nodenet, config=waconfig)
+
     assert not world.synchronous_mode
     assert world.vrep_watchdog is not None
     assert world.vrep_watchdog.process is not None
@@ -320,9 +331,13 @@ while True:
     assert world.vrep_watchdog.process is None
     world.vrep_watchdog.resume()
 
-    sleep(1)  # give the watch dog a moment to spawn
-    assert world.vrep_watchdog.process is not None
-    assert world.connection_daemon.is_connected
+    with mock.patch.object(worldadapter, 'initialize') as initmock:
+        sleep(1)  # give the watch dog a moment to spawn
+        # world.connection_daemon.resume()
+        # sleep(1)  # give the reconnect thread a moment to do its thing
+        assert world.vrep_watchdog.process is not None
+        assert world.connection_daemon.is_connected
+        assert initmock.called_once()
 
     runtime.delete_world(world_uid)
     assert not apimock.initialized

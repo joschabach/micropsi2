@@ -38,8 +38,6 @@ class WorldAdapterMixin(object):
 
     def __init__(self, world, uid=None, config={}, **kwargs):
         super().__init__(world, uid=uid, config=config, **kwargs)
-        for key in config:
-            setattr(self, key, config[key])
 
     def initialize(self):
         """ Called after a reset of the simulation """

@@ -238,9 +238,15 @@ class VrepCallMixin():
         if type(result) == int:
             return True
         if len(result) == 2:
-            return result[1]
+            rval = result[1]
+            if np.any(np.isnan(np.array(rval, dtype=float))):
+                raise Exception('VREP returned invalid value')
+            return rval
         else:
-            return result[1:]
+            rval = result[1:]
+            if np.any(np.isnan(np.array(rval, dtype=float))):
+                raise Exception('VREP returned invalid value')
+            return rval
 
 
 class VREPWorld(World):

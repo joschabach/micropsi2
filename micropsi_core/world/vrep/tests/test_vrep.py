@@ -34,6 +34,7 @@ def domock(mockding=None):
     vrep_world.vrep = mockding
 
 
+@pytest.mark.engine("dict_engine")
 def test_vrep_with_external_process():
     apimock = VREPMock()
     domock(apimock)
@@ -53,6 +54,7 @@ def test_vrep_with_external_process():
     assert not apimock.initialized
 
 
+@pytest.mark.engine("dict_engine")
 def test_vrep_robot_worldadapter():
     robotmock = VREPMock(objects=["MTB_Robot"], joints=["joint1", "joint2"])
     domock(robotmock)
@@ -78,6 +80,7 @@ def test_vrep_robot_worldadapter():
     assert 'test' in data['agents']
 
 
+@pytest.mark.engine("dict_engine")
 def test_vrep_iiwa_ik_worldadapter_synchmode():
     robotmock = VREPMock(objects=["LBR_iiwa_7_R800"], joints=["joint%d" % (i + 1) for i in range(7)])
     domock(robotmock)
@@ -120,6 +123,7 @@ def test_vrep_iiwa_ik_worldadapter_synchmode():
     assert pos == expected
 
 
+@pytest.mark.engine("dict_engine")
 def test_vrep_oneballrobot():
     robotmock = VREPMock(objects=["MTB_Robot", "Ball"], vision=["Observer"], collision=['Collision'], joints=["joint%d" % (i + 1) for i in range(2)])
     domock(robotmock)
@@ -180,6 +184,7 @@ def test_vrep_oneballrobot():
     assert worldadapter.get_datasource_value('collision') == 1
 
 
+@pytest.mark.engine("dict_engine")
 def test_vrep_objects6d():
     robotmock = VREPMock(objects=["fork", "ghost-fork"], vision=["Observer"])
     domock(robotmock)
@@ -221,6 +226,7 @@ def test_vrep_objects6d():
     assert 'plots' in world.get_world_view(1)
 
 
+@pytest.mark.engine("dict_engine")
 def test_vrep_forcetorque():
     robotmock = VREPMock(objects=["MTB_Robot"], joints=["joint1", "joint2"])
     domock(robotmock)
@@ -240,6 +246,7 @@ def test_vrep_forcetorque():
     # what to assert?
 
 
+@pytest.mark.engine("dict_engine")
 def test_vrep_ikrobot():
     robotmock = VREPMock(objects=["LBR_iiwa_7_R800", "fork"], joints=["joint%d" % (i + 1) for i in range(7)])
     domock(robotmock)
@@ -267,6 +274,7 @@ def test_vrep_ikrobot():
     # what to assert?
 
 
+@pytest.mark.engine("dict_engine")
 def test_vrep_ikrobotwithgrayscalevision():
     robotmock = VREPMock(objects=["LBR_iiwa_7_R800", "fork"], vision=["Observer"], joints=["joint%d" % (i + 1) for i in range(7)])
     domock(robotmock)
@@ -292,6 +300,7 @@ def test_vrep_ikrobotwithgrayscalevision():
     # what to assert?
 
 
+@pytest.mark.engine("dict_engine")
 def test_vrep_with_internal_process(resourcepath, test_nodenet):
     import stat
     from time import sleep
@@ -341,6 +350,7 @@ while True:
     assert not apimock.initialized
 
 
+@pytest.mark.engine("dict_engine")
 def test_vrep_error_handling():
     robotmock = VREPMock(objects=["MTB_Robot"], joints=["joint1", "joint2"])
     domock(robotmock)

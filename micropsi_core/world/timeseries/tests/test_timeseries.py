@@ -27,7 +27,7 @@ def worldconfig():
 
 def prepare_datafile(resourcepath):
     filename = os.path.join(resourcepath, "test.npz")
-    timestamps=[]
+    timestamps = []
     data = []
     for i in range(5):
         data.append([i*0.1, i*0.2])
@@ -110,12 +110,10 @@ def test_timeseries_dummydata(resourcepath):
     world.set_user_data({'step': 3})
     assert len(worldadapter.datasource_values) == 10
 
+
 def test_timeseries_invalid_file():
     config = worldconfig()
     config['time_series_data_file'] = '/tmp/nothere.npz'
     success, world_uid = runtime.new_world("Timseries", "TimeSeries", owner="tester", config=config)
     world = runtime.worlds[world_uid]
     assert world.timestamps == [0]
-
-
-    

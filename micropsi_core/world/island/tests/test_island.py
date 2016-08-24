@@ -31,16 +31,16 @@ def test_island(resourcepath):
     runtime.delete_world(world_uid)
 
 
-def test_island_braitenberg(resourcepath, test_nodenet):
+def test_island_braitenberg(resourcepath, default_nodenet):
     ok, world_uid = micropsi.new_world("Misland", "Island", owner="tester")
     world = runtime.worlds[world_uid]
 
     runtime.add_worldobject(world_uid, "Lightsource", (500, 300), uid='lightsource', name="light")
 
-    nodenet = runtime.nodenets[test_nodenet]
-    runtime.set_nodenet_properties(test_nodenet, worldadapter="Braitenberg", world_uid=world_uid)
+    nodenet = runtime.nodenets[default_nodenet]
+    runtime.set_nodenet_properties(default_nodenet, worldadapter="Braitenberg", world_uid=world_uid)
 
-    assert test_nodenet in world.agents
+    assert default_nodenet in world.agents
 
     # create a tiny braiti
     netapi = nodenet.netapi
@@ -53,17 +53,17 @@ def test_island_braitenberg(resourcepath, test_nodenet):
             if s.get_parameter('datasource') == 'brightness_r' and a.get_parameter('datatarget') == 'engine_l':
                 netapi.link(a, 'gen', a, 'gen')
 
-    runtime.set_worldagent_properties(world_uid, test_nodenet, position=(600, 500), orientation=0)
+    runtime.set_worldagent_properties(world_uid, default_nodenet, position=(600, 500), orientation=0)
 
     for i in range(10):
-        runtime.step_nodenet(test_nodenet)
+        runtime.step_nodenet(default_nodenet)
 
     # assert it moved towards the lightsource
-    assert world.agents[test_nodenet].position[0] < 600
-    assert world.agents[test_nodenet].position[1] < 500
+    assert world.agents[default_nodenet].position[0] < 600
+    assert world.agents[default_nodenet].position[1] < 500
 
 
-def test_island_survivor(resourcepath, test_nodenet):
+def test_island_survivor(resourcepath, default_nodenet):
     ok, world_uid = micropsi.new_world("Misland", "Island", owner="tester")
     world = runtime.worlds[world_uid]
 
@@ -77,9 +77,9 @@ def test_island_survivor(resourcepath, test_nodenet):
     # bottom: waterhole
     runtime.add_worldobject(world_uid, "Waterhole", (700, 500), uid='waterhole', name="waterhole")
 
-    runtime.set_nodenet_properties(test_nodenet, worldadapter="Survivor", world_uid=world_uid)
-    runtime.set_worldagent_properties(world_uid, test_nodenet, position=(700, 400), orientation=0)
-    nodenet = runtime.nodenets[test_nodenet]
+    runtime.set_nodenet_properties(default_nodenet, worldadapter="Survivor", world_uid=world_uid)
+    runtime.set_worldagent_properties(world_uid, default_nodenet, position=(700, 400), orientation=0)
+    nodenet = runtime.nodenets[default_nodenet]
     worldadapter = nodenet.worldadapter_instance
 
     # go north:

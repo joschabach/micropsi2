@@ -13,7 +13,6 @@ pytest.importorskip("PIL")
 import os
 import numpy as np
 from unittest import mock
-from micropsi_core import runtime
 
 from vrep_api_mock import VREPMock
 from micropsi_core.world.vrep import vrep_world
@@ -34,8 +33,7 @@ def domock(mockding=None):
     vrep_world.vrep = mockding
 
 
-@pytest.mark.engine("dict_engine")
-def test_vrep_with_external_process():
+def test_vrep_with_external_process(runtime):
     apimock = VREPMock()
     domock(apimock)
     success, world_uid = runtime.new_world("vrep", "VREPWorld", owner="tester", config=worldconfig)
@@ -54,8 +52,7 @@ def test_vrep_with_external_process():
     assert not apimock.initialized
 
 
-@pytest.mark.engine("dict_engine")
-def test_vrep_robot_worldadapter():
+def test_vrep_robot_worldadapter(runtime):
     robotmock = VREPMock(objects=["MTB_Robot"], joints=["joint1", "joint2"])
     domock(robotmock)
     success, world_uid = runtime.new_world("vrep", "VREPWorld", owner="tester", config=worldconfig)
@@ -80,8 +77,7 @@ def test_vrep_robot_worldadapter():
     assert 'test' in data['agents']
 
 
-@pytest.mark.engine("dict_engine")
-def test_vrep_iiwa_ik_worldadapter_synchmode():
+def test_vrep_iiwa_ik_worldadapter_synchmode(runtime):
     robotmock = VREPMock(objects=["LBR_iiwa_7_R800"], joints=["joint%d" % (i + 1) for i in range(7)])
     domock(robotmock)
     wconf = worldconfig.copy()
@@ -123,8 +119,7 @@ def test_vrep_iiwa_ik_worldadapter_synchmode():
     assert pos == expected
 
 
-@pytest.mark.engine("dict_engine")
-def test_vrep_oneballrobot():
+def test_vrep_oneballrobot(runtime):
     robotmock = VREPMock(objects=["MTB_Robot", "Ball"], vision=["Observer"], collision=['Collision'], joints=["joint%d" % (i + 1) for i in range(2)])
     domock(robotmock)
     wconf = worldconfig.copy()
@@ -184,8 +179,7 @@ def test_vrep_oneballrobot():
     assert worldadapter.get_datasource_value('collision') == 1
 
 
-@pytest.mark.engine("dict_engine")
-def test_vrep_objects6d():
+def test_vrep_objects6d(runtime):
     robotmock = VREPMock(objects=["fork", "ghost-fork"], vision=["Observer"])
     domock(robotmock)
     wconf = worldconfig.copy()
@@ -226,8 +220,7 @@ def test_vrep_objects6d():
     assert 'plots' in world.get_world_view(1)
 
 
-@pytest.mark.engine("dict_engine")
-def test_vrep_forcetorque():
+def test_vrep_forcetorque(runtime):
     robotmock = VREPMock(objects=["MTB_Robot"], joints=["joint1", "joint2"])
     domock(robotmock)
     success, world_uid = runtime.new_world("vrep", "VREPWorld", owner="tester", config=worldconfig)
@@ -246,8 +239,7 @@ def test_vrep_forcetorque():
     # what to assert?
 
 
-@pytest.mark.engine("dict_engine")
-def test_vrep_ikrobot():
+def test_vrep_ikrobot(runtime):
     robotmock = VREPMock(objects=["LBR_iiwa_7_R800", "fork"], joints=["joint%d" % (i + 1) for i in range(7)])
     domock(robotmock)
     success, world_uid = runtime.new_world("vrep", "VREPWorld", owner="tester", config=worldconfig)
@@ -274,8 +266,7 @@ def test_vrep_ikrobot():
     # what to assert?
 
 
-@pytest.mark.engine("dict_engine")
-def test_vrep_ikrobotwithgrayscalevision():
+def test_vrep_ikrobotwithgrayscalevision(runtime):
     robotmock = VREPMock(objects=["LBR_iiwa_7_R800", "fork"], vision=["Observer"], joints=["joint%d" % (i + 1) for i in range(7)])
     domock(robotmock)
     success, world_uid = runtime.new_world("vrep", "VREPWorld", owner="tester", config=worldconfig)
@@ -300,8 +291,7 @@ def test_vrep_ikrobotwithgrayscalevision():
     # what to assert?
 
 
-@pytest.mark.engine("dict_engine")
-def test_vrep_with_internal_process(resourcepath, test_nodenet):
+def test_vrep_with_internal_process(resourcepath, default_nodenet, runtime):
     import stat
     from time import sleep
     apimock = VREPMock(objects=["MTB_Robot"], joints=["joint1", "joint2"])
@@ -327,7 +317,7 @@ while True:
 
     success, world_uid = runtime.new_world("vrep", "VREPWorld", owner="tester", config=wconf)
     world = runtime.worlds[world_uid]
-    result, worldadapter = world.register_nodenet("Robot", test_nodenet, config=waconfig)
+    result, worldadapter = world.register_nodenet("Robot", default_nodenet, config=waconfig)
 
     assert not world.synchronous_mode
     assert world.vrep_watchdog is not None
@@ -350,8 +340,7 @@ while True:
     assert not apimock.initialized
 
 
-@pytest.mark.engine("dict_engine")
-def test_vrep_error_handling():
+def test_vrep_error_handling(runtime):
     robotmock = VREPMock(objects=["MTB_Robot"], joints=["joint1", "joint2"])
     domock(robotmock)
     success, world_uid = runtime.new_world("vrep", "VREPWorld", owner="tester", config=worldconfig)

@@ -186,34 +186,34 @@ def test_set_runner_properties(app):
     assert response.json_body['data']['factor'] == 1
 
 
-def test_get_is_calculation_running(app, test_nodenet):
-    response = app.get_json('/rpc/get_is_calculation_running(nodenet_uid="%s")' % test_nodenet)
+def test_get_is_calculation_running(app, default_nodenet):
+    response = app.get_json('/rpc/get_is_calculation_running(nodenet_uid="%s")' % default_nodenet)
     assert_success(response)
     assert not response.json_body['data']
 
 
-def test_stop_calculation(app, test_nodenet):
+def test_stop_calculation(app, default_nodenet):
     app.set_auth()
-    response = app.post_json('/rpc/start_calculation', params=dict(nodenet_uid=test_nodenet))
+    response = app.post_json('/rpc/start_calculation', params=dict(nodenet_uid=default_nodenet))
     assert_success(response)
-    response = app.get_json('/rpc/get_is_calculation_running(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/get_is_calculation_running(nodenet_uid="%s")' % default_nodenet)
     assert_success(response)
     assert response.json_body['data']
-    response = app.post_json('/rpc/stop_calculation', params=dict(nodenet_uid=test_nodenet))
+    response = app.post_json('/rpc/stop_calculation', params=dict(nodenet_uid=default_nodenet))
     assert_success(response)
-    response = app.get_json('/rpc/get_is_calculation_running(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/get_is_calculation_running(nodenet_uid="%s")' % default_nodenet)
     assert_success(response)
     assert not response.json_body['data']
 
 
-def test_step_calculation(app, test_nodenet):
+def test_step_calculation(app, default_nodenet):
     app.set_auth()
-    response = app.get_json('/rpc/get_nodenet_metadata(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/get_nodenet_metadata(nodenet_uid="%s")' % default_nodenet)
     assert response.json_body['data']['current_step'] == 0
-    response = app.get_json('/rpc/step_calculation(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/step_calculation(nodenet_uid="%s")' % default_nodenet)
     assert_success(response)
     assert response.json_body['data'] == 1
-    response = app.get_json('/rpc/get_nodenet_metadata(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/get_nodenet_metadata(nodenet_uid="%s")' % default_nodenet)
     assert response.json_body['data']['current_step'] == 1
 
 
@@ -472,20 +472,20 @@ def test_get_world_view(app, test_world):
     assert 'step' not in response.json_body['data']
 
 
-def test_set_worldagent_properties(app, test_world, test_nodenet):
+def test_set_worldagent_properties(app, test_world, default_nodenet):
     # create agent.
     app.set_auth()
-    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, worldadapter="Braitenberg", world_uid=test_world))
+    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=default_nodenet, worldadapter="Braitenberg", world_uid=test_world))
     response = app.post_json('/rpc/set_worldagent_properties', params={
         'world_uid': test_world,
-        'uid': test_nodenet,
+        'uid': default_nodenet,
         'position': [23, 23],
         'orientation': 37,
         'name': 'Sepp'
     })
     assert_success(response)
     response = app.get_json('/rpc/get_world_view(world_uid="%s", step=0)' % test_world)
-    data = response.json_body['data']['agents'][test_nodenet]
+    data = response.json_body['data']['agents'][default_nodenet]
     assert data['position'] == [23, 23]
     assert data['orientation'] == 37
     assert data['name'] == 'Sepp'
@@ -1259,9 +1259,9 @@ def test_400(app):
     assert "Malformed arguments" in response.json_body['data']
 
 
-def test_401(app, test_nodenet):
+def test_401(app, default_nodenet):
     app.unset_auth()
-    response = app.get_json('/rpc/delete_nodenet(nodenet_uid="%s")' % test_nodenet, expect_errors=True)
+    response = app.get_json('/rpc/delete_nodenet(nodenet_uid="%s")' % default_nodenet, expect_errors=True)
     assert_failure(response)
     assert 'Insufficient permissions' in response.json_body['data']
 
@@ -1272,8 +1272,8 @@ def test_404(app):
     assert response.json_body['data'] == "Function not found"
 
 
-def test_405(app, test_nodenet):
-    response = app.get_json('/rpc/get_available_nodenets', params={'nodenet_uid': test_nodenet}, expect_errors=True)
+def test_405(app, default_nodenet):
+    response = app.get_json('/rpc/get_available_nodenets', params={'nodenet_uid': default_nodenet}, expect_errors=True)
     assert_failure(response)
     assert response.json_body['data'] == "Method not allowed"
 
@@ -1285,7 +1285,7 @@ def test_500(app):
     assert response.json_body['traceback'] is not None
 
 
-def test_get_recipes(app, test_nodenet, resourcepath):
+def test_get_recipes(app, default_nodenet, resourcepath):
     app.set_auth()
     import os
     recipe_file = os.path.join(resourcepath, 'Test', 'recipes.py')
@@ -1526,7 +1526,7 @@ def test_get_nodenet_diff(app, test_nodenet, node):
     assert [node2] == list(data['changes']['nodes_dirty'].keys())
 
 
-def test_get_operations(app, test_nodenet):
+def test_get_operations(app):
     response = app.get_json('/rpc/get_available_operations()')
     data = response.json_body['data']
     for selectioninfo in data['autoalign']['selection']:

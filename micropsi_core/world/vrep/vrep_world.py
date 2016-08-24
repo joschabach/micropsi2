@@ -239,14 +239,14 @@ class VrepCallMixin():
             return True
         if len(result) == 2:
             rval = result[1]
-            if np.any(np.isnan(np.array(rval, dtype=float))):
-                self.logger.error('VREP returned invalid value calling {} with params {}'.format(method, params))
+            # if np.any(np.isnan(np.array(rval, dtype=float))):
+            #     self.logger.error('VREP returned invalid value calling {} with params {}'.format(method, params))
             return rval
         else:
             rval = result[1:]
-            for arr in rval:
-                if np.any(np.isnan(np.array(arr, dtype=float))):
-                    self.logger.error('VREP returned invalid value calling {} with params {}'.format(method, params))
+            # for arr in rval:
+            #     if np.any(np.isnan(np.array(arr, dtype=float))):
+            #         self.logger.error('VREP returned invalid value calling {} with params {}'.format(method, params))
             return rval
 
 
@@ -388,9 +388,10 @@ class VrepGreyscaleVisionMixin(WorldAdapterMixin):
     def get_config_options():
         return [{'name': 'downscale',
              'description': 'shrink the image by a factor of 2^k, using anti aliasing. specify `1` to halve the image in each dimension, `2` to quarter it, `0` to leave it unscaled (default)',
-             'default': 0}]
+             'default': 1}]
 
     def initialize(self):
+        self.downscale = float(self.downscale)
         super().initialize()
         self.observer_handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, "Observer", vrep.simx_opmode_blocking])
         if self.observer_handle < 1:
@@ -557,7 +558,7 @@ class Vrep6DObjectsMixin(WorldAdapterMixin):
     def get_config_options():
         parameters = [{'name': 'objects',
                       'description': 'comma-separated names of objects in the vrep scene',
-                      'default': 'fork,ghost_fork'}]
+                      'default': 'Cylinder'}]
         parameters.extend(VrepGreyscaleVisionMixin.get_config_options())
         return parameters
 
@@ -643,7 +644,7 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
              'options': ["LBR_iiwa_7_R800", "MTB_Robot"]},
             {'name': 'control_type',
              'description': 'The type of input sent to the robot',
-             'default': 'force/torque',
+             'default': 'ik',
              'options': ["force/torque", "force/torque-sync", "ik", "angles", "movements"]},
             {'name': 'randomize_arm',
              'description': 'Initialize the robot arm randomly',

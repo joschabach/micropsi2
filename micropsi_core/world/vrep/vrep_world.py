@@ -460,6 +460,7 @@ class VrepRGBVisionMixin(WorldAdapterMixin):
         self.image.norm.vmax = 1
 
     def read_from_world(self):
+        super().read_from_world()
         resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_buffer])
         rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (
                                self.vision_resolution[0]*self.downscale_factor, self.vision_resolution[1]*self.downscale_factor, 3)).astype(np.float32)
@@ -611,6 +612,7 @@ class Vrep6DObjectsMixin(WorldAdapterMixin):
         self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 
     def read_from_world(self):
+        super().read_from_world()
         execute = self._get_datatarget_value('execute') > 0.9
 
         for i, (name, handle) in enumerate(zip(self.object_names, self.object_handles)):
@@ -943,6 +945,7 @@ class IKRobotWithGreyscaleVision(Robot, VrepGreyscaleVisionMixin, Vrep6DObjectsM
         parameters.extend(VrepGreyscaleVisionMixin.get_config_options())
         parameters.extend(Vrep6DObjectsMixin.get_config_options())
         return parameters
+
 
 class IKRobot(Robot, Vrep6DObjectsMixin):
     """ A Worldadapter to control a robot with IK + arbitrary scene objects """

@@ -559,7 +559,6 @@ class Vrep6DObjectsMixin(WorldAdapterMixin):
         parameters = [{'name': 'objects',
                       'description': 'comma-separated names of objects in the vrep scene',
                       'default': 'Cylinder'}]
-        parameters.extend(VrepGreyscaleVisionMixin.get_config_options())
         return parameters
 
     def initialize(self):

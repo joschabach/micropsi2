@@ -137,15 +137,15 @@ def test_set_node_activation(app, test_nodenet, node):
     assert float("%.3f" % sheaves['default']['activation']) == 0.734
 
 
-def test_start_calculation(app, test_nodenet):
+def test_start_calculation(app, default_nodenet):
     app.set_auth()
-    response = app.post_json('/rpc/start_calculation', params=dict(nodenet_uid=test_nodenet))
+    response = app.post_json('/rpc/start_calculation', params=dict(nodenet_uid=default_nodenet))
     assert_success(response)
-    response = app.get_json('/rpc/get_nodenet_metadata(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/get_nodenet_metadata(nodenet_uid="%s")' % default_nodenet)
     assert response.json_body['data']['is_active']
 
 
-def test_start_calculation_with_condition(app, test_nodenet):
+def test_start_calculation_with_condition(app, default_nodenet):
     import time
     app.set_auth()
     app.post_json('/rpc/set_runner_properties', params={
@@ -153,18 +153,18 @@ def test_start_calculation_with_condition(app, test_nodenet):
         'factor': 1
     })
     response = app.post_json('/rpc/set_runner_condition', params={
-        'nodenet_uid': test_nodenet,
+        'nodenet_uid': default_nodenet,
         'steps': '2'
     })
     assert_success(response)
     assert response.json_body['data']['step'] == 2
-    response = app.post_json('/rpc/start_calculation', params=dict(nodenet_uid=test_nodenet))
+    response = app.post_json('/rpc/start_calculation', params=dict(nodenet_uid=default_nodenet))
     assert_success(response)
     time.sleep(1)
-    response = app.get_json('/rpc/get_nodenet_metadata(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/get_nodenet_metadata(nodenet_uid="%s")' % default_nodenet)
     assert not response.json_body['data']['is_active']
     assert response.json_body['data']['current_step'] == 2
-    response = app.post_json('/rpc/remove_runner_condition', params=dict(nodenet_uid=test_nodenet))
+    response = app.post_json('/rpc/remove_runner_condition', params=dict(nodenet_uid=default_nodenet))
     assert_success(response)
 
 

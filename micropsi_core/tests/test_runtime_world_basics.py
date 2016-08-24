@@ -96,9 +96,9 @@ def test_get_worldobjects(test_world):
     assert 'foobar' in objects
 
 
-def test_register_agent(test_world, test_nodenet):
+def test_register_agent(test_world, default_nodenet):
     world = runtime.load_world(test_world)
-    nodenet = runtime.get_nodenet(test_nodenet)
+    nodenet = runtime.get_nodenet(default_nodenet)
     assert nodenet.uid not in world.data['agents']
     nodenet.world = test_world
     runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)

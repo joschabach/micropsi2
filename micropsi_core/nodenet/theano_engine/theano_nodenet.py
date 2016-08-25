@@ -1610,8 +1610,10 @@ class TheanoNodenet(Nodenet):
 
         for partition in self.partitions.values():
             a_array = partition.a.get_value(borrow=True)
-            a_array[partition.sensor_indices] = sensor_values
-            a_array[partition.actuator_indices] = actuator_feedback_values
+            valid = np.where(partition.sensor_indices >= 0)[0]
+            a_array[partition.sensor_indices[valid]] = sensor_values[valid]
+            valid = np.where(partition.actuator_indices >= 0)[0]
+            a_array[partition.actuator_indices[valid]] = actuator_feedback_values[valid]
             partition.a.set_value(a_array, borrow=True)
 
     def set_actuator_values(self):

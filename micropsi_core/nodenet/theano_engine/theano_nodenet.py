@@ -1620,10 +1620,11 @@ class TheanoNodenet(Nodenet):
         """
         Writes the values from the actuators to datatargets and modulators
         """
-        actuator_values_to_write = np.zeros_like(self.rootpartition.actuator_indices)
+        actuator_values_to_write = np.zeros(self.rootpartition.actuator_indices.shape)
         for partition in self.partitions.values():
             a_array = partition.a.get_value(borrow=True)
-            actuator_values_to_write = actuator_values_to_write + a_array[partition.actuator_indices]
+            valid = np.where(partition.actuator_indices >= 0)
+            actuator_values_to_write[valid] += a_array[partition.actuator_indices[valid]]
         if self.use_modulators and bool(self.actuatormap):
             writeables = sorted(DoernerianEmotionalModulators.writeable_modulators)
             # remove modulators from actuator values

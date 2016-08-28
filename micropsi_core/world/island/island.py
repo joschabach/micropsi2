@@ -6,6 +6,7 @@ from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.worldobject import WorldObject
 from micropsi_core.world.island import png
 from micropsi_core.world.island import utils
+from micropsi_core.world.island.structured_objects.structured_objects import StructuredObjects
 
 
 class Island(World):
@@ -227,7 +228,7 @@ class Champignon(WorldObject):
         return True, 0.3, 0, 0
 
     def action_drink(self):
-        return True, 0, 0, 0
+        return False, 0, 0, 0
 
 
 class FlyAgaric(WorldObject):

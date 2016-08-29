@@ -531,7 +531,7 @@ class TheanoNodenet(Nodenet):
     def save(self, filename):
 
         # write json metadata, which will be used by runtime to manage the net
-        with open(filename, 'w+') as fp:
+        with open(filename, 'w+', encoding="utf-8") as fp:
             metadata = self.metadata
             metadata['positions'] = self.positions
             metadata['names'] = self.names
@@ -561,7 +561,7 @@ class TheanoNodenet(Nodenet):
             if os.path.isfile(filename):
                 try:
                     self.logger.info("Loading nodenet %s metadata from file %s", self.name, filename)
-                    with open(filename) as file:
+                    with open(filename, encoding="utf-8") as file:
                         initfrom.update(json.load(file))
                 except ValueError:  # pragma: no cover
                     self.logger.warning("Could not read nodenet metadata from file %s", filename)
@@ -1610,18 +1610,21 @@ class TheanoNodenet(Nodenet):
 
         for partition in self.partitions.values():
             a_array = partition.a.get_value(borrow=True)
-            a_array[partition.sensor_indices] = sensor_values
-            a_array[partition.actuator_indices] = actuator_feedback_values
+            valid = np.where(partition.sensor_indices >= 0)[0]
+            a_array[partition.sensor_indices[valid]] = sensor_values[valid]
+            valid = np.where(partition.actuator_indices >= 0)[0]
+            a_array[partition.actuator_indices[valid]] = actuator_feedback_values[valid]
             partition.a.set_value(a_array, borrow=True)
 
     def set_actuator_values(self):
         """
         Writes the values from the actuators to datatargets and modulators
         """
-        actuator_values_to_write = np.zeros_like(self.rootpartition.actuator_indices)
+        actuator_values_to_write = np.zeros(self.rootpartition.actuator_indices.shape)
         for partition in self.partitions.values():
             a_array = partition.a.get_value(borrow=True)
-            actuator_values_to_write = actuator_values_to_write + a_array[partition.actuator_indices]
+            valid = np.where(partition.actuator_indices >= 0)
+            actuator_values_to_write[valid] += a_array[partition.actuator_indices[valid]]
         if self.use_modulators and bool(self.actuatormap):
             writeables = sorted(DoernerianEmotionalModulators.writeable_modulators)
             # remove modulators from actuator values

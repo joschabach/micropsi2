@@ -259,7 +259,7 @@ class DictNodenet(Nodenet):
     def save(self, filename):
         # dict_engine saves everything to json, just dump the json export
         data = json.dumps(self.export_json(), sort_keys=True, indent=4)
-        with open(filename, 'w+') as fp:
+        with open(filename, 'w+', encoding="utf-8") as fp:
             fp.write(data)
         if os.path.getsize(filename) < 100:
             # kind of hacky, but we don't really know what was going on
@@ -275,7 +275,7 @@ class DictNodenet(Nodenet):
             if os.path.isfile(filename):
                 try:
                     self.logger.info("Loading nodenet %s from file %s", self.name, filename)
-                    with open(filename) as file:
+                    with open(filename, encoding="utf-8") as file:
                         initfrom.update(json.load(file))
                 except ValueError:
                     self.logger.warning("Could not read nodenet data")

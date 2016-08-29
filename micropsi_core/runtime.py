@@ -749,7 +749,7 @@ def import_nodenet(string, owner=None):
     meta = parse_definition(import_data, filename)
     nodenet_data[nodenet_uid] = meta
     # assert import_data['world'] in worlds
-    with open(filename, 'w+') as fp:
+    with open(filename, 'w+', encoding="utf-8") as fp:
         fp.write(json.dumps(meta))
     load_nodenet(nodenet_uid)
     merge_nodenet(nodenet_uid, string, keep_uids=True)
@@ -1463,7 +1463,7 @@ def crawl_definition_files(path, type="definition"):
             if definition_file_name.endswith(".json"):
                 try:
                     filename = os.path.join(user_directory_name, definition_file_name)
-                    with open(filename) as file:
+                    with open(filename, encoding="utf-8") as file:
                         data = parse_definition(json.load(file), filename)
                         result[data.uid] = data
                 except ValueError:
@@ -1507,7 +1507,7 @@ def load_definitions():
         uid = tools.generate_uid()
         filename = os.path.join(PERSISTENCY_PATH, WORLD_DIRECTORY, uid + '.json')
         world_data[uid] = Bunch(uid=uid, name="default", version=1, filename=filename, owner="admin", world_type="DefaultWorld")
-        with open(filename, 'w+') as fp:
+        with open(filename, 'w+', encoding="utf-8") as fp:
             fp.write(json.dumps(world_data[uid], sort_keys=True, indent=4))
     for uid in world_data:
         world_data[uid].supported_worldadapters = get_world_class_from_name(world_data[uid].get('world_type', "DefaultWorld")).get_supported_worldadapters()
@@ -1536,13 +1536,15 @@ def load_user_files(path, reload_nodefunctions=False, errors=[]):
 
 
 def parse_native_module_file(path):
+
     global native_modules
-    with open(path) as fp:
+    with open(path, encoding="utf-8") as fp:
         category = os.path.relpath(os.path.dirname(path), start=RESOURCE_PATH)
         try:
             modules = json.load(fp)
-        except ValueError:
-            return "Nodetype data in %s/nodetypes.json not well-formed." % category
+        except ValueError as oi:
+            print("oi: "+oi)
+            return "Nodetype data in %s/nodetypes.json not well-formed. Boing." % category
         for key in modules:
             modules[key]['path'] = os.path.join(os.path.dirname(path), 'nodefunctions.py')
             modules[key]['category'] = category

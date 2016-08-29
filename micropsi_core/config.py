@@ -74,7 +74,7 @@ class ConfigurationManager(object):
     def load_configs(self):
         """load configuration data"""
         try:
-            with open(self.config_file_name) as file:
+            with open(self.config_file_name, encoding="utf-8") as file:
                 self.data = json.load(file)
             return True
         except ValueError:
@@ -85,7 +85,7 @@ class ConfigurationManager(object):
 
     def save_configs(self):
         """saves the config data to a file"""
-        with open(self.config_file_name, mode='w+') as file:
+        with open(self.config_file_name, mode='w+', encoding="utf-8") as file:
             json.dump(self.data, file, indent=4)
 
     def __setitem__(self, key, value):

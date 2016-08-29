@@ -234,13 +234,6 @@ def kill_runners(signal=None, frame=None):
     runner['runner'].join()
 
 
-def _get_world_uid_for_nodenet_uid(nodenet_uid):
-    """ get the world uid to a given nodenet uid."""
-    if nodenet_uid in nodenet_data:
-        return nodenet_data[nodenet_uid].world
-    return None
-
-
 # MicroPsi API
 
 

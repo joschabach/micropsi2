@@ -331,8 +331,8 @@ class VREPWorld(World):
     def __del__(self):
         self.signal_handler()
 
-    @staticmethod
-    def get_config_options():
+    @classmethod
+    def get_config_options(cls):
         return [
             {'name': 'vrep_host',
              'default': '127.0.0.1'},
@@ -356,11 +356,13 @@ class VREPWorld(World):
 
 class VrepCollisionsMixin(WorldAdapterMixin):
 
-    @staticmethod
-    def get_config_options():
-        return [{'name': 'collision_name',
+    @classmethod
+    def get_config_options(cls):
+        options = super().get_config_options()
+        options.extend([{'name': 'collision_name',
              'default': 'Collision',
-             'description': 'The name of the robot\'s collision handle'}]
+             'description': 'The name of the robot\'s collision handle'}])
+        return options
 
     def initialize(self):
         super().initialize()
@@ -471,12 +473,14 @@ class VrepRGBVisionMixin(WorldAdapterMixin):
 
 class VrepOneBallGameMixin(WorldAdapterMixin):
 
-    @staticmethod
-    def get_config_options():
-        return [{'name': 'randomize_ball',
+    @classmethod
+    def get_config_options(cls):
+        options = super().get_config_options()
+        options.extend([{'name': 'randomize_ball',
              'description': 'Initialize the ball position randomly',
              'default': 'False',
-             'options': ["False", "True"]}]
+             'options': ["False", "True"]}])
+        return options
 
     def initialize(self):
         super().initialize()
@@ -537,13 +541,13 @@ class VrepOneBallGameMixin(WorldAdapterMixin):
 
 class Vrep6DObjectsMixin(WorldAdapterMixin):
 
-    @staticmethod
-    def get_config_options():
-        parameters = [{'name': 'objects',
+    @classmethod
+    def get_config_options(cls):
+        options = super().get_config_options()
+        options.extend([{'name': 'objects',
                       'description': 'comma-separated names of objects in the vrep scene',
-                      'default': 'fork,ghost_fork'}]
-        parameters.extend(VrepGreyscaleVisionMixin.get_config_options())
-        return parameters
+                      'default': 'fork,ghost_fork'}])
+        return options
 
     def initialize(self):
         super().initialize()
@@ -617,9 +621,10 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
     """ The basic worldadapter to control a robot in vrep.
     Combine this with the Vrep Mixins for a useful robot simulation"""
 
-    @staticmethod
-    def get_config_options():
-        return [
+    @classmethod
+    def get_config_options(cls):
+        options = super().get_config_options()
+        options.extend([
             {'name': 'robot_name',
              'description': 'The name of the robot object in V-REP',
              'default': 'LBR_iiwa_7_R800',
@@ -632,7 +637,8 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
              'description': 'Initialize the robot arm randomly',
              'default': 'False',
              'options': ["False", "True"]},
-        ]
+        ])
+        return options
 
     def __init__(self, world, uid=None, **data):
         super().__init__(world, uid, **data)
@@ -901,53 +907,23 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
 
 class OneBallRobot(Robot, VrepGreyscaleVisionMixin, VrepCollisionsMixin, VrepOneBallGameMixin):
     """ A Worldadapter to play the one-ball-reaching-task """
-
-    @classmethod
-    def get_config_options(cls):
-        """ I've found no way around this yet """
-        parameters = []
-        parameters.extend(Robot.get_config_options())
-        parameters.extend(VrepCollisionsMixin.get_config_options())
-        parameters.extend(VrepGreyscaleVisionMixin.get_config_options())
-        parameters.extend(VrepOneBallGameMixin.get_config_options())
-        return parameters
+    pass
 
 
 class IKRobotWithGreyscaleVision(Robot, VrepGreyscaleVisionMixin, Vrep6DObjectsMixin):
     """ A Worldadapter to control a robot with IK + arbitrary scene objects, based on a greyscale vision stream """
+    pass
 
-    @classmethod
-    def get_config_options(cls):
-        """ I've found no way around this yet """
-        parameters = []
-        parameters.extend(Robot.get_config_options())
-        parameters.extend(VrepGreyscaleVisionMixin.get_config_options())
-        parameters.extend(Vrep6DObjectsMixin.get_config_options())
-        return parameters
 
 class IKRobot(Robot, Vrep6DObjectsMixin):
     """ A Worldadapter to control a robot with IK + arbitrary scene objects """
-
-    @classmethod
-    def get_config_options(cls):
-        """ I've found no way around this yet """
-        parameters = []
-        parameters.extend(Robot.get_config_options())
-        parameters.extend(Vrep6DObjectsMixin.get_config_options())
-        return parameters
+    pass
 
 
 class Objects6D(VrepRGBVisionMixin, Vrep6DObjectsMixin, VrepCallMixin, ArrayWorldAdapter):
     """ worldadapter to observe and control 6D poses of arbitrary objects in a vrep scene
     (i.e. their positons and orientations)"""
     block_runner_if_connection_lost = True
-
-    @staticmethod
-    def get_config_options():
-        parameters = []
-        parameters.extend(VrepRGBVisionMixin.get_config_options())
-        parameters.extend(Vrep6DObjectsMixin.get_config_options())
-        return parameters
 
     def __init__(self, world, uid=None, **data):
         super().__init__(world, uid, **data)

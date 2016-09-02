@@ -61,8 +61,8 @@ class World(object):
     def config(self):
         return self.data['config']
 
-    @staticmethod
-    def get_config_options():
+    @classmethod
+    def get_config_options(cls):
         """ Returns a list of configuration-options for this world.
         Expected format:
         [{

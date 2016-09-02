@@ -30,8 +30,8 @@ class WorldAdapterMixin(object):
     """ Superclass for modular world-adapter extensions that provide
     functionality reusable in several worldadapters. See examples in vrep_world.py"""
 
-    @staticmethod
-    def get_config_options():
+    @classmethod
+    def get_config_options(cls):
         """ returns an array of parameters that are needed
         to configure this mixin """
         return []

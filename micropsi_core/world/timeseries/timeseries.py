@@ -118,8 +118,8 @@ class TimeSeries(World):
             t = self.permutation[t]
         return self.timeseries[t, :]
 
-    @staticmethod
-    def get_config_options():
+    @classmethod
+    def get_config_options(cls):
         """ Returns a list of configuration-options for this world.
         Expected format:
         [{

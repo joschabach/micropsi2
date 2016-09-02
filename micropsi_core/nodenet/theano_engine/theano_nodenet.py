@@ -388,8 +388,8 @@ class TheanoNodenet(Nodenet):
                         gate_numerical = from_el - partition.allocated_node_offsets[from_nids[j]]
                         gate_type = get_string_gate_type(gate_numerical, from_obj_nodetype)
                         if from_obj_nodetype.is_highdimensional:
-                            if source_gate_type.rstrip('0123456789') in from_obj_nodetype.dimensionality['gates']:
-                                gate_type = source_gate_type.rstrip('0123456789') + '0'
+                            if gate_type.rstrip('0123456789') in from_obj_nodetype.dimensionality['gates']:
+                                gate_type = gate_type.rstrip('0123456789') + '0'
                         ldict = {
                             'source_node_uid': source_uid,
                             'source_gate_name': gate_type,
@@ -414,8 +414,8 @@ class TheanoNodenet(Nodenet):
                         slot_numerical = to_el - partition.allocated_node_offsets[to_nids[j]]
                         slot_type = get_string_slot_type(slot_numerical, to_obj_nodetype)
                         if to_obj_nodetype.is_highdimensional:
-                            if source_slot_type.rstrip('0123456789') in to_obj_nodetype.dimensionality['slots']:
-                                slot_type = source_slot_type.rstrip('0123456789') + '0'
+                            if slot_type.rstrip('0123456789') in to_obj_nodetype.dimensionality['slots']:
+                                slot_type = slot_type.rstrip('0123456789') + '0'
                         ldict = {
                             'source_node_uid': uid,
                             'source_gate_name': gate_type,
@@ -502,8 +502,8 @@ class TheanoNodenet(Nodenet):
                         gate_numerical = from_elements[index] - from_partition.allocated_node_offsets[source_nid]
                         gate_type = get_string_gate_type(gate_numerical, from_obj_nodetype)
                         if from_obj_nodetype.is_highdimensional:
-                            if source_gate_type.rstrip('0123456789') in from_obj_nodetype.dimensionality['gates']:
-                                gate_type = source_gate_type.rstrip('0123456789') + '0'
+                            if gate_type.rstrip('0123456789') in from_obj_nodetype.dimensionality['gates']:
+                                gate_type = gate_type.rstrip('0123456789') + '0'
                         if obj_nodetype.is_highdimensional:
                             if slot_type.rstrip('0123456789') in obj_nodetype.dimensionality['slots']:
                                 slot_type = slot_type.rstrip('0123456789') + '0'
@@ -531,7 +531,7 @@ class TheanoNodenet(Nodenet):
     def save(self, filename):
 
         # write json metadata, which will be used by runtime to manage the net
-        with open(filename, 'w+') as fp:
+        with open(filename, 'w+', encoding="utf-8") as fp:
             metadata = self.metadata
             metadata['positions'] = self.positions
             metadata['names'] = self.names
@@ -561,7 +561,7 @@ class TheanoNodenet(Nodenet):
             if os.path.isfile(filename):
                 try:
                     self.logger.info("Loading nodenet %s metadata from file %s", self.name, filename)
-                    with open(filename) as file:
+                    with open(filename, encoding="utf-8") as file:
                         initfrom.update(json.load(file))
                 except ValueError:  # pragma: no cover
                     self.logger.warning("Could not read nodenet metadata from file %s", filename)
@@ -1610,18 +1610,21 @@ class TheanoNodenet(Nodenet):
 
         for partition in self.partitions.values():
             a_array = partition.a.get_value(borrow=True)
-            a_array[partition.sensor_indices] = sensor_values
-            a_array[partition.actuator_indices] = actuator_feedback_values
+            valid = np.where(partition.sensor_indices >= 0)[0]
+            a_array[partition.sensor_indices[valid]] = sensor_values[valid]
+            valid = np.where(partition.actuator_indices >= 0)[0]
+            a_array[partition.actuator_indices[valid]] = actuator_feedback_values[valid]
             partition.a.set_value(a_array, borrow=True)
 
     def set_actuator_values(self):
         """
         Writes the values from the actuators to datatargets and modulators
         """
-        actuator_values_to_write = np.zeros_like(self.rootpartition.actuator_indices)
+        actuator_values_to_write = np.zeros(self.rootpartition.actuator_indices.shape)
         for partition in self.partitions.values():
             a_array = partition.a.get_value(borrow=True)
-            actuator_values_to_write = actuator_values_to_write + a_array[partition.actuator_indices]
+            valid = np.where(partition.actuator_indices >= 0)
+            actuator_values_to_write[valid] += a_array[partition.actuator_indices[valid]]
         if self.use_modulators and bool(self.actuatormap):
             writeables = sorted(DoernerianEmotionalModulators.writeable_modulators)
             # remove modulators from actuator values

@@ -16,8 +16,9 @@ import random
 import sys
 from io import BytesIO
 
-from scipy.misc import toimage, fromimage
+from scipy.misc import toimage, fromimage, imresize
 from PIL import Image
+
 
 import vrep
 from micropsi_core.world.world import World
@@ -243,9 +244,16 @@ class VrepCallMixin():
         if type(result) == int:
             return True
         if len(result) == 2:
-            return result[1]
+            rval = result[1]
+            # if np.any(np.isnan(np.array(rval, dtype=float))):
+            #     self.logger.error('VREP returned invalid value calling {} with params {}'.format(method, params))
+            return rval
         else:
-            return result[1:]
+            rval = result[1:]
+            # for arr in rval:
+            #     if np.any(np.isnan(np.array(arr, dtype=float))):
+            #         self.logger.error('VREP returned invalid value calling {} with params {}'.format(method, params))
+            return rval
 
 
 class VREPWorld(World):
@@ -264,7 +272,7 @@ class VREPWorld(World):
     def __init__(self, filename, world_type="VREPWorld", name="", owner="", engine=None, uid=None, version=1, config={}):
         World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version, config=config)
 
-        self.simulation_speed = float(config['simulation_speed'])
+        self.simulation_speed = int(config['simulation_speed'])
         self.synchronous_mode = self.simulation_speed > 0
 
         self.vrep_watchdog = None
@@ -384,18 +392,30 @@ class VrepCollisionsMixin(WorldAdapterMixin):
 
 class VrepGreyscaleVisionMixin(WorldAdapterMixin):
 
+    @classmethod
+    def get_config_options(cls):
+        options = super().get_config_options()
+        options.extend([{'name': 'downscale',
+             'description': 'shrink the image by a factor of 2^k, using anti aliasing. specify `1` to halve the image in each dimension, `2` to quarter it, `0` to leave it unscaled (default)',
+             'default': 1}])
+        return options
+
     def initialize(self):
+        self.downscale = float(self.downscale)
         super().initialize()
         self.observer_handle = self.call_vrep(vrep.simxGetObjectHandle, [self.clientID, "Observer", vrep.simx_opmode_blocking])
         if self.observer_handle < 1:
             self.logger.warn("Could not get handle for Observer vision sensor, vision will not be available.")
         else:
             resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_streaming]) # _split+4000)
-            self.vision_resolution = resolution
             if len(resolution) != 2:
                 self.logger.error("Could not determine vision resolution.")
-            else:
+            elif self.downscale == 0:
+                self.vision_resolution = resolution
                 self.logger.info("Vision resolution is %s, greyscale" % str(self.vision_resolution))
+            else:
+                self.vision_resolution = (int(resolution[0] / 2**self.downscale), int(resolution[1] / 2**self.downscale))
+                self.logger.info("Vision resolution is {} (greyscale) after downscaling by 2**{}".format(self.vision_resolution, self.downscale))
         for y in range(self.vision_resolution[1]):
             for x in range(self.vision_resolution[0]):
                 self.add_datasource("px_%03d_%03d" % (x, y))
@@ -407,10 +427,15 @@ class VrepGreyscaleVisionMixin(WorldAdapterMixin):
     def read_from_world(self):
         super().read_from_world()
         resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_buffer])
-        rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (self.vision_resolution[0] * self.vision_resolution[1], 3)).astype(np.float32)
-        rgb_image /= 255.
+        rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (resolution[0] * resolution[1], 3)).astype(np.float32)
+
         luminance = np.sum(rgb_image * np.asarray([.2126, .7152, .0722]), axis=1)
-        y_image = luminance.astype(np.float32).reshape((self.vision_resolution[0], self.vision_resolution[1]))[::-1,:]   # todo: npyify and make faster
+        y_image = luminance.astype(np.float32).reshape((resolution[0], resolution[1]))[::-1, :]   # todo: npyify and make faster
+
+        if self.downscale != 0:
+            y_image = imresize(y_image*255, size=1./(2**self.downscale), interp='bilinear')  # for greyscale images, scipy.misc.imresize is enough.
+
+        y_image = y_image/255.0
 
         self.set_datasource_range('px_000_000', y_image.flatten())
         self.image.set_data(y_image)
@@ -546,7 +571,7 @@ class Vrep6DObjectsMixin(WorldAdapterMixin):
         options = super().get_config_options()
         options.extend([{'name': 'objects',
                       'description': 'comma-separated names of objects in the vrep scene',
-                      'default': 'fork,ghost_fork'}])
+                      'default': 'Cylinder'}])
         return options
 
     def initialize(self):
@@ -591,24 +616,24 @@ class Vrep6DObjectsMixin(WorldAdapterMixin):
                 tx = self.get_datatarget_value("%s-x" % name)
                 ty = self.get_datatarget_value("%s-y" % name)
                 tz = self.get_datatarget_value("%s-z" % name)
-                self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, handle, -1, [tx, ty, tz], vrep.simx_opmode_oneshot], empty_result_ok=True)
+                self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, handle, -1, [tx, ty, tz], vrep.simx_opmode_streaming], empty_result_ok=True)
                 # set angles:
                 talpha = self.get_datatarget_value("%s-alpha" % name)
                 tbeta = self.get_datatarget_value("%s-beta" % name)
                 tgamma = self.get_datatarget_value("%s-gamma" % name)
-                self.call_vrep(vrep.simxSetObjectOrientation, [self.clientID, handle, -1, [talpha, tbeta, tgamma], vrep.simx_opmode_oneshot], empty_result_ok=True)
+                self.call_vrep(vrep.simxSetObjectOrientation, [self.clientID, handle, -1, [talpha, tbeta, tgamma], vrep.simx_opmode_streaming], empty_result_ok=True)
+
         self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 
     def read_from_world(self):
         super().read_from_world()
         execute = self.get_datatarget_value('execute') > 0.9
-
         for i, (name, handle) in enumerate(zip(self.object_names, self.object_handles)):
-            tx, ty, tz = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, handle, -1, vrep.simx_opmode_oneshot], empty_result_ok=False)
+            tx, ty, tz = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, handle, -1, vrep.simx_opmode_streaming], empty_result_ok=False)
             self.set_datasource_value("%s-x" % name, tx)
             self.set_datasource_value("%s-y" % name, ty)
             self.set_datasource_value("%s-z" % name, tz)
-            talpha, tbeta, tgamma = self.call_vrep(vrep.simxGetObjectOrientation, [self.clientID, handle, -1, vrep.simx_opmode_oneshot], empty_result_ok=False)
+            talpha, tbeta, tgamma = self.call_vrep(vrep.simxGetObjectOrientation, [self.clientID, handle, -1, vrep.simx_opmode_streaming], empty_result_ok=False)
             self.set_datasource_value("%s-alpha" % name, talpha)
             self.set_datasource_value("%s-beta" % name, tbeta)
             self.set_datasource_value("%s-gamma" % name, tgamma)
@@ -631,7 +656,7 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
              'options': ["LBR_iiwa_7_R800", "MTB_Robot"]},
             {'name': 'control_type',
              'description': 'The type of input sent to the robot',
-             'default': 'force/torque',
+             'default': 'ik',
              'options': ["force/torque", "force/torque-sync", "ik", "angles", "movements"]},
             {'name': 'randomize_arm',
              'description': 'Initialize the robot arm randomly',
@@ -714,6 +739,7 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
         self.write_to_world()
         if self.world.synchronous_mode:
             self.call_vrep(vrep.simxSynchronousTrigger, [self.clientID])
+            self.call_vrep(vrep.simxGetPingTime, [self.clientID])
         self.read_from_world()
 
     def write_to_world(self):
@@ -840,6 +866,9 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
             self.call_vrep(vrep.simxSetJointPosition, [self.clientID, self.joints[-2], math.pi/2, vrep.simx_opmode_oneshot], empty_result_ok=True)
             # /hack
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
+
+        if self.world.synchronous_mode:
+            self.call_vrep(vrep.simxSynchronousTrigger, [self.clientID])
 
         self.read_from_world()
         self.last_restart = self.world.current_step

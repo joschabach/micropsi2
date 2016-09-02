@@ -131,7 +131,8 @@ def test_vrep_oneballrobot(runtime):
         'control_type': 'angles',
         'randomize_arm': 'False',
         'collision_name': 'Collision',
-        'randomize_ball': 'True'
+        'randomize_ball': 'True',
+        'downscale': '1'
     }
 
     config_options = vrep_world.OneBallRobot.get_config_options()
@@ -276,7 +277,8 @@ def test_vrep_ikrobotwithgrayscalevision(runtime):
         'robot_name': 'LBR_iiwa_7_R800',
         'control_type': 'ik',
         'randomize_arm': 'False',
-        'objects': 'fork'
+        'objects': 'fork',
+        'downscale': '0'
     }
     config_options = vrep_world.IKRobotWithGreyscaleVision.get_config_options()
     for item in config_options:

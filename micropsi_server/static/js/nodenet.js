@@ -4103,9 +4103,9 @@ function showNodeForm(nodeUid, refresh){
         }
         $('#node_slots').html(link_list || "<tr><td>None</td></tr>");
         if(nodes[nodeUid].outlinks > viewProperties.load_link_threshold){
-            link_list += '<tr><td colspan="2">'+nodes[nodeUid].outlinks+' invisible links to outside nodespaces. <a href="#loadlinks" class="loadLinks">Load all links</a></td></tr>';
+            content += '<tr><td colspan="2">'+nodes[nodeUid].outlinks+' invisible links to outside nodespaces. <a href="#loadlinks" class="loadLinks">Load all links</a></td></tr>';
         } else if(nodes[nodeUid].outlinks > 0){
-            content = '<tr><td colspan="2">'+nodes[nodeUid].outlinks+' invisible links to outside nodespaces</td></tr>';
+            content += '<tr><td colspan="2">'+nodes[nodeUid].outlinks+' invisible links to outside nodespaces</td></tr>';
         }
         for(name in nodes[nodeUid].gates){
             link_list = "";
@@ -4125,11 +4125,13 @@ function showNodeForm(nodeUid, refresh){
             }
             content += "</tr>";
         }
+        $('#node_gates').html(content || "<tr><td>None</td></tr>");
         $('a.loadLinks', form).on('click', function(evt){
             evt.preventDefault();
-            loadLinksForSelection(null, true);
-        })
-        $('#node_gates').html(content || "<tr><td>None</td></tr>");
+            loadLinksForSelection(function(){
+                showNodeForm(nodeUid);
+            }, true);
+        });
         $('a.followlink').on('click', followlink);
         $('a.follownode').on('click', follownode);
         //$('a.followslot').on('click', followslot);

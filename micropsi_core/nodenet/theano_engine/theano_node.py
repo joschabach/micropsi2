@@ -111,7 +111,10 @@ class TheanoNode(Node):
         self._partition.a.set_value(a_array, borrow=True)
 
     def get_data(self, complete=False, include_links=True):
-        data = self._partition.get_node_data(ids=[self._id], complete=complete, include_links=include_links)[0][self.uid]
+        nspace = {
+            self._partition.spid: [self._parent_id]
+        }
+        data = self._partition.get_node_data(nodespaces_by_partition=nspace, ids=[self._id], complete=complete, include_links=include_links)[0][self.uid]
         return data
 
     def get_gate(self, type):

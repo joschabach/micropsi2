@@ -388,8 +388,8 @@ class TheanoNodenet(Nodenet):
                         gate_numerical = from_el - partition.allocated_node_offsets[from_nids[j]]
                         gate_type = get_string_gate_type(gate_numerical, from_obj_nodetype)
                         if from_obj_nodetype.is_highdimensional:
-                            if source_gate_type.rstrip('0123456789') in from_obj_nodetype.dimensionality['gates']:
-                                gate_type = source_gate_type.rstrip('0123456789') + '0'
+                            if gate_type.rstrip('0123456789') in from_obj_nodetype.dimensionality['gates']:
+                                gate_type = gate_type.rstrip('0123456789') + '0'
                         ldict = {
                             'source_node_uid': source_uid,
                             'source_gate_name': gate_type,
@@ -414,8 +414,8 @@ class TheanoNodenet(Nodenet):
                         slot_numerical = to_el - partition.allocated_node_offsets[to_nids[j]]
                         slot_type = get_string_slot_type(slot_numerical, to_obj_nodetype)
                         if to_obj_nodetype.is_highdimensional:
-                            if source_slot_type.rstrip('0123456789') in to_obj_nodetype.dimensionality['slots']:
-                                slot_type = source_slot_type.rstrip('0123456789') + '0'
+                            if slot_type.rstrip('0123456789') in to_obj_nodetype.dimensionality['slots']:
+                                slot_type = slot_type.rstrip('0123456789') + '0'
                         ldict = {
                             'source_node_uid': uid,
                             'source_gate_name': gate_type,
@@ -502,8 +502,8 @@ class TheanoNodenet(Nodenet):
                         gate_numerical = from_elements[index] - from_partition.allocated_node_offsets[source_nid]
                         gate_type = get_string_gate_type(gate_numerical, from_obj_nodetype)
                         if from_obj_nodetype.is_highdimensional:
-                            if source_gate_type.rstrip('0123456789') in from_obj_nodetype.dimensionality['gates']:
-                                gate_type = source_gate_type.rstrip('0123456789') + '0'
+                            if gate_type.rstrip('0123456789') in from_obj_nodetype.dimensionality['gates']:
+                                gate_type = gate_type.rstrip('0123456789') + '0'
                         if obj_nodetype.is_highdimensional:
                             if slot_type.rstrip('0123456789') in obj_nodetype.dimensionality['slots']:
                                 slot_type = slot_type.rstrip('0123456789') + '0'
@@ -1792,8 +1792,8 @@ class TheanoNodenet(Nodenet):
             if nodespace_to_uid not in partition_to.nodegroups or group_to not in partition_to.nodegroups[nodespace_to_uid]:
                 raise ValueError("Group %s does not exist in nodespace %s." % (group_to, nodespace_to_uid))
 
-            elements_from_indices = partition_from.nodegroups[nodespace_from_uid][group_from]
-            elements_to_indices = partition_to.nodegroups[nodespace_to_uid][group_to]
+            elements_from_indices = np.array(partition_from.nodegroups[nodespace_from_uid][group_from], dtype='int32')
+            elements_to_indices = np.array(partition_to.nodegroups[nodespace_to_uid][group_to], dtype='int32')
 
             partition_to.set_inlink_weights(partition_from.spid, elements_from_indices, elements_to_indices, new_w)
         else:

@@ -158,16 +158,12 @@ class MicropsiRunner(threading.Thread):
                             nodenet.is_active = False
                             continue
                         log = True
+                        if self.profiler:
+                            self.profiler.enable()
                         try:
-                            if self.profiler:
-                                self.profiler.enable()
                             nodenet.timed_step()
-                            if self.profiler:
-                                self.profiler.disable()
                             nodenet.update_monitors_and_recorders()
                         except:
-                            if self.profiler:
-                                self.profiler.disable()
                             nodenet.is_active = False
                             logging.getLogger("agent.%s" % uid).error("Exception in NodenetRunner:", exc_info=1)
                             MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
@@ -178,6 +174,8 @@ class MicropsiRunner(threading.Thread):
                                 nodenet.is_active = False
                                 logging.getLogger("world").error("Exception in WorldRunner:", exc_info=1)
                                 MicropsiRunner.last_world_exception[nodenets[uid].world] = sys.exc_info()
+                        if self.profiler:
+                            self.profiler.disable()
 
             elapsed = datetime.now() - start
             if log:
@@ -193,7 +191,7 @@ class MicropsiRunner(threading.Thread):
                         s = io.StringIO()
                         sortby = 'cumtime'
                         ps = pstats.Stats(self.profiler, stream=s).sort_stats(sortby)
-                        ps.print_stats('nodenet')
+                        ps.print_stats('micropsi_')
                         logging.getLogger("system").debug(s.getvalue())
 
                     logging.getLogger("system").debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_duration))
@@ -566,7 +564,7 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
         assert worldadapter in world_obj.supported_worldadapters
         nodenet.world = world_uid
         nodenet.worldadapter = worldadapter
-        result, wa_instance = world_obj.register_nodenet(worldadapter, nodenet.uid, nodenet_name=nodenet.name)
+        result, wa_instance = world_obj.register_nodenet(worldadapter, nodenet.uid, nodenet_name=nodenet.name, config=worldadapter_config)
         if result:
             nodenet.worldadapter_instance = wa_instance
     if nodenet_name:
@@ -654,7 +652,24 @@ def step_nodenet(nodenet_uid):
         nodenet_uid: The uid of the nodenet
     """
     nodenet = get_nodenet(nodenet_uid)
+
+    if cfg['micropsi2'].get('profile_runner'):
+        import cProfile
+        profiler = cProfile.Profile()
+        profiler.enable()
+
     nodenet.timed_step()
+
+    if cfg['micropsi2'].get('profile_runner'):
+        profiler.disable()
+        import pstats
+        import io
+        s = io.StringIO()
+        sortby = 'cumtime'
+        ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
+        ps.print_stats('micropsi_')
+        logging.getLogger("agent.%s" % nodenet_uid).debug(s.getvalue())
+
     nodenet.update_monitors_and_recorders()
     if nodenet.world and nodenet.current_step % configs['runner_factor'] == 0:
         worlds[nodenet.world].step()

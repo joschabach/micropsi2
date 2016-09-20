@@ -194,9 +194,9 @@ function get_available_worlds(){
         for(var i in worlds){
             html += '<option value="'+worlds[i][0]+'">'+worlds[i][1]+'</option>';
         }
-        $('#nodenet_world').html(html);
+        $('#nodenet_world_uid').html(html);
         if(currentNodenet && nodenet_data){
-            $('#nodenet_world').val(nodenet_data.world);
+            $('#nodenet_world_uid').val(nodenet_data.world);
         }
     });
 }
@@ -239,10 +239,10 @@ function get_available_gatefunctions(){
 }
 
 function setNodenetValues(data){
-    $('#nodenet_world').val(data.world);
+    $('#nodenet_world_uid').val(data.world);
     $('#nodenet_uid').val(currentNodenet);
-    $('#nodenet_name').val(data.name);
-    $('#nodenet_snap').attr('checked', data.snap_to_grid);
+    $('#nodenet_nodenet_name').val(data.name);
+    $('#ui_snap').attr('checked', data.snap_to_grid);
     if (!jQuery.isEmptyObject(worldadapters)) {
         var worldadapter_select = $('#nodenet_worldadapter');
         worldadapter_select.val(data.worldadapter);
@@ -3825,28 +3825,30 @@ function handleNodespaceUp() {
 
 function handleEditNodenet(event){
     event.preventDefault();
-    var form = event.target;
+    var form = $(event.target);
     var reload = false;
-    var params = {
-        nodenet_uid: currentNodenet,
-        nodenet_name: $('#nodenet_name', form).val()
-    };
-    var nodenet_world = $('#nodenet_world', form).val();
-    if(nodenet_world){
-        params.world_uid = nodenet_world;
+    var data = {
+        "nodenet_uid": currentNodenet,
+        "worldadapter_config": {}
     }
-    if(nodenet_world != nodenet_data.world){
-        if(typeof currentWorld != 'undefined' && (nodenet_data.world == currentWorld || nodenet_world == currentWorld)){
+    var formvalues = form.serializeArray();
+
+    for(var i = 0; i < formvalues.length; i++){
+        var field = formvalues[i];
+        if(field.name.substr(0, 11) == "nodenet_wa_"){
+            data.worldadapter_config[field.name.substr(11)] = field.value;
+        } else if(field.name.substr(0, 8) == "nodenet_") {
+            data[field.name.substr(8)] = field.value;
+        }
+    }
+    if(data.world != nodenet_data.world){
+        if(typeof currentWorld != 'undefined' && (nodenet_data.world == currentWorld || data.world == currentWorld)){
             reload = true;
         }
     }
-    var worldadapter = $('#nodenet_worldadapter', form).val();
-    if(worldadapter){
-        params.worldadapter = worldadapter;
-    }
-    nodenet_data.snap_to_grid = $('#nodenet_snap').attr('checked');
+    nodenet_data.snap_to_grid = $('#ui_snap').attr('checked');
     $.cookie('snap_to_grid', nodenet_data.snap_to_grid || '', {path: '/', expires: 7})
-    api.call("set_nodenet_properties", params,
+    api.call("set_nodenet_properties", data,
         success=function(data){
             dialogs.notification('Nodenet data saved', 'success');
             if(reload){
@@ -3982,7 +3984,7 @@ function initializeSidebarForms(){
     $('#native_add_param').click(function(){
         $('#native_parameters').append('<tr><td><input name="param_name" type="text" class="inplace"/></td><td><input name="param_value" type="text"  class="inplace" /></td></tr>');
     });
-    var world_selector = $("#nodenet_world");
+    var world_selector = $("#nodenet_world_uid");
     var worldadapter_selector = $("#nodenet_worldadapter");
     var update_worldadapter_params = function(data){
         var html = [];
@@ -3992,11 +3994,11 @@ function initializeSidebarForms(){
             var op = wa.config_options[i]
             var param = '<tr><td><label for="nodenet_wa_'+op.name+'">'+op.name+'</td>';
             if(op.options){
-                param += '<td><select id="nodenet_wa_'+op.name+'">';
+                param += '<td><select name="nodenet_wa_'+op.name+'" id="nodenet_wa_'+op.name+'">';
                 param += '<option>' + op.options.join("</option><option>") + '<option>';
                 param += '</select></td>';
             } else {
-                param += '<td><input type="text" id="nodenet_wa_'+op.name+'"></td>';
+                param += '<td><input type="text" name="nodenet_wa_'+op.name+'" id="nodenet_wa_'+op.name+'"></td>';
             }
             html.push(param +'</tr>')
         }

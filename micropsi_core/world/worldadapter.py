@@ -52,6 +52,12 @@ class WorldAdapterMixin(object):
     def update_datasources_and_targets(self):
         pass
 
+    def write_to_world(self):
+        pass
+
+    def read_from_world(self):
+        pass
+
 
 class WorldAdapter(WorldObject, metaclass=ABCMeta):
     """Transmits data between agent and environment.
@@ -185,55 +191,40 @@ try:
             self.datatarget_values = np.zeros(0)
             self.datatarget_feedback_values = np.zeros(0)
 
-        def add_datasource(self, name, initial_value=0):
+        def add_datasource(self, name, initial_value=0.):
             """ Adds a datasource, and returns the index
             where they were added"""
-            if len(self.datasource_names) > 0:
-                self.datasource_names.append(name)
-                self.datasource_values = np.concatenate((self.datasource_values, np.asarray([initial_value])))
-            else:
-                self.datasource_names = [name]
-                self.datasource_values = np.asarray([initial_value])
+            self.datasource_names.append(name)
+            self.datasource_values = np.concatenate((self.datasource_values, np.asarray([initial_value])))
             return len(self.datasource_names) - 1
 
-        def add_datatarget(self, name, initial_value=0):
+        def add_datatarget(self, name, initial_value=0.):
             """ Adds a datatarget, and returns the index
             where they were added"""
-            if len(self.datatarget_names) > 0:
-                self.datatarget_names.append(name)
-                self.datatarget_values = np.concatenate((self.datatarget_values, np.asarray([initial_value])))
-                self.datatarget_feedback_values = np.concatenate((self.datatarget_feedback_values, np.asarray([initial_value])))
-            else:
-                self.datatarget_names = [name]
-                self.datatarget_values = np.asarray([initial_value])
-                self.datatarget_feedback_values = np.asarray([initial_value])
+            self.datatarget_names.append(name)
+            self.datatarget_values = np.concatenate((self.datatarget_values, np.asarray([initial_value])))
+            self.datatarget_feedback_values = np.concatenate((self.datatarget_feedback_values, np.asarray([initial_value])))
             return len(self.datatarget_names) - 1
 
         def add_datasources(self, names, initial_values=False):
             """ Adds a list of datasources, and returns the indexes
             where they were added"""
-            if len(self.datasource_names) > 0:
-                offset = len(self.datasource_names)
-                self.datasource_names.extend(names)
-                self.datasource_values = np.concatenate((self.datasource_values, np.asarray(initial_values)))
-            else:
-                self.datasource_names = names
-                self.datasource_values = np.asarray([initial_values])
-
+            offset = len(self.datasource_names)
+            self.datasource_names.extend(names)
+            if not initial_values or len(initial_values) != len(names):
+                initial_values = np.zeros(len(names))
+            self.datasource_values = np.concatenate((self.datasource_values, np.asarray(initial_values)))
             return range(offset, offset + len(names))
 
         def add_datatargets(self, names, initial_values=False):
             """ Adds a list of datatargets, and returns the indexes
             where they were added"""
-            if len(self.datatarget_names) > 0:
-                offset = len(self.datatarget_names)
-                self.datatarget_names.extend(names)
-                self.datatarget_values = np.concatenate((self.datatarget_values, np.asarray(initial_values)))
-                self.datatarget_feedback_values = np.concatenate((self.datatarget_feedback_values, np.asarray(initial_values)))
-            else:
-                self.datatarget_names = names
-                self.datatarget_values = np.asarray([initial_values])
-                self.datatarget_feedback_values = np.asarray([initial_values])
+            offset = len(self.datatarget_names)
+            self.datatarget_names.extend(names)
+            if not initial_values or len(initial_values) != len(names):
+                initial_values = np.zeros(len(names))
+            self.datatarget_values = np.concatenate((self.datatarget_values, np.asarray(initial_values)))
+            self.datatarget_feedback_values = np.concatenate((self.datatarget_feedback_values, np.asarray(initial_values)))
             return range(offset, offset + len(names))
 
         def get_available_datasources(self):
@@ -306,7 +297,7 @@ try:
 
         def _set_datatarget_values(self, start_key, values):
             idx = self.get_datatarget_index(start_key)
-            self.datatarget_feedback_values[idx:idx + len(values)] = values
+            self.datatarget_values[idx:idx + len(values)] = values
 
         @abstractmethod
         def update_data_sources_and_targets(self):

@@ -64,12 +64,12 @@
                         <td><input type="text" name="nodenet_uid" disabled="disabled" id="nodenet_uid"></td>
                     </tr>
                     <tr>
-                        <td><label for="nodenet_name">Name</label></td>
-                        <td><input type="text" name="nodenet_name" id="nodenet_name"></td>
+                        <td><label for="nodenet_nodenet_name">Name</label></td>
+                        <td><input type="text" name="nodenet_nodenet_name" id="nodenet_nodenet_name"></td>
                     </tr>
                     <tr>
-                        <td><label for="nodenet_world">World</label></td>
-                        <td><select name="nodenet_world" id="nodenet_world"></select></td>
+                        <td><label for="nodenet_world_uid">World</label></td>
+                        <td><select name="nodenet_world_uid" id="nodenet_world_uid"></select></td>
                     </tr>
                     <tr>
                         <td><label for="nodenet_worldadapter">Worldadapter</label></td>
@@ -79,8 +79,8 @@
                         <td colspan="2" class="worldadapter_config">
                     </tr>
                     <tr>
-                        <td><label for="nodenet_snap">Snap to grid</label></td>
-                        <td><input type="checkbox" name="nodenet_snap" id="nodenet_snap" /></td>
+                        <td><label for="ui_snap">Snap to grid</label></td>
+                        <td><input type="checkbox" name="ui_snap" id="ui_snap" /></td>
                     </tr>
                 </table>
                 <div class="controls">

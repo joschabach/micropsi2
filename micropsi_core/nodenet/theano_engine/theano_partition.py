@@ -1883,7 +1883,10 @@ class TheanoPartition():
             node_ids = np.nonzero(self.allocated_nodes)[0]
 
         if ids is not None:
+            fetchall = False
             node_ids = np.intersect1d(node_ids, ids)
+            if len(node_ids) and linked_nodespaces_by_partition == {}:
+                linked_nodespaces_by_partition[self.spid] = self.allocated_node_parents[node_ids]
 
         nodes = {}
         highdim_nodes = []
@@ -2021,11 +2024,11 @@ class TheanoPartition():
 
                 if not fetchall:
                     if source_uid not in nodes and target_uid in nodes:
-                        if self.allocated_node_parents[source_id] not in linked_nodespaces_by_partition[self.spid]:
+                        if self.allocated_node_parents[source_id] not in linked_nodespaces_by_partition.get(self.spid, []):
                             nodes[target_uid]['inlinks'] += 1
                             continue
                     elif target_uid not in nodes and source_uid in nodes:
-                        if self.allocated_node_parents[target_id] not in linked_nodespaces_by_partition[self.spid]:
+                        if self.allocated_node_parents[target_id] not in linked_nodespaces_by_partition.get(self.spid, []):
                             nodes[source_uid]['outlinks'] += 1
                             continue
                     elif source_uid not in nodes or target_uid not in nodes:
@@ -2071,7 +2074,7 @@ class TheanoPartition():
                     inlinks = to_partition.inlinks[self.spid]
                     from_elements = inlinks[0].get_value(borrow=True)
 
-                    if not fetchall and partition_to_spid not in nodespaces_by_partition and linked_nodespaces_by_partition[partition_to_spid] == []:
+                    if not fetchall and partition_to_spid not in nodespaces_by_partition and linked_nodespaces_by_partition.get(partition_to_spid, []) == []:
                         nids = self.allocated_elements_to_nodes[from_elements]
                         if inlinks[4] == 'identity':
                             for nid in nids:
@@ -2142,7 +2145,7 @@ class TheanoPartition():
             if not fetchall:
                 # incoming cross-partition links
                 for from_partition_id, inlinks in self.inlinks.items():
-                    if from_partition_id not in nodespaces_by_partition and linked_nodespaces_by_partition[from_partition_id] == []:
+                    if from_partition_id not in nodespaces_by_partition and linked_nodespaces_by_partition.get(from_partition_id, []) == []:
                         to_elements = inlinks[1].get_value(borrow=True)
                         nids = self.allocated_elements_to_nodes[to_elements]
                         if inlinks[4] == 'identity':

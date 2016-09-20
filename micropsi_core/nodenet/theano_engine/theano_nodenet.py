@@ -496,7 +496,7 @@ class TheanoNodenet(Nodenet):
                         slot_type = get_string_slot_type(slot_numerical, obj_nodetype)
                         gate_index = gates[index]
                         source_nid = from_partition.allocated_elements_to_nodes[from_elements[gate_index]]
-                        node_ids.add(source_id)
+                        node_ids.add(source_nid)
                         from_nodetype = from_partition.allocated_nodes[source_nid]
                         from_obj_nodetype = self.get_nodetype(get_string_node_type(from_nodetype, self.native_modules))
                         gate_numerical = from_elements[index] - from_partition.allocated_node_offsets[source_nid]

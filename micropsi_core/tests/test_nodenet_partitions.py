@@ -294,6 +294,14 @@ def test_partition_get_node_data(test_nodenet):
 
     n1, n3, n4, n5, n9 = nodes[1], nodes[3], nodes[4], nodes[5], nodes[9]
 
+    # assert outlinks/inlinks in get_node
+    _, data = micropsi.get_node(test_nodenet, n1.uid)
+    assert data['outlinks'] == 1
+    assert data['inlinks'] == 0
+    _, data = micropsi.get_node(test_nodenet, n4.uid)
+    assert data['outlinks'] == 1
+    assert data['inlinks'] == 1
+
     node_data = nodenet.get_nodes(nodespace_uids=[None])['nodes']
     assert set(node_data.keys()) == set([n.uid for n in nodes[:5]] + [source.uid])
     assert node_data[n1.uid]['outlinks'] == 1

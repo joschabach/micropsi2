@@ -449,7 +449,7 @@ function setNodespaceData(data, changed){
                     }
                 }
                 addLinks(data.links);
-            });
+            }, false, true);
 
             for(var uid in links) {
                 if(!(uid in links_data)) {
@@ -778,6 +778,8 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
         this.gate_parameters = jQuery.extend(jQuery.extend({}, GATE_DEFAULTS), item.gate_parameters || {});;
         this.gate_activations = item.gate_activations;
         this.gatefunctions = item.gatefunctions;
+        this.outlinks = item.outlinks;
+        this.inlinks = item.inlinks;
         for(var i in nodetypes[type].gatetypes){
             var gatetype = nodetypes[type].gatetypes[i];
             this.gates[gatetype].parameters = jQuery.extend(jQuery.extend({}, GATE_DEFAULTS), this.gate_parameters[gatetype]);
@@ -2439,7 +2441,7 @@ function onMouseUp(event) {
         selectionBox.setBounds(selectionRectangle);
     }
     if(currentNodenet && nodenet_data){
-        loadLinksForSelection();
+        loadLinksForSelection(null, false, true);
     }
 }
 
@@ -2514,24 +2516,28 @@ function updateSelection(event){
     }
 }
 
-function loadLinksForSelection(callback, force_load){
+function loadLinksForSelection(callback, force_load, show_node_form){
+    var skiploading = false;
     if(nodespaceProperties[currentNodeSpace].renderlinks == 'none'){
-        return;
+        skiploading = true;
     }
     var uids = [];
+    var skipped = [];
     var load_links = false;
     for(var uid in selection){
         if(uid in nodes && nodes[uid].type != 'Nodespace' && (force_load || nodes[uid].inlinks < viewProperties.load_link_threshold && nodes[uid].outlinks < viewProperties.load_link_threshold)){
             uids.push(uid)
+        } else {
+            skipped.push(uid)
         }
         if(nodes[uid].inlinks > 0 || nodes[uid].outlinks > 0){
             load_links = true;
         }
     }
     if(nodespaceProperties[currentNodeSpace].renderlinks == 'always' && !load_links){
-        return;
+        skiploading = true;
     }
-    if(uids.length){
+    if(!skiploading && uids.length){
         api.call('get_links_for_nodes',
             {'nodenet_uid': currentNodenet,
              'node_uids': uids },
@@ -2553,13 +2559,15 @@ function loadLinksForSelection(callback, force_load){
                         linkdict[luid] = data.links[i];
                     }
                     addLinks(linkdict);
-                    if(uids.length == 1 && uids[0] in selection && clickType != "gate"){
+                    if(uids.length == 1 && uids[0] in selection && clickType != "gate" && show_node_form){
                         showNodeForm(uids[0]);
                     }
                 }
                 view.draw(true);
             }
         );
+    } else if(skipped.length == 1 && skipped[0] in selection && clickType != "gate" && show_node_form){
+        showNodeForm(skipped[0]);
     }
 }
 
@@ -3923,8 +3931,7 @@ function scrollToNode(node, doShowNodeForm){
             selectNode(node.uid);
             view.draw();
             if(node.uid in nodes && doShowNodeForm) {
-                loadLinksForSelection();
-                showNodeForm(node.uid);
+                loadLinksForSelection(null, false, true);
             }
         });
     } else {
@@ -4105,9 +4112,9 @@ function showNodeForm(nodeUid, refresh){
         }
         $('#node_slots').html(link_list || "<tr><td>None</td></tr>");
         if(nodes[nodeUid].outlinks > viewProperties.load_link_threshold){
-            link_list += '<tr><td colspan="2">'+nodes[nodeUid].outlinks+' invisible links to outside nodespaces. <a href="#loadlinks" class="loadLinks">Load all links</a></td></tr>';
+            content += '<tr><td colspan="2">'+nodes[nodeUid].outlinks+' invisible links to outside nodespaces. <a href="#loadlinks" class="loadLinks">Load all links</a></td></tr>';
         } else if(nodes[nodeUid].outlinks > 0){
-            content = '<tr><td colspan="2">'+nodes[nodeUid].outlinks+' invisible links to outside nodespaces</td></tr>';
+            content += '<tr><td colspan="2">'+nodes[nodeUid].outlinks+' invisible links to outside nodespaces</td></tr>';
         }
         for(name in nodes[nodeUid].gates){
             link_list = "";
@@ -4127,11 +4134,11 @@ function showNodeForm(nodeUid, refresh){
             }
             content += "</tr>";
         }
+        $('#node_gates').html(content || "<tr><td>None</td></tr>");
         $('a.loadLinks', form).on('click', function(evt){
             evt.preventDefault();
-            loadLinksForSelection(null, true);
-        })
-        $('#node_gates').html(content || "<tr><td>None</td></tr>");
+            loadLinksForSelection(null, true, true);
+        });
         $('a.followlink').on('click', followlink);
         $('a.follownode').on('click', follownode);
         //$('a.followslot').on('click', followslot);

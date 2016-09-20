@@ -214,7 +214,7 @@ class Nodenet(metaclass=ABCMeta):
         return data
 
     @abstractmethod
-    def get_nodes(self, nodespaces=[], include_links=True):
+    def get_nodes(self, nodespaces=[], node_uids=[], include_links=True, links_to_nodespaces=[]):
         """
         Returns a dict with contents for the given nodespaces
         """

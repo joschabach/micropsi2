@@ -149,13 +149,30 @@ def default_world(request):
     """
     for uid in micropsi.world_data:
         if micropsi.world_data[uid].get('world_type', 'DefaultWorld') == 'DefaultWorld':
+            micropsi.load_world(uid)
             return uid
+
+
+@pytest.yield_fixture(scope="function")
+def default_nodenet(request):
+    """
+    A nodenet with the default engine
+    Use this for tests that are engine-agnostic
+    """
+    success, nn_uid = micropsi.new_nodenet("Defaultnet", owner="Pytest User", uid='defaultnet')
+    micropsi.save_nodenet(nn_uid)
+    yield nn_uid
+    try:
+        micropsi.delete_nodenet(nn_uid)
+    except:
+        pass
 
 
 @pytest.yield_fixture(scope="function")
 def test_nodenet(request, test_world, engine):
     """
-    Fixture: A completely empty nodenet without a worldadapter
+    An empty nodenet, with the currently tested engine.
+    Use this for tests that should run in both engines
     """
     global nn_uid
     success, nn_uid = micropsi.new_nodenet("Testnet", engine=engine, owner="Pytest User", uid='Testnet')

@@ -30,33 +30,31 @@ class WorldAdapterMixin(object):
     """ Superclass for modular world-adapter extensions that provide
     functionality reusable in several worldadapters. See examples in vrep_world.py"""
 
-    @staticmethod
-    def get_config_options():
+    @classmethod
+    def get_config_options(cls):
         """ returns an array of parameters that are needed
         to configure this mixin """
         return []
 
     def __init__(self, world, uid=None, config={}, **kwargs):
         super().__init__(world, uid=uid, config=config, **kwargs)
-        for key in config:
-            setattr(self, key, config[key])
 
     def initialize(self):
         """ Called after a reset of the simulation """
-        pass
+        pass  # pragma: no cover
 
     def reset_simulation_state(self):
         """ Called on reset """
-        pass
+        pass  # pragma: no cover
 
     def update_datasources_and_targets(self):
-        pass
+        pass  # pragma: no cover
 
     def write_to_world(self):
-        pass
+        pass  # pragma: no cover
 
     def read_from_world(self):
-        pass
+        pass  # pragma: no cover
 
 
 class WorldAdapter(WorldObject, metaclass=ABCMeta):
@@ -81,17 +79,14 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
         self.logger = logging.getLogger('agent.%s' % self.uid)
         if data.get('name'):
             self.data['name'] = data['name']
+        for item in self.__class__.get_config_options():
+            if item['name'] not in config:
+                config[item['name']] = item.get('default')
         for key in config:
             setattr(self, key, config[key])
 
     def initialize_worldobject(self, data):
-        for key in self.datasources:
-            if key in data.get('datasources', {}):
-                self.datasources[key] = data['datasources'][key]
-        for key in self.datatargets:
-            if key in data.get('datatargets', {}):
-                self.datatargets[key] = data['datatargets'][key]
-                self.datatarget_feedback[key] = 0
+        pass
 
     def get_available_datasources(self):
         """returns a list of identifiers of the datasources available for this world adapter"""
@@ -127,7 +122,7 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
         """allows the agent to read all datasource values"""
         return [float(self.datatarget_feedback[x]) for x in self.get_available_datatargets()]
 
-    def set_datatarget_feedback(self, key, value):
+    def set_datatarget_feedback_value(self, key, value):
         """set feedback for the given datatarget"""
         self.datatarget_feedback[key] = value
 
@@ -144,7 +139,7 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
     @abstractmethod
     def update_data_sources_and_targets(self):
         """must be implemented by concrete world adapters to read datatargets and fill datasources"""
-        pass
+        pass  # pragma: no cover
 
     def is_alive(self):
         """called by the world to check whether the agent has died and should be removed"""
@@ -228,76 +223,116 @@ try:
             return range(offset, offset + len(names))
 
         def get_available_datasources(self):
+            """Returns a list of all datasource names"""
             return self.datasource_names
 
         def get_available_datatargets(self):
+            """Returns a list of all datatarget names"""
             return self.datatarget_names
 
         def get_datasource_index(self, name):
+            """Returns the index of the given datasource in the value array"""
             return self.datasource_names.index(name)
 
         def get_datatarget_index(self, name):
+            """Returns the index of the given datatarget in the value array"""
             return self.datatarget_names.index(name)
 
         def get_datasource_value(self, key):
             """allows the agent to read a value from a datasource"""
-            index = self.get_available_datasources().index(key)
+            index = self.get_datasource_index(key)
             return self.datasource_values[index]
+
+        def get_datatarget_value(self, key):
+            """allows the agent to read a value from a datatarget"""
+            index = self.get_datatarget_index(key)
+            return self.datatarget_values[index]
+
+        def get_datatarget_feedback_value(self, key):
+            """allows the agent to read a value from a datatarget"""
+            index = self.get_datatarget_index(key)
+            return self.datatarget_feedback_values[index]
 
         def get_datasource_values(self):
             """allows the agent to read all datasource values"""
             return self.datasource_values
 
-        def add_to_datatarget(self, key, value):
-            """allows the agent to write a value to a datatarget"""
-            index = self.get_available_datasources().index(key)
-            self.datatarget_values[index] += value
-
-        def set_datatarget_values(self, values):
-            """allows the agent to write a list of value to the datatargets"""
-            self.datatarget_values = values
-
-        def get_datatarget_feedback_value(self, key):
-            """get feedback whether the actor-induced action succeeded"""
-            index = self.get_available_datatargets().index(key)
-            return self.datatarget_feedback_values[index]
-
-        def set_datatarget_feedback(self, key, value):
-            """set feedback for the given datatarget"""
-            index = self.get_available_datatargets().index(key)
-            self.datatarget_feedback_values[index] = value
+        def get_datatarget_values(self):
+            """allows the agent to read all datatarget values"""
+            return self.datatarget_values
 
         def get_datatarget_feedback_values(self):
-            """allows the agent to read all datasource values"""
+            """allows the agent to read all datatarget_feedback values"""
             return self.datatarget_feedback_values
 
-        def reset_datatargets(self):
-            """ resets (zeros) the datatargets """
-            pass
-
-        def _set_datasource_value(self, key, value):
-            self.datasource_values[self.get_datasource_index(key)] = value
-
-        def _set_datatarget_value(self, key, value):
-            self.datatarget_values[self.get_datatarget_index(key)] = value
-
-        def _get_datatarget_value(self, key):
-            return self.datatarget_values[self.get_datatarget_index(key)]
-
-        def _set_datatarget_feedback_value(self, key, value):
-            self.datatarget_feedback_values[self.get_datatarget_index(key)] = value
-
-        def _set_datasource_values(self, start_key, values):
+        def get_datasource_range(self, start_key, length):
+            """Returns an array of datasource values, with offset at the given key and with the given length"""
             idx = self.get_datasource_index(start_key)
-            self.datasource_values[idx:idx + len(values)] = values
+            return self.datasource_values[idx:idx + length]
 
-        def _get_datatarget_values(self, start_key, length):
+        def get_datatarget_range(self, start_key, length):
+            """Returns an array of datatarget values, with offset at the given key and with the given length"""
             idx = self.get_datatarget_index(start_key)
             return self.datatarget_values[idx:idx + length]
 
-        def _set_datatarget_values(self, start_key, values):
+        def get_datatarget_feedback_range(self, start_key, length):
+            """Returns an array of datatarget_feedback values, with offset at the given key and with the given length"""
+            idx = self.get_datatarget_index(start_key)
+            return self.datatarget_feedback_values[idx:idx + length]
+
+        def set_datasource_value(self, key, value):
+            """Sets the given datasource value"""
+            idx = self.get_datasource_index(key)
+            self.datasource_values[idx] = value
+
+        def set_datatarget_value(self, key, value):
+            """Sets the given datasource value"""
+            idx = self.get_datatarget_index(key)
+            self.datatarget_values[idx] = value
+
+        def add_to_datatarget(self, key, value):
+            """Adds the given value to the given datatarget"""
+            idx = self.get_datatarget_index(key)
+            self.datatarget_values[idx] += value
+
+        def set_datatarget_feedback_value(self, key, value):
+            """Sets the given datatarget_feedback value"""
+            idx = self.get_datatarget_index(key)
+            self.datatarget_feedback_values[idx] = value
+
+        def set_datasource_range(self, start_key, values):
+            """Sets the given datasource values, with offset at the given key """
+            idx = self.get_datasource_index(start_key)
+            self.datasource_values[idx:idx + len(values)] = values
+
+        def set_datatarget_range(self, start_key, values):
+            """Sets the given datatarget values, with offset at the given key """
             idx = self.get_datatarget_index(start_key)
             self.datatarget_values[idx:idx + len(values)] = values
+
+        def set_datatarget_feedback_range(self, start_key, values):
+            """Sets the given datatarget_feedback values, with offset at the given key """
+            idx = self.get_datatarget_index(start_key)
+            self.datatarget_feedback_values[idx:idx + len(values)] = values
+
+        def set_datasource_values(self, values):
+            """sets the complete datasources to new values"""
+            assert len(values) == len(self.datasource_values)
+            self.datasource_values = values
+
+        def set_datatarget_values(self, values):
+            """sets the complete datatargets to new values"""
+            assert len(values) == len(self.datatarget_values)
+            self.datatarget_values = values
+
+        def set_datatarget_feedback_values(self, values):
+            """sets the complete datatargets_feedback to new values"""
+            assert len(values) == len(self.datatarget_feedback_values)
+            self.datatarget_feedback_values = values
+
+        def reset_datatargets(self):
+            """ resets (zeros) the datatargets """
+            pass  # pragma: no cover
 
         @abstractmethod
         def update_data_sources_and_targets(self):
@@ -311,8 +346,8 @@ try:
             get_available_datatargets().
             Values of the superclass' dict objects will be bypassed and ignored.
             """
-            pass
+            pass  # pragma: no cover
 
 
-except ImportError:
+except ImportError: # pragma: no cover
     pass

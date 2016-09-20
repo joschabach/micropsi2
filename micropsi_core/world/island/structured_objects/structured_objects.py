@@ -40,22 +40,22 @@ class StructuredObjects(WorldAdapter):
 
         self.scene = Scene(world, uid)
         self.scene.load_object("PalmTree", OBJECTS["PalmTree"]["shape_grid"])
+        self.newscene_seen = False
 
     def initialize_worldobject(self, data):
         if "position" not in data:
             self.position = self.world.groundmap['start_position']
 
-    def get_datasource(self, key):
+    def get_datasource_value(self, key):
         """
             allows the agent to read a value from a datasource.
             overrides default to make sure newscene signals are picked up by the node net
         """
-        if key == "major-newscene":
-            if self.datasource_snapshots[key] == 1:
-                self.datasources[key] = 0
-                return 1
+        if key == "major-newscene" and not self.newscene_seen:
+            self.newscene_seen = True
+            return 1
         else:
-            return WorldAdapter.get_datasource(self, key)
+            return super().get_datasource_value(key)
 
     def update_data_sources_and_targets(self):
         """called on every world calculation step to advance the life of the agent"""
@@ -63,7 +63,7 @@ class StructuredObjects(WorldAdapter):
         # we don't move, for now
         self.position = self.world.get_movement_result(self.position, (0, 0))
 
-        #find nearest object to load into the scene
+        # find nearest object to load into the scene
         lowest_distance_to_worldobject = float("inf")
         nearest_worldobject = None
         for key, worldobject in self.world.objects.items():
@@ -78,10 +78,14 @@ class StructuredObjects(WorldAdapter):
             self.scene.load_object(self.currentobject.structured_object_type,
                                    OBJECTS[self.currentobject.structured_object_type]['shape_grid'])
             self.datasources["major-newscene"] = 1
+            self.newscene_seen = False
             logging.getLogger("agent.%s" % self.uid).debug("StructuredObjects WA selected new scene: %s",
                                              self.currentobject.structured_object_type)
 
-        #manage the scene
+        else:
+            self.datasources["major-newscene"] = 0
+
+        # manage the scene
         if self.datatargets['fov_reset'] > 0:
             self.scene.reset_fovea()
 

@@ -58,19 +58,11 @@ class World(object):
         self.data['current_step'] = current_step
 
     @property
-    def is_active(self):
-        return self.data.get("is_active", False)
-
-    @is_active.setter
-    def is_active(self, is_active):
-        self.data['is_active'] = is_active
-
-    @property
     def config(self):
         return self.data['config']
 
-    @staticmethod
-    def get_config_options():
+    @classmethod
+    def get_config_options(cls):
         """ Returns a list of configuration-options for this world.
         Expected format:
         [{
@@ -335,11 +327,11 @@ class World(object):
     def set_user_data(self, data):
         """ Sets some data from the user. Implement this in your worldclass to allow
         the user to set certain properties of this world"""
-        pass
+        pass  # pragma: no cover
 
     def signal_handler(self, *args):
         """ stuff to do on sigint, sigabrt, etc"""
-        pass
+        pass  # pragma: no cover
 
     def __del__(self):
         """ Empty destructor """

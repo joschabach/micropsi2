@@ -6,6 +6,7 @@ from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.worldobject import WorldObject
 from micropsi_core.world.island import png
 from micropsi_core.world.island import utils
+from micropsi_core.world.island.structured_objects.structured_objects import StructuredObjects
 
 
 class Island(World):
@@ -227,7 +228,7 @@ class Champignon(WorldObject):
         return True, 0.3, 0, 0
 
     def action_drink(self):
-        return True, 0, 0, 0
+        return False, 0, 0, 0
 
 
 class FlyAgaric(WorldObject):
@@ -322,8 +323,9 @@ class Survivor(WorldAdapter):
         if self.is_dead:
             return
 
-        effortvector = ((50*self.datatargets['loco_east'])+(50 * -self.datatargets['loco_west']),
-                        (50*self.datatargets['loco_north'])-(50* -self.datatargets['loco_south']))
+        effortvector = ((50 * self.datatargets['loco_east']) + (50 * -self.datatargets['loco_west']),
+                        (50 * self.datatargets['loco_south']) + (50 * -self.datatargets['loco_north']))
+
         desired_position = (self.position[0] + effortvector[0], self.position[1] + effortvector[1])
         self.datatargets['loco_east'] = 0
         self.datatargets['loco_west'] = 0
@@ -358,7 +360,7 @@ class Survivor(WorldAdapter):
                 if self.datatargets[datatarget] >= 1 and self.action_cooloff <= 0:
                     self.datatargets[datatarget] = 0
                     if hasattr(nearest_worldobject, datatarget):
-                        cando, delta_energy, delta_water, delta_integrity = nearest_worldobject.action_eat()
+                        cando, delta_energy, delta_water, delta_integrity = getattr(nearest_worldobject, datatarget)()
                     else:
                         cando, delta_energy, delta_water, delta_integrity = False, 0, 0, 0
                     if cando:

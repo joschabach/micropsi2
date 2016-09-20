@@ -46,7 +46,7 @@ class TimeSeries(World):
         except IOError as error:
             self.logger.error("Could not load data file %s, error was: %s" % (path, str(error)))
             self.ids = [0]
-            self.timeseries[[0, 0, 0]]
+            self.timeseries = [[0, 0, 0]]
             self.timestamps = [0]
             self.len_ts = 1
             return
@@ -96,6 +96,10 @@ class TimeSeries(World):
 
         self.len_ts = self.timeseries.shape[0]
 
+        if self.shuffle:
+            idxs = np.arange(self.len_ts)
+            self.permutation = np.random.permutation(idxs)
+
     # todo: option to use only a subset of the data (e.g. for training/test)
 
     def step(self):
@@ -111,14 +115,11 @@ class TimeSeries(World):
     def state(self):
         t = (self.current_step - 1) % self.len_ts
         if self.shuffle:
-            if t == 0:
-                idxs = np.arange(self.len_ts)
-                self.permutation = np.random.permutation(idxs)
             t = self.permutation[t]
         return self.timeseries[t, :]
 
-    @staticmethod
-    def get_config_options():
+    @classmethod
+    def get_config_options(cls):
         """ Returns a list of configuration-options for this world.
         Expected format:
         [{

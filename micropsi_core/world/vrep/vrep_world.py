@@ -94,7 +94,7 @@ class VREPConnection(threading.Thread):
 def preexec_function():
     # Ignore the SIGINT signal by setting the handler to the standard
     # signal handler SIG_IGN.
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    signal.signal(signal.SIGINT, signal.SIG_IGN)  # pramga: no cover
 
 
 class VREPWatchdog(threading.Thread):
@@ -210,25 +210,31 @@ class VrepCallMixin():
     def call_vrep(self, method, params, empty_result_ok=False, debugprint=False):
         """ error handling wrapper for calls to the vrep API """
         result = method(*params)
-        if debugprint:
+        if debugprint:  # pragma: no cover
             print(self.world.current_step, ' vrep wrap called', method, 'with parameters', params, '. result was', result)
         code = result if type(result) == int else result[0]
         if code != vrep.simx_return_ok:
-            if (code == vrep.simx_return_novalue_flag or code == vrep.simx_return_split_progress_flag) and not empty_result_ok:
+            if (code & vrep.simx_return_novalue_flag or code & vrep.simx_return_split_progress_flag) and not empty_result_ok:
                     # streaming mode did not return data. wait a bit, try again
                     self.logger.info("Did not receive data from vrep when calling %s, trying again in 500 ms" % method.__name__)
                     time.sleep(0.5)
                     result = method(*params)
                     code = result if type(result) == int else result[0]
-            if code == vrep.simx_return_illegal_opmode_flag:
-                self.logger.error("Illegal opmode for VREP call %s" % method.__name)
-            if code == vrep.simx_return_remote_error_flag:
+
+            if code & vrep.simx_return_illegal_opmode_flag:
+                self.logger.error("Illegal opmode for VREP call %s" % method.__name__)
+                return False
+            if code & vrep.simx_return_remote_error_flag:
                 self.logger.error("VREP internal error when calling %s. Invalid handle specified?" % method.__name__)
-            elif code == vrep.simx_return_local_error_flag:
-                self.logger.error("Client error for VREP call %s" % method.__name)
-            elif code == vrep.simx_return_initialize_error_flag:
+                return False
+            if code & vrep.simx_return_local_error_flag:
+                self.logger.error("Client error for VREP call %s" % method.__name__)
+                return False
+            if code & vrep.simx_return_initialize_error_flag:
                 self.logger.error("VREP Simulation is not running")
-            elif code == vrep.simx_return_timeout_flag or ((code == vrep.simx_return_novalue_flag or code == vrep.simx_return_split_progress_flag) and not empty_result_ok):
+                return False
+
+            if code & vrep.simx_return_timeout_flag or ((code & vrep.simx_return_novalue_flag or code & vrep.simx_return_split_progress_flag) and not empty_result_ok):
                 self.logger.warning("Vrep returned code %d when calling %s, attempting a reconnect" % (code, method.__name__))
                 self.world.connection_daemon.resume()
                 self.initialized = False
@@ -333,8 +339,8 @@ class VREPWorld(World):
     def __del__(self):
         self.signal_handler()
 
-    @staticmethod
-    def get_config_options():
+    @classmethod
+    def get_config_options(cls):
         return [
             {'name': 'vrep_host',
              'default': '127.0.0.1'},
@@ -358,11 +364,13 @@ class VREPWorld(World):
 
 class VrepCollisionsMixin(WorldAdapterMixin):
 
-    @staticmethod
-    def get_config_options():
-        return [{'name': 'collision_name',
+    @classmethod
+    def get_config_options(cls):
+        options = super().get_config_options()
+        options.extend([{'name': 'collision_name',
              'default': 'Collision',
-             'description': 'The name of the robot\'s collision handle'}]
+             'description': 'The name of the robot\'s collision handle'}])
+        return options
 
     def initialize(self):
         super().initialize()
@@ -379,16 +387,18 @@ class VrepCollisionsMixin(WorldAdapterMixin):
         if self.collision_name:
             collision_state = self.call_vrep(vrep.simxReadCollision, [self.clientID, self.collision_handle,
                                                           vrep.simx_opmode_buffer])
-            self._set_datasource_value("collision", 1 if collision_state else 0)
+            self.set_datasource_value("collision", 1 if collision_state else 0)
 
 
 class VrepGreyscaleVisionMixin(WorldAdapterMixin):
 
-    @staticmethod
-    def get_config_options():
-        return [{'name': 'downscale',
+    @classmethod
+    def get_config_options(cls):
+        options = super().get_config_options()
+        options.extend([{'name': 'downscale',
              'description': 'shrink the image by a factor of 2^k, using anti aliasing. specify `1` to halve the image in each dimension, `2` to quarter it, `0` to leave it unscaled (default)',
-             'default': 1}]
+             'default': 1}])
+        return options
 
     def initialize(self):
         self.downscale = float(self.downscale)
@@ -427,7 +437,7 @@ class VrepGreyscaleVisionMixin(WorldAdapterMixin):
 
         y_image = y_image/255.0
 
-        self._set_datasource_values('px_000_000', y_image.flatten())
+        self.set_datasource_range('px_000_000', y_image.flatten())
         self.image.set_data(y_image)
         # print('vrep vision image sum', np.sum(abs(y_image)))
 
@@ -478,7 +488,7 @@ class VrepRGBVisionMixin(WorldAdapterMixin):
         # plt.savefig('/tmp/upsi/vision_worldadapter{}.png'.format(self.world.current_step))
         # plt.close('all')
 
-        self._set_datasource_values('px_000_000_0', scaled_image.flatten())
+        self.set_datasource_range('px_000_000_0', scaled_image.flatten())
         self.image.set_data(scaled_image)
 
 
@@ -488,12 +498,14 @@ class VrepRGBVisionMixin(WorldAdapterMixin):
 
 class VrepOneBallGameMixin(WorldAdapterMixin):
 
-    @staticmethod
-    def get_config_options():
-        return [{'name': 'randomize_ball',
+    @classmethod
+    def get_config_options(cls):
+        options = super().get_config_options()
+        options.extend([{'name': 'randomize_ball',
              'description': 'Initialize the ball position randomly',
              'default': 'False',
-             'options': ["False", "True"]}]
+             'options': ["False", "True"]}])
+        return options
 
     def initialize(self):
         super().initialize()
@@ -515,8 +527,8 @@ class VrepOneBallGameMixin(WorldAdapterMixin):
         super().write_to_world()
         if self.ball_handle > 0:
             # position the transparent sphere:
-            rx = self._get_datatarget_value('sphere_x')
-            ry = self._get_datatarget_value('sphere_y')
+            rx = self.get_datatarget_value('sphere_x')
+            ry = self.get_datatarget_value('sphere_y')
             self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, self.sphere_handle, self.robot_handle, [-rx, -ry], vrep.simx_opmode_oneshot], empty_result_ok=True)
 
     def read_from_world(self):
@@ -529,10 +541,10 @@ class VrepOneBallGameMixin(WorldAdapterMixin):
             relative_pos[0] = ball_pos[0] - self.robot_position[0]
             relative_pos[1] = ball_pos[1] - self.robot_position[1]
 
-            dist = np.linalg.norm(np.array(ball_pos) - np.array(joint_pos))
-            self._set_datasource_value('ball-distance', dist)
-            self._set_datasource_value('ball-x', relative_pos[0])
-            self._set_datasource_value('ball-y', relative_pos[1])
+            dist = np.linalg.norm(np.array(ball_pos) - np.array(joint_pos[:2]))
+            self.set_datasource_value('ball-distance', dist)
+            self.set_datasource_value('ball-x', relative_pos[0])
+            self.set_datasource_value('ball-y', relative_pos[1])
 
     def reset_simulation_state(self):
         super().reset_simulation_state()
@@ -554,12 +566,13 @@ class VrepOneBallGameMixin(WorldAdapterMixin):
 
 class Vrep6DObjectsMixin(WorldAdapterMixin):
 
-    @staticmethod
-    def get_config_options():
-        parameters = [{'name': 'objects',
+    @classmethod
+    def get_config_options(cls):
+        options = super().get_config_options()
+        options.extend([{'name': 'objects',
                       'description': 'comma-separated names of objects in the vrep scene',
-                      'default': 'Cylinder'}]
-        return parameters
+                      'default': 'Cylinder'}])
+        return options
 
     def initialize(self):
         super().initialize()
@@ -598,33 +611,32 @@ class Vrep6DObjectsMixin(WorldAdapterMixin):
         super().write_to_world()
         self.call_vrep(vrep.simxPauseCommunication, [self.clientID, True], empty_result_ok=True)
         for i, (name, handle) in enumerate(zip(self.object_names, self.object_handles)):
-            if self._get_datatarget_value('execute-%s' % name) > 0.9:
+            if self.get_datatarget_value('execute-%s' % name) > 0.9:
                 # set position:
-                tx = self._get_datatarget_value("%s-x" % name)
-                ty = self._get_datatarget_value("%s-y" % name)
-                tz = self._get_datatarget_value("%s-z" % name)
+                tx = self.get_datatarget_value("%s-x" % name)
+                ty = self.get_datatarget_value("%s-y" % name)
+                tz = self.get_datatarget_value("%s-z" % name)
                 self.call_vrep(vrep.simxSetObjectPosition, [self.clientID, handle, -1, [tx, ty, tz], vrep.simx_opmode_streaming], empty_result_ok=True)
                 # set angles:
-                talpha = self._get_datatarget_value("%s-alpha" % name)
-                tbeta = self._get_datatarget_value("%s-beta" % name)
-                tgamma = self._get_datatarget_value("%s-gamma" % name)
+                talpha = self.get_datatarget_value("%s-alpha" % name)
+                tbeta = self.get_datatarget_value("%s-beta" % name)
+                tgamma = self.get_datatarget_value("%s-gamma" % name)
                 self.call_vrep(vrep.simxSetObjectOrientation, [self.clientID, handle, -1, [talpha, tbeta, tgamma], vrep.simx_opmode_streaming], empty_result_ok=True)
+
         self.call_vrep(vrep.simxPauseCommunication, [self.clientID, False])
 
     def read_from_world(self):
         super().read_from_world()
-        execute = self._get_datatarget_value('execute') > 0.9
-
+        execute = self.get_datatarget_value('execute') > 0.9
         for i, (name, handle) in enumerate(zip(self.object_names, self.object_handles)):
             tx, ty, tz = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, handle, -1, vrep.simx_opmode_streaming], empty_result_ok=False)
-            self._set_datasource_value("%s-x" % name, tx)
-            self._set_datasource_value("%s-y" % name, ty)
-            self._set_datasource_value("%s-z" % name, tz)
-
+            self.set_datasource_value("%s-x" % name, tx)
+            self.set_datasource_value("%s-y" % name, ty)
+            self.set_datasource_value("%s-z" % name, tz)
             talpha, tbeta, tgamma = self.call_vrep(vrep.simxGetObjectOrientation, [self.clientID, handle, -1, vrep.simx_opmode_streaming], empty_result_ok=False)
-            self._set_datasource_value("%s-alpha" % name, talpha)
-            self._set_datasource_value("%s-beta" % name, tbeta)
-            self._set_datasource_value("%s-gamma" % name, tgamma)
+            self.set_datasource_value("%s-alpha" % name, talpha)
+            self.set_datasource_value("%s-beta" % name, tbeta)
+            self.set_datasource_value("%s-gamma" % name, tgamma)
 
             # if name == 'fork':
             #     print('fetch: step={}, object {}, name={}, handle={}\nx={} y={} z={}\nalpha={} beta={} gamma={}\n'.format(self.world.current_step, i, name, handle, tx, ty, tz, talpha, tbeta, tgamma))
@@ -634,9 +646,10 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
     """ The basic worldadapter to control a robot in vrep.
     Combine this with the Vrep Mixins for a useful robot simulation"""
 
-    @staticmethod
-    def get_config_options():
-        return [
+    @classmethod
+    def get_config_options(cls):
+        options = super().get_config_options()
+        options.extend([
             {'name': 'robot_name',
              'description': 'The name of the robot object in V-REP',
              'default': 'LBR_iiwa_7_R800',
@@ -649,7 +662,8 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
              'description': 'Initialize the robot arm randomly',
              'default': 'False',
              'options': ["False", "True"]},
-        ]
+        ])
+        return options
 
     def __init__(self, world, uid=None, **data):
         super().__init__(world, uid, **data)
@@ -735,8 +749,8 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
 
         self.tvals = None
 
-        restart = self._get_datatarget_value('restart') > 0.9 and self.world.current_step - self.last_restart >= 5
-        execute = self._get_datatarget_value('execute') > 0.9
+        restart = self.get_datatarget_value('restart') > 0.9 and self.world.current_step - self.last_restart >= 5
+        execute = self.get_datatarget_value('execute') > 0.9
 
         # simulation restart
         if restart:
@@ -750,7 +764,7 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
 
             if self.control_type != "ik":
                 self.tvals = [0] * len(self.datatarget_values)
-                self.current_angle_target_values = np.array(self._get_datatarget_values('joint_1', len(self.joints)))
+                self.current_angle_target_values = np.array(self.get_datatarget_range('joint_1', len(self.joints)))
                 joint_angle_offset = self.get_datasource_index("joint_angle_1")
                 for i, joint_handle in enumerate(self.joints):
                     tval = self.current_angle_target_values[i] * math.pi
@@ -775,9 +789,9 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
                                            [self.clientID, self.ik_follower_handle, -1,
                                             vrep.simx_opmode_buffer])
 
-                tx = tpos[0] + self._get_datatarget_value("ik_x")
-                ty = tpos[1] + self._get_datatarget_value("ik_y")
-                tz = tpos[2] + self._get_datatarget_value("ik_z")
+                tx = tpos[0] + self.get_datatarget_value("ik_x")
+                ty = tpos[1] + self.get_datatarget_value("ik_y")
+                tz = tpos[2] + self.get_datatarget_value("ik_z")
 
                 self.call_vrep(vrep.simxSetObjectPosition,
                                [self.clientID, self.ik_target_handle, -1, [tx, ty, tz],
@@ -844,8 +858,8 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
         if self.randomize_arm == "True":
             self.call_vrep(vrep.simxPauseCommunication, [self.clientID, True], empty_result_ok=True)
             for i, joint_handle in enumerate(self.joints):
-                self._set_datatarget_value("joint_%d" % (i + 1), random.uniform(-0.8, 0.8))
-                self.current_angle_target_values[i] = self._get_datatarget_value("joint_%d" % (i + 1))
+                self.set_datatarget_value("joint_%d" % (i + 1), random.uniform(-0.8, 0.8))
+                self.current_angle_target_values[i] = self.get_datatarget_value("joint_%d" % (i + 1))
                 tval = self.current_angle_target_values[i] * math.pi
                 self.call_vrep(vrep.simxSetJointPosition, [self.clientID, joint_handle, tval, vrep.simx_opmode_oneshot], empty_result_ok=True)
             # hack: noeppel down
@@ -873,9 +887,9 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
 
         joint_pos = self.call_vrep(vrep.simxGetObjectPosition, [self.clientID, self.joints[len(self.joints)-1], -1, vrep.simx_opmode_streaming])
 
-        self._set_datasource_value('tip-x', joint_pos[0] - self.robot_position[0])
-        self._set_datasource_value('tip-y', joint_pos[1] - self.robot_position[1])
-        self._set_datasource_value('tip-z', joint_pos[2] - self.robot_position[2])
+        self.set_datasource_value('tip-x', joint_pos[0] - self.robot_position[0])
+        self.set_datasource_value('tip-y', joint_pos[1] - self.robot_position[1])
+        self.set_datasource_value('tip-z', joint_pos[2] - self.robot_position[2])
 
         joint_ids, something, data, se = self.call_vrep(vrep.simxGetObjectGroupData, [self.clientID, vrep.sim_object_joint_type, 15, vrep.simx_opmode_streaming])
 
@@ -892,15 +906,15 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
                     if targets is not None:
                         target_angle = targets[i]
                         if abs(abs(angle) - abs(target_angle)) < .001 and include_feedback:
-                            self._set_datatarget_feedback_value("joint_%s" % (i + 1), 1)
+                            self.set_datatarget_feedback_value("joint_%s" % (i + 1), 1)
                         else:
                             allgood = False
                 elif self.control_type == "angles":
                     angle = data[i * 2]
                 elif self.control_type == "movements":
                     angle = data[i * 2]
-                self._set_datasource_value("joint_angle_%s" % (i + 1), angle / math.pi)
-                self._set_datasource_value("joint_force_%s" % (i + 1), force)
+                self.set_datasource_value("joint_angle_%s" % (i + 1), angle / math.pi)
+                self.set_datasource_value("joint_force_%s" % (i + 1), force)
 
             movement_finished = allgood
             if not movement_finished:
@@ -922,54 +936,23 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
 
 class OneBallRobot(Robot, VrepGreyscaleVisionMixin, VrepCollisionsMixin, VrepOneBallGameMixin):
     """ A Worldadapter to play the one-ball-reaching-task """
-
-    @classmethod
-    def get_config_options(cls):
-        """ I've found no way around this yet """
-        parameters = []
-        parameters.extend(Robot.get_config_options())
-        parameters.extend(VrepCollisionsMixin.get_config_options())
-        parameters.extend(VrepGreyscaleVisionMixin.get_config_options())
-        parameters.extend(VrepOneBallGameMixin.get_config_options())
-        return parameters
+    pass
 
 
 class IKRobotWithGreyscaleVision(Robot, VrepGreyscaleVisionMixin, Vrep6DObjectsMixin):
     """ A Worldadapter to control a robot with IK + arbitrary scene objects, based on a greyscale vision stream """
-
-    @classmethod
-    def get_config_options(cls):
-        """ I've found no way around this yet """
-        parameters = []
-        parameters.extend(Robot.get_config_options())
-        parameters.extend(VrepGreyscaleVisionMixin.get_config_options())
-        parameters.extend(Vrep6DObjectsMixin.get_config_options())
-        return parameters
+    pass
 
 
 class IKRobot(Robot, Vrep6DObjectsMixin):
     """ A Worldadapter to control a robot with IK + arbitrary scene objects """
-
-    @classmethod
-    def get_config_options(cls):
-        """ I've found no way around this yet """
-        parameters = []
-        parameters.extend(Robot.get_config_options())
-        parameters.extend(Vrep6DObjectsMixin.get_config_options())
-        return parameters
+    pass
 
 
 class Objects6D(VrepRGBVisionMixin, Vrep6DObjectsMixin, VrepCallMixin, ArrayWorldAdapter):
     """ worldadapter to observe and control 6D poses of arbitrary objects in a vrep scene
     (i.e. their positons and orientations)"""
     block_runner_if_connection_lost = True
-
-    @staticmethod
-    def get_config_options():
-        parameters = []
-        parameters.extend(VrepRGBVisionMixin.get_config_options())
-        parameters.extend(Vrep6DObjectsMixin.get_config_options())
-        return parameters
 
     def __init__(self, world, uid=None, **data):
         super().__init__(world, uid, **data)
@@ -998,12 +981,20 @@ class Objects6D(VrepRGBVisionMixin, Vrep6DObjectsMixin, VrepCallMixin, ArrayWorl
         # print('objects6D initialize: self.datasources=',self.datasources)
         self.reset_simulation_state()
 
+    def update_data_sources_and_targets(self):
+        self.write_to_world()
+        self.read_from_world()
+
     def write_to_world(self):
-        restart = self._get_datatarget_value('restart') > 0.9 and self.world.current_step - self.last_restart >= 5
+        restart = self.get_datatarget_value('restart') > 0.9 and self.world.current_step - self.last_restart >= 5
         # simulation restart
         if restart:
             return self.reset_simulation_state()
         super().write_to_world()
+
+    def read_from_world(self):
+        super().read_from_world()
+        self.fetch_sensor_and_feedback_values_from_simulation(None)
 
     def fetch_sensor_and_feedback_values_from_simulation(self, targets, include_feedback=False):
         if not self.world.connection_daemon.is_connected:

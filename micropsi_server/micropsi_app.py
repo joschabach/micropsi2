@@ -1068,8 +1068,8 @@ def add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=None, name=None, color=N
 
 
 @rpc("add_link_monitor")
-def add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, property, name, color=None):
-    return True, runtime.add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, property, name, color=color)
+def add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, name, color=None):
+    return True, runtime.add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, name, color=color)
 
 
 @rpc("add_modulator_monitor")
@@ -1249,8 +1249,8 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
 
 
 @rpc("set_link_weight", permission_required="manage nodenets")
-def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty=1):
-    return runtime.set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
+def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight):
+    return runtime.set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight)
 
 
 @rpc("get_links_for_nodes")

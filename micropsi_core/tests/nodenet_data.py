@@ -3,7 +3,6 @@ fixed_nodenet_data = """{
     "uid": "fixed_test_nodenet",
     "links": {
         "n0003:sub:gen:n0004": {
-            "certainty": 1,
             "source_gate_name": "sub",
             "source_node_uid": "n0003",
             "target_node_uid": "n0004",
@@ -12,7 +11,6 @@ fixed_nodenet_data = """{
             "weight": 1
         },
         "n0001:por:gen:n0002": {
-            "certainty": 1,
             "source_gate_name": "por",
             "source_node_uid": "n0001",
             "target_node_uid": "n0002",
@@ -21,7 +19,6 @@ fixed_nodenet_data = """{
             "weight": 1
         },
         "n0005:gen:gen:n0003": {
-            "certainty": 1,
             "source_gate_name": "gen",
             "source_node_uid": "n0005",
             "target_node_uid": "n0003",
@@ -30,7 +27,6 @@ fixed_nodenet_data = """{
             "weight": 1
         },
         "n0005:gen:gen:n0001": {
-            "certainty": 1,
             "source_gate_name": "gen",
             "source_node_uid": "n0005",
             "target_node_uid": "n0001",

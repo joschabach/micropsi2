@@ -185,14 +185,14 @@ class NetAPI(object):
         entity = self.__nodenet.get_nodespace(uid)
         return entity
 
-    def link(self, source_node, source_gate, target_node, target_slot, weight=1, certainty=1):
+    def link(self, source_node, source_gate, target_node, target_slot, weight=1):
         """
         Creates a link between two nodes. If the link already exists, it will be updated
-        with the given weight and certainty values (or the default 1 if not given)
+        with the given weight (or the default 1 if not given)
         """
-        self.__nodenet.create_link(source_node.uid, source_gate, target_node.uid, target_slot, weight, certainty)
+        self.__nodenet.create_link(source_node.uid, source_gate, target_node.uid, target_slot, weight)
 
-    def link_with_reciprocal(self, source_node, target_node, linktype, weight=1, certainty=1):
+    def link_with_reciprocal(self, source_node, target_node, linktype, weight=1):
         """
         Creates two (reciprocal) links between two nodes, valid linktypes are subsur, porret, catexp and symref
         """
@@ -201,23 +201,23 @@ class NetAPI(object):
         if linktype == "subsur":
             subslot = "sub" if "sub" in target_slot_types else "gen"
             surslot = "sur" if "sur" in source_slot_types else "gen"
-            self.__nodenet.create_link(source_node.uid, "sub", target_node.uid, subslot, weight, certainty)
-            self.__nodenet.create_link(target_node.uid, "sur", source_node.uid, surslot, weight, certainty)
+            self.__nodenet.create_link(source_node.uid, "sub", target_node.uid, subslot, weight)
+            self.__nodenet.create_link(target_node.uid, "sur", source_node.uid, surslot, weight)
         elif linktype == "porret":
             porslot = "por" if "por" in target_slot_types else "gen"
             retslot = "ret" if "ret" in source_slot_types else "gen"
-            self.__nodenet.create_link(source_node.uid, "por", target_node.uid, porslot, weight, certainty)
-            self.__nodenet.create_link(target_node.uid, "ret", source_node.uid, retslot, weight, certainty)
+            self.__nodenet.create_link(source_node.uid, "por", target_node.uid, porslot, weight)
+            self.__nodenet.create_link(target_node.uid, "ret", source_node.uid, retslot, weight)
         elif linktype == "catexp":
             catslot = "cat" if "cat" in target_slot_types else "gen"
             expslot = "exp" if "exp" in source_slot_types else "gen"
-            self.__nodenet.create_link(source_node.uid, "cat", target_node.uid, catslot, weight, certainty)
-            self.__nodenet.create_link(target_node.uid, "exp", source_node.uid, expslot, weight, certainty)
+            self.__nodenet.create_link(source_node.uid, "cat", target_node.uid, catslot, weight)
+            self.__nodenet.create_link(target_node.uid, "exp", source_node.uid, expslot, weight)
         elif linktype == "symref":
             symslot = "sym" if "sym" in target_slot_types else "gen"
             refslot = "ref" if "ref" in source_slot_types else "gen"
-            self.__nodenet.create_link(source_node.uid, "sym", target_node.uid, symslot, weight, certainty)
-            self.__nodenet.create_link(target_node.uid, "ref", source_node.uid, refslot, weight, certainty)
+            self.__nodenet.create_link(source_node.uid, "sym", target_node.uid, symslot, weight)
+            self.__nodenet.create_link(target_node.uid, "ref", source_node.uid, refslot, weight)
 
     def unlink(self, source_node, source_gate=None, target_node=None, target_slot=None):
         """
@@ -258,7 +258,7 @@ class NetAPI(object):
         for link in links_to_delete:
             link.source_node.unlink(target_node_uid=node.uid, slot_name=gateslot)
 
-    def link_actuator(self, node, datatarget, weight=1, certainty=1, gate='sub', slot='sur'):
+    def link_actuator(self, node, datatarget, weight=1, gate='sub', slot='sur'):
         """
         Links a node to an actuator. If no actuator exists in the node's nodespace for the given datatarget,
         a new actuator will be created, otherwise the first actuator found will be used
@@ -271,7 +271,7 @@ class NetAPI(object):
             actuator = self.create_node("Actuator", node.parent_nodespace, datatarget)
             actuator.set_parameter('datatarget', datatarget)
 
-        self.link(node, gate, actuator, 'gen', weight, certainty)
+        self.link(node, gate, actuator, 'gen', weight)
         # self.link(actuator, 'gen', node, slot)
 
     def link_sensor(self, node, datasource, slot='sur', weight=1):
@@ -438,8 +438,7 @@ class NetAPI(object):
                                   l.source_gate.type,
                                   self.get_node(uidmap[l.target_node.uid]),
                                   l.target_slot.type,
-                                  weight=l.weight,
-                                  certainty=l.certainty)
+                                  weight=l.weight)
         mapping = {}
         for node in nodes:
             mapping[node] = self.get_node(uidmap[node.uid])
@@ -531,11 +530,10 @@ class NetAPI(object):
         Returns the uid of the new monitor."""
         return self.__nodenet.add_slot_monitor(node_uid, slot, sheaf=sheaf, name=name, color=color)
 
-    def add_link_monitor(self, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, color=None):
-        """Adds a continuous monitor to a link. You can choose to monitor either weight (default) or certainty
-        The monitor will collect respective value in every calculation step.
+    def add_link_monitor(self, source_node_uid, gate_type, target_node_uid, slot_type, name=None, color=None):
+        """Adds a continuous weightmonitor to a link. The monitor will record the linkweight in every calculation step.
         Returns the uid of the new monitor."""
-        return self.__nodenet.add_link_monitor(source_node_uid, gate_type, target_node_uid, slot_type, property=property, name=name, color=color)
+        return self.__nodenet.add_link_monitor(source_node_uid, gate_type, target_node_uid, slot_type, name=name, color=color)
 
     def add_modulator_monitor(self, modulator, name, color=None):
         """Adds a continuous monitor to a global modulator.

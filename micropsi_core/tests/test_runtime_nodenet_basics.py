@@ -113,7 +113,7 @@ def test_nodespace_removal(fixed_nodenet):
     res, uid = micropsi.add_nodespace(fixed_nodenet, [100, 100], nodespace=None, name="testspace")
     res, n1_uid = micropsi.add_node(fixed_nodenet, 'Register', [100, 100], nodespace=uid, name="sub1")
     res, n2_uid = micropsi.add_node(fixed_nodenet, 'Register', [100, 200], nodespace=uid, name="sub2")
-    micropsi.add_link(fixed_nodenet, n1_uid, 'gen', n2_uid, 'gen', weight=1, certainty=1)
+    micropsi.add_link(fixed_nodenet, n1_uid, 'gen', n2_uid, 'gen', weight=1)
     res, sub_uid = micropsi.add_nodespace(fixed_nodenet, [100, 100], nodespace=uid, name="subsubspace")
     micropsi.delete_nodespace(fixed_nodenet, uid)
     # assert that the nodespace is gone

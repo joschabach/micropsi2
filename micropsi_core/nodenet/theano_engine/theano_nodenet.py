@@ -1243,10 +1243,10 @@ class TheanoNodenet(Nodenet):
                 actuators[uid] = self.get_node(uid)
         return actuators
 
-    def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
+    def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1):
         return self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight)
 
-    def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
+    def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1):
 
         source_partition = self.get_partition(source_node_uid)
         target_partition = self.get_partition(target_node_uid)
@@ -1449,7 +1449,6 @@ class TheanoNodenet(Nodenet):
 
                 data.append({
                     "weight": weight,
-                    "certainty": 1,
                     "target_slot_name": target_slot_type,
                     "target_node_uid": node_to_id(target_id, partition.pid),
                     "source_gate_name": source_gate_type,
@@ -1482,7 +1481,6 @@ class TheanoNodenet(Nodenet):
 
                                 data.append({
                                     "weight": float(weights[i, link_index]),
-                                    "certainty": 1,
                                     "target_slot_name": target_slot_type,
                                     "target_node_uid": node_to_id(target_id, to_partition.pid),
                                     "source_gate_name": source_gate_type,
@@ -1502,7 +1500,6 @@ class TheanoNodenet(Nodenet):
 
                             data.append({
                                 "weight": 1.,
-                                "certainty": 1,
                                 "target_slot_name": target_slot_type,
                                 "target_node_uid": node_to_id(target_id, to_partition.pid),
                                 "source_gate_name": source_gate_type,

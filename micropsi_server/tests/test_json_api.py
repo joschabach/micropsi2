@@ -655,7 +655,6 @@ def test_add_link_monitor(app, test_nodenet, node):
         'gate_type': 'gen',
         'target_node_uid': node,
         'slot_type': 'gen',
-        'property': 'weight',
         'name': 'LinkWeight'
     })
     assert_success(response)
@@ -668,7 +667,6 @@ def test_add_link_monitor(app, test_nodenet, node):
     assert response.json_body['data']['monitors'][uid]['gate_type'] == 'gen'
     assert response.json_body['data']['monitors'][uid]['target_node_uid'] == node
     assert response.json_body['data']['monitors'][uid]['slot_type'] == 'gen'
-    assert response.json_body['data']['monitors'][uid]['property'] == 'weight'
 
 
 def test_add_custom_monitor(app, test_nodenet):

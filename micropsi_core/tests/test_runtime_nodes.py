@@ -103,9 +103,9 @@ def test_get_nodespace_list_with_empty_nodespace(test_nodenet):
 
 def test_add_link(test_nodenet):
     nodes = prepare_nodenet(test_nodenet)
-    micropsi.add_link(test_nodenet, nodes['a'], "por", nodes['b'], "gen", 0.5, 1)
-    micropsi.add_link(test_nodenet, nodes['a'], "por", nodes['b'], "gen", 1, 0.1)
-    micropsi.add_link(test_nodenet, nodes['c'], "ret", nodes['b'], "gen", 1, 1)
+    micropsi.add_link(test_nodenet, nodes['a'], "por", nodes['b'], "gen", 0.5)
+    micropsi.add_link(test_nodenet, nodes['a'], "por", nodes['b'], "gen", 1)
+    micropsi.add_link(test_nodenet, nodes['c'], "ret", nodes['b'], "gen", 1)
 
     nodespace = micropsi.get_nodes(test_nodenet)
     assert len(nodespace["nodes"]) == 4
@@ -125,7 +125,7 @@ def test_add_link(test_nodenet):
 
 def test_delete_link(test_nodenet):
     nodes = prepare_nodenet(test_nodenet)
-    success, link = micropsi.add_link(test_nodenet, nodes['a'], "por", nodes['b'], "gen", 0.5, 1)
+    success, link = micropsi.add_link(test_nodenet, nodes['a'], "por", nodes['b'], "gen", 0.5)
     assert success
     micropsi.delete_link(test_nodenet, nodes['a'], "por", nodes['b'], "gen")
     nodespace = micropsi.get_nodes(test_nodenet)
@@ -246,7 +246,7 @@ def test_non_standard_gate_defaults(test_nodenet):
 
 def test_ignore_links(test_nodenet):
     nodes = prepare_nodenet(test_nodenet)
-    micropsi.add_link(test_nodenet, nodes['a'], "por", nodes['b'], "gen", 0.5, 1)
+    micropsi.add_link(test_nodenet, nodes['a'], "por", nodes['b'], "gen", 0.5)
 
     nodespace = micropsi.get_nodes(test_nodenet, [])
     assert len(nodespace["nodes"]) == 4

@@ -1019,7 +1019,6 @@ def test_add_link_monitor(test_nodenet, node):
     netapi = nodenet.netapi
     uid = netapi.add_link_monitor(node, 'gen', node, 'gen', name='sepplink')
     assert nodenet.get_monitor(uid).name == 'sepplink'
-    assert nodenet.get_monitor(uid).property == 'weight'
 
 
 def test_add_modulator_monitor(test_nodenet):

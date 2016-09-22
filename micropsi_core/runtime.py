@@ -905,8 +905,7 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
             l.source_gate.type,
             target_uid,
             l.target_slot.type,
-            l.weight,
-            l.certainty)
+            l.weight)
 
     for uid in uidmap.values():
         result[uid] = nodenet.get_node(uid).get_data(include_links=True)
@@ -1220,7 +1219,7 @@ def bind_datatarget_to_actuator(nodenet_uid, actuator_uid, datatarget):
     return False
 
 
-def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
+def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1):
     """Creates a new link.
 
     Arguments.
@@ -1229,20 +1228,19 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
         target_node_uid: uid of the target node
         slot_type: type of the target slot
         weight: the weight of the link (a float)
-        certainty (optional): a probabilistic parameter for the link
     """
     nodenet = get_nodenet(nodenet_uid)
     with nodenet.netlock:
-        success = nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
+        success = nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight)
     uid = None
     if success:                                                       # todo: check whether clients need these uids
         uid = "%s:%s:%s:%s" % (source_node_uid, gate_type, slot_type, target_node_uid)
     return success, uid
 
 
-def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
+def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1):
     """Set weight of the given link."""
-    return get_nodenet(nodenet_uid).set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
+    return get_nodenet(nodenet_uid).set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight)
 
 
 def get_links_for_nodes(nodenet_uid, node_uids):

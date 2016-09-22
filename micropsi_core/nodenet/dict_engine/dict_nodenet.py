@@ -622,20 +622,20 @@ class DictNodenet(Nodenet):
                     actuators[uid] = self._nodes[uid]
         return actuators
 
-    def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
+    def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1):
         """Set weight of the given link."""
 
         source_node = self.get_node(source_node_uid)
         if source_node is None:
             return False
 
-        link = source_node.link(gate_type, target_node_uid, slot_type, weight, certainty)
+        link = source_node.link(gate_type, target_node_uid, slot_type, weight)
         if link is None:
             return False
         else:
             return True
 
-    def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
+    def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1):
         """Creates a new link.
 
         Arguments.
@@ -644,7 +644,6 @@ class DictNodenet(Nodenet):
             target_node_uid: uid of the target node
             slot_type: type of the target slot
             weight: the weight of the link (a float)
-            certainty (optional): a probabilistic parameter for the link
 
         Returns:
             the link if successful,
@@ -655,7 +654,7 @@ class DictNodenet(Nodenet):
         if source_node is None:
             return False, None
 
-        source_node.link(gate_type, target_node_uid, slot_type, weight, certainty)
+        source_node.link(gate_type, target_node_uid, slot_type, weight)
         return True
 
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):

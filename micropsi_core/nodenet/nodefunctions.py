@@ -27,7 +27,7 @@ def sensor(netapi, node=None, datasource=None, **params):
     node.get_gate('gen').gate_function(datasource_value)
 
 
-def actor(netapi, node=None, datatarget=None, **params):
+def actuator(netapi, node=None, datatarget=None, **params):
     activation_to_set = node.get_slot("gen").activation
     if netapi.worldadapter and datatarget in netapi.worldadapter.get_available_datatargets():
         netapi.worldadapter.add_to_datatarget(datatarget, activation_to_set)

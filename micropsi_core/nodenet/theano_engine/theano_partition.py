@@ -1953,7 +1953,7 @@ class TheanoPartition():
                     parameters['datasource'] = None
                 else:
                     parameters['datasource'] = self.nodenet.get_datasources()[datasource_index[0]]
-            elif strtype == "Actor":
+            elif strtype == "Actuator":
                 actuator_element = self.allocated_node_offsets[id] + GEN
                 datatarget_index = np.where(self.actuator_indices == actuator_element)[0]
                 if len(datatarget_index) == 0:

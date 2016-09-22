@@ -175,7 +175,7 @@ class NetAPI(object):
         Create a new nodespace with the given name in the given parent_nodespace
         Options:
             new_partition - Whether or not to create a seperate partition for this nodespace
-                            Attention: Experimental Feature, Sensors & Actors only work in the root-partition
+                            Attention: Experimental Feature, Sensors & Actuators only work in the root-partition
         """
         if name is None:
             name = ""   # TODO: empty names crash the client right now, but really shouldn't
@@ -258,21 +258,21 @@ class NetAPI(object):
         for link in links_to_delete:
             link.source_node.unlink(target_node_uid=node.uid, slot_name=gateslot)
 
-    def link_actor(self, node, datatarget, weight=1, certainty=1, gate='sub', slot='sur'):
+    def link_actuator(self, node, datatarget, weight=1, certainty=1, gate='sub', slot='sur'):
         """
-        Links a node to an actor. If no actor exists in the node's nodespace for the given datatarget,
-        a new actor will be created, otherwise the first actor found will be used
+        Links a node to an actuator. If no actuator exists in the node's nodespace for the given datatarget,
+        a new actuator will be created, otherwise the first actuator found will be used
         """
-        actor = None
-        for uid, candidate in self.__nodenet.get_actors(node.parent_nodespace).items():
+        actuator = None
+        for uid, candidate in self.__nodenet.get_actuators(node.parent_nodespace).items():
             if candidate.get_parameter('datatarget') == datatarget:
-                actor = candidate
-        if actor is None:
-            actor = self.create_node("Actor", node.parent_nodespace, datatarget)
-            actor.set_parameter('datatarget', datatarget)
+                actuator = candidate
+        if actuator is None:
+            actuator = self.create_node("Actuator", node.parent_nodespace, datatarget)
+            actuator.set_parameter('datatarget', datatarget)
 
-        self.link(node, gate, actor, 'gen', weight, certainty)
-        # self.link(actor, 'gen', node, slot)
+        self.link(node, gate, actuator, 'gen', weight, certainty)
+        # self.link(actuator, 'gen', node, slot)
 
     def link_sensor(self, node, datasource, slot='sur', weight=1):
         """
@@ -289,28 +289,28 @@ class NetAPI(object):
 
         self.link(sensor, 'gen', node, slot, weight)
 
-    def import_actors(self, nodespace, datatarget_prefix=None):
+    def import_actuators(self, nodespace, datatarget_prefix=None):
         """
-        Makes sure an actor for all datatargets whose names start with the given prefix, or all datatargets,
+        Makes sure an actuator for all datatargets whose names start with the given prefix, or all datatargets,
         exists in the given nodespace.
         """
-        all_actors = []
+        all_actuators = []
         if self.worldadapter is None:
-            return all_actors
+            return all_actuators
 
         datatargets = self.worldadapter.get_available_datatargets()
 
         for datatarget in datatargets:
             if datatarget_prefix is None or datatarget.startswith(datatarget_prefix):
-                actor = None
-                for uid, candidate in self.__nodenet.get_actors(nodespace, datatarget).items():
-                    actor = candidate
+                actuator = None
+                for uid, candidate in self.__nodenet.get_actuators(nodespace, datatarget).items():
+                    actuator = candidate
                     break
-                if actor is None:
-                    actor = self.create_node("Actor", nodespace, datatarget)
-                    actor.set_parameter('datatarget', datatarget)
-                all_actors.append(actor)
-        return all_actors
+                if actuator is None:
+                    actuator = self.create_node("Actuator", nodespace, datatarget)
+                    actuator.set_parameter('datatarget', datatarget)
+                all_actuators.append(actuator)
+        return all_actuators
 
     def import_sensors(self, nodespace, datasource_prefix=None):
         """

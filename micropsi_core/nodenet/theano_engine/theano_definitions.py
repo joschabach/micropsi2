@@ -156,7 +156,7 @@ def get_string_slot_type(type, nodetype=None):
 def get_numerical_node_type(type, nativemodules=None):
     if type == "Register":
         return REGISTER
-    elif type == "Actor":
+    elif type == "Actuator":
         return ACTUATOR
     elif type == "Sensor":
         return SENSOR
@@ -182,7 +182,7 @@ def get_string_node_type(type, nativemodules=None):
     if type == REGISTER:
         return "Register"
     elif type == ACTUATOR:
-        return "Actor"
+        return "Actuator"
     elif type == SENSOR:
         return "Sensor"
     elif type == ACTIVATOR:

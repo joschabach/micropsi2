@@ -1211,10 +1211,10 @@ def bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource):
     return False
 
 
-def bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget):
-    """Associates the datatarget type to the actor node with the given uid."""
-    node = get_nodenet(nodenet_uid).get_node(actor_uid)
-    if node.type == "Actor":
+def bind_datatarget_to_actuator(nodenet_uid, actuator_uid, datatarget):
+    """Associates the datatarget type to the actuator node with the given uid."""
+    node = get_nodenet(nodenet_uid).get_node(actuator_uid)
+    if node.type == "Actuator":
         node.set_parameter('datatarget', datatarget)
         return True
     return False

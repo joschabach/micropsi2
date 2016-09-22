@@ -1066,7 +1066,7 @@ function calculateLinkStart(sourceNode, targetNode, gateName) {
     }
     var sourcePoints, startPoint, startAngle;
     if (!isOutsideNodespace(sourceNode) && isCompact(sourceNode)) {
-        if (sourceNode.type=="Sensor" || sourceNode.type == "Actor") {
+        if (sourceNode.type=="Sensor" || sourceNode.type == "Actuator") {
             if (sourceNode.type == "Sensor")
                 startPoint = new Point(sourceBounds.x+sourceBounds.width*0.5,
                     sourceBounds.y);
@@ -1134,7 +1134,7 @@ function calculateLinkEnd(sourceNode, targetNode, slotName, linkType) {
         }
     }
     if (!isOutsideNodespace(targetNode) && isCompact(targetNode)) {
-        if (targetNode.type=="Sensor" || targetNode.type == "Actor") {
+        if (targetNode.type=="Sensor" || targetNode.type == "Actuator") {
             endPoint = new Point(targetBounds.x + targetBounds.width*0.6, targetBounds.y);
             endAngle = 270;
         } else {
@@ -1486,7 +1486,7 @@ function createCompactNodeShape(node) {
                 new Point(bounds.right, bounds.y-bounds.height * 0.3), bounds.bottomRight);
             shape.closePath();
             break;
-        case "Actor":
+        case "Actuator":
             shape = new Path([bounds.bottomRight,
                 new Point(bounds.x+bounds.width * 0.65, bounds.y),
                 new Point(bounds.x+bounds.width * 0.35, bounds.y),
@@ -2860,7 +2860,7 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     if(node.type == "Sensor"){
         html += '<li><a href="#">Select datasource</li>';
     }
-    if(node.type == "Actor"){
+    if(node.type == "Actuator"){
         html += '<li><a href="#">Select datatarget</li>';
     }
     html += '<li><a href="#">Add Monitor</a></li>' +
@@ -2914,10 +2914,10 @@ function handleContextMenu(event) {
                         source_select.val(nodes[clickOriginUid].parameters['datasource']).select().focus();
                     };
                     break;
-                case "Actor":
+                case "Actuator":
                     callback = function(data){
                         clickOriginUid = data;
-                        dialogs.notification('Please Select a datatarget for this actor');
+                        dialogs.notification('Please Select a datatarget for this actuator');
                         var target_select = $('#select_datatarget_modal select');
                         target_select.html('');
                         $("#select_datatarget_modal").modal("show");
@@ -3798,9 +3798,9 @@ function handleSelectDatatargetModal(event){
     $("#select_datatarget_modal").modal("hide");
     nodes[nodeUid].parameters['datatarget'] = value;
     showNodeForm(nodeUid);
-    api.call("bind_datatarget_to_actor", {
+    api.call("bind_datatarget_to_actuator", {
         nodenet_uid: currentNodenet,
-        actor_uid: nodeUid,
+        actuator_uid: nodeUid,
         datatarget: value
     }, function(data){
         showNodeForm(nodeUid, true);

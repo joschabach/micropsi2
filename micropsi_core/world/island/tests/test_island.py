@@ -43,9 +43,9 @@ def test_island_braitenberg(runtime, resourcepath, default_nodenet):
     # create a tiny braiti
     netapi = nodenet.netapi
     sensors = netapi.import_sensors(None)
-    actors = netapi.import_actors(None)
+    actuators = netapi.import_actuators(None)
     for s in sensors:
-        for a in actors:
+        for a in actuators:
             if s.get_parameter('datasource') == 'brightness_l' and a.get_parameter('datatarget') == 'engine_r':
                 netapi.link(s, 'gen', a, 'gen')
             if s.get_parameter('datasource') == 'brightness_r' and a.get_parameter('datatarget') == 'engine_l':

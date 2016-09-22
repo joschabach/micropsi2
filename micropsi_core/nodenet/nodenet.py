@@ -369,9 +369,9 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_actors(self, nodespace=None, datatarget=None):
+    def get_actuators(self, nodespace=None, datatarget=None):
         """
-        Returns a dict of all actor nodes. Optionally filtered by the given nodespace and data target
+        Returns a dict of all actuator nodes. Optionally filtered by the given nodespace and data target
         """
         pass  # pragma: no cover
 

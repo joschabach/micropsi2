@@ -37,10 +37,10 @@ STANDARD_NODETYPES = {
         "nodefunction_name": "sensor",
         "gatetypes": ["gen"]
     },
-    "Actor": {
-        "name": "Actor",
+    "Actuator": {
+        "name": "Actuator",
         "parameters": ["datatarget"],
-        "nodefunction_name": "actor",
+        "nodefunction_name": "actuator",
         "slottypes": ["gen"],
         "gatetypes": ["gen"]
     },
@@ -612,15 +612,15 @@ class DictNodenet(Nodenet):
                     sensors[uid] = self._nodes[uid]
         return sensors
 
-    def get_actors(self, nodespace=None, datatarget=None):
-        """Returns a dict of all sensor nodes. Optionally filtered by the given nodespace"""
+    def get_actuators(self, nodespace=None, datatarget=None):
+        """Returns a dict of all actuator nodes. Optionally filtered by the given nodespace"""
         nodes = self._nodes if nodespace is None else self._nodespaces[nodespace].get_known_ids('nodes')
-        actors = {}
+        actuators = {}
         for uid in nodes:
-            if self._nodes[uid].type == 'Actor':
+            if self._nodes[uid].type == 'Actuator':
                 if datatarget is None or self._nodes[uid].get_parameter('datatarget') == datatarget:
-                    actors[uid] = self._nodes[uid]
-        return actors
+                    actuators[uid] = self._nodes[uid]
+        return actuators
 
     def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
         """Set weight of the given link."""

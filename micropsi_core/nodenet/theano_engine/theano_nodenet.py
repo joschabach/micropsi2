@@ -49,10 +49,10 @@ STANDARD_NODETYPES = {
         "nodefunction_name": "sensor",
         "gatetypes": ["gen"]
     },
-    "Actor": {
-        "name": "Actor",
+    "Actuator": {
+        "name": "Actuator",
         "parameters": ["datatarget"],
-        "nodefunction_name": "actor",
+        "nodefunction_name": "actuator",
         "slottypes": ["gen"],
         "gatetypes": ["gen"]
     },
@@ -176,7 +176,7 @@ class TheanoNodenet(Nodenet):
         self._worldadapter_instance = _worldadapter_instance
         if self._worldadapter_instance:
             self._worldadapter_instance.nodenet = self
-        self._rebuild_sensor_actor_indices()
+        self._rebuild_sensor_actuator_indices()
 
     @property
     def current_step(self):
@@ -265,7 +265,7 @@ class TheanoNodenet(Nodenet):
         self.rootpartition = rootpartition
         self.partitionmap = {}
         self.inverted_partitionmap = {}
-        self._rebuild_sensor_actor_indices(rootpartition)
+        self._rebuild_sensor_actuator_indices(rootpartition)
 
         self._version = NODENET_VERSION  # used to check compatibility of the node net data
         self._step = 0
@@ -607,7 +607,7 @@ class TheanoNodenet(Nodenet):
             # re-initialize step operators for theano recompile to new shared variables
             self.initialize_stepoperators()
 
-            self._rebuild_sensor_actor_indices()
+            self._rebuild_sensor_actuator_indices()
 
             return True
 
@@ -886,7 +886,7 @@ class TheanoNodenet(Nodenet):
                 self.get_node(uid).set_parameter("datasource", parameters['datasource'])
                 if name is None or name == "" or name == uid:
                     name = parameters['datasource']
-        elif nodetype == "Actor":
+        elif nodetype == "Actuator":
             if 'datatarget' in parameters:
                 self.get_node(uid).set_parameter("datatarget", parameters['datatarget'])
                 if name is None or name == "" or name == uid:
@@ -1092,7 +1092,7 @@ class TheanoNodenet(Nodenet):
             self.partitionmap[parent_uid] = []
         self.partitionmap[parent_uid].append(partition)
         self.inverted_partitionmap[partition.spid] = parent_uid
-        self._rebuild_sensor_actor_indices(partition)
+        self._rebuild_sensor_actuator_indices(partition)
         return partition.spid
 
     def delete_partition(self, pid):
@@ -1231,7 +1231,7 @@ class TheanoNodenet(Nodenet):
                 sensors[uid] = self.get_node(uid)
         return sensors
 
-    def get_actors(self, nodespace=None, datatarget=None):
+    def get_actuators(self, nodespace=None, datatarget=None):
         actuators = {}
         actuatorlist = []
         if datatarget is None:
@@ -1636,9 +1636,9 @@ class TheanoNodenet(Nodenet):
         if self._worldadapter_instance:
             self._worldadapter_instance.set_datatarget_values(actuator_values_to_write)
 
-    def _rebuild_sensor_actor_indices(self, partition=None):
+    def _rebuild_sensor_actuator_indices(self, partition=None):
         """
-        Rebuilds the actor and sensor indices of the given partition or all partitions if None
+        Rebuilds the actuator and sensor indices of the given partition or all partitions if None
         """
         if partition is not None:
             partitions = [partition]

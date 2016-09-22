@@ -1238,9 +1238,9 @@ def bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource):
     return runtime.bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource)
 
 
-@rpc("bind_datatarget_to_actor", permission_required="manage nodenets")
-def bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget):
-    return runtime.bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget)
+@rpc("bind_datatarget_to_actuator", permission_required="manage nodenets")
+def bind_datatarget_to_actuator(nodenet_uid, actuator_uid, datatarget):
+    return runtime.bind_datatarget_to_actuator(nodenet_uid, actuator_uid, datatarget)
 
 
 @rpc("add_link", permission_required="manage nodenets")

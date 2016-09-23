@@ -65,44 +65,37 @@ STANDARD_NODETYPES = {
             "gen": {
                 "minimum": -1,
                 "maximum": 1,
-                "threshold": -1,
-                "spreadsheaves": 0
+                "threshold": -1
             },
             "por": {
                 "minimum": -1,
                 "maximum": 1,
-                "threshold": -1,
-                "spreadsheaves": 0
+                "threshold": -1
             },
             "ret": {
                 "minimum": -1,
                 "maximum": 1,
-                "threshold": -1,
-                "spreadsheaves": 0
+                "threshold": -1
             },
             "sub": {
                 "minimum": -1,
                 "maximum": 1,
-                "threshold": -1,
-                "spreadsheaves": True
+                "threshold": -1
             },
             "sur": {
                 "minimum": -1,
                 "maximum": 1,
-                "threshold": -1,
-                "spreadsheaves": 0
+                "threshold": -1
             },
             "cat": {
                 "minimum": -1,
                 "maximum": 1,
-                "threshold": -1,
-                "spreadsheaves": 1
+                "threshold": -1
             },
             "exp": {
                 "minimum": -1,
                 "maximum": 1,
-                "threshold": -1,
-                "spreadsheaves": 0
+                "threshold": -1
             }
         },
         "parameters": ["expectation", "wait"],
@@ -723,9 +716,9 @@ class TheanoNodenet(Nodenet):
                     gate_functions=data.get('gate_functions'))
             uidmap[uid] = new_uid
             node_proxy = self.get_node(new_uid)
-            for gatetype in data.get('gate_activations', {}):   # todo: implement sheaves
+            for gatetype in data.get('gate_activations', {}):
                 if gatetype in node_proxy.nodetype.gatetypes:
-                    node_proxy.get_gate(gatetype).activation = data['gate_activations'][gatetype]['default']['activation']
+                    node_proxy.get_gate(gatetype).activation = data['gate_activations'][gatetype]
             state = data.get('state', {})
             if state is not None:
                 for key, value in state.items():

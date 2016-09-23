@@ -31,7 +31,6 @@ def test_node_netapi_create_register_node(fixed_nodenet):
     assert node.type == "Register"
     assert node.uid is not None
     assert len(node.get_gate('gen').get_links()) == 0
-    assert len(node.get_gate('gen').activations) == 1
 
     # frontend/persistency-oriented data dictionary test
     data = node.get_data()
@@ -55,19 +54,12 @@ def test_node_netapi_create_pipe_node(fixed_nodenet):
     assert node.type == "Pipe"
     assert node.uid is not None
     assert len(node.get_gate('gen').get_links()) == 0
-    assert len(node.get_gate('gen').activations) == 1
     assert len(node.get_gate('sub').get_links()) == 0
-    assert len(node.get_gate('sub').activations) == 1
     assert len(node.get_gate('sur').get_links()) == 0
-    assert len(node.get_gate('sur').activations) == 1
     assert len(node.get_gate('por').get_links()) == 0
-    assert len(node.get_gate('por').activations) == 1
     assert len(node.get_gate('ret').get_links()) == 0
-    assert len(node.get_gate('ret').activations) == 1
     assert len(node.get_gate('cat').get_links()) == 0
-    assert len(node.get_gate('cat').activations) == 1
     assert len(node.get_gate('exp').get_links()) == 0
-    assert len(node.get_gate('exp').activations) == 1
 
     # frontend/persistency-oriented data dictionary test
     data = node.get_data()
@@ -96,23 +88,14 @@ def test_node_netapi_create_concept_node(fixed_nodenet):
     assert node.type == "Concept"
     assert node.uid is not None
     assert len(node.get_gate('gen').get_links()) == 0
-    assert len(node.get_gate('gen').activations) == 1
     assert len(node.get_gate('sub').get_links()) == 0
-    assert len(node.get_gate('sub').activations) == 1
     assert len(node.get_gate('sur').get_links()) == 0
-    assert len(node.get_gate('sur').activations) == 1
     assert len(node.get_gate('por').get_links()) == 0
-    assert len(node.get_gate('por').activations) == 1
     assert len(node.get_gate('ret').get_links()) == 0
-    assert len(node.get_gate('ret').activations) == 1
     assert len(node.get_gate('cat').get_links()) == 0
-    assert len(node.get_gate('cat').activations) == 1
     assert len(node.get_gate('exp').get_links()) == 0
-    assert len(node.get_gate('exp').activations) == 1
     assert len(node.get_gate('sym').get_links()) == 0
-    assert len(node.get_gate('sym').activations) == 1
     assert len(node.get_gate('ref').get_links()) == 0
-    assert len(node.get_gate('ref').activations) == 1
 
     # frontend/persistency-oriented data dictionary test
     data = node.get_data()

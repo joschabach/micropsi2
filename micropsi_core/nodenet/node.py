@@ -19,9 +19,6 @@ __author__ = 'joscha'
 __date__ = '09.05.12'
 
 
-emptySheafElement = dict(uid="default", name="default", activation=0)
-
-
 class Node(metaclass=ABCMeta):
     """
     Abstract base class for node implementations.
@@ -105,23 +102,7 @@ class Node(metaclass=ABCMeta):
     @abstractmethod
     def activation(self):
         """
-        This node's activation property ('default' sheaf) as calculated once per step by its node function
-        """
-        pass  # pragma: no cover
-
-    # @property
-    # @abstractmethod
-    # def activations(self):
-    #     """
-    #     This node's activation properties (dict of all sheaves) as calculated once per step by its node function
-    #     """
-
-    @property
-    @abstractmethod
-    def activations(self):
-        """
-        Returns a copy of the nodes's activations (all sheaves)
-        Changes to the returned dict will not affect the node
+        This node's activation property as calculated once per step by its node function
         """
         pass  # pragma: no cover
 
@@ -129,7 +110,7 @@ class Node(metaclass=ABCMeta):
     @abstractmethod
     def activation(self, activation):
         """
-        Sets this node's activation property ('default' sheaf), overriding what has been calculated by the node function
+        Sets this node's activation property, overriding what has been calculated by the node function
         """
         pass  # pragma: no cover
 
@@ -164,7 +145,6 @@ class Node(metaclass=ABCMeta):
             "parameters": self.clone_parameters(),
             "state": self.clone_state(),
             "gate_parameters": self.clone_non_default_gate_parameters(),
-            "sheaves": self.clone_sheaves(),
             "activation": self.activation,
             "gate_activations": self.construct_gates_dict(),
             "gate_functions": self.get_gatefunction_names()
@@ -304,15 +284,6 @@ class Node(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def clone_sheaves(self):
-        """
-        Returns a copy of the activation values present in the node.
-        Note that this is about node activation, not gate activation (gates have their own sheaves).
-        Write access to this dict will not affect the node.
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
     def node_function(self):
         """
         The node function of the node, called after activation has been propagated to the node's slots.
@@ -375,7 +346,7 @@ class Node(metaclass=ABCMeta):
     def construct_gates_dict(self):
         data = {}
         for gate_name in self.get_gate_types():
-            data[gate_name] = self.get_gate(gate_name).clone_sheaves()
+            data[gate_name] = self.get_gate(gate_name).activation
         return data
 
     def __repr__(self):
@@ -416,16 +387,7 @@ class Gate(metaclass=ABCMeta):
     @abstractmethod
     def activation(self):
         """
-        Returns the gate's activation ('default' sheaf)
-        """
-        pass  # pragma: no cover
-
-    @property
-    @abstractmethod
-    def activations(self):
-        """
-        Returns a copy of the gate's activations (all sheaves)
-        Changes to the returned dict will not affect the gate
+        Returns the gate's activation
         """
         pass  # pragma: no cover
 
@@ -445,15 +407,7 @@ class Gate(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def clone_sheaves(self):
-        """
-        Returns a copy of the activation values present in the gate.
-        Write access to this dict will not affect the gate.
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def gate_function(self, input_activation, sheaf="default"):
+    def gate_function(self, input_activation):
         """
         This function sets the activation of the gate.
         This only needs to be implemented if the reference implementation for the node functions from
@@ -467,18 +421,6 @@ class Gate(metaclass=ABCMeta):
 
         Implementations should allow to define alternative gate functions on a per-nodespace basis, i.e. all
         gates of nodes in a given nodespace should use the same gate function.
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def open_sheaf(self, input_activation, sheaf="default"):
-        """
-        This function opens a new sheaf and calls gate_function function for the newly opened sheaf.
-        This only needs to be implemented if the reference implementation for the node functions from
-        nodefunctions.py is being used.
-
-        Alternative implementations are free to handle sheaves in the node functions directly and
-        can pass on the implementation of this method.
         """
         pass  # pragma: no cover
 
@@ -521,25 +463,15 @@ class Slot(metaclass=ABCMeta):
     @abstractmethod
     def activation(self):
         """
-        Returns the activation in this slot ('default' sheaf)
+        Returns the activation in this slot
         """
         pass  # pragma: no cover
 
     @property
     @abstractmethod
-    def activations(self):
+    def get_activation(self):
         """
-        Returns a copy of the slots's activations (all sheaves)
-        Changes to the returned dict will not affect the gate
-        """
-        pass  # pragma: no cover
-
-    @property
-    @abstractmethod
-    def get_activation(self, sheaf="default"):
-        """
-        Returns the activation in this slot for the given sheaf.
-        Will return the activation in the 'default' sheaf if the sheaf does not exist
+        Returns the activation in this slot.
         """
         pass  # pragma: no cover
 
@@ -565,8 +497,7 @@ class Nodetype(object):
         "amplification": 1,
         "threshold": -1,
         "theta": 0,
-        "rho": 0,
-        "spreadsheaves": 0
+        "rho": 0
     }
 
     @property

@@ -68,8 +68,7 @@ GATE_DEFAULTS = {
     "amplification": 1,
     "threshold": -1,
     "theta": 0,
-    "rho": 0,
-    "spreadsheaves": 0
+    "rho": 0
 }
 
 
@@ -114,8 +113,6 @@ nodespace_property_defaults = {
 
 
 currentWorldadapter = null;
-
-var currentSheaf = "default";
 
 var selectionRectangle = new Rectangle(1,1,1,1);
 selectionBox = new Path.Rectangle(selectionRectangle);
@@ -408,7 +405,7 @@ function setNodespaceData(data, changed){
         }
         var links_data = {}
         for(uid in data.nodes){
-            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions, data.nodes[uid].is_highdimensional, data.nodes[uid].inlinks, data.nodes[uid].outlinks);
+            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions, data.nodes[uid].is_highdimensional, data.nodes[uid].inlinks, data.nodes[uid].outlinks);
             if(uid in nodes){
                 if(nodeRedrawNeeded(item)) {
                     nodes[uid].update(item);
@@ -496,7 +493,7 @@ function setNodespaceDiffData(data, changed){
             links_data = {}
             for(var uid in data.changes.nodes_dirty){
                 var nodedata = data.changes.nodes_dirty[uid];
-                item = new Node(uid, nodedata['position'][0], nodedata['position'][1], nodedata.parent_nodespace, nodedata.name, nodedata.type, nodedata.sheaves, nodedata.state, nodedata.parameters, nodedata.gate_activations, nodedata.gate_parameters, nodedata.gate_functions, nodedata.is_highdimensional, nodedata.inlinks, nodedata.outlinks);
+                item = new Node(uid, nodedata['position'][0], nodedata['position'][1], nodedata.parent_nodespace, nodedata.name, nodedata.type, nodedata.activation, nodedata.state, nodedata.parameters, nodedata.gate_activations, nodedata.gate_parameters, nodedata.gate_functions, nodedata.is_highdimensional, nodedata.inlinks, nodedata.outlinks);
                 if(uid in nodes){
                     for (var gateName in nodes[uid].gates) {
                         for (linkUid in nodes[uid].gates[gateName].outgoing) {
@@ -544,12 +541,12 @@ function setNodespaceDiffData(data, changed){
             for(var i=0; i < nodes[uid].gateIndexes.length; i++){
                 var type = nodes[uid].gateIndexes[i];
                 var gateAct = (activations) ? activations[i] : 0;
-                nodes[uid].gates[type].sheaves['default'].activation = gateAct;
+                nodes[uid].gates[type].activation = gateAct;
                 if(type == 'gen'){
                     gen = gateAct;
                 }
             }
-            nodes[uid].sheaves['default'].activation = gen;
+            nodes[uid].activation = gen;
             setActivation(nodes[uid]);
             redrawNodeLinks(nodes[uid]);
         }
@@ -706,11 +703,11 @@ function updateModulators(data){
 
 
 // data structure for net entities
-function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, gate_activations, gate_parameters, gatefunctions, is_highdim, inlinks, outlinks) {
+function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters, gate_activations, gate_parameters, gatefunctions, is_highdim, inlinks, outlinks) {
 	this.uid = uid;
 	this.x = x;
 	this.y = y;
-	this.sheaves = sheaves || {"default": {"uid": "default", "name": "default", "activation": 0}};
+	this.activation = activation || 0;
     this.state = state;
 	this.name = name;
 	this.type = type;
@@ -743,10 +740,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
         for(i in nodetypes[type].gatetypes){
             var gatetype = nodetypes[type].gatetypes[i]
             parameters = {};
-            sheaves = this.gate_activations[gatetype];
-            if(!sheaves) {
-                sheaves = {"default":{"uid":"default", "name":"default", "activation": 0}};
-            }
+            activation = this.gate_activations[gatetype];
             parameters = jQuery.extend({}, GATE_DEFAULTS);
             if(nodetypes[type].gate_defaults && nodetypes[type].gate_defaults[gatetype]) {
                 for(var key in nodetypes[type].gate_defaults[gatetype]){
@@ -759,7 +753,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
                 }
             }
             var highdim = is_highdim && gatetype in nodetypes[type].dimensionality.gates;
-            this.gates[gatetype] = new Gate(gatetype, i, sheaves, parameters, this.gatefunctions[gatetype], highdim);
+            this.gates[gatetype] = new Gate(gatetype, i, activation, parameters, this.gatefunctions[gatetype], highdim);
         }
         this.slotIndexes = Object.keys(this.slots);
         this.gateIndexes = Object.keys(this.gates);
@@ -772,7 +766,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
         this.y = item.y;
         this.parent = item.parent;
         this.name = item.name;
-        this.sheaves = item.sheaves;
+        this.activation = item.activation;
         this.state = item.state;
         this.parameters = item.parameters;
         this.gate_parameters = jQuery.extend(jQuery.extend({}, GATE_DEFAULTS), item.gate_parameters || {});;
@@ -783,7 +777,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
         for(var i in nodetypes[type].gatetypes){
             var gatetype = nodetypes[type].gatetypes[i];
             this.gates[gatetype].parameters = jQuery.extend(jQuery.extend({}, GATE_DEFAULTS), this.gate_parameters[gatetype]);
-            this.gates[gatetype].sheaves = this.gate_activations[gatetype];
+            this.gates[gatetype].activation = this.gate_activations[gatetype];
             this.gates[gatetype].gatefunction = this.gatefunctions[gatetype];
 
         }
@@ -793,7 +787,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
         var gatechecksum = "";
         for(var i in nodetypes[type].gatetypes){
             var gatetype = nodetypes[type].gatetypes[i];
-            gatechecksum += "-" + this.gates[gatetype].sheaves[currentSheaf].activation;
+            gatechecksum += "-" + this.gates[gatetype].activation;
             gatechecksum += ':' + this.gates[gatetype].gatefunction;
         }
         return gatechecksum;
@@ -804,15 +798,15 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
 function Slot(name) {
 	this.name = name;
 	this.incoming = {};
-	this.sheaves = {"default": {"uid": "default", "name": "default", "activation": 0}};
+	this.activation = 0;
 }
 
 // source for links, part of a net entity
-function Gate(name, index, sheaves, parameters, gatefunction, is_highdim) {
+function Gate(name, index, activation, parameters, gatefunction, is_highdim) {
 	this.name = name;
     this.index = index;
 	this.outgoing = {};
-	this.sheaves = sheaves;
+	this.activation = activation;
     this.is_highdim = is_highdim;
     this.gatefunction = gatefunction || 'identity';
     if(parameters){
@@ -873,8 +867,8 @@ function redrawLink(link, forceRedraw){
     if (forceRedraw || !oldLink || !(link.uid in linkLayer.children) || oldLink.weight != link.weight ||
         oldLink.certainty != link.certainty ||
             !nodes[oldLink.sourceNodeUid] || !nodes[link.sourceNodeUid] ||
-            nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].sheaves[currentSheaf].activation !=
-            nodes[link.sourceNodeUid].gates[link.gateName].sheaves[currentSheaf].activation) {
+            nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].activation !=
+            nodes[link.sourceNodeUid].gates[link.gateName].activation) {
         if(link.uid in linkLayer.children){
             linkLayer.children[link.uid].remove();
         }
@@ -1014,9 +1008,8 @@ function nodeRedrawNeeded(node){
         if(node.x == nodes[node.uid].x &&
             node.y == nodes[node.uid].y &&
             node.name == nodes[node.uid].name &&
-            node.sheaves[currentSheaf].activation == nodes[node.uid].sheaves[currentSheaf].activation &&
+            node.activation == nodes[node.uid].activation &&
             node.gatechecksum() == nodes[node.uid].gatechecksum() &&
-            Object.keys(node.sheaves).length == Object.keys(nodes[node.uid].sheaves).length &&
             viewProperties.zoomFactor == nodes[node.uid].zoomFactor){
             return false;
         }
@@ -1268,7 +1261,7 @@ function renderLink(link, force) {
 
     link.strokeWidth = Math.max(0.1, Math.min(1.0, Math.abs(link.weight)))*viewProperties.zoomFactor;
     if(sourceNode){
-        link.strokeColor = activationColor(sourceNode.gates[link.gateName].sheaves[currentSheaf].activation * link.weight, viewProperties.linkColor);
+        link.strokeColor = activationColor(sourceNode.gates[link.gateName].activation * link.weight, viewProperties.linkColor);
     } else {
         link.strokeColor = viewProperties.linkColor;
     }
@@ -1285,7 +1278,7 @@ function renderLink(link, force) {
     linkContainer.name = link.uid;
     if (nodespaceProperties[currentNodeSpace].activation_display == 'alpha'){
         if(sourceNode){
-            linkContainer.opacity = Math.max(0.1, sourceNode.sheaves[currentSheaf].activation)
+            linkContainer.opacity = Math.max(0.1, sourceNode.activation)
         } else {
             linkContainer.opacity = 0.1
         }
@@ -1382,9 +1375,8 @@ function renderFullNode(node) {
         var skeleton = createFullNodeSkeleton(node);
         var activations = createFullNodeActivations(node);
         var titleBar = createFullNodeLabel(node);
-        var sheavesAnnotation = createSheavesAnnotation(node);
         var gateAnnotations = createGateAnnotation(node);
-        nodeItem = new Group([activations, skeleton, titleBar, gateAnnotations, sheavesAnnotation]);
+        nodeItem = new Group([activations, skeleton, titleBar, gateAnnotations]);
     }
     nodeItem.name = node.uid;
     nodeItem.isCompact = false;
@@ -1545,31 +1537,6 @@ function createFullNodeLabel(node) {
         fontSize: viewProperties.fontSize*viewProperties.zoomFactor
     };
     titleText.content = (node.name ? node.name : node.uid);
-    titleText.name = "text";
-    label.addChild(titleText);
-    return label;
-}
-
-// draw the sheaves annotation of a full node -- this is rather hacky, we will want to find
-// a better way of visualizing sheaves, including sheaf states
-function createSheavesAnnotation(node) {
-    var bounds = node.bounds;
-    var label = new Group();
-    label.name = "sheavesLabel";
-    var titleText = new PointText(new Point(bounds.x+ 80*viewProperties.zoomFactor +viewProperties.padding*viewProperties.zoomFactor,
-        bounds.y+viewProperties.lineHeight*0.8*viewProperties.zoomFactor));
-    titleText.characterStyle = {
-        fillColor: viewProperties.nodeFontColor,
-        fontSize: viewProperties.fontSize*viewProperties.zoomFactor
-    };
-    var sheavesText = "";
-    for(uid in node.sheaves) {
-        name = node.sheaves[uid].name;
-        if(name != "default") {
-            sheavesText += name + "\n";
-        }
-    }
-    titleText.content = sheavesText;
     titleText.name = "text";
     label.addChild(titleText);
     return label;
@@ -1834,19 +1801,19 @@ function setActivation(node) {
     }
     if (node.uid in nodeLayer.children) {
         var nodeItem = nodeLayer.children[node.uid];
-        if((nodespaceProperties[currentNodeSpace].activation_display != 'alpha') || node.sheaves[currentSheaf].activation > 0.5){
+        if((nodespaceProperties[currentNodeSpace].activation_display != 'alpha') || node.activation > 0.5){
             node.fillColor = nodeItem.children["activation"].children["body"].fillColor =
-                activationColor(node.sheaves[currentSheaf].activation, viewProperties.nodeColor);
+                activationColor(node.activation, viewProperties.nodeColor);
         }
         if(nodespaceProperties[currentNodeSpace].activation_display == 'alpha'){
             for(var i in nodeItem.children){
                 if(nodeItem.children[i].name == 'labelText'){
                     nodeItem.children[i].opacity = 0;
-                    if (node.sheaves[currentSheaf].activation > 0.5){
-                        nodeItem.children[i].opacity = node.sheaves[currentSheaf].activation;
+                    if (node.activation > 0.5){
+                        nodeItem.children[i].opacity = node.activation;
                     }
                 } else {
-                    nodeItem.children[i].opacity = Math.max(0.1, node.sheaves[currentSheaf].activation)
+                    nodeItem.children[i].opacity = Math.max(0.1, node.activation)
                 }
             }
         }
@@ -1856,13 +1823,13 @@ function setActivation(node) {
             var type;
             for (type in node.slots) {
                 nodeItem.children["activation"].children["slots"].children[i++].fillColor =
-                    activationColor(node.slots[type].sheaves[currentSheaf].activation,
+                    activationColor(node.slots[type].activation,
                     viewProperties.nodeColor);
             }
             i=0;
             for (type in node.gates) {
                 nodeItem.children["activation"].children["gates"].children[i++].fillColor =
-                    activationColor(node.gates[type].sheaves[currentSheaf].activation,
+                    activationColor(node.gates[type].activation,
                     viewProperties.nodeColor);
             }
         }
@@ -2551,7 +2518,7 @@ function loadLinksForSelection(callback, force_load, show_node_form){
                     callback(data);
                 } else {
                     for(var uid in data.nodes){
-                        addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions, data.nodes[uid].is_highdimensional, data.nodes[uid].inlinks, data.nodes[uid].outlinks));
+                        addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions, data.nodes[uid].is_highdimensional, data.nodes[uid].inlinks, data.nodes[uid].outlinks));
                     }
                     var linkdict = {};
                     for(var i = 0; i < data.links.length; i++){
@@ -3445,7 +3412,7 @@ function createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot){
                     'nodenet_uid': currentNodenet,
                     'node_uid': targetUid
                 }, function(data){
-                    nodes[targetUid] = new Node(data.uid, data.position[0], data.position[1], data.parent_nodespace, data.name, data.type, data.sheaves, data.state, data.parameters, data.gate_activations, data.gate_parameters, data.is_highdimensional, data.inlinks, data.outlinks);
+                    nodes[targetUid] = new Node(data.uid, data.position[0], data.position[1], data.parent_nodespace, data.name, data.type, data.activation, data.state, data.parameters, data.gate_activations, data.gate_parameters, data.is_highdimensional, data.inlinks, data.outlinks);
                     createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot);
                 });
             } else {
@@ -3463,7 +3430,7 @@ function createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot){
                             'nodenet_uid': currentNodenet,
                             'node_uid': targetUid
                         }, function(data){
-                            nodes[targetUid] = new Node(data.uid, data.position[0], data.position[1], data.parent_nodespace, data.name, data.type, data.sheaves, data.state, data.parameters, data.gate_activations, data.gate_parameters, data.is_highdimensional, data.inlinks, data.outlinks);
+                            nodes[targetUid] = new Node(data.uid, data.position[0], data.position[1], data.parent_nodespace, data.name, data.type, data.activation, data.state, data.parameters, data.gate_activations, data.gate_parameters, data.is_highdimensional, data.inlinks, data.outlinks);
                             nodes[targetUid].linksFromOutside.push(uid);
                         });
                     } else if(nodes[targetUid].parent != currentNodeSpace){
@@ -3664,7 +3631,7 @@ function handleEditNode(event){
     if(nodes[nodeUid].state != state  && nodes[nodeUid].type != 'Nodespace'){
         setNodeState(nodeUid, state);
     }
-    if(nodes[nodeUid].sheaves[currentSheaf].activation != activation && nodes[nodeUid].type != 'Nodespace'){
+    if(nodes[nodeUid].activation != activation && nodes[nodeUid].type != 'Nodespace'){
         setNodeActivation(nodeUid, activation);
     }
     redrawNode(nodes[nodeUid], true);
@@ -3728,10 +3695,10 @@ function handleEditGate(event){
 
 function setNodeActivation(nodeUid, activation){
     activation = activation || 0;
-    nodes[nodeUid].sheaves[currentSheaf].activation = activation;
+    nodes[nodeUid].activation = activation;
     //TODO not sure this is generic enough, should probably just take the 0th
     if(nodes[nodeUid].gates["gen"]) {
-        nodes[nodeUid].gates["gen"].sheaves[currentSheaf].activation = activation;
+        nodes[nodeUid].gates["gen"].activation = activation;
     }
     api.call('set_node_activation', {
         'nodenet_uid': currentNodenet,
@@ -4042,7 +4009,7 @@ function showNodeForm(nodeUid, refresh){
             nodenet_uid:currentNodenet,
             node_uid: nodeUid
         }, function(data){
-            item = new Node(nodeUid, data['position'][0], data['position'][1], data.parent_nodespace, data.name, data.type, data.sheaves, data.state, data.parameters, data.gate_activations, data.gate_parameters, data.gate_functions, data.is_highdimensional, data.inlinks, data.outlinks);
+            item = new Node(nodeUid, data['position'][0], data['position'][1], data.parent_nodespace, data.name, data.type, data.activation, data.state, data.parameters, data.gate_activations, data.gate_parameters, data.gate_functions, data.is_highdimensional, data.inlinks, data.outlinks);
             redrawNode(item);
             nodes[nodeUid].update(item);
             if(clickType == 'gate'){
@@ -4069,7 +4036,7 @@ function showNodeForm(nodeUid, refresh){
     } else {
         $('tr.node', form).show();
         $('tr.comment', form).hide();
-        $('#node_activation_input').val(nodes[nodeUid].sheaves[currentSheaf].activation);
+        $('#node_activation_input').val(nodes[nodeUid].activation);
         $('#node_parameters').html(getNodeParameterHTML(nodes[nodeUid].parameters, nodetypes[nodes[nodeUid].type].parameter_values));
         $('#node_datatarget').val(nodes[nodeUid].parameters['datatarget']);
         $('#node_datasource').val(nodes[nodeUid].parameters['datasource']);
@@ -4209,7 +4176,7 @@ function showGateForm(node, gate){
         if(el.attr('name') in gate.parameters){
             el.val(gate.parameters[el.attr('name')]);
         } else if(el.attr('name') == 'activation'){
-            el.val(gate.sheaves[currentSheaf].activation || '0');
+            el.val(gate.activation || '0');
         } else if(nodetypes[node.type].gate_defaults && el.attr('name') in nodetypes[node.type].gate_defaults[gate.name]){
             el.val(nodetypes[node.type].gate_defaults[gate.name][el.attr('name')]);
         }

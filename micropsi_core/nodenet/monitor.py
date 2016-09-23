@@ -86,21 +86,19 @@ class GroupMonitor(Monitor):
 
 class NodeMonitor(Monitor):
 
-    def __init__(self, nodenet, node_uid, type, target, sheaf=None, name=None, uid=None, color=None, values={}, **_):
+    def __init__(self, nodenet, node_uid, type, target, name=None, uid=None, color=None, values={}, **_):
         name = name or "%s %s @ Node %s" % (type, target, nodenet.get_node(node_uid).name or nodenet.get_node(node_uid).uid)
         super(NodeMonitor, self).__init__(nodenet, name, uid, color=color, values=values)
         self.node_uid = node_uid
         self.type = type
         self.target = target or 'gen'
-        self.sheaf = sheaf or 'default'
 
     def get_data(self):
         data = super().get_data()
         data.update({
             "node_uid": self.node_uid,
             "type": self.type,
-            "target": self.target,
-            "sheaf": self.sheaf,
+            "target": self.target
         })
         return data
 
@@ -108,9 +106,9 @@ class NodeMonitor(Monitor):
         value = None
         if self.nodenet.is_node(self.node_uid):
             if self.type == 'gate' and self.target in self.nodenet.get_node(self.node_uid).get_gate_types():
-                value = self.nodenet.get_node(self.node_uid).get_gate(self.target).activations[self.sheaf]
+                value = self.nodenet.get_node(self.node_uid).get_gate(self.target).activation
             if self.type == 'slot' and self.target in self.nodenet.get_node(self.node_uid).get_slot_types():
-                value = self.nodenet.get_node(self.node_uid).get_slot(self.target).activations[self.sheaf]
+                value = self.nodenet.get_node(self.node_uid).get_slot(self.target).activation
 
         if value is not None and not math.isnan(value):
             return value

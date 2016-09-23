@@ -22,9 +22,6 @@ __author__ = 'joscha'
 __date__ = '09.05.12'
 
 
-emptySheafElement = dict(uid="default", name="default", activation=0)
-
-
 class DictNode(NetEntity, Node):
     """A net entity with slots and gates and a node function.
 
@@ -41,27 +38,19 @@ class DictNode(NetEntity, Node):
 
     @property
     def activation(self):
-        return self.sheaves['default']['activation']
-
-    @property
-    def activations(self):
-        return dict((k, v['activation']) for k, v in self.sheaves.items())
+        return self.__activation
 
     @activation.setter
     def activation(self, activation):
-        self.set_sheaf_activation(activation)
-
-    def set_sheaf_activation(self, activation, sheaf="default"):
-        sheaves_to_calculate = self.get_sheaves_to_calculate()
-        if sheaf not in sheaves_to_calculate:
-            raise "Sheaf " + sheaf + " can not be set as it hasn't been propagated to any slot"
-
-        if activation is None:
-            activation = 0
-
-        self.sheaves[sheaf]['activation'] = float(activation)
-        if 'gen' in self.nodetype.gatetypes:
-            self.set_gate_activation('gen', activation, sheaf)
+        #activation_to_set = float(activation)
+        #gengate = self.get_gate('gen')
+        #if gengate is not None:
+        #    activation_to_set = gengate.gate_function(float(activation))
+        #self.__activation = activation_to_set
+        self.__activation = float(activation)
+        gengate = self.get_gate('gen')
+        if gengate is not None:
+            gengate.activation = float(activation)
 
     def __init__(self, nodenet, parent_nodespace, position, state=None, activation=0,
                  name="", type="Concept", uid=None, index=None, parameters=None, gate_parameters=None, gate_activations=None, gate_functions=None, **_):
@@ -79,6 +68,7 @@ class DictNode(NetEntity, Node):
         self.__non_default_gate_parameters = {}
 
         self.__state = {}
+        self.__activation = 0
 
         self.__gates = {}
         self.__slots = {}
@@ -120,17 +110,13 @@ class DictNode(NetEntity, Node):
                 self.__gatefunctions[gate] = gatefunctions.identity
             else:
                 self.__gatefunctions[gate] = getattr(gatefunctions, gate_functions[gate])
-            if gate_activations is None or gate not in gate_activations:
-                sheaves_to_use = None
-            else:
-                sheaves_to_use = gate_activations[gate]
-            self.__gates[gate] = DictGate(gate, self, sheaves=sheaves_to_use, parameters=gate_parameters.get(gate))
+
+            self.__gates[gate] = DictGate(gate, self, parameters=gate_parameters.get(gate))
         for slot in self.nodetype.slottypes:
             self.__slots[slot] = DictSlot(slot, self)
         if state:
             self.__state = state
         nodenet._register_node(self)
-        self.sheaves = {"default": emptySheafElement.copy()}
         self.activation = activation
 
     def node_function(self):
@@ -148,45 +134,20 @@ class DictNode(NetEntity, Node):
         # call nodefunction of my node type
         if self.nodetype and self.nodetype.nodefunction is not None:
 
-            sheaves_to_calculate = self.get_sheaves_to_calculate()
-
-            # find node activation to carry over
-            node_activation_to_carry_over = {}
-            for id in self.sheaves:
-                if id in sheaves_to_calculate:
-                    node_activation_to_carry_over[id] = self.sheaves[id]
-
             # clear activation states
             for gatename in self.get_gate_types():
                 gate = self.get_gate(gatename)
-                gate.sheaves = {}
-            self.sheaves = {}
+                gate.__activation = 0
 
-            # calculate activation states for all open sheaves
-            for sheaf_id in sheaves_to_calculate:
-
-                # prepare sheaves
-                for gatename in self.get_gate_types():
-                    gate = self.get_gate(gatename)
-                    gate.sheaves[sheaf_id] = sheaves_to_calculate[sheaf_id].copy()
-                if sheaf_id in node_activation_to_carry_over:
-                    self.sheaves[sheaf_id] = node_activation_to_carry_over[sheaf_id].copy()
-                    self.set_sheaf_activation(node_activation_to_carry_over[sheaf_id]['activation'], sheaf_id)
-                else:
-                    self.sheaves[sheaf_id] = sheaves_to_calculate[sheaf_id].copy()
-                    self.set_sheaf_activation(0, sheaf_id)
-
-            # and actually calculate new values for them
-            for sheaf_id in sheaves_to_calculate:
-
-                try:
-                    self.nodetype.nodefunction(netapi=self.nodenet.netapi, node=self, sheaf=sheaf_id, **self.__parameters)
-                except Exception:
-                    self.nodenet.is_active = False
-                    self.activation = -1
-                    raise
+            #call node function
+            try:
+                self.nodetype.nodefunction(netapi=self.nodenet.netapi, node=self, **self.__parameters)
+            except Exception:
+                self.nodenet.is_active = False
+                self.activation = -1
+                raise
         else:
-            # default node function (only using the "default" sheaf)
+            # default node function
             if len(self.get_slot_types()):
                 self.activation = sum([self.get_slot(slot).activation for slot in self.get_slot_types()])
                 if len(self.get_gate_types()):
@@ -205,22 +166,13 @@ class DictNode(NetEntity, Node):
         except KeyError:
             return None
 
-    def set_gate_activation(self, gatetype, activation, sheaf="default"):
+    def set_gate_activation(self, gatetype, activation):
         """ sets the activation of the given gate"""
-        activation = float(activation)
+        if gatetype == 'gen':
+            self.activation = float(activation)
         gate = self.get_gate(gatetype)
         if gate is not None:
-            gate.sheaves[sheaf]['activation'] = activation
-
-    def get_sheaves_to_calculate(self):
-        sheaves_to_calculate = {}
-        for slotname in self.get_slot_types():
-            for uid in self.get_slot(slotname).sheaves:
-                sheaves_to_calculate[uid] = self.get_slot(slotname).sheaves[uid].copy()
-                sheaves_to_calculate[uid]['activation'] = 0
-        if 'default' not in sheaves_to_calculate:
-            sheaves_to_calculate['default'] = emptySheafElement.copy()
-        return sheaves_to_calculate
+            gate.activation = activation
 
     def get_gate_parameters(self):
         """Looks into the gates and returns gate parameters if these are defined"""
@@ -287,7 +239,7 @@ class DictNode(NetEntity, Node):
 
     def reset_slots(self):
         for slottype in self.get_slot_types():
-            self.get_slot(slottype).sheaves = {"default": emptySheafElement.copy()}
+            self.get_slot(slottype).reset()
 
     def get_parameter(self, parameter):
         if parameter in self.__parameters:
@@ -312,9 +264,6 @@ class DictNode(NetEntity, Node):
 
     def clone_parameters(self):
         return self.__parameters.copy()
-
-    def clone_sheaves(self):
-        return self.sheaves.copy()
 
     def get_state(self, state_element):
         if state_element in self.__state:
@@ -402,7 +351,6 @@ class DictGate(Gate):
     Attributes:
         type: a string that determines the type of the gate
         node: the parent node of the gate
-        sheaves: a dict of sheaves this gate initially has to support
         parameters: a dictionary of values used by the gate function
     """
 
@@ -420,13 +368,13 @@ class DictGate(Gate):
 
     @property
     def activation(self):
-        return self.sheaves['default']['activation']
+        return self.__activation
 
-    @property
-    def activations(self):
-        return dict((k, v['activation']) for k, v in self.sheaves.items())
+    @activation.setter
+    def activation(self, activation):
+        self.__activation = activation
 
-    def __init__(self, type, node, sheaves=None, parameters=None):
+    def __init__(self, type, node, parameters=None):
         """create a gate.
 
         Parameters:
@@ -436,12 +384,7 @@ class DictGate(Gate):
         """
         self.__type = type
         self.__node = node
-        if sheaves is None:
-            self.sheaves = {"default": emptySheafElement.copy()}
-        else:
-            self.sheaves = {}
-            for key in sheaves:
-                self.sheaves[key] = dict(uid=sheaves[key]['uid'], name=sheaves[key]['name'], activation=sheaves[key]['activation'])
+        self.__activation = 0
         self.__outgoing = {}
         self.parameters = parameters.copy()
         self.monitor = None
@@ -458,10 +401,7 @@ class DictGate(Gate):
     def _unregister_outgoing(self, link):
         del self.__outgoing[link.signature]
 
-    def clone_sheaves(self):
-        return self.sheaves.copy()
-
-    def gate_function(self, input_activation, sheaf="default"):
+    def gate_function(self, input_activation):
         """This function sets the activation of the gate.
 
         The gate function should be called by the node function, and can be replaced by different functions
@@ -478,7 +418,7 @@ class DictGate(Gate):
         else:
             gate_factor = 1.0
         if gate_factor == 0.0:
-            self.sheaves[sheaf]['activation'] = 0
+            self.__activation = 0.0
             return 0  # if the gate is closed, we don't need to execute the gate function
 
         gatefunction = self.__node.get_gatefunction(self.__type)
@@ -495,25 +435,9 @@ class DictGate(Gate):
 
         activation = min(self.parameters["maximum"], max(self.parameters["minimum"], activation))
 
-        self.sheaves[sheaf]['activation'] = activation
+        self.__activation = activation
 
         return activation
-
-    def open_sheaf(self, input_activation, sheaf="default"):
-        """This function opens a new sheaf and calls the gate function for the newly opened sheaf
-        """
-        if sheaf is "default":
-            sheaf_uid_prefix = "default" + "-"
-            sheaf_name_prefix = ""
-        else:
-            sheaf_uid_prefix = sheaf + "-"
-            sheaf_name_prefix = self.sheaves[sheaf]['name'] + "-"
-
-        new_sheaf = dict(uid=sheaf_uid_prefix + self.node.uid, name=sheaf_name_prefix + self.node.name, activation=0)
-        self.sheaves[new_sheaf['uid']] = new_sheaf
-
-        self.gate_function(input_activation, new_sheaf['uid'])
-
 
 class DictSlot(Slot):
     """The entrance of activation into a node. Nodes may have many slots, in which links terminate.
@@ -540,11 +464,7 @@ class DictSlot(Slot):
 
     @property
     def activation(self):
-        return self.sheaves['default']['activation']
-
-    @property
-    def activations(self):
-        return dict((k, v['activation']) for k, v in self.sheaves.items())
+        return self.__activation
 
     def __init__(self, type, node):
         """create a slot.
@@ -556,14 +476,18 @@ class DictSlot(Slot):
         self.__type = type
         self.__node = node
         self.__incoming = {}
-        self.sheaves = {"default": emptySheafElement.copy()}
+        self.__activation = 0
 
-    def get_activation(self, sheaf="default"):
+    def add_activation(self, activation):
+        self.__activation += activation
+
+    def reset(self):
+        self.__activation = 0
+
+    def get_activation(self):
         if len(self.__incoming) == 0:
             return 0
-        if sheaf not in self.sheaves:
-            return 0
-        return self.sheaves[sheaf]['activation']
+        return self.__activation
 
     def get_links(self):
         return list(self.__incoming.values())

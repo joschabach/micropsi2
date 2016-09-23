@@ -595,19 +595,19 @@ class Nodenet(metaclass=ABCMeta):
     def clear(self):
         self._monitors = {}
 
-    def add_gate_monitor(self, node_uid, gate, sheaf=None, name=None, color=None):
+    def add_gate_monitor(self, node_uid, gate, name=None, color=None):
         """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation
         value in every calculation step.
         Returns the uid of the new monitor."""
-        mon = monitor.NodeMonitor(self, node_uid, 'gate', gate, sheaf=sheaf, name=name, color=color)
+        mon = monitor.NodeMonitor(self, node_uid, 'gate', gate, name=name, color=color)
         self._monitors[mon.uid] = mon
         return mon.uid
 
-    def add_slot_monitor(self, node_uid, slot, sheaf=None, name=None, color=None):
+    def add_slot_monitor(self, node_uid, slot, name=None, color=None):
         """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
         value in every calculation step.
         Returns the uid of the new monitor."""
-        mon = monitor.NodeMonitor(self, node_uid, 'slot', slot, sheaf=sheaf, name=name, color=color)
+        mon = monitor.NodeMonitor(self, node_uid, 'slot', slot, name=name, color=color)
         self._monitors[mon.uid] = mon
         return mon.uid
 

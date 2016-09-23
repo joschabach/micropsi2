@@ -9,13 +9,12 @@ from micropsi_core import runtime as micropsi
 
 
 def test_add_gate_monitor(fixed_nodenet):
-    uid = micropsi.add_gate_monitor(fixed_nodenet, 'n0001', 'gen', sheaf='default')
+    uid = micropsi.add_gate_monitor(fixed_nodenet, 'n0001', 'gen')
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
     assert monitor.name == 'gate gen @ Node A1'
     assert monitor.node_uid == 'n0001'
     assert monitor.target == 'gen'
     assert monitor.type == 'gate'
-    assert monitor.sheaf == 'default'
     assert monitor.color.startswith('#')
     assert len(monitor.values) == 0
     micropsi.step_nodenet(fixed_nodenet)
@@ -101,7 +100,7 @@ def test_remove_monitor(fixed_nodenet):
 
 def test_remove_monitored_node(fixed_nodenet):
     nodenet = micropsi.nodenets[fixed_nodenet]
-    uid = micropsi.add_gate_monitor(fixed_nodenet, 'n0001', 'gen', sheaf='default')
+    uid = micropsi.add_gate_monitor(fixed_nodenet, 'n0001', 'gen')
     micropsi.delete_nodes(fixed_nodenet, ['n0001'])
     micropsi.step_nodenet(fixed_nodenet)
     monitor = nodenet.get_monitor(uid)

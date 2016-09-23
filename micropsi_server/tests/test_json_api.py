@@ -133,8 +133,8 @@ def test_set_node_activation(app, test_nodenet, node):
     })
     assert_success(response)
     response = app.get_json('/rpc/get_nodes(nodenet_uid="%s")' % test_nodenet)
-    sheaves = response.json_body['data']['nodes'][node]['sheaves']
-    assert float("%.3f" % sheaves['default']['activation']) == 0.734
+    activation = response.json_body['data']['nodes'][node]['activation']
+    assert float("%.3f" % activation) == 0.734
 
 
 def test_start_calculation(app, default_nodenet):
@@ -612,8 +612,7 @@ def test_add_gate_monitor(app, test_nodenet, node):
     response = app.post_json('/rpc/add_gate_monitor', params={
         'nodenet_uid': test_nodenet,
         'node_uid': node,
-        'gate': 'sub',
-        'sheaf': 'default'
+        'gate': 'sub'
     })
     assert_success(response)
     uid = response.json_body['data']
@@ -623,7 +622,6 @@ def test_add_gate_monitor(app, test_nodenet, node):
     assert response.json_body['data']['monitors'][uid]['node_uid'] == node
     assert response.json_body['data']['monitors'][uid]['target'] == 'sub'
     assert response.json_body['data']['monitors'][uid]['type'] == 'gate'
-    assert response.json_body['data']['monitors'][uid]['sheaf'] == 'default'
     assert response.json_body['data']['monitors'][uid]['values'] == {}
 
 
@@ -644,7 +642,6 @@ def test_add_slot_monitor(app, test_nodenet, node):
     assert response.json_body['data']['monitors'][uid]['node_uid'] == node
     assert response.json_body['data']['monitors'][uid]['target'] == 'gen'
     assert response.json_body['data']['monitors'][uid]['type'] == 'slot'
-    assert response.json_body['data']['monitors'][uid]['sheaf'] == 'default'
     assert response.json_body['data']['monitors'][uid]['values'] == {}
 
 
@@ -1407,7 +1404,7 @@ def test_nodenet_data_structure(app, test_nodenet, resourcepath, node):
 
     # gates
     for key in ['gen', 'por', 'ret', 'sub', 'sur', 'cat', 'exp']:
-        assert data['nodenet']['nodes'][node]['gate_activations'][key]['default']['activation'] == 0
+        assert data['nodenet']['nodes'][node]['gate_activations'][key] == 0
         assert key not in data['nodenet']['nodes'][node]['gate_parameters']
         assert data['nodenet']['nodes'][node]['gate_functions'][key] == 'identity'
 

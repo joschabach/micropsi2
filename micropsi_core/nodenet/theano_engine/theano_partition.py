@@ -1936,10 +1936,7 @@ class TheanoPartition():
                 if not len(parameters) == 0:
                     gate_parameters[gate] = parameters
 
-                gate_activations[gate] = {"default": {
-                    "name": "default",
-                    "uid": "default",
-                    "activation": float(a[element])}}
+                gate_activations[gate] = float(a[element])
 
             state = None
             if uid in self.native_module_instances:
@@ -1996,9 +1993,6 @@ class TheanoPartition():
                     "parameters": parameters,
                     "state": state,
                     "gate_parameters": gate_parameters,
-                    "sheaves": {"default": {"name": "default",
-                                "uid": "default",
-                                "activation": float(a[self.allocated_node_offsets[id] + GEN])}},
                     "activation": float(a[self.allocated_node_offsets[id] + GEN]),
                     "gate_activations": gate_activations,
                     "gate_functions": gate_functions,

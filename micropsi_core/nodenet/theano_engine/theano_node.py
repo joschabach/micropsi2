@@ -100,10 +100,6 @@ class TheanoNode(Node):
     def activation(self):
         return float(self._partition.a.get_value(borrow=True)[self._partition.allocated_node_offsets[self._id] + GEN])
 
-    @property
-    def activations(self):
-        return {"default": self.activation}
-
     @activation.setter
     def activation(self, activation):
         a_array = self._partition.a.get_value(borrow=True)
@@ -433,12 +429,9 @@ class TheanoNode(Node):
         else:
             return None
 
-    def clone_sheaves(self):
-        return {"default": dict(uid="default", name="default", activation=self.activation)}  # todo: implement sheaves
-
     def node_function(self):
         try:
-            self.nodetype.nodefunction(netapi=self._nodenet.netapi, node=self, sheaf="default", **self.clone_parameters())
+            self.nodetype.nodefunction(netapi=self._nodenet.netapi, node=self, **self.clone_parameters())
         except Exception:
             self._nodenet.is_active = False
             if self.nodetype is not None and self.nodetype.nodefunction is None:
@@ -518,10 +511,6 @@ class TheanoGate(Gate):
         a_array[self.__partition.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype] = value
         self.__partition.a.set_value(a_array, borrow=True)
 
-    @property
-    def activations(self):
-        return {'default': self.activation}  # todo: implement sheaves
-
     def __init__(self, type, node, nodenet, partition):
         self.__type = type
         self.__node = node
@@ -581,16 +570,10 @@ class TheanoGate(Gate):
         gate_parameters.update(self.__node.clone_non_default_gate_parameters(self.type))
         return gate_parameters[parameter_name]
 
-    def clone_sheaves(self):
-        return {"default": dict(uid="default", name="default", activation=self.activation)}  # todo: implement sheaves
-
-    def gate_function(self, input_activation, sheaf="default"):
+    def gate_function(self, input_activation):
         # in the theano implementation, this will only be called for native module gates, and simply write
         # the value back to the activation vector for the theano math to take over
         self.activation = input_activation
-
-    def open_sheaf(self, input_activation, sheaf="default"):
-        pass            # todo: implement sheaves
 
 
 class TheanoSlot(Slot):
@@ -619,12 +602,6 @@ class TheanoSlot(Slot):
     def activation(self):
         return self.__node.get_slot_activations(self.__type)
 
-    @property
-    def activations(self):
-        return {
-            "default": self.activation
-        }
-
     def __init__(self, type, node, nodenet, partition):
         self.__type = type
         self.__node = node
@@ -633,7 +610,7 @@ class TheanoSlot(Slot):
         self.__numerictype = get_numerical_slot_type(type, node.nodetype)
         self.__linkcache = None
 
-    def get_activation(self, sheaf="default"):
+    def get_activation(self):
         return self.activation
 
     def get_links(self):

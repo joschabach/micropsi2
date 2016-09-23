@@ -1058,13 +1058,13 @@ def import_world_rpc(worlddata):
 # Monitor
 
 @rpc("add_gate_monitor")
-def add_gate_monitor(nodenet_uid, node_uid, gate, sheaf=None, name=None, color=None):
-    return True, runtime.add_gate_monitor(nodenet_uid, node_uid, gate, sheaf=sheaf, name=name, color=color)
+def add_gate_monitor(nodenet_uid, node_uid, gate, name=None, color=None):
+    return True, runtime.add_gate_monitor(nodenet_uid, node_uid, gate, name=name, color=color)
 
 
 @rpc("add_slot_monitor")
-def add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=None, name=None, color=None):
-    return True, runtime.add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=sheaf, name=name, color=color)
+def add_slot_monitor(nodenet_uid, node_uid, slot, name=None, color=None):
+    return True, runtime.add_slot_monitor(nodenet_uid, node_uid, slot, name=name, color=color)
 
 
 @rpc("add_link_monitor")

@@ -804,7 +804,6 @@ def get_node(nodenet_uid, node_uid, include_links=True):
         "gate_activations" (dict): a dictionary containing dicts of activations for each gate of this node
         "gate_functions"(dict): a dictionary containing the name of the gatefunction for each gate of this node
         "position" (list): the x, y, z coordinates of this node, as a list
-        "sheaves" (dict): a dict of sheaf-activations for this node
         "parent_nodespace" (str): the uid of the nodespace this node lives in
     }
     """

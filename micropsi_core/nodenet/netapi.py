@@ -129,7 +129,7 @@ class NetAPI(object):
                 nodes.append(link.source_node)
         return nodes
 
-    def get_nodes_active(self, nodespace, type=None, min_activation=1, gate=None, sheaf='default'):
+    def get_nodes_active(self, nodespace, type=None, min_activation=1, gate=None):
         """
         Returns all nodes with a min activation, of the given type, active at the given gate, or with node.activation
         """
@@ -138,10 +138,10 @@ class NetAPI(object):
             if type is None or node.type == type:
                 if gate is not None:
                     if gate in node.get_gate_types():
-                        if node.get_gate(gate).activations[sheaf] >= min_activation:
+                        if node.get_gate(gate).activation >= min_activation:
                             nodes.append(node)
                 else:
-                    if node.activations[sheaf] >= min_activation:
+                    if node.activation >= min_activation:
                         nodes.append(node)
         return nodes
 
@@ -519,17 +519,17 @@ class NetAPI(object):
         """
         return self.__nodenet.get_node_uids(nodespace_uid, group)
 
-    def add_gate_monitor(self, node_uid, gate, sheaf=None, name=None, color=None):
+    def add_gate_monitor(self, node_uid, gate, name=None, color=None):
         """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation
         value in every calculation step.
         Returns the uid of the new monitor."""
-        return self.__nodenet.add_gate_monitor(node_uid, gate, sheaf=sheaf, name=name, color=color)
+        return self.__nodenet.add_gate_monitor(node_uid, gate, name=name, color=color)
 
-    def add_slot_monitor(self, node_uid, slot, sheaf=None, name=None, color=None):
+    def add_slot_monitor(self, node_uid, slot, name=None, color=None):
         """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
         value in every calculation step.
         Returns the uid of the new monitor."""
-        return self.__nodenet.add_slot_monitor(node_uid, slot, sheaf=sheaf, name=name, color=color)
+        return self.__nodenet.add_slot_monitor(node_uid, slot, name=name, color=color)
 
     def add_link_monitor(self, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, color=None):
         """Adds a continuous monitor to a link. You can choose to monitor either weight (default) or certainty

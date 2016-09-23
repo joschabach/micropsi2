@@ -37,6 +37,17 @@ class DictNode(NetEntity, Node):
     """
 
     @property
+    def position(self):
+        return self.__position
+
+    @position.setter
+    def position(self, position):
+        position = list(position)
+        position = (position + [0] * 3)[:3]
+        self.__position = position
+        self.last_changed = self.nodenet.current_step
+
+    @property
     def activation(self):
         return self.__activation
 
@@ -62,8 +73,10 @@ class DictNode(NetEntity, Node):
 
         Node.__init__(self, type, nodenet.get_nodetype(type))
 
-        NetEntity.__init__(self, nodenet, parent_nodespace, position,
+        NetEntity.__init__(self, nodenet, parent_nodespace,
             name=name, entitytype="nodes", uid=uid, index=index)
+
+        self.position = position
 
         self.__non_default_gate_parameters = {}
 

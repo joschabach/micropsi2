@@ -424,7 +424,7 @@ function setNodespaceData(data, changed){
                 }
             }
         }
-        for(uid in data.nodespaces){
+        /*for(uid in data.nodespaces){
             if(!(uid in nodespaces)){
                 nodespaces[uid] = data.nodespaces[uid];
             }
@@ -435,7 +435,7 @@ function setNodespaceData(data, changed){
             } else{
                 addNode(item);
             }
-        }
+        }*/
 
         if(nodespaceProperties[currentNodeSpace].renderlinks != 'none'){
             loadLinksForSelection(function(data){
@@ -516,6 +516,7 @@ function setNodespaceDiffData(data, changed){
                 }
             }
             addLinks(links_data);
+            /*
             for(var uid in data.changes.nodespaces_dirty){
                 var nodespacedata = data.changes.nodespaces_dirty[uid];
                 if(!(uid in nodespaces)){
@@ -528,7 +529,7 @@ function setNodespaceDiffData(data, changed){
                 } else{
                     addNode(item);
                 }
-            }
+            }*/
         }
         // activations:
         for(var uid in nodes){
@@ -728,35 +729,31 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
     this.is_highdim = is_highdim;
     this.inlinks = inlinks || 0;
     this.outlinks = outlinks || 0;
-	if(type == "Nodespace") {
-        this.symbol = "NS";
-    } else {
-        this.symbol = nodetypes[type].symbol || type.substr(0,1);
-        var i;
-        for(i in nodetypes[type].slottypes){
-            this.slots[nodetypes[type].slottypes[i]] = new Slot(nodetypes[type].slottypes[i]);
-        }
-        for(i in nodetypes[type].gatetypes){
-            var gatetype = nodetypes[type].gatetypes[i]
-            parameters = {};
-            activation = this.gate_activations[gatetype];
-            parameters = jQuery.extend({}, GATE_DEFAULTS);
-            if(nodetypes[type].gate_defaults && nodetypes[type].gate_defaults[gatetype]) {
-                for(var key in nodetypes[type].gate_defaults[gatetype]){
-                    parameters[key] = nodetypes[type].gate_defaults[gatetype][key];
-                }
-            }
-            if(this.gate_parameters[gatetype]){
-                for(var key in this.gate_parameters[gatetype]){
-                    parameters[key] = this.gate_parameters[gatetype][key];
-                }
-            }
-            var highdim = is_highdim && gatetype in nodetypes[type].dimensionality.gates;
-            this.gates[gatetype] = new Gate(gatetype, i, activation, parameters, this.gatefunctions[gatetype], highdim);
-        }
-        this.slotIndexes = Object.keys(this.slots);
-        this.gateIndexes = Object.keys(this.gates);
+    this.symbol = nodetypes[type].symbol || type.substr(0,1);
+    var i;
+    for(i in nodetypes[type].slottypes){
+        this.slots[nodetypes[type].slottypes[i]] = new Slot(nodetypes[type].slottypes[i]);
     }
+    for(i in nodetypes[type].gatetypes){
+        var gatetype = nodetypes[type].gatetypes[i]
+        parameters = {};
+        activation = this.gate_activations[gatetype];
+        parameters = jQuery.extend({}, GATE_DEFAULTS);
+        if(nodetypes[type].gate_defaults && nodetypes[type].gate_defaults[gatetype]) {
+            for(var key in nodetypes[type].gate_defaults[gatetype]){
+                parameters[key] = nodetypes[type].gate_defaults[gatetype][key];
+            }
+        }
+        if(this.gate_parameters[gatetype]){
+            for(var key in this.gate_parameters[gatetype]){
+                parameters[key] = this.gate_parameters[gatetype][key];
+            }
+        }
+        var highdim = is_highdim && gatetype in nodetypes[type].dimensionality.gates;
+        this.gates[gatetype] = new Gate(gatetype, i, activation, parameters, this.gatefunctions[gatetype], highdim);
+    }
+    this.slotIndexes = Object.keys(this.slots);
+    this.gateIndexes = Object.keys(this.gates);
 
     this.update = function(item){
         this.uid = item.uid;
@@ -1439,9 +1436,6 @@ function calculateNodeBounds(node) {
     if (!isCompact(node)) {
         width = viewProperties.nodeWidth * viewProperties.zoomFactor;
         height = viewProperties.lineHeight*(Math.max(node.slotIndexes.length, node.gateIndexes.length)+2)*viewProperties.zoomFactor;
-        if (node.type == "Nodespace"){
-            height = Math.max(height, viewProperties.lineHeight*4*viewProperties.zoomFactor);
-        }
     } else {
         width = height = viewProperties.compactNodeWidth * viewProperties.zoomFactor;
     }
@@ -1452,7 +1446,7 @@ function calculateNodeBounds(node) {
 
 // determine shape of a full node
 function createFullNodeShape(node) {
-    if (node.type == "Nodespace" || node.type == "Comment"){
+    if (node.type == "Comment"){
         return new Path.Rectangle(node.bounds);
     } else {
         return new Path.RoundRectangle(node.bounds, viewProperties.cornerWidth*viewProperties.zoomFactor);
@@ -1464,7 +1458,6 @@ function createCompactNodeShape(node) {
     var bounds = node.bounds;
     var shape;
     switch (node.type) {
-        case "Nodespace":
         case "Comment":
             shape = new Path.Rectangle(bounds);
             break;
@@ -2116,10 +2109,6 @@ function onMouseDown(event) {
     }
 
     if (linkCreationStart) {
-        // todo: open dialog to link into different nodespaces
-        if(!(clickType == "node" && nodes[path.name].type == "Nodespace")){
-            cancelLinkCreationHandler();
-        }
         return;
     }
 
@@ -2259,14 +2248,10 @@ function onDoubleClick(event) {
         if (nodeUid in nodes) {
             var node = nodes[nodeUid];
             if(node.bounds.contains(p)){
-                if(node.type == "Nodespace"){
-                    handleEnterNodespace(node.uid);
-                } else {
-                    if(isCompact(nodeUid)){
-                        nodes[nodeUid].renderCompact = false;
-                        redrawNode(nodes[nodeUid], true);
-                        view.draw();
-                    }
+                if(isCompact(nodeUid)){
+                    nodes[nodeUid].renderCompact = false;
+                    redrawNode(nodes[nodeUid], true);
+                    view.draw();
                 }
                 return;
             }
@@ -2489,7 +2474,7 @@ function loadLinksForSelection(callback, force_load, show_node_form){
     var skipped = [];
     var load_links = false;
     for(var uid in selection){
-        if(uid in nodes && nodes[uid].type != 'Nodespace' && (force_load || nodes[uid].inlinks < viewProperties.load_link_threshold && nodes[uid].outlinks < viewProperties.load_link_threshold)){
+        if(uid in nodes && (force_load || nodes[uid].inlinks < viewProperties.load_link_threshold && nodes[uid].outlinks < viewProperties.load_link_threshold)){
             uids.push(uid)
         } else {
             skipped.push(uid)
@@ -3173,25 +3158,27 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
     var method = "";
     var params = {
         nodenet_uid: currentNodenet,
-        position: [x,y,0],
         nodespace: currentNodeSpace,
         name: name}
     if(type == "Nodespace"){
         method = "add_nodespace";
+        params.name = "New Nodespace";
     } else {
         method = "add_node"
         params.type = type;
+        params.position = [x,y,0];
         params.parameters = parameters;
     }
     api.call(method, params,
         success=function(uid){
             if(type == 'Nodespace'){
                 nodespaceProperties[uid] = nodespace_property_defaults
+            } else {
+                addNode(new Node(uid, x, y, currentNodeSpace, name || '', type, null, null, parameters));
+                selectNode(uid);
             }
-            addNode(new Node(uid, x, y, currentNodeSpace, name || '', type, null, null, parameters));
-            view.draw();
-            selectNode(uid);
             if(callback) callback(uid);
+            view.draw();
             showNodeForm(uid);
             getNodespaceList();
         }
@@ -3577,7 +3564,7 @@ function cancelLinkCreationHandler() {
 }
 
 function moveNodesOnServer(position_data){
-    api.call("set_entity_positions", {
+    api.call("set_node_positions", {
         nodenet_uid: currentNodenet,
         positions: position_data
     });

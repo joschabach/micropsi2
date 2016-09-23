@@ -839,18 +839,17 @@ def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name=
     return True, uid
 
 
-def add_nodespace(nodenet_uid, pos, nodespace=None, uid=None, name="", options=None):
+def add_nodespace(nodenet_uid, nodespace=None, uid=None, name="", options=None):
     """Creates a new nodespace
     Arguments:
         nodenet_uid: uid of the nodespace manager
-        position: position of the node in the current nodespace
         nodespace: uid of the parent nodespace
         uid (optional): if not supplied, a uid will be generated
         name (optional): if not supplied, the uid will be used instead of a display name
         options (optional): a dict of options. TBD
     """
     nodenet = get_nodenet(nodenet_uid)
-    uid = nodenet.create_nodespace(nodespace, pos, name=name, uid=uid, options=options)
+    uid = nodenet.create_nodespace(nodespace, name=name, uid=uid, options=options)
     return True, uid
 
 
@@ -945,34 +944,37 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     idmap = {}
     nodenet = get_nodenet(nodenet_uid)
     nodes = []
-    nodespaces = []
+    #nodespaces = []
+    #for node_uid in node_uids:
+    #    if not nodenet.is_nodespace(node_uid):
+    #        nodes.append(nodenet.get_node(node_uid))
+    #    else:
+    #        nodespaces.append(nodenet.get_nodespace(node_uid))
+
     for node_uid in node_uids:
-        if not nodenet.is_nodespace(node_uid):
-            nodes.append(nodenet.get_node(node_uid))
-        else:
-            nodespaces.append(nodenet.get_nodespace(node_uid))
+        nodes.append(nodenet.get_node(node_uid))
 
     xpos = []
     ypos = []
     zpos = []
     nodes = sorted(nodes, key=lambda node: node.position[1] * 1000 + node.position[0])
-    nodespaces = sorted(nodespaces, key=lambda node: node.position[1] * 1000 + node.position[0])
+    #nodespaces = sorted(nodespaces, key=lambda node: node.position[1] * 1000 + node.position[0])
 
     # nodespaces
-    for i, nodespace in enumerate(nodespaces):
-        name = nodespace.name.strip() if nodespace.name != nodespace.uid else None
-        varname = "nodespace%i" % i
-        if name:
-            pythonname = __pythonify(name)
-            if pythonname not in idmap.values():
-                varname = pythonname
-            lines.append("%s = netapi.create_nodespace(None, \"%s\")" % (varname, name))
-        else:
-            lines.append("%s = netapi.create_nodespace(None)" % (varname))
-        idmap[nodespace.uid] = varname
-        xpos.append(nodespace.position[0])
-        ypos.append(nodespace.position[1])
-        zpos.append(nodespace.position[2])
+    #for i, nodespace in enumerate(nodespaces):
+    #    name = nodespace.name.strip() if nodespace.name != nodespace.uid else None
+    #    varname = "nodespace%i" % i
+    #    if name:
+    #        pythonname = __pythonify(name)
+    #        if pythonname not in idmap.values():
+    #            varname = pythonname
+    #        lines.append("%s = netapi.create_nodespace(None, \"%s\")" % (varname, name))
+    #    else:
+    #        lines.append("%s = netapi.create_nodespace(None)" % (varname))
+    #    idmap[nodespace.uid] = varname
+    #    xpos.append(nodespace.position[0])
+    #    ypos.append(nodespace.position[1])
+    #    zpos.append(nodespace.position[2])
 
     # nodes and gates
     for i, node in enumerate(nodes):
@@ -1073,7 +1075,7 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     origin = [100, 100, 0]
     factor = [int(min(xpos)), int(min(ypos)), int(min(zpos))]
     lines.append("origin_pos = (%d, %d, %d)" % (origin[0], origin[1], origin[2]))
-    for node in nodes + nodespaces:
+    for node in nodes:
         x = int(node.position[0] - factor[0])
         y = int(node.position[1] - factor[1])
         z = int(node.position[2] - factor[2])
@@ -1082,9 +1084,9 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     return "\n".join(lines)
 
 
-def set_entity_positions(nodenet_uid, positions):
+def set_node_positions(nodenet_uid, positions):
     """ Takes a dict with node_uids as keys and new positions for the nodes as values """
-    get_nodenet(nodenet_uid).set_entity_positions(positions)
+    get_nodenet(nodenet_uid).set_node_positions(positions)
     return True
 
 

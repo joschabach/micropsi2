@@ -46,10 +46,8 @@ def test_add_node(test_nodenet):
 
 def test_position_always_3d(test_nodenet):
     res, nuid = micropsi.add_node(test_nodenet, "Pipe", [200], None, state=None, name="A")
-    res, nsuid = micropsi.add_nodespace(test_nodenet, [200, 125, 0, 134], None, name="NS")
     data = micropsi.get_nodes(test_nodenet)
     assert data['nodes'][nuid]['position'] == [200, 0, 0]
-    assert data['nodespaces'][nsuid]['position'] == [200, 125, 0]
 
 
 def test_get_nodenet_activation_data(test_nodenet):
@@ -96,7 +94,7 @@ def test_get_nodespace_list(test_nodenet):
 
 
 def test_get_nodespace_list_with_empty_nodespace(test_nodenet):
-    res, uid = micropsi.add_nodespace(test_nodenet, [200, 250, 10], None, name="Foospace")
+    res, uid = micropsi.add_nodespace(test_nodenet, None, name="Foospace")
     data = micropsi.get_nodespace_list(test_nodenet)
     assert data[uid]['nodes'] == {}
 

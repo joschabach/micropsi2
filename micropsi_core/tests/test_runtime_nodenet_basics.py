@@ -110,11 +110,11 @@ def test_user_notification(test_nodenet, node):
 
 
 def test_nodespace_removal(fixed_nodenet):
-    res, uid = micropsi.add_nodespace(fixed_nodenet, [100, 100], nodespace=None, name="testspace")
+    res, uid = micropsi.add_nodespace(fixed_nodenet, nodespace=None, name="testspace")
     res, n1_uid = micropsi.add_node(fixed_nodenet, 'Register', [100, 100], nodespace=uid, name="sub1")
     res, n2_uid = micropsi.add_node(fixed_nodenet, 'Register', [100, 200], nodespace=uid, name="sub2")
     micropsi.add_link(fixed_nodenet, n1_uid, 'gen', n2_uid, 'gen', weight=1)
-    res, sub_uid = micropsi.add_nodespace(fixed_nodenet, [100, 100], nodespace=uid, name="subsubspace")
+    res, sub_uid = micropsi.add_nodespace(fixed_nodenet, nodespace=uid, name="subsubspace")
     micropsi.delete_nodespace(fixed_nodenet, uid)
     # assert that the nodespace is gone
     assert not micropsi.nodenets[fixed_nodenet].is_nodespace(uid)
@@ -206,7 +206,7 @@ def test_clone_nodes_internal_links(fixed_nodenet):
 def test_clone_nodes_to_new_nodespace(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
 
-    res, testspace_uid = micropsi.add_nodespace(fixed_nodenet, [100, 100], nodespace=None, name="testspace")
+    res, testspace_uid = micropsi.add_nodespace(fixed_nodenet, nodespace=None, name="testspace")
 
     success, result = micropsi.clone_nodes(fixed_nodenet, ['n0001', 'n0002'], 'internal', nodespace=testspace_uid)
 

@@ -311,7 +311,6 @@ class DictNodenet(Nodenet):
                 self.initialize_nodespace(data[id]['parent_nodespace'], data)
             self._nodespaces[id] = DictNodespace(self,
                 data[id].get('parent_nodespace'),
-                data[id].get('position'),
                 name=data[id].get('name', 'Root'),
                 uid=id,
                 index=data[id].get('index'))
@@ -332,7 +331,7 @@ class DictNodenet(Nodenet):
 
         # set up nodespaces; make sure that parent nodespaces exist before children are initialized
         self._nodespaces = {}
-        self._nodespaces["Root"] = DictNodespace(self, None, [0, 0, 0], name="Root", uid="Root")
+        self._nodespaces["Root"] = DictNodespace(self, None, name="Root", uid="Root")
 
         if 'current_step' in initfrom:
             self._step = initfrom['current_step']
@@ -545,9 +544,9 @@ class DictNodenet(Nodenet):
             gate_parameters=gate_parameters)
         return node.uid
 
-    def create_nodespace(self, parent_uid, position, name="", uid=None, options=None):
+    def create_nodespace(self, parent_uid, name="", uid=None, options=None):
         parent_uid = self.get_nodespace(parent_uid).uid
-        nodespace = DictNodespace(self, parent_uid, position=position, name=name, uid=uid)
+        nodespace = DictNodespace(self, parent_uid, name=name, uid=uid)
         return nodespace.uid
 
     def get_node(self, uid):
@@ -575,13 +574,11 @@ class DictNodenet(Nodenet):
     def is_nodespace(self, uid):
         return uid in self._nodespaces
 
-    def set_entity_positions(self, positions):
+    def set_node_positions(self, positions):
         """ Sets the position of nodes or nodespaces """
         for uid in positions:
             if uid in self._nodes:
                 self._nodes[uid].position = positions[uid]
-            elif uid in self._nodespaces:
-                self._nodespaces[uid].position = positions[uid]
 
     def get_nativemodules(self, nodespace=None):
         """Returns a dict of native modules. Optionally filtered by the given nodespace"""

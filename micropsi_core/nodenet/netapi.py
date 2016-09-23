@@ -179,9 +179,8 @@ class NetAPI(object):
         """
         if name is None:
             name = ""   # TODO: empty names crash the client right now, but really shouldn't
-        pos = [100, 100, 0]  # default so native modules will not be bothered with positions
 
-        uid = self.__nodenet.create_nodespace(parent_nodespace, pos, name=name, options=options)
+        uid = self.__nodenet.create_nodespace(parent_nodespace, name=name, options=options)
         entity = self.__nodenet.get_nodespace(uid)
         return entity
 

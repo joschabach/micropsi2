@@ -273,7 +273,7 @@ class TheanoNodenet(Nodenet):
             if native_modules[key].get('engine', self.engine) == self.engine:
                 self.native_module_definitions[key] = native_modules[key]
 
-        self.create_nodespace(None, None, "Root", nodespace_to_id(1, rootpartition.pid))
+        self.create_nodespace(None, "Root", nodespace_to_id(1, rootpartition.pid))
 
         self.initialize_nodenet({})
 
@@ -774,7 +774,6 @@ class TheanoNodenet(Nodenet):
                         self.merge_nodespace_data(nodespace_to_id(parent_id, partition.pid), data, uidmap, keep_uids)
                 self.create_nodespace(
                     data[nodespace_uid].get('parent_nodespace'),
-                    data[nodespace_uid].get('position'),
                     name=data[nodespace_uid].get('name', 'Root'),
                     uid=nodespace_uid
                 )
@@ -1061,7 +1060,7 @@ class TheanoNodenet(Nodenet):
     def is_nodespace(self, uid):
         return uid in self.get_nodespace_uids()
 
-    def set_entity_positions(self, positions):
+    def set_node_positions(self, positions):
         for uid in positions:
             pos = (positions[uid] + [0] * 3)[:3]
             self.positions[uid] = pos
@@ -1111,7 +1110,7 @@ class TheanoNodenet(Nodenet):
                     for s in node.get_slot_types():
                         node.get_slot(s).invalidate_caches()
 
-    def create_nodespace(self, parent_uid, position, name="", uid=None, options=None):
+    def create_nodespace(self, parent_uid, name="", uid=None, options=None):
         if options is None:
             options = {}
         new_partition = options.get('new_partition', False)
@@ -1184,9 +1183,6 @@ class TheanoNodenet(Nodenet):
 
         if name is not None and len(name) > 0 and name != uid:
             self.names[uid] = name
-        if position is not None:
-            position = (position + [0] * 3)[:3]
-            self.positions[uid] = position
 
         return uid
 

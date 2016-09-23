@@ -831,7 +831,6 @@ def test_add_nodespace(app, test_nodenet):
     app.set_auth()
     response = app.post_json('/rpc/add_nodespace', params={
         'nodenet_uid': test_nodenet,
-        'position': [23, 42, 13],
         'nodespace': None,
         'name': 'nodespace'
     })
@@ -858,9 +857,9 @@ def test_clone_nodes(app, test_nodenet, node):
     assert node['links']['gen'][0]['target_node_uid'] == node['uid']
 
 
-def test_set_entity_positions(app, test_nodenet, node):
+def test_set_node_positions(app, test_nodenet, node):
     app.set_auth()
-    response = app.post_json('/rpc/set_entity_positions', params={
+    response = app.post_json('/rpc/set_node_positions', params={
         'nodenet_uid': test_nodenet,
         'positions': {node: [42, 23, 11]}
     })
@@ -896,7 +895,6 @@ def test_delete_nodespace(app, test_nodenet, node):
     app.set_auth()
     response = app.post_json('/rpc/add_nodespace', params={
         'nodenet_uid': test_nodenet,
-        'position': [23, 42, 13],
         'nodespace': None,
         'name': 'nodespace'
     })
@@ -1344,7 +1342,6 @@ def test_nodenet_data_structure(app, test_nodenet, resourcepath, node):
     response = app.get_json('/rpc/reload_native_modules()')
     response = app.post_json('/rpc/add_nodespace', params={
         'nodenet_uid': test_nodenet,
-        'position': [23, 23, 42],
         'nodespace': None,
         'name': 'Test-Node-Space'
     })
@@ -1427,7 +1424,6 @@ def test_nodenet_data_structure(app, test_nodenet, resourcepath, node):
     # assert data['nodenet']['nodespaces'][nodespace_uid]['index'] == 3
     assert data['nodenet']['nodespaces'][nodespace_uid]['name'] == 'Test-Node-Space'
     # assert data['nodenet']['nodespaces'][nodespace_uid]['parent_nodespace'] == 'Root'
-    assert data['nodenet']['nodespaces'][nodespace_uid]['position'] == [23, 23, 42]
 
     # Nodetypes
     response = app.get_json('/rpc/get_available_node_types(nodenet_uid="%s")' % test_nodenet)

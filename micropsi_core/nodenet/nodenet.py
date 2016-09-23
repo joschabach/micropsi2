@@ -342,8 +342,8 @@ class Nodenet(metaclass=ABCMeta):
             return self._nodespace_ui_properties
 
     @abstractmethod
-    def set_entity_positions(self, positions):
-        """ Sets the position of nodes or nodespaces.
+    def set_node_positions(self, positions):
+        """ Sets the position of nodes.
         Parameters: a hash of uids to their positions """
         pass   # pragma: no cover
 

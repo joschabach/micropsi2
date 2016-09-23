@@ -181,8 +181,8 @@ def test_generate_netapi_fragment(test_nodenet, resourcepath):
         netapi.link_with_reciprocal(p1, p2, t)
     reg = netapi.create_node('Register', None, 'reg')
     netapi.link(reg, 'gen', nodes[0], 'gen')
-    ns = netapi.create_nodespace(None, 'ns1')
-    nodes.extend([reg, ns])
+    #ns = netapi.create_nodespace(None, 'ns1')
+    #nodes.extend([reg, ns])
     # remember their names
     names = [n.name for n in nodes]
     fragment = micropsi.generate_netapi_fragment(test_nodenet, [n.uid for n in nodes])
@@ -194,7 +194,7 @@ def test_generate_netapi_fragment(test_nodenet, resourcepath):
     micropsi.reload_native_modules()
     micropsi.run_recipe(test_nodenet, 'foo', {})
     # assert that all the nodes are there again
-    assert set(names) == set([n.name for n in netapi.get_nodes()] + ['ns1'])
+    assert set(names) == set([n.name for n in netapi.get_nodes()])
 
 
 def test_get_nodes(test_nodenet):

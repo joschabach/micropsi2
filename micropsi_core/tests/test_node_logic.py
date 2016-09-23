@@ -130,20 +130,20 @@ def test_node_logic_sensor_datasource(test_nodenet, default_world):
     assert round(register.get_gate("gen").activation, 3) == 0.35
 
 
-def test_node_logic_actor_modulator(test_nodenet, default_world):
+def test_node_logic_actuator_modulator(test_nodenet, default_world):
     net, netapi, source = prepare(test_nodenet)
-    netapi.link_actor(source, "base_porret_decay_factor", weight=0.3, gate="gen")
+    netapi.link_actuator(source, "base_porret_decay_factor", weight=0.3, gate="gen")
     micropsi.step_nodenet(test_nodenet)
     assert round(netapi.get_modulator("base_porret_decay_factor"), 3) == 0.3
 
 
-def test_node_logic_actor_datatarget(test_nodenet, default_world):
+def test_node_logic_actuator_datatarget(test_nodenet, default_world):
     net, netapi, source = prepare(test_nodenet)
     micropsi.set_nodenet_properties(test_nodenet, worldadapter="Default", world_uid=default_world)
-    netapi.link_actor(source, "echo", weight=0.5, gate="gen")
+    netapi.link_actuator(source, "echo", weight=0.5, gate="gen")
     register = netapi.create_node("Register", None)
-    actor = netapi.get_nodes(node_name_prefix="echo")[0]
-    netapi.link(actor, "gen", register, "gen")
+    actuator = netapi.get_nodes(node_name_prefix="echo")[0]
+    netapi.link(actuator, "gen", register, "gen")
     micropsi.step_nodenet(test_nodenet)
     micropsi.step_nodenet(test_nodenet)
     micropsi.step_nodenet(test_nodenet)
@@ -160,13 +160,13 @@ def test_node_logic_sensor_nomodulators(engine, default_world):
     assert round(register.get_gate("gen").activation, 1) == 0.4
 
 
-def test_node_logic_actor_nomodulators(engine, default_world):
+def test_node_logic_actuator_nomodulators(engine, default_world):
     result, nnuid = micropsi.new_nodenet("adf", engine, "Default", world_uid=default_world, use_modulators=False)
     net, netapi, source = prepare(nnuid)
-    netapi.link_actor(source, "echo", weight=0.7, gate="gen")
+    netapi.link_actuator(source, "echo", weight=0.7, gate="gen")
     register = netapi.create_node("Register", None)
-    actor = netapi.get_nodes(node_name_prefix="echo")[0]
-    netapi.link(actor, "gen", register, "gen")
+    actuator = netapi.get_nodes(node_name_prefix="echo")[0]
+    netapi.link(actuator, "gen", register, "gen")
     micropsi.step_nodenet(nnuid)
     micropsi.step_nodenet(nnuid)
     micropsi.step_nodenet(nnuid)

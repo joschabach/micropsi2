@@ -438,7 +438,6 @@ $(function() {
                 params['gate_type'] = $('#monitor_link_sourcegate_type_input').val();
                 params['target_node_uid'] = $('#monitor_link_targetnode_uid_input').val();
                 params['slot_type'] = $('#monitor_link_targetslot_type_input').val();
-                params['property'] = 'weight';
                 break;
             case 'modulator':
                 func = 'add_modulator_monitor';

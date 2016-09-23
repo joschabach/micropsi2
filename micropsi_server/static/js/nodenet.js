@@ -64,7 +64,6 @@ monitors = {};
 GATE_DEFAULTS = {
     "minimum": -1,
     "maximum": 1,
-    "certainty": 1,
     "amplification": 1,
     "threshold": -1,
     "theta": 0,
@@ -572,14 +571,14 @@ function addLinks(link_data){
         sourceId = link_data[uid]['source_node_uid'];
         targetId = link_data[uid]['target_node_uid'];
         if (sourceId in nodes && targetId in nodes && nodes[sourceId].parent == nodes[targetId].parent){
-            link = new Link(uid, sourceId, link_data[uid].source_gate_name, targetId, link_data[uid].target_slot_name, link_data[uid].weight, link_data[uid].certainty);
+            link = new Link(uid, sourceId, link_data[uid].source_gate_name, targetId, link_data[uid].target_slot_name, link_data[uid].weight);
             if(uid in links){
                 redrawLink(link);
             } else {
                 addLink(link);
             }
         } else if(sourceId in nodes || targetId in nodes){
-            link = new Link(uid, sourceId, link_data[uid].source_gate_name, targetId, link_data[uid].target_slot_name, link_data[uid].weight, link_data[uid].certainty);
+            link = new Link(uid, sourceId, link_data[uid].source_gate_name, targetId, link_data[uid].target_slot_name, link_data[uid].weight);
             if(targetId in nodes && nodes[targetId].linksFromOutside.indexOf(link.uid) < 0)
                 nodes[targetId].linksFromOutside.push(link.uid);
             if(sourceId in nodes && nodes[sourceId].linksToOutside.indexOf(link.uid) < 0)
@@ -817,14 +816,13 @@ function Gate(name, index, activation, parameters, gatefunction, is_highdim) {
 }
 
 // link, connects two nodes, from a gate to a slot
-function Link(uid, sourceNodeUid, gateName, targetNodeUid, slotName, weight, certainty){
+function Link(uid, sourceNodeUid, gateName, targetNodeUid, slotName, weight){
     this.uid = uid;
     this.sourceNodeUid = sourceNodeUid;
     this.gateName = gateName;
     this.targetNodeUid = targetNodeUid;
     this.slotName = slotName;
     this.weight = weight;
-    this.certainty = certainty;
 
     this.strokeColor = null;
     this.strokeWidth = null;
@@ -865,7 +863,6 @@ function addLink(link) {
 function redrawLink(link, forceRedraw){
     var oldLink = links[link.uid];
     if (forceRedraw || !oldLink || !(link.uid in linkLayer.children) || oldLink.weight != link.weight ||
-        oldLink.certainty != link.certainty ||
             !nodes[oldLink.sourceNodeUid] || !nodes[link.sourceNodeUid] ||
             nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].activation !=
             nodes[link.sourceNodeUid].gates[link.gateName].activation) {
@@ -1059,7 +1056,7 @@ function calculateLinkStart(sourceNode, targetNode, gateName) {
     }
     var sourcePoints, startPoint, startAngle;
     if (!isOutsideNodespace(sourceNode) && isCompact(sourceNode)) {
-        if (sourceNode.type=="Sensor" || sourceNode.type == "Actor") {
+        if (sourceNode.type=="Sensor" || sourceNode.type == "Actuator") {
             if (sourceNode.type == "Sensor")
                 startPoint = new Point(sourceBounds.x+sourceBounds.width*0.5,
                     sourceBounds.y);
@@ -1127,7 +1124,7 @@ function calculateLinkEnd(sourceNode, targetNode, slotName, linkType) {
         }
     }
     if (!isOutsideNodespace(targetNode) && isCompact(targetNode)) {
-        if (targetNode.type=="Sensor" || targetNode.type == "Actor") {
+        if (targetNode.type=="Sensor" || targetNode.type == "Actuator") {
             endPoint = new Point(targetBounds.x + targetBounds.width*0.6, targetBounds.y);
             endAngle = 270;
         } else {
@@ -1478,7 +1475,7 @@ function createCompactNodeShape(node) {
                 new Point(bounds.right, bounds.y-bounds.height * 0.3), bounds.bottomRight);
             shape.closePath();
             break;
-        case "Actor":
+        case "Actuator":
             shape = new Path([bounds.bottomRight,
                 new Point(bounds.x+bounds.width * 0.65, bounds.y),
                 new Point(bounds.x+bounds.width * 0.35, bounds.y),
@@ -2827,7 +2824,7 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     if(node.type == "Sensor"){
         html += '<li><a href="#">Select datasource</li>';
     }
-    if(node.type == "Actor"){
+    if(node.type == "Actuator"){
         html += '<li><a href="#">Select datatarget</li>';
     }
     html += '<li><a href="#">Add Monitor</a></li>' +
@@ -2881,10 +2878,10 @@ function handleContextMenu(event) {
                         source_select.val(nodes[clickOriginUid].parameters['datasource']).select().focus();
                     };
                     break;
-                case "Actor":
+                case "Actuator":
                     callback = function(data){
                         clickOriginUid = data;
-                        dialogs.notification('Please Select a datatarget for this actor');
+                        dialogs.notification('Please Select a datatarget for this actuator');
                         var target_select = $('#select_datatarget_modal select');
                         target_select.html('');
                         $("#select_datatarget_modal").modal("show");
@@ -3011,7 +3008,6 @@ function handleContextMenu(event) {
                     var linkUid = clickOriginUid;
                     if (linkUid in links) {
                         $("#link_weight_input").val(links[linkUid].weight);
-                        $("#link_certainty_input").val(links[linkUid].certainty);
                         $("#link_weight_input").focus();
                     }
                     break;
@@ -3342,9 +3338,7 @@ function handleEditLink(event){
     var form = event.target.form;
     var linkUid = clickOriginUid;
     var weight = parseFloat($('input[name="link_weight"]', form).val());
-    var certainty = parseFloat($('input[name="link_certainty"]', form).val());
     links[linkUid].weight = weight;
-    links[linkUid].certainty = certainty;
     redrawLink(links[linkUid], true);
     view.draw();
     api.call("set_link_weight", {
@@ -3354,7 +3348,6 @@ function handleEditLink(event){
         target_node_uid: links[linkUid].targetNodeUid,
         slot_type: links[linkUid].slotName,
         weight: weight,
-        certainty: certainty
     });
 }
 
@@ -3562,14 +3555,14 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
     cancelLinkCreationHandler();
 }
 
-function createLinkIfNotExists(sourceNode, sourceGate, targetNode, targetSlot, weight, certainty){
+function createLinkIfNotExists(sourceNode, sourceGate, targetNode, targetSlot, weight){
     for(var uid in sourceNode.gates[sourceGate].outgoing){
         var link = sourceNode.gates[sourceGate].outgoing[uid];
         if(link.targetNodeUid == targetNode.uid && link.slotName == targetSlot){
             return false;
         }
     }
-    var newlink = new Link('tmp', sourceNode.uid, sourceGate, targetNode.uid, targetSlot, weight || 1, certainty || 1);
+    var newlink = new Link('tmp', sourceNode.uid, sourceGate, targetNode.uid, targetSlot, weight || 1);
     return newlink;
 }
 
@@ -3765,9 +3758,9 @@ function handleSelectDatatargetModal(event){
     $("#select_datatarget_modal").modal("hide");
     nodes[nodeUid].parameters['datatarget'] = value;
     showNodeForm(nodeUid);
-    api.call("bind_datatarget_to_actor", {
+    api.call("bind_datatarget_to_actuator", {
         nodenet_uid: currentNodenet,
-        actor_uid: nodeUid,
+        actuator_uid: nodeUid,
         datatarget: value
     }, function(data){
         showNodeForm(nodeUid, true);
@@ -3990,7 +3983,6 @@ function showLinkForm(linkUid){
     $('#nodenet_forms .form-horizontal').hide();
     $('#edit_link_form').show();
     $('#link_weight_input').val(links[linkUid].weight);
-    $('#link_certainty_input').val(links[linkUid].certainty);
     $('.link_source_node').html(
         '<a href="#follownode" class="follownode" data="'+links[linkUid].sourceNodeUid+'">'+(nodes[links[linkUid].sourceNodeUid].name || nodes[links[linkUid].sourceNodeUid].uid.substr(0,8))+'</a> : ' +
         '<a href="#followgate" class="followgate" data-node="'+links[linkUid].sourceNodeUid+'" data-gate="'+links[linkUid].gateName+'">'+links[linkUid].gateName+'</a>'

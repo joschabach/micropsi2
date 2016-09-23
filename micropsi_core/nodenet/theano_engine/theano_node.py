@@ -307,7 +307,7 @@ class TheanoNode(Node):
                 if self.name is None or self.name == "" or self.name == self.uid:
                     self.name = value
 
-        elif self.type == "Actor" and parameter == "datatarget":
+        elif self.type == "Actuator" and parameter == "datatarget":
             if value is not None and value != "":
                 datatargets = self._nodenet.get_datatargets()
                 actuator_element = self._partition.allocated_node_offsets[self._id] + GEN
@@ -367,7 +367,7 @@ class TheanoNode(Node):
                 parameters['datasource'] = None
             else:
                 parameters['datasource'] = self._nodenet.get_datasources()[datasource_index[0]]
-        elif self.type == "Actor":
+        elif self.type == "Actuator":
             actuator_element = self._partition.allocated_node_offsets[self._id] + GEN
             datatarget_index = np.where(self._partition.actuator_indices == actuator_element)[0]
             if len(datatarget_index) == 0:

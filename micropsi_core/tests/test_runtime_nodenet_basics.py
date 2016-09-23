@@ -113,7 +113,7 @@ def test_nodespace_removal(fixed_nodenet):
     res, uid = micropsi.add_nodespace(fixed_nodenet, [100, 100], nodespace=None, name="testspace")
     res, n1_uid = micropsi.add_node(fixed_nodenet, 'Register', [100, 100], nodespace=uid, name="sub1")
     res, n2_uid = micropsi.add_node(fixed_nodenet, 'Register', [100, 200], nodespace=uid, name="sub2")
-    micropsi.add_link(fixed_nodenet, n1_uid, 'gen', n2_uid, 'gen', weight=1, certainty=1)
+    micropsi.add_link(fixed_nodenet, n1_uid, 'gen', n2_uid, 'gen', weight=1)
     res, sub_uid = micropsi.add_nodespace(fixed_nodenet, [100, 100], nodespace=uid, name="subsubspace")
     micropsi.delete_nodespace(fixed_nodenet, uid)
     # assert that the nodespace is gone
@@ -257,13 +257,13 @@ def test_modulators(fixed_nodenet, engine):
         assert 'Emotional' not in item.__class__.__name__
 
 
-def test_modulators_sensor_actor_connection(test_nodenet, test_world):
+def test_modulators_sensor_actuator_connection(test_nodenet, test_world):
     nodenet = micropsi.get_nodenet(test_nodenet)
     micropsi.set_nodenet_properties(test_nodenet, worldadapter="Braitenberg", world_uid=test_world)
     res, s1_id = micropsi.add_node(test_nodenet, "Sensor", [10, 10], None, name="brightness_l", parameters={'datasource': 'brightness_l'})
     res, s2_id = micropsi.add_node(test_nodenet, "Sensor", [20, 20], None, name="emo_activation", parameters={'datasource': 'emo_activation'})
-    res, a1_id = micropsi.add_node(test_nodenet, "Actor", [30, 30], None, name="engine_l", parameters={'datatarget': 'engine_l'})
-    res, a2_id = micropsi.add_node(test_nodenet, "Actor", [40, 40], None, name="base_importance_of_intention", parameters={'datatarget': 'base_importance_of_intention'})
+    res, a1_id = micropsi.add_node(test_nodenet, "Actuator", [30, 30], None, name="engine_l", parameters={'datatarget': 'engine_l'})
+    res, a2_id = micropsi.add_node(test_nodenet, "Actuator", [40, 40], None, name="base_importance_of_intention", parameters={'datatarget': 'base_importance_of_intention'})
     res, r1_id = micropsi.add_node(test_nodenet, "Register", [10, 30], None, name="r1")
     res, r2_id = micropsi.add_node(test_nodenet, "Register", [10, 30], None, name="r2")
     s1 = nodenet.get_node(s1_id)

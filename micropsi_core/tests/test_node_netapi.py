@@ -663,20 +663,20 @@ def test_node_netapi_unlink_direction(fixed_nodenet):
     assert len(n_c.get_slot('sub').get_links()) == 0
 
 
-def test_node_netapi_import_actors(fixed_nodenet, test_world):
-    # test importing data targets as actors
+def test_node_netapi_import_actuators(fixed_nodenet, test_world):
+    # test importing data targets as actuators
     net, netapi, source = prepare(fixed_nodenet)
     micropsi.set_nodenet_properties(fixed_nodenet, world_uid=test_world, worldadapter='Braitenberg')
     root_ns = netapi.get_nodespace(None)
-    netapi.import_actors(root_ns.uid)
-    actors = netapi.get_nodes(root_ns.uid, nodetype="Actor")
-    assert len(actors) == 2
-    assert set([a.get_parameter('datatarget') for a in actors]) == set(net.worldadapter_instance.datatargets.keys())
+    netapi.import_actuators(root_ns.uid)
+    actuators = netapi.get_nodes(root_ns.uid, nodetype="Actuator")
+    assert len(actuators) == 2
+    assert set([a.get_parameter('datatarget') for a in actuators]) == set(net.worldadapter_instance.datatargets.keys())
 
     # do it again, make sure we can call import multiple times
-    netapi.import_actors(root_ns.uid)
-    actors = netapi.get_nodes(root_ns.uid, nodetype="Actor")
-    assert len(actors) == 2
+    netapi.import_actuators(root_ns.uid)
+    actuators = netapi.get_nodes(root_ns.uid, nodetype="Actuator")
+    assert len(actuators) == 2
 
 
 def test_node_netapi_import_sensors(fixed_nodenet, test_world):
@@ -1002,7 +1002,6 @@ def test_add_link_monitor(test_nodenet, node):
     netapi = nodenet.netapi
     uid = netapi.add_link_monitor(node, 'gen', node, 'gen', name='sepplink')
     assert nodenet.get_monitor(uid).name == 'sepplink'
-    assert nodenet.get_monitor(uid).property == 'weight'
 
 
 def test_add_modulator_monitor(test_nodenet):

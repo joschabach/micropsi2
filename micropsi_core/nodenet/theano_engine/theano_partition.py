@@ -1950,7 +1950,7 @@ class TheanoPartition():
                     parameters['datasource'] = None
                 else:
                     parameters['datasource'] = self.nodenet.get_datasources()[datasource_index[0]]
-            elif strtype == "Actor":
+            elif strtype == "Actuator":
                 actuator_element = self.allocated_node_offsets[id] + GEN
                 datatarget_index = np.where(self.actuator_indices == actuator_element)[0]
                 if len(datatarget_index) == 0:
@@ -2045,7 +2045,6 @@ class TheanoPartition():
                     if target_slot_type.rstrip('0123456789') in target_nodetype.dimensionality['slots']:
                         target_slot_type = target_slot_type.rstrip('0123456789') + '0'
                 linkdict = {"weight": float(w[slot_index, gate_index]),
-                            "certainty": 1,
                             "target_slot_name": target_slot_type,
                             "target_node_uid": target_uid}
 
@@ -2123,7 +2122,6 @@ class TheanoPartition():
                             weight = 1.
 
                         linkdict = {"weight": weight,
-                                    "certainty": 1,
                                     "target_slot_name": target_slot_type,
                                     "target_node_uid": target_uid}
                         if source_gate_type not in nodes[source_uid]["links"]:
@@ -2197,7 +2195,6 @@ class TheanoPartition():
                                     source_gate_type = source_gate_type.rstrip('0123456789') + '0'
 
                             additional_links.append({"weight": weight,
-                                        "certainty": 1,
                                         "target_slot_name": target_slot_type,
                                         "target_node_uid": target_uid,
                                         "source_node_uid": source_uid,

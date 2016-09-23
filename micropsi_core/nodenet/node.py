@@ -493,7 +493,6 @@ class Nodetype(object):
     GATE_DEFAULTS = {
         "minimum": -1,
         "maximum": 1,
-        "certainty": 1,
         "amplification": 1,
         "threshold": -1,
         "theta": 0,

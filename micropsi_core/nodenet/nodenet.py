@@ -369,21 +369,21 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_actors(self, nodespace=None, datatarget=None):
+    def get_actuators(self, nodespace=None, datatarget=None):
         """
-        Returns a dict of all actor nodes. Optionally filtered by the given nodespace and data target
+        Returns a dict of all actuator nodes. Optionally filtered by the given nodespace and data target
         """
         pass  # pragma: no cover
 
     @abstractmethod
-    def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
+    def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1):
         """
         Creates a new link between the given node/gate and node/slot
         """
         pass  # pragma: no cover
 
     @abstractmethod
-    def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
+    def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1):
         """
         Set weight of the link between the given node/gate and node/slot
         """
@@ -611,11 +611,11 @@ class Nodenet(metaclass=ABCMeta):
         self._monitors[mon.uid] = mon
         return mon.uid
 
-    def add_link_monitor(self, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, color=None):
-        """Adds a continuous monitor to a link. You can choose to monitor either weight (default) or certainty
-        The monitor will collect respective value in every calculation step.
+    def add_link_monitor(self, source_node_uid, gate_type, target_node_uid, slot_type, name=None, color=None):
+        """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
+        value in every calculation step.
         Returns the uid of the new monitor."""
-        mon = monitor.LinkMonitor(self, source_node_uid, gate_type, target_node_uid, slot_type, property=property, name=name, color=color)
+        mon = monitor.LinkMonitor(self, source_node_uid, gate_type, target_node_uid, slot_type, name=name, color=color)
         self._monitors[mon.uid] = mon
         return mon.uid
 

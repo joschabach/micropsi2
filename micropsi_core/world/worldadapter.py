@@ -2,7 +2,7 @@
 Agent types provide an interface between agents (which are implemented in node nets) and environments,
 such as the MicroPsi world simulator.
 
-At each agent cycle, the activity of this actor nodes are written to data targets within the agent type,
+At each agent cycle, the activity of this actuator nodes are written to data targets within the agent type,
 and the activity of sensor nodes is determined by the values exposed in its data sources.
 At each world cycle, the value of the data targets is translated into operations performed upon the world,
 and the value of the data sources is updated according to sensory data derived from the world.
@@ -115,7 +115,7 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
             self.datatargets[key] = values[i]
 
     def get_datatarget_feedback_value(self, key):
-        """get feedback whether the actor-induced action succeeded"""
+        """get feedback whether the actuator-induced action succeeded"""
         return self.datatarget_feedback.get(key, 0)
 
     def get_datatarget_feedback_values(self):

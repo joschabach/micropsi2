@@ -54,10 +54,6 @@ class TheanoLink(Link):
                 return 1. if x == y else 0.
 
     @property
-    def certainty(self):
-        return 1
-
-    @property
     def source_node(self):
         return self.__nodenet.get_node(self.__source_node_uid)
 

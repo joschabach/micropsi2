@@ -38,7 +38,7 @@ def align(nodenet, nodespace, entity_uids=False):
         unaligned_nodespaces = [id for id in unaligned_nodespaces if id in entity_uids]
         unaligned_nodes = [id for id in unaligned_nodes if id in entity_uids]
         sensors = []
-        actors = []
+        actuators = []
         activators = []
         ymin = min(nodenet.get_node(n).position[1] for n in unaligned_nodes + unaligned_nodespaces)
         xmin = min(nodenet.get_node(n).position[0] for n in unaligned_nodes + unaligned_nodespaces)
@@ -46,9 +46,9 @@ def align(nodenet, nodespace, entity_uids=False):
 
     else:
         sensors = [s for s in unaligned_nodes if nodenet.get_node(s).type == "Sensor"]
-        actors = [a for a in unaligned_nodes if nodenet.get_node(a).type == "Actor"]
+        actuators = [a for a in unaligned_nodes if nodenet.get_node(a).type == "Actuator"]
         activators = [a for a in unaligned_nodes if nodenet.get_node(a).type == "Activator"]
-        unaligned_nodes = [n for n in unaligned_nodes if not nodenet.get_node(n).type in ("Sensor", "Actor", "Activator")]
+        unaligned_nodes = [n for n in unaligned_nodes if not nodenet.get_node(n).type in ("Sensor", "Actuator", "Activator")]
 
         start_position = (BORDER + GRID / 2, BORDER + (0.5 + math.ceil(len(unaligned_nodespaces) / PREFERRED_WIDTH)) * GRID, 0)
 
@@ -65,8 +65,8 @@ def align(nodenet, nodespace, entity_uids=False):
     # group_other_links(por_groups)
     # group nodes that share a sur-linked parent below that parent
     group_with_same_parent(por_groups)
-    # put sensors and actors below
-    sensor_group = HorizontalGroup([DisplayNode(i) for i in sensors] + [DisplayNode(i) for i in actors])
+    # put sensors and actuators below
+    sensor_group = HorizontalGroup([DisplayNode(i) for i in sensors] + [DisplayNode(i) for i in actuators])
     actviator_group = HorizontalGroup([DisplayNode(i) for i in activators])
     por_groups.append(sensor_group)
     por_groups.append(actviator_group)

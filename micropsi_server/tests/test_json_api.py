@@ -652,7 +652,6 @@ def test_add_link_monitor(app, test_nodenet, node):
         'gate_type': 'gen',
         'target_node_uid': node,
         'slot_type': 'gen',
-        'property': 'weight',
         'name': 'LinkWeight'
     })
     assert_success(response)
@@ -665,7 +664,6 @@ def test_add_link_monitor(app, test_nodenet, node):
     assert response.json_body['data']['monitors'][uid]['gate_type'] == 'gen'
     assert response.json_body['data']['monitors'][uid]['target_node_uid'] == node
     assert response.json_body['data']['monitors'][uid]['slot_type'] == 'gen'
-    assert response.json_body['data']['monitors'][uid]['property'] == 'weight'
 
 
 def test_add_custom_monitor(app, test_nodenet):
@@ -1056,19 +1054,19 @@ def test_bind_datasource_to_sensor(app, test_nodenet, test_world):
     assert response.json_body['data']['parameters']['datasource'] == 'brightness_l'
 
 
-def test_bind_datatarget_to_actor(app, test_nodenet, test_world):
+def test_bind_datatarget_to_actuator(app, test_nodenet, test_world):
     app.set_auth()
     response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, world_uid=test_world, worldadapter="Braitenberg"))
     response = app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
-        'type': 'Actor',
+        'type': 'Actuator',
         'position': [23, 42, 13],
         'nodespace': None,
     })
     uid = response.json_body['data']
-    response = app.post_json('/rpc/bind_datatarget_to_actor', params={
+    response = app.post_json('/rpc/bind_datatarget_to_actuator', params={
         'nodenet_uid': test_nodenet,
-        'actor_uid': uid,
+        'actuator_uid': uid,
         'datatarget': 'engine_l'
     })
     assert_success(response)
@@ -1439,7 +1437,7 @@ def test_nodenet_data_structure(app, test_nodenet, resourcepath, node):
         assert 'gatetypes' not in metadata['nodetypes'][key]
         assert 'slottypes' not in metadata['nodetypes'][key]
 
-    for key in ['Pipe', 'Register', 'Actor']:
+    for key in ['Pipe', 'Register', 'Actuator']:
         assert 'gatetypes' in metadata['nodetypes'][key]
         assert 'slottypes' in metadata['nodetypes'][key]
 

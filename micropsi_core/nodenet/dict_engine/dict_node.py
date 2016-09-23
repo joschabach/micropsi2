@@ -277,10 +277,10 @@ class DictNode(NetEntity, Node):
     def clone_state(self):
         return self.__state.copy()
 
-    def link(self, gate_name, target_node_uid, slot_name, weight=1, certainty=1):
-        """Ensures a link exists with the given parameters and returns it
-           Only one link between a node/gate and a node/slot can exist, its parameters will be updated with the
-           given parameters if a link existed prior to the call of this method
+    def link(self, gate_name, target_node_uid, slot_name, weight=1):
+        """Ensures a link exists with the given weight and returns it
+           Only one link between a node/gate and a node/slot can exist, its weight will be updated with the
+           given value if a link existed prior to the call of this method
            Will return None if no such link can be created.
         """
 
@@ -308,7 +308,7 @@ class DictNode(NetEntity, Node):
         if link is None:
             link = DictLink(self, gate_name, target, slot_name)
 
-        link._set_weight(weight, certainty)
+        link._set_weight(weight)
         return link
 
     def unlink_completely(self):

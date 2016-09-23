@@ -118,7 +118,7 @@ class NodeMonitor(Monitor):
 
 class LinkMonitor(Monitor):
 
-    def __init__(self, nodenet, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, uid=None, color=None, values={}, **_):
+    def __init__(self, nodenet, source_node_uid, gate_type, target_node_uid, slot_type, name=None, uid=None, color=None, values={}, **_):
         api = nodenet.netapi
         name = name or "%s:%s -> %s:%s" % (api.get_node(source_node_uid).name, gate_type, api.get_node(source_node_uid).name, slot_type)
         super(LinkMonitor, self).__init__(nodenet, name, uid, color=color, values=values)
@@ -126,7 +126,6 @@ class LinkMonitor(Monitor):
         self.target_node_uid = target_node_uid
         self.gate_type = gate_type
         self.slot_type = slot_type
-        self.property = property or 'weight'
 
     def get_data(self):
         data = super().get_data()
@@ -134,8 +133,7 @@ class LinkMonitor(Monitor):
             "source_node_uid": self.source_node_uid,
             "target_node_uid": self.target_node_uid,
             "gate_type": self.gate_type,
-            "slot_type": self.slot_type,
-            "property": self.property,
+            "slot_type": self.slot_type
         })
         return data
 
@@ -152,7 +150,7 @@ class LinkMonitor(Monitor):
     def getvalue(self):
         link = self.find_link()
         if link:
-            return getattr(self.find_link(), self.property)
+            return self.find_link().weight
         else:
             return None
 

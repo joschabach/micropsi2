@@ -1068,8 +1068,8 @@ def add_slot_monitor(nodenet_uid, node_uid, slot, name=None, color=None):
 
 
 @rpc("add_link_monitor")
-def add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, property, name, color=None):
-    return True, runtime.add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, property, name, color=color)
+def add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, name, color=None):
+    return True, runtime.add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, name, color=color)
 
 
 @rpc("add_modulator_monitor")
@@ -1238,9 +1238,9 @@ def bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource):
     return runtime.bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource)
 
 
-@rpc("bind_datatarget_to_actor", permission_required="manage nodenets")
-def bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget):
-    return runtime.bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget)
+@rpc("bind_datatarget_to_actuator", permission_required="manage nodenets")
+def bind_datatarget_to_actuator(nodenet_uid, actuator_uid, datatarget):
+    return runtime.bind_datatarget_to_actuator(nodenet_uid, actuator_uid, datatarget)
 
 
 @rpc("add_link", permission_required="manage nodenets")
@@ -1249,8 +1249,8 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
 
 
 @rpc("set_link_weight", permission_required="manage nodenets")
-def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty=1):
-    return runtime.set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
+def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight):
+    return runtime.set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight)
 
 
 @rpc("get_links_for_nodes")

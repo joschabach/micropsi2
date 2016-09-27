@@ -168,7 +168,7 @@ def test_export_json_does_not_send_duplicate_links(fixed_nodenet):
     assert len(result['links']) == 4
 
 
-def test_generate_netapi_fragment(test_nodenet, resourcepath):
+def test_generate_netapi_fragment(test_nodenet, engine, resourcepath):
     import os
     netapi = micropsi.nodenets[test_nodenet].netapi
     # create a bunch of nodes and link them
@@ -181,20 +181,19 @@ def test_generate_netapi_fragment(test_nodenet, resourcepath):
         netapi.link_with_reciprocal(p1, p2, t)
     reg = netapi.create_node('Register', None, 'reg')
     netapi.link(reg, 'gen', nodes[0], 'gen')
-    #ns = netapi.create_nodespace(None, 'ns1')
-    #nodes.extend([reg, ns])
     # remember their names
     names = [n.name for n in nodes]
     fragment = micropsi.generate_netapi_fragment(test_nodenet, [n.uid for n in nodes])
-    micropsi.nodenets[test_nodenet].clear()
+    res, pastenet = micropsi.new_nodenet('pastnet', engine)
     code = "def foo(netapi):\n    " + "\n    ".join(fragment.split('\n'))
     # save the fragment as recipe & run
     with open(os.path.join(resourcepath, 'recipes.py'), 'w+') as fp:
         fp.write(code)
     micropsi.reload_native_modules()
-    micropsi.run_recipe(test_nodenet, 'foo', {})
+    micropsi.run_recipe(pastenet, 'foo', {})
+    pastnetapi = micropsi.get_nodenet(pastenet).netapi
     # assert that all the nodes are there again
-    assert set(names) == set([n.name for n in netapi.get_nodes()])
+    assert set(names) == set([n.name for n in pastnetapi.get_nodes()])
 
 
 def test_get_nodes(test_nodenet):

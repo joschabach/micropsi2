@@ -64,7 +64,7 @@
                     </div>
                 </div>
 
-                %for type, data in worldtypes:
+                %for type, data in worldtypes.items():
                     % for param in data['class'].get_config_options():
                     <div class="control-group world_config world_config_{{type}}" style="display:none">
                         <label class="control-label" for="world_config_{{type}}_{{param['name']}}">{{param['name']}}</label>

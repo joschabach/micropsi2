@@ -259,4 +259,10 @@ def get_available_world_types():
     """Returns a mapping of the available world type names to their classes"""
     import importlib
     from micropsi_core.world.world import World
-    return dict((cls.__name__, cls) for cls in tools.itersubclasses(World))
+    data = {}
+    for cls in tools.itersubclasses(World):
+        data[cls.__name__] = {
+            'class': cls,
+            'config': cls.get_config_options(),
+        }
+    return data

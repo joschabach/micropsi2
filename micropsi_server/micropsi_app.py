@@ -1011,7 +1011,10 @@ def new_world(world_name, world_type, owner=None, config={}):
 
 @rpc("get_available_world_types")
 def get_available_world_types():
-    return True, sorted(runtime.get_available_world_types().keys())
+    data = runtime.get_available_world_types()
+    for key in data:
+        del data[key]['class']  # remove class reference for json
+    return True, data
 
 
 @rpc("delete_world", permission_required="manage worlds")

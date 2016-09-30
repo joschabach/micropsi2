@@ -506,7 +506,9 @@ def test_new_world(app):
 def test_get_available_world_types(app):
     response = app.get_json('/rpc/get_available_world_types()')
     assert_success(response)
-    assert 'Island' in response.json_body['data']
+    data = response.json_body['data']
+    assert 'Island' in data
+    assert data['Island']['config'] == []
 
 
 def test_delete_world(app, test_world):

@@ -53,19 +53,19 @@
                         %else:
                             <select class="input-xlarge" id="world_type" name="world_type">
                                 <option value="">None</option>
-                                % for type in sorted(worldtypes):
+                                % for type in sorted(worldtypes.keys()):
                                     <option value="{{type}}" selected="selected">{{type}}</option>
                                 %end
                             </select>
                         %end
-                        % for type in worldtypes:
-                            <div class="hint small world_docstring world_docstring_{{type}}" style="display:none; white-space: pre-wrap;">{{(worldtypes[type].__doc__ or '').strip()}}</div>
+                        % for type, data in worldtypes.items():
+                            <div class="hint small world_docstring world_docstring_{{type}}" style="display:none; white-space: pre-wrap;">{{(data['class'].__doc__ or '').strip()}}</div>
                         %end
                     </div>
                 </div>
 
-                %for type in sorted(worldtypes):
-                    % for param in worldtypes[type].get_config_options():
+                %for type, data in worldtypes:
+                    % for param in data['class'].get_config_options():
                     <div class="control-group world_config world_config_{{type}}" style="display:none">
                         <label class="control-label" for="world_config_{{type}}_{{param['name']}}">{{param['name']}}</label>
                         <div class="controls">

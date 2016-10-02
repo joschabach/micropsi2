@@ -5,15 +5,14 @@ Tests for vizapi
 """
 
 import pytest
-from micropsi_core import runtime as micropsi
 
 # skip these tests if numpy is not installed
 pytest.importorskip("numpy")
 
 
-def test_plot_activations(test_nodenet):
+def test_plot_activations(runtime, test_nodenet):
     from random import random
-    nodenet = micropsi.get_nodenet(test_nodenet)
+    nodenet = runtime.get_nodenet(test_nodenet)
     vizapi = nodenet.netapi.vizapi
     activations = [random() for i in range(256)]
     plot = vizapi.NodenetPlot(plotsize=(2, 2))
@@ -22,9 +21,9 @@ def test_plot_activations(test_nodenet):
     assert len(res) > 1000
 
 
-def test_plot_linkweights(test_nodenet):
+def test_plot_linkweights(runtime, test_nodenet):
     from random import random
-    nodenet = micropsi.get_nodenet(test_nodenet)
+    nodenet = runtime.get_nodenet(test_nodenet)
     vizapi = nodenet.netapi.vizapi
     linkweights = []
     for i in range(16):
@@ -35,10 +34,10 @@ def test_plot_linkweights(test_nodenet):
     assert len(res) > 1000
 
 
-def test_save_file(test_nodenet, resourcepath):
+def test_save_file(runtime, test_nodenet, resourcepath):
     from random import random
     import os
-    nodenet = micropsi.get_nodenet(test_nodenet)
+    nodenet = runtime.get_nodenet(test_nodenet)
     vizapi = nodenet.netapi.vizapi
     activations = [random() for i in range(256)]
     plot = vizapi.NodenetPlot(plotsize=(2, 2))
@@ -49,11 +48,11 @@ def test_save_file(test_nodenet, resourcepath):
     assert os.path.isfile(filepath)
 
 
-def test_plot_from_nodefunc(test_nodenet, resourcepath):
+def test_plot_from_nodefunc(runtime, test_nodenet, resourcepath):
     import os
     from random import random
     from time import sleep
-    nodenet = micropsi.get_nodenet(test_nodenet)
+    nodenet = runtime.get_nodenet(test_nodenet)
     vizapi = nodenet.netapi.vizapi
     activations = [random() for i in range(256)]
     plot = vizapi.NodenetPlot(plotsize=(2, 2))
@@ -84,19 +83,19 @@ def plotfunc(netapi, node=None, **params):
     plot.add_activation_plot(activations)
     plot.save_to_file(filepath)
 """)
-    micropsi.reload_native_modules()
+    runtime.reload_native_modules()
     node = nodenet.netapi.create_node("Plotter", None, name="Plotter")
     node.set_parameter("plotpath", resourcepath)
-    micropsi.start_nodenetrunner(test_nodenet)
+    runtime.start_nodenetrunner(test_nodenet)
     sleep(2)
-    micropsi.stop_nodenetrunner(test_nodenet)
-    assert micropsi.MicropsiRunner.last_nodenet_exception == {}
+    runtime.stop_nodenetrunner(test_nodenet)
+    assert runtime.MicropsiRunner.last_nodenet_exception == {}
     assert os.path.isfile(os.path.join(resourcepath, "plot.png"))
 
 
-def test_update_plot(test_nodenet):
+def test_update_plot(runtime, test_nodenet):
     import numpy as np
-    nodenet = micropsi.get_nodenet(test_nodenet)
+    nodenet = runtime.get_nodenet(test_nodenet)
     vizapi = nodenet.netapi.vizapi
     image = vizapi.NodenetPlot((4, 4))
     activations_1 = np.random.rand(16)

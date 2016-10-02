@@ -7,13 +7,12 @@ Tests for node, nodefunction and the like
 
 from micropsi_core.nodenet.node import Nodetype
 from micropsi_core.nodenet.nodefunctions import register, concept
-from micropsi_core import runtime as micropsi
 import pytest
 
 
 @pytest.mark.engine("theano_engine")
-def test_nodetype_function_definition_overwrites_default_function_name_theano(fixed_nodenet):
-    nodenet = micropsi.get_nodenet(fixed_nodenet)
+def test_nodetype_function_definition_overwrites_default_function_name_theano(runtime, test_nodenet):
+    nodenet = runtime.get_nodenet(test_nodenet)
     nodetype = nodenet.get_standard_nodetype_definitions()['Register'].copy()
     foo = Nodetype(nodenet=nodenet, **nodetype)
     assert foo.nodefunction == register
@@ -24,8 +23,8 @@ def test_nodetype_function_definition_overwrites_default_function_name_theano(fi
 
 
 @pytest.mark.engine("dict_engine")
-def test_nodetype_function_definition_overwrites_default_function_name(fixed_nodenet):
-    nodenet = micropsi.get_nodenet(fixed_nodenet)
+def test_nodetype_function_definition_overwrites_default_function_name(runtime, test_nodenet):
+    nodenet = runtime.get_nodenet(test_nodenet)
     nodetype = nodenet.get_standard_nodetype_definitions()['Concept'].copy()
     foo = Nodetype(nodenet=nodenet, **nodetype)
     assert foo.nodefunction == concept
@@ -35,8 +34,8 @@ def test_nodetype_function_definition_overwrites_default_function_name(fixed_nod
     assert foo.nodefunction(nodenet, None) == 17
 
 
-def test_node_states(test_nodenet, node):
-    nodenet = micropsi.get_nodenet(test_nodenet)
+def test_node_states(runtime, test_nodenet, node):
+    nodenet = runtime.get_nodenet(test_nodenet)
     node = nodenet.get_node(node)
     assert node.get_state('foobar') is None
     node.set_state('foobar', 'bazbaz')
@@ -45,8 +44,8 @@ def test_node_states(test_nodenet, node):
     assert node.get_state('foobar') == 42
 
 
-def test_node_positions_as_tuples(test_nodenet):
-    nodenet = micropsi.get_nodenet(test_nodenet)
+def test_node_positions_as_tuples(runtime, test_nodenet):
+    nodenet = runtime.get_nodenet(test_nodenet)
     api = nodenet.netapi
     node = api.create_node("Pipe", None, "node1")
     nodespace = api.create_nodespace(None, "nodespace1")
@@ -55,7 +54,7 @@ def test_node_positions_as_tuples(test_nodenet):
 
 
 @pytest.mark.engine("theano_engine")
-def test_fat_native_modules(test_nodenet, resourcepath):
+def test_fat_native_modules(runtime, test_nodenet, resourcepath):
     import os
     import numpy as np
     with open(os.path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
@@ -82,8 +81,8 @@ def test_fat_native_modules(test_nodenet, resourcepath):
 def phatNM(netapi, node, **_):
     pass""")
 
-    micropsi.reload_native_modules()
-    netapi = micropsi.nodenets[test_nodenet].netapi
+    runtime.reload_native_modules()
+    netapi = runtime.nodenets[test_nodenet].netapi
     node = netapi.create_node("PhatNM", None, "phatty")
     node.take_slot_activation_snapshot()
 
@@ -97,7 +96,7 @@ def phatNM(netapi, node, **_):
     target = netapi.create_node("Register", None, "Target")
     for g in node.get_gate_types():
         netapi.link(node, g, target, 'gen')
-    micropsi.step_nodenet(test_nodenet)
+    runtime.step_nodenet(test_nodenet)
     assert target.activation > 0
 
     # test saving/loading data
@@ -105,16 +104,16 @@ def phatNM(netapi, node, **_):
     assert np.all(node.load_data() == new_activation)
 
     # test persistency
-    micropsi.save_nodenet(test_nodenet)
-    micropsi.revert_nodenet(test_nodenet)
-    netapi = micropsi.nodenets[test_nodenet].netapi
+    runtime.save_nodenet(test_nodenet)
+    runtime.revert_nodenet(test_nodenet)
+    netapi = runtime.nodenets[test_nodenet].netapi
     node = netapi.get_node(node.uid)
     target = netapi.get_node(target.uid)
     assert np.all(node.load_data() == new_activation)
 
     # test setting gate details, get_gate_activation
     node.set_gatefunction_name("A_out0", "sigmoid")
-    micropsi.step_nodenet(test_nodenet)
+    runtime.step_nodenet(test_nodenet)
     act = node.get_gate_activations()
     assert act[3] == 0.5
     assert np.all(act[4:] == 0)
@@ -123,7 +122,7 @@ def phatNM(netapi, node, **_):
     netapi.link(target, 'gen', node, 'A_in580')
     pipe = netapi.create_node("Pipe", None, "pipe")
     netapi.link_with_reciprocal(pipe, node, 'subsur')
-    data = micropsi.nodenets[test_nodenet].get_nodes()
+    data = runtime.nodenets[test_nodenet].get_nodes()
     nodedata = data['nodes'][node.uid]
     assert len(nodedata['gate_activations'].keys()) == 5
     assert 'gen' in nodedata['gate_activations']
@@ -135,7 +134,7 @@ def phatNM(netapi, node, **_):
     assert data['nodes'][pipe.uid]['links']['sub'][0]['target_slot_name'] == 'sub'
 
     # test get nodetypes
-    result = micropsi.get_available_native_module_types(test_nodenet)['PhatNM']
+    result = runtime.get_available_native_module_types(test_nodenet)['PhatNM']
     assert result['dimensionality']['gates']['A_out0'] == 768
     assert result['dimensionality']['gates']['B_out0'] == 13
     assert result['dimensionality']['slots']['A_in0'] == 1024

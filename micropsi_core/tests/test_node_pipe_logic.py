@@ -5,13 +5,10 @@
 Tests for node activation propagation and gate arithmetic
 """
 
-from micropsi_core import runtime as micropsi
 
-
-def prepare(fixed_nodenet):
-    nodenet = micropsi.get_nodenet(fixed_nodenet)
+def prepare(runtime, test_nodenet):
+    nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
-    netapi.delete_node(netapi.get_node("n0006"))
     source = netapi.create_node("Register", None, "Source")
     netapi.link(source, "gen", source, "gen")
     source.activation = 1
@@ -19,8 +16,8 @@ def prepare(fixed_nodenet):
     return nodenet, netapi, source
 
 
-def add_directional_activators(fixed_nodenet):
-    net = micropsi.get_nodenet(fixed_nodenet)
+def add_directional_activators(runtime, test_nodenet):
+    net = runtime.get_nodenet(test_nodenet)
     netapi = net.netapi
     sub_act = netapi.create_node("Activator", None, "sub-activator")
     net.get_node(sub_act.uid).set_parameter("type", "sub")
@@ -43,9 +40,9 @@ def add_directional_activators(fixed_nodenet):
     return sub_act, sur_act, por_act, ret_act, cat_act, exp_act
 
 
-def test_node_pipe_logic_subtrigger(fixed_nodenet):
+def test_node_pipe_logic_subtrigger(runtime, test_nodenet):
     # test a resting classifier, expect sub to be activated
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     n_head = netapi.create_node("Pipe", None, "Head")
 
     netapi.link(source, "gen", n_head, "sub", 1)
@@ -54,9 +51,9 @@ def test_node_pipe_logic_subtrigger(fixed_nodenet):
     assert n_head.get_gate("sub").activation == 1
 
 
-def test_node_pipe_logic_classifier_two_off(fixed_nodenet):
+def test_node_pipe_logic_classifier_two_off(runtime, test_nodenet):
     # test a resting classifier, expect no activation
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     n_head = netapi.create_node("Pipe", None, "Head")
     n_a = netapi.create_node("Pipe", None, "A")
     n_b = netapi.create_node("Pipe", None, "B")
@@ -68,9 +65,9 @@ def test_node_pipe_logic_classifier_two_off(fixed_nodenet):
     assert n_head.get_gate("gen").activation == 0
 
 
-def test_node_pipe_logic_classifier_two_partial(fixed_nodenet):
+def test_node_pipe_logic_classifier_two_partial(runtime, test_nodenet):
     # test partial success of a classifier (fuzzyness)
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     n_head = netapi.create_node("Pipe", None, "Head")
     n_head.set_parameter("expectation", 0)
     n_a = netapi.create_node("Pipe", None, "A")
@@ -96,9 +93,9 @@ def test_node_pipe_logic_classifier_two_partial(fixed_nodenet):
     assert n_head.get_gate("gen").activation == 1
 
 
-def test_node_pipe_logic_classifier_two_partially_failing(fixed_nodenet):
+def test_node_pipe_logic_classifier_two_partially_failing(runtime, test_nodenet):
     # test fuzzyness with one node failing
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     n_head = netapi.create_node("Pipe", None, "Head")
     n_a = netapi.create_node("Pipe", None, "A")
     n_b = netapi.create_node("Pipe", None, "B")
@@ -121,9 +118,9 @@ def test_node_pipe_logic_classifier_two_partially_failing(fixed_nodenet):
     assert n_head.get_gate("gen").activation == 0
 
 
-def test_node_pipe_logic_classifier_three_off(fixed_nodenet):
+def test_node_pipe_logic_classifier_three_off(runtime, test_nodenet):
     # test a resting classifier, expect no activation
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     n_head = netapi.create_node("Pipe", None, "Head")
     n_a = netapi.create_node("Pipe", None, "A")
     n_b = netapi.create_node("Pipe", None, "B")
@@ -137,9 +134,9 @@ def test_node_pipe_logic_classifier_three_off(fixed_nodenet):
     assert n_head.get_gate("gen").activation == 0
 
 
-def test_node_pipe_logic_classifier_three_partial(fixed_nodenet):
+def test_node_pipe_logic_classifier_three_partial(runtime, test_nodenet):
     # test partial success of a classifier (fuzzyness)
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     n_head = netapi.create_node("Pipe", None, "Head")
     n_head.set_parameter("expectation", 0)
     n_a = netapi.create_node("Pipe", None, "A")
@@ -178,9 +175,9 @@ def test_node_pipe_logic_classifier_three_partial(fixed_nodenet):
     assert round(n_head.get_gate("gen").activation, 2) == 1
 
 
-def test_node_pipe_logic_classifier_three_partially_failing(fixed_nodenet):
+def test_node_pipe_logic_classifier_three_partially_failing(runtime, test_nodenet):
     # test fuzzyness with one node failing
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     n_head = netapi.create_node("Pipe", None, "Head")
     n_head.set_parameter("expectation", 0)
     n_a = netapi.create_node("Pipe", None, "A")
@@ -216,9 +213,9 @@ def test_node_pipe_logic_classifier_three_partially_failing(fixed_nodenet):
     assert round(n_head.get_gate("gen").activation, 2) == round(1 / 3, 2)
 
 
-def test_node_pipe_logic_two_script(fixed_nodenet):
+def test_node_pipe_logic_two_script(runtime, test_nodenet):
     # test whether scripts work
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     n_head = netapi.create_node("Pipe", None, "Head")
     n_a = netapi.create_node("Pipe", None, "A")
     n_a.set_parameter("wait", 100)
@@ -267,9 +264,9 @@ def test_node_pipe_logic_two_script(fixed_nodenet):
     assert round(n_head.get_gate("gen").activation, 2) == 1
 
 
-def test_node_pipe_logic_three_script(fixed_nodenet):
+def test_node_pipe_logic_three_script(runtime, test_nodenet):
     # test whether scripts work
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     n_head = netapi.create_node("Pipe", None, "Head")
     n_a = netapi.create_node("Pipe", None, "A")
     n_a.set_parameter("wait", 100)
@@ -358,9 +355,9 @@ def test_node_pipe_logic_three_script(fixed_nodenet):
     assert n_head.get_gate("gen").activation == -1
 
 
-def test_node_pipe_logic_alternatives(fixed_nodenet):
+def test_node_pipe_logic_alternatives(runtime, test_nodenet):
     # create a script with alternatives, let one fail, one one succeed
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     n_head = netapi.create_node("Pipe", None, "Head")
     n_a = netapi.create_node("Pipe", None, "A")
     n_a.set_parameter("wait", 100)
@@ -469,9 +466,9 @@ def test_node_pipe_logic_alternatives(fixed_nodenet):
     assert round(n_head.get_gate("gen").activation, 2) == -1
 
 
-def test_node_pipe_logic_timeout_fail(fixed_nodenet):
+def test_node_pipe_logic_timeout_fail(runtime, test_nodenet):
     # test whether scripts work
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     n_head = netapi.create_node("Pipe", None, "Head")
     n_head.set_parameter("wait", 100)
     n_a = netapi.create_node("Pipe", None, "A")
@@ -530,9 +527,9 @@ def test_node_pipe_logic_timeout_fail(fixed_nodenet):
     assert round(n_head.get_gate("gen").activation, 2) == -1
 
 
-#def test_node_pipe_logic_feature_binding(fixed_nodenet):
+#def test_node_pipe_logic_feature_binding(runtime, test_nodenet):
 #    # check if the same feature can be checked and bound twice
-#    net, netapi, source = prepare(fixed_nodenet)
+#    net, netapi, source = prepare(runtime, test_nodenet)
 #    schema = netapi.create_node("Pipe", None, "Schema")
 #    element1 = netapi.create_node("Pipe", None, "Element1")
 #    element2 = netapi.create_node("Pipe", None, "Element2")
@@ -565,14 +562,14 @@ def test_node_pipe_logic_timeout_fail(fixed_nodenet):
 #    assert schema.get_gate("gen").activation == 1
 
 
-#def test_node_pipe_logic_search_sub(fixed_nodenet):
+#def test_node_pipe_logic_search_sub(runtime, test_nodenet):
 #    # check if sub-searches work
-#    net, netapi, source = prepare(fixed_nodenet)
+#    net, netapi, source = prepare(runtime, test_nodenet)
 #    n_a = netapi.create_node("Pipe", None, "A")
 #    n_b = netapi.create_node("Pipe", None, "B")
 #    netapi.link_with_reciprocal(n_a, n_b, "subsur")
 #
-#    sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(fixed_nodenet)
+#    sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(runtime, test_nodenet)
 #    netapi.link(source, "gen", sub_act, "gen")
 #
 #    netapi.link(source, "gen", n_a, "sub")
@@ -585,14 +582,14 @@ def test_node_pipe_logic_timeout_fail(fixed_nodenet):
 #    assert round(n_b.get_gate("sub").activation, 2) == 1
 #
 #
-#def test_node_pipe_logic_search_sur(fixed_nodenet):
+#def test_node_pipe_logic_search_sur(runtime, test_nodenet):
 #    # check if sur-searches work
-#    net, netapi, source = prepare(fixed_nodenet)
+#    net, netapi, source = prepare(runtime, test_nodenet)
 #    n_a = netapi.create_node("Pipe", None, "A")
 #    n_b = netapi.create_node("Pipe", None, "B")
 #    netapi.link_with_reciprocal(n_a, n_b, "subsur")
 #
-#    sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(fixed_nodenet)
+#    sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(runtime, test_nodenet)
 #    netapi.link(source, "gen", sur_act, "gen")
 #
 #    netapi.link(source, "gen", n_b, "sur")
@@ -605,14 +602,14 @@ def test_node_pipe_logic_timeout_fail(fixed_nodenet):
 #    assert n_a.get_gate("sur").activation > 0
 
 
-def test_node_pipe_logic_search_por(fixed_nodenet):
+def test_node_pipe_logic_search_por(runtime, test_nodenet):
     # check if por-searches work
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     n_a = netapi.create_node("Pipe", None, "A")
     n_b = netapi.create_node("Pipe", None, "B")
     netapi.link_with_reciprocal(n_a, n_b, "porret")
 
-    sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(fixed_nodenet)
+    sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(runtime, test_nodenet)
     netapi.link(source, "gen", por_act, "gen")
 
     netapi.link(source, "gen", n_a, "por")
@@ -625,14 +622,14 @@ def test_node_pipe_logic_search_por(fixed_nodenet):
     assert round(n_b.get_gate("por").activation, 2) == 1
 
 
-def test_node_pipe_logic_search_ret(fixed_nodenet):
+def test_node_pipe_logic_search_ret(runtime, test_nodenet):
     # check if ret-searches work
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     n_a = netapi.create_node("Pipe", None, "A")
     n_b = netapi.create_node("Pipe", None, "B")
     netapi.link_with_reciprocal(n_a, n_b, "porret")
 
-    sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(fixed_nodenet)
+    sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(runtime, test_nodenet)
     netapi.link(source, "gen", ret_act, "gen")
 
     netapi.link(source, "gen", n_b, "ret")
@@ -645,14 +642,14 @@ def test_node_pipe_logic_search_ret(fixed_nodenet):
     assert round(n_a.get_gate("ret").activation, 2) == 1
 
 
-def test_node_pipe_logic_search_cat(fixed_nodenet):
+def test_node_pipe_logic_search_cat(runtime, test_nodenet):
     # check if cat-searches work
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     n_a = netapi.create_node("Pipe", None, "A")
     n_b = netapi.create_node("Pipe", None, "B")
     netapi.link_with_reciprocal(n_a, n_b, "catexp")
 
-    sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(fixed_nodenet)
+    sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(runtime, test_nodenet)
     netapi.link(source, "gen", cat_act, "gen")
 
     netapi.link(source, "gen", n_a, "cat")
@@ -665,14 +662,14 @@ def test_node_pipe_logic_search_cat(fixed_nodenet):
     assert round(n_b.get_gate("cat").activation, 2) == 1
 
 
-def test_node_pipe_logic_search_exp(fixed_nodenet):
+def test_node_pipe_logic_search_exp(runtime, test_nodenet):
     # check if exp-searches work
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     n_a = netapi.create_node("Pipe", None, "A")
     n_b = netapi.create_node("Pipe", None, "B")
     netapi.link_with_reciprocal(n_a, n_b, "catexp")
 
-    sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(fixed_nodenet)
+    sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(runtime, test_nodenet)
     netapi.link(source, "gen", exp_act, "gen")
 
     netapi.link(source, "gen", n_b, "exp")

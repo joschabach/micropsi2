@@ -138,7 +138,7 @@ def delete_world(world_uid):
         raise KeyError("World not found")
 
     # remove a running instance if there should be one
-    if world_uid not in micropsi_core.runtime.worlds:
+    if world_uid in micropsi_core.runtime.worlds:
         world = micropsi_core.runtime.worlds[world_uid]
         for uid in list(world.agents.keys()):
             world.unregister_nodenet(uid)

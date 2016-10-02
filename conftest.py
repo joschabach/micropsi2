@@ -134,7 +134,7 @@ def test_world(request):
     Fixture: A test world of type Island
     """
     global world_uid
-    success, world_uid = micropsi.new_world("World of Pain", "Island", "Pytest User", uid=world_uid)
+    success, world_uid = micropsi.new_world("World of Pain", "Island", "Pytest User")
     yield world_uid
     try:
         micropsi.delete_world(world_uid)
@@ -159,7 +159,7 @@ def default_nodenet(request):
     A nodenet with the default engine
     Use this for tests that are engine-agnostic
     """
-    success, nn_uid = micropsi.new_nodenet("Defaultnet", owner="Pytest User", uid='defaultnet')
+    success, nn_uid = micropsi.new_nodenet("Defaultnet", owner="Pytest User")
     micropsi.save_nodenet(nn_uid)
     yield nn_uid
     try:
@@ -175,7 +175,7 @@ def test_nodenet(request, test_world, engine):
     Use this for tests that should run in both engines
     """
     global nn_uid
-    success, nn_uid = micropsi.new_nodenet("Testnet", engine=engine, owner="Pytest User", uid='Testnet')
+    success, nn_uid = micropsi.new_nodenet("Testnet", engine=engine, owner="Pytest User")
     micropsi.save_nodenet(nn_uid)
     yield nn_uid
     try:

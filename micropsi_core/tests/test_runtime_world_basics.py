@@ -62,15 +62,15 @@ def test_get_worldadapters(test_world, default_nodenet):
 
 def test_add_worldobject(test_world):
     world = runtime.load_world(test_world)
-    runtime.add_worldobject(test_world, "Default", (10, 10), uid='foobar', name='foobar', parameters={})
-    assert "foobar" in world.data['objects']
-    assert "foobar" in world.objects
-    result, uid = runtime.add_worldobject(test_world, "Spam", (10, 10))
+    result, foobar_uid = runtime.add_worldobject(test_world, "Default", (10, 10), name='foobar', parameters={})
+    assert foobar_uid in world.data['objects']
+    assert foobar_uid in world.objects
+    result, spam_uid = runtime.add_worldobject(test_world, "Spam", (10, 10))
     assert not result  # spam is not supported
     runtime.save_world(test_world)
     runtime.revert_world(test_world)
-    assert "foobar" in world.data['objects']
-    assert "foobar" in world.objects
+    assert foobar_uid in world.data['objects']
+    assert foobar_uid in world.objects
 
 
 def test_add_worldobject_without_id(test_world):
@@ -82,18 +82,14 @@ def test_add_worldobject_without_id(test_world):
 
 
 def test_get_worldobjects(test_world):
-    world = runtime.load_world(test_world)
-    runtime.add_worldobject(test_world, "Default", (10, 10), uid='foobar', name='foobar', parameters={})
+    runtime.load_world(test_world)
+    reuslt, foobar_uid = runtime.add_worldobject(test_world, "Default", (10, 10), name='foobar', parameters={})
     objects = runtime.get_world_objects(test_world)
-    assert 'foobar' in objects
+    assert foobar_uid in objects
     objects = runtime.get_world_objects(test_world, type="Spam")
     assert not objects
     objects = runtime.get_world_objects(test_world, type="Default")
-    assert 'foobar' in objects
-    runtime.save_world(test_world)
-    runtime.revert_world(test_world)
-    objects = runtime.get_world_objects(test_world)
-    assert 'foobar' in objects
+    assert foobar_uid in objects
 
 
 def test_register_agent(test_world, default_nodenet):
@@ -112,18 +108,18 @@ def test_register_agent(test_world, default_nodenet):
 
 def test_set_object_properties(test_world):
     world = runtime.load_world(test_world)
-    runtime.add_worldobject(test_world, "Default", (10, 10), uid='foobar', name='foobar', parameters={"foo": "bar"})
-    runtime.set_worldobject_properties(test_world, "foobar", name="foobaz", position=(5, 5), orientation=270, parameters={"foo": "baz"})
-    assert world.objects["foobar"].position == (5, 5)
-    assert world.data['objects']['foobar']['position'] == (5, 5)
-    assert world.objects['foobar'].parameters["foo"] == "baz"
-    assert world.data['objects']['foobar']['parameters']["foo"] == "baz"
-    assert world.objects["foobar"].name == "foobaz"
-    assert world.data['objects']['foobar']['name'] == "foobaz"
-    assert world.objects["foobar"].orientation == 270
-    assert world.data['objects']['foobar']['orientation'] == 270
+    result, foobar_uid = runtime.add_worldobject(test_world, "Default", (10, 10), name='foobar', parameters={"foo": "bar"})
+    runtime.set_worldobject_properties(test_world, foobar_uid, name="foobaz", position=(5, 5), orientation=270, parameters={"foo": "baz"})
+    assert world.objects[foobar_uid].position == (5, 5)
+    assert world.data['objects'][foobar_uid]['position'] == (5, 5)
+    assert world.objects[foobar_uid].parameters["foo"] == "baz"
+    assert world.data['objects'][foobar_uid]['parameters']["foo"] == "baz"
+    assert world.objects[foobar_uid].name == "foobaz"
+    assert world.data['objects'][foobar_uid]['name'] == "foobaz"
+    assert world.objects[foobar_uid].orientation == 270
+    assert world.data['objects'][foobar_uid]['orientation'] == 270
 
-    assert runtime.get_world_view(test_world, -1)['objects']['foobar']['position'] == (5, 5)
+    assert runtime.get_world_view(test_world, -1)['objects'][foobar_uid]['position'] == (5, 5)
 
 
 def test_set_agent_properties(test_world, default_nodenet):

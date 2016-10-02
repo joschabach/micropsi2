@@ -493,7 +493,7 @@ def unload_nodenet(nodenet_uid):
     return True
 
 
-def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=None, owner="", world_uid=None, uid=None, use_modulators=True, worldadapter_config={}):
+def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=None, owner="", world_uid=None, use_modulators=True, worldadapter_config={}):
     """Creates a new node net manager and registers it.
 
     Arguments:
@@ -501,14 +501,12 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
             gate types supported for directional activation spreading of this nodenet, and the initial node types
         owner (optional): the creator of this nodenet
         world_uid (optional): if submitted, attempts to bind the nodenet to this world
-        uid (optional): if submitted, this is used as the UID for the nodenet (normally, this is generated)
 
     Returns
         nodenet_uid if successful,
         None if failure
     """
-    if not uid:
-        uid = tools.generate_uid()
+    uid = tools.generate_uid()
 
     data = dict(
         version=1,
@@ -818,7 +816,7 @@ def get_node(nodenet_uid, node_uid, include_links=True):
         return False, "Unknown UID"
 
 
-def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name="", parameters=None):
+def add_node(nodenet_uid, type, pos, nodespace=None, state=None, name="", parameters=None):
     """Creates a new node. (Including native module.)
 
     Arguments:
@@ -835,21 +833,20 @@ def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name=
         None if failure.
     """
     nodenet = get_nodenet(nodenet_uid)
-    uid = nodenet.create_node(type, nodespace, pos, name, uid=uid, parameters=parameters)
+    uid = nodenet.create_node(type, nodespace, pos, name, parameters=parameters)
     return True, uid
 
 
-def add_nodespace(nodenet_uid, nodespace=None, uid=None, name="", options=None):
+def add_nodespace(nodenet_uid, nodespace=None, name="", options=None):
     """Creates a new nodespace
     Arguments:
         nodenet_uid: uid of the nodespace manager
         nodespace: uid of the parent nodespace
-        uid (optional): if not supplied, a uid will be generated
         name (optional): if not supplied, the uid will be used instead of a display name
         options (optional): a dict of options. TBD
     """
     nodenet = get_nodenet(nodenet_uid)
-    uid = nodenet.create_nodespace(nodespace, name=name, uid=uid, options=options)
+    uid = nodenet.create_nodespace(nodespace, name=name, options=options)
     return True, uid
 
 

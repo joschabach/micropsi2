@@ -82,9 +82,9 @@ def delete_worldobject(world_uid, object_uid):
     return micropsi_core.runtime.worlds[world_uid].delete_object(object_uid)
 
 
-def add_worldobject(world_uid, type, position, orientation=0.0, name="", parameters=None, uid=None):
+def add_worldobject(world_uid, type, position, orientation=0.0, name="", parameters=None):
     return micropsi_core.runtime.worlds[world_uid].add_object(type, position, orientation=orientation, name=name,
-                                                              parameters=parameters, uid=uid)
+                                                              parameters=parameters)
 
 
 def set_worldobject_properties(world_uid, uid, position=None, orientation=None, name=None, parameters=None):
@@ -96,7 +96,7 @@ def set_worldagent_properties(world_uid, uid, position=None, orientation=None, n
     return micropsi_core.runtime.worlds[world_uid].set_agent_properties(uid, position, orientation, name, parameters)
 
 
-def new_world(world_name, world_type, owner="", uid=None, config={}):
+def new_world(world_name, world_type, owner="", config={}):
     """Creates a new world  and registers it.
 
     Arguments:
@@ -108,8 +108,7 @@ def new_world(world_name, world_type, owner="", uid=None, config={}):
         world_uid if successful,
         None if failure
     """
-    if uid is None:
-        uid = tools.generate_uid()
+    uid = tools.generate_uid()
 
     if world_type.startswith('Minecraft'):
         for uid in micropsi_core.runtime.worlds:

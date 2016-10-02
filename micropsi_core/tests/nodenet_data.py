@@ -1,6 +1,5 @@
 
 fixed_nodenet_data = """{
-    "uid": "fixed_test_nodenet",
     "links": {
         "n0003:sub:gen:n0004": {
             "source_gate_name": "sub",

@@ -977,8 +977,8 @@ def get_world_objects(world_uid, type=None):
 
 
 @rpc("add_worldobject")
-def add_worldobject(world_uid, type, position, orientation=0.0, name="", parameters=None, uid=None):
-    return runtime.add_worldobject(world_uid, type, position, orientation=orientation, name=name, parameters=parameters, uid=uid)
+def add_worldobject(world_uid, type, position, orientation=0.0, name="", parameters=None):
+    return runtime.add_worldobject(world_uid, type, position, orientation=orientation, name=name, parameters=parameters)
 
 
 @rpc("delete_worldobject")

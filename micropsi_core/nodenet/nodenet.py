@@ -289,7 +289,7 @@ class Nodenet(metaclass=ABCMeta):
     @abstractmethod
     def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
         """
-        Creates a new node of the given node type (string), in the nodespace with the given UID, at the given
+        Creates a new node of the given node type (string), in the given nodespace, at the given
         position and returns the uid of the new node
         """
         pass  # pragma: no cover
@@ -348,9 +348,9 @@ class Nodenet(metaclass=ABCMeta):
         pass   # pragma: no cover
 
     @abstractmethod
-    def create_nodespace(self, parent_uid, position, name="", uid=None):
+    def create_nodespace(self, parent_uid, name="", uid=None):
         """
-        Creates a new nodespace  in the nodespace with the given UID, at the given position.
+        Creates a new nodespace within the given parent-nodespace
         """
         pass  # pragma: no cover
 

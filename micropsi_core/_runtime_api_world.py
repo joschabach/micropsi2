@@ -171,9 +171,10 @@ def set_world_properties(world_uid, world_name=None, owner=None, config=None):
     if world_uid not in micropsi_core.runtime.world_data:
         raise KeyError("World not found")
 
-    micropsi_core.runtime.world_data[world_uid]['name'] = world_name
+    if world_name is not None:
+        micropsi_core.runtime.world_data[world_uid]['name'] = world_name
     if owner is not None:
-        micropsi_core.runtime.world_data[world_uid]['owner'] = world_name
+        micropsi_core.runtime.world_data[world_uid]['owner'] = owner
     if config is not None:
         micropsi_core.runtime.world_data[world_uid]['config'].update(config)
 

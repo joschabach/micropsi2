@@ -133,13 +133,21 @@ def new_world(world_name, world_type, owner="", uid=None, config={}):
 
 def delete_world(world_uid):
     """Removes the world with the given uid from the server (and unloads it from memory if it is running.)"""
-    world = micropsi_core.runtime.worlds[world_uid]
-    for uid in list(world.agents.keys()):
-        world.unregister_nodenet(uid)
-        micropsi_core.runtime.nodenets[uid].worldadapter_instance = None
-        micropsi_core.runtime.nodenets[uid].world = None
-    micropsi_core.runtime.worlds[world_uid].__del__()
-    del micropsi_core.runtime.worlds[world_uid]
+
+    if world_uid not in micropsi_core.runtime.world_data:
+        raise KeyError("World not found")
+
+    # remove a running instance if there should be one
+    if world_uid not in micropsi_core.runtime.worlds:
+        world = micropsi_core.runtime.worlds[world_uid]
+        for uid in list(world.agents.keys()):
+            world.unregister_nodenet(uid)
+            micropsi_core.runtime.nodenets[uid].worldadapter_instance = None
+            micropsi_core.runtime.nodenets[uid].world = None
+        micropsi_core.runtime.worlds[world_uid].__del__()
+        del micropsi_core.runtime.worlds[world_uid]
+
+    # delete metadata
     os.remove(micropsi_core.runtime.world_data[world_uid].filename)
     del micropsi_core.runtime.world_data[world_uid]
     return True
@@ -160,12 +168,22 @@ def get_world_view(world_uid, step):
 
 def set_world_properties(world_uid, world_name=None, owner=None, config=None):
     """Sets the supplied parameters (and only those) for the world with the given uid."""
-    if world_uid not in micropsi_core.runtime.worlds:
+    if world_uid not in micropsi_core.runtime.world_data:
         raise KeyError("World not found")
-    micropsi_core.runtime.worlds[world_uid].name = world_name
+
+    micropsi_core.runtime.world_data[world_uid]['name'] = world_name
     if owner is not None:
-        micropsi_core.runtime.worlds[world_uid].owner = owner
+        micropsi_core.runtime.world_data[world_uid]['owner'] = world_name
     if config is not None:
+        micropsi_core.runtime.world_data[world_uid]['config'].update(config)
+
+    filename = os.path.join(micropsi_core.runtime.PERSISTENCY_PATH, micropsi_core.runtime.WORLD_DIRECTORY, world_uid)
+    with open(filename + '.json', 'w+', encoding="utf-8") as fp:
+        fp.write(json.dumps(micropsi_core.runtime.world_data[world_uid], sort_keys=True, indent=4))
+
+    # if this world is running, revert to new settings and re-register agents
+    if world_uid in micropsi_core.runtime.worlds:
+
         agent_data = {}
         for uid, net in micropsi_core.runtime.nodenets.items():
             if net.world == world_uid:
@@ -174,11 +192,7 @@ def set_world_properties(world_uid, world_name=None, owner=None, config=None):
                     'worldadapter': net.worldadapter,
                     'config': net.metadata['worldadapter_config']
                 }
-        micropsi_core.runtime.world_data[world_uid]['config'].update(config)
-        micropsi_core.runtime.world_data[world_uid]['name'] = world_name
-        filename = os.path.join(micropsi_core.runtime.PERSISTENCY_PATH, micropsi_core.runtime.WORLD_DIRECTORY, world_uid)
-        with open(filename + '.json', 'w+', encoding="utf-8") as fp:
-            fp.write(json.dumps(micropsi_core.runtime.world_data[world_uid], sort_keys=True, indent=4))
+
         micropsi_core.runtime.revert_world(world_uid)
         # re-register all agents:
         for uid, data in agent_data.items():

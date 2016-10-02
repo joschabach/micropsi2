@@ -1037,8 +1037,8 @@ def get_world_view(world_uid, step):
 
 
 @rpc("set_world_properties", permission_required="manage worlds")
-def set_world_properties(world_uid, world_name=None, owner=None):
-    return runtime.set_world_properties(world_uid, world_name, owner)
+def set_world_properties(world_uid, world_name=None, owner=None, config=None):
+    return runtime.set_world_properties(world_uid, world_name, owner, config)
 
 
 @rpc("set_world_data")

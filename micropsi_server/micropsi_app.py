@@ -951,7 +951,16 @@ def step_nodenets_in_world(world_uid, nodenet_uid=None, steps=1):
 def get_available_worlds(user_id=None):
     data = {}
     for uid, world in runtime.get_available_worlds(user_id).items():
-        data[uid] = {'name': world.name}  # fixme
+        data[uid] = dict(
+                uid=world.uid,
+                name=world.name,
+                world_type=world.world_type,
+                filename=world.filename,
+                config={},
+                owner=world.owner)  # fixme
+                                    # ok I might but couldcha tell me more about wat is broken wid ya?
+        if hasattr(world, 'config'):
+            data[uid]['config'] = world.config
     return True, data
 
 

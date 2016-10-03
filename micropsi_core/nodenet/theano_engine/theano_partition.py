@@ -120,6 +120,16 @@ class TheanoPartition():
             self.__has_new_usages = True
             self.__has_gatefunction_elu = value
 
+    @property
+    def has_gatefunction_threshold(self):
+        return self.__has_gatefunction_threshold
+
+    @has_gatefunction_threshold.setter
+    def has_gatefunction_threshold(self, value):
+        if value != self.__has_gatefunction_threshold:
+            self.__has_new_usages = True
+            self.__has_gatefunction_threshold = value
+
     def __init__(self, nodenet, pid, sparse=True, initial_number_of_nodes=2000, average_elements_per_node_assumption=5, initial_number_of_nodespaces=10):
 
         # logger used by this partition
@@ -318,6 +328,7 @@ class TheanoPartition():
         self.__has_gatefunction_one_over_x = False
         self.__has_gatefunction_elu = False
         self.__has_gatefunction_relu = False
+        self.__has_gatefunction_threshold = False
         self.por_ret_dirty = True
 
         self.last_allocated_node = 0
@@ -555,17 +566,21 @@ class TheanoPartition():
         if self.has_gatefunction_one_over_x:
             gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_DIST), T.switch(T.neq(0, gate_function_output), 1 / gate_function_output, 0), gate_function_output)
 
-        # apply threshold
-        thresholded_gate_function_output = \
-            T.switch(T.ge(gate_function_output, self.g_threshold), gate_function_output, 0)
+        if self.has_gatefunction_threshold:
 
-        # apply amplification
-        amplified_gate_function_output = thresholded_gate_function_output * self.g_amplification
+            # apply threshold
+            thresholded_gate_function_output = \
+                T.switch(T.ge(gate_function_output, self.g_threshold), gate_function_output, 0)
 
-        # apply minimum and maximum
-        limited_gate_function_output = T.clip(amplified_gate_function_output, self.g_min, self.g_max)
+            # apply amplification
+            amplified_gate_function_output = thresholded_gate_function_output * self.g_amplification
 
-        gatefunctions = limited_gate_function_output
+            # apply minimum and maximum
+            limited_gate_function_output = T.clip(amplified_gate_function_output, self.g_min, self.g_max)
+
+            gatefunctions = limited_gate_function_output
+        else:
+            gatefunctions = gate_function_output
 
         # put the theano graph into a callable function to be executed
         if self.has_pipes:
@@ -980,6 +995,7 @@ class TheanoPartition():
             self.has_gatefunction_relu = GATE_FUNCTION_RELU in g_function_selector
             self.has_gatefunction_one_over_x = GATE_FUNCTION_DIST in g_function_selector
             self.has_gatefunction_elu = GATE_FUNCTION_ELU in g_function_selector
+            self.has_gatefunction_elu = GATE_FUNCTION_THRESHOLD in g_function_selector
         else:
             self.logger.warning("no g_function_selector in file, falling back to defaults")
 
@@ -1582,6 +1598,8 @@ class TheanoPartition():
             self.has_gatefunction_elu = True
         elif g_function_selector[elementindex] == GATE_FUNCTION_DIST:
             self.has_gatefunction_one_over_x = True
+        elif g_function_selector[elementindex] == GATE_FUNCTION_THRESHOLD:
+            self.has_gatefunction_threshold = True
 
     def set_nodespace_gatetype_activator(self, nodespace_id, gate_type, activator_id):
         if gate_type == "por":

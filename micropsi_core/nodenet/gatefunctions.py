@@ -32,3 +32,12 @@ def relu(input_activation, rho, theta):
 
 def one_over_x(input_activation, rho, theta):
     return 0.0 if input_activation == 0.0 else 1.0 / input_activation
+
+
+def threshold(input_activation, minimum=0.0, maximum=1.0, threshold=0.0, amplification=1.0):
+    act = input_activation
+    if act < threshold:
+        return 0
+    act *= amplification
+    act = min(maximum, max(act, minimum))
+    return act

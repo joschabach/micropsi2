@@ -28,6 +28,7 @@ GATE_FUNCTION_SIGMOID = 2
 GATE_FUNCTION_RELU = 4
 GATE_FUNCTION_DIST = 5
 GATE_FUNCTION_ELU = 6
+GATE_FUNCTION_THRESHOLD = 7
 
 
 NFPG_PIPE_NON = 0
@@ -216,6 +217,8 @@ def get_numerical_gatefunction_type(type):
         return GATE_FUNCTION_DIST
     elif type == "elu":
         return GATE_FUNCTION_ELU
+    elif type == "threshold":
+        return GATE_FUNCTION_THRESHOLD
     else:
         raise ValueError("Supplied gatefunction type is not a valid type: "+str(type))
 
@@ -233,6 +236,8 @@ def get_string_gatefunction_type(type):
         return "one_over_x"
     elif type == GATE_FUNCTION_ELU:
         return "elu"
+    elif type == GATE_FUNCTION_THRESHOLD:
+        return "threhold"
     else:
         raise ValueError("Supplied gatefunction type is not a valid type: "+str(type))
 

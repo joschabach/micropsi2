@@ -127,6 +127,14 @@ def test_gatefunction_sigmoid(runtime, test_nodenet):
     assert round(register.get_gate("gen").activation, 5) == round(sigmoid(1, 0, 0), 5)
 
 
+def test_gatefunction_threshold(runtime, test_nodenet):
+    from micropsi_core.nodenet.gatefunctions import threshold
+    net, netapi, source, register = prepare(runtime, test_nodenet)
+    register.set_gatefunction_name("gen", "threshold")
+    net.step()
+    assert round(register.get_gate("gen").activation, 5) == round(threshold(1, 0, 0), 5)
+
+
 def test_gatefunction_none_is_identity(runtime, test_nodenet):
     from micropsi_core.nodenet.gatefunctions import identity
     net, netapi, source, register = prepare(runtime, test_nodenet)
@@ -135,13 +143,20 @@ def test_gatefunction_none_is_identity(runtime, test_nodenet):
     assert register.get_gate("gen").activation == identity(1, 0, 0)
 
 
-def test_gatefunctions(runtime, test_nodenet):
+def test_dict_gatefunctions(runtime, test_nodenet):
     # call every gatefunction once
     import micropsi_core.nodenet.gatefunctions as funcs
     assert funcs.absolute(-1., 0, 0) == 1
     assert funcs.one_over_x(2., 0, 0) == 0.5
     assert funcs.identity(1, 0, 0) == 1
     assert funcs.sigmoid(0, 0, 0) == 0.5
+    assert funcs.threshold(0.5, threshold=1) == 0
+    assert funcs.threshold(0.5, minimum=0.7) == 0.7
+    assert funcs.threshold(0.5, maximum=0.4) == 0.4
+    assert funcs.threshold(0.5, minimum=0.7, threshold=1) == 0
+    assert funcs.threshold(0.6, minimum=0.7, maximum=1.1, amplification=2) == 1.1
+    assert funcs.threshold(0.5, maximum=0.4, amplification=2) == 0.4
+    assert funcs.threshold(0.5, threshold=1, amplification=2) == 0
 
 
 def test_node_activation_is_gen_gate_activation(runtime, test_nodenet):

@@ -488,17 +488,17 @@ class NetAPI(object):
         """
         return self.__nodenet.get_gate_configurations(nodespace_uid, group, gatefunction_parameter)
 
-    def set_gate_configurations(self, nodespace_uid, group, gatefunctions, gatefunction_parameter=None, parameter_values=None):
+    def set_gate_configurations(self, nodespace_uid, group, gatefunction, gatefunction_parameter=None, parameter_values=None):
         """
         Bulk-sets gatefunctions and a gatefunction_parameter for the given group.
         Arguments:
             nodespace_uid (string) - id of the parent nodespace
             group (string) - name of the group
-            gatefunctions (list) - list of gatefunction names
+            gatefunction (string) - name of the gatefunction to set
             gatefunction_parameter (optinoal) - name of the gatefunction_paramr to set
             parameter_values (optional) - values to set for the gatefunction_parameetr
         """
-        self.__nodenet.set_gate_configurations(nodespace_uid, group, gatefunctions, gatefunction_parameter, parameter_values)
+        self.__nodenet.set_gate_configurations(nodespace_uid, group, gatefunction, gatefunction_parameter, parameter_values)
 
     def get_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to):
         """

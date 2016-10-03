@@ -707,19 +707,20 @@ class DictNodenet(Nodenet):
             raise ValueError("Group %s does not exist in nodespace %s" % (group, nodespace_uid))
         nodes = self.nodegroups[nodespace_uid][group][0]
         gate = self.nodegroups[nodespace_uid][group][1]
-        data = {
-            'gatefunctions': []
-        }
+        data = {'gatefunction': set()}
         if gatefunction_parameter:
-            data['gatefunction_parameters'] = []
+            data['parameter_values'] = []
         for node in nodes:
             config = node.get_gate_configuration(gate)
-            data['gatefunctions'].append(config['gatefunction'])
+            data['gatefunction'].add(config['gatefunction'])
             if gatefunction_parameter is not None:
-                data['gatefunction_parameters'].append(config['gatefunction_parameters'].get(gatefunction_parameter))
+                data['parameter_values'].append(config['gatefunction_parameters'].get(gatefunction_parameter))
+        if len(data['gatefunction']) > 1:
+            raise RuntimeError("Heterogenous gatefunction configuration")
+        data['gatefunction'] = data['gatefunction'].pop()
         return data
 
-    def set_gate_configurations(self, nodespace_uid, group, gatefunctions, gatefunction_parameter=None, parameter_values=None):
+    def set_gate_configurations(self, nodespace_uid, group, gatefunction, gatefunction_parameter=None, parameter_values=None):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
 
@@ -731,7 +732,7 @@ class DictNodenet(Nodenet):
             parameter = {}
             if gatefunction_parameter:
                 parameter[gatefunction_parameter] = parameter_values[i]
-            nodes[i].set_gate_configuration(gate, gatefunctions[i], parameter)
+            nodes[i].set_gate_configuration(gate, gatefunction, parameter)
 
     def get_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to):
         if nodespace_from_uid is None:

@@ -517,13 +517,13 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def set_gate_configurations(self, nodespace_uid, group, gatefunctions, gatefunction_parameter=None, parameter_values=None):
+    def set_gate_configurations(self, nodespace_uid, group, gatefunction, gatefunction_parameter=None, parameter_values=None):
         """
         Bulk-sets gatefunctions and a gatefunction_parameter for the given group.
         Arguments:
             nodespace_uid (string) - id of the parent nodespace
             group (string) - name of the group
-            gatefunctions (list) - list of gatefunction names
+            gatefunction (string) - name of the gatefunction to set
             gatefunction_parameter (optinoal) - name of the gatefunction_paramr to set
             parameter_values (optional) - values to set for the gatefunction_parameetr
         """

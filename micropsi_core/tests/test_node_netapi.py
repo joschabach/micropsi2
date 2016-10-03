@@ -867,8 +867,9 @@ def test_set_gate_get_gate_config(runtime, test_nodenet):
     sepp3 = netapi.create_node("Register", None, "sepp3")
     netapi.group_nodes_by_names(None, node_name_prefix="sepp")
     data = netapi.get_gate_configurations(None, "sepp", 'bias')
-    assert data['gatefunction_parameters'] == [None, None, None]
-    assert data['gatefunctions'] == ['identity', 'identity', 'identity']
+    assert data['gatefunction'] == 'identity'
+    assert data['parameter_values'] == [None, None, None]
+
 
 def test_set_gate_config(runtime, test_nodenet):
     from micropsi_core.nodenet.gatefunctions import sigmoid
@@ -878,13 +879,13 @@ def test_set_gate_config(runtime, test_nodenet):
     sepp3 = netapi.create_node("Register", None, "sepp3")
     netapi.group_nodes_by_names(None, node_name_prefix="sepp")
 
-    netapi.set_gate_configurations(None, "sepp", ['sigmoid'] * 3, 'bias', [1, 2, 3])
+    netapi.set_gate_configurations(None, "sepp", 'sigmoid', 'bias', [1, 2, 3])
 
     net.step()
 
     data = netapi.get_gate_configurations(None, "sepp", 'bias')
-    assert data['gatefunctions'] == ['sigmoid'] * 3
-    assert data['gatefunction_parameters'] == [1, 2, 3]
+    assert data['gatefunction'] == 'sigmoid'
+    assert data['parameter_values'] == [1, 2, 3]
     assert sepp1.get_gate('gen').activation == sigmoid(0, 1)
     assert sepp2.get_gate('gen').activation == sigmoid(0, 2)
     assert sepp3.get_gate('gen').activation == sigmoid(0, 3)

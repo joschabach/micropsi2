@@ -715,7 +715,7 @@ class DictNodenet(Nodenet):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
 
-        if group in self.nodegroups:
+        if group in self.nodegroups[nodespace_uid]:
             del self.nodegroups[nodespace_uid][group]
 
     def get_activations(self, nodespace_uid, group):

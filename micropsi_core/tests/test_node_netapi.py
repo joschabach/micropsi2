@@ -6,11 +6,10 @@ Tests for netapi, i.e. the interface native modules will be developed against
 """
 
 import pytest
-from micropsi_core import runtime as micropsi
 
 
-def prepare(fixed_nodenet):
-    nodenet = micropsi.get_nodenet(fixed_nodenet)
+def prepare(runtime, test_nodenet):
+    nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
     source = netapi.create_node("Register", None, "Source")
     netapi.link(source, "gen", source, "gen")
@@ -19,9 +18,9 @@ def prepare(fixed_nodenet):
     return nodenet, netapi, source
 
 
-def test_node_netapi_create_register_node(fixed_nodenet):
+def test_node_netapi_create_register_node(runtime, test_nodenet):
     # test register node creation
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     node = netapi.create_node("Register", None, "TestName")
 
     # basic logic tests
@@ -43,9 +42,9 @@ def test_node_netapi_create_register_node(fixed_nodenet):
     # assert data['name'] == node.name
 
 
-def test_node_netapi_create_pipe_node(fixed_nodenet):
+def test_node_netapi_create_pipe_node(runtime, test_nodenet):
     # test concept node generation
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     node = netapi.create_node("Pipe", None, "TestName")
 
     # basic logic tests
@@ -77,9 +76,9 @@ def test_node_netapi_create_pipe_node(fixed_nodenet):
 
 
 @pytest.mark.engine("dict_engine")
-def test_node_netapi_create_concept_node(fixed_nodenet):
+def test_node_netapi_create_concept_node(runtime, test_nodenet):
     # test concept node generation
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     node = netapi.create_node("Concept", None, "TestName")
 
     # basic logic tests
@@ -108,9 +107,9 @@ def test_node_netapi_create_concept_node(fixed_nodenet):
     # assert data['name'] == node.name
 
 
-def test_node_netapi_create_node_in_nodespace(fixed_nodenet):
+def test_node_netapi_create_node_in_nodespace(runtime, test_nodenet):
     # test register node in nodespace creation
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     nodespace = netapi.create_nodespace(None, "NestedNodespace")
     node = netapi.create_node("Register", nodespace.uid, "TestName")
 
@@ -118,9 +117,9 @@ def test_node_netapi_create_node_in_nodespace(fixed_nodenet):
     assert node.get_data()['parent_nodespace'] == nodespace.uid
 
 
-def test_node_netapi_get_nodespace_one(fixed_nodenet):
+def test_node_netapi_get_nodespace_one(runtime, test_nodenet):
     # test single nodespace querying
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     nodespace = netapi.create_nodespace(None, "TestName")
 
     queried_nodespace = netapi.get_nodespace(nodespace.uid)
@@ -128,9 +127,9 @@ def test_node_netapi_get_nodespace_one(fixed_nodenet):
     assert queried_nodespace.name == nodespace.name
 
 
-def test_node_netapi_get_nodespace_multi(fixed_nodenet):
+def test_node_netapi_get_nodespace_multi(runtime, test_nodenet):
     # test nodespace listing
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     nodespace1 = netapi.create_nodespace(None, "TestName1")
     nodespace2 = netapi.create_nodespace(None, "TestName2")
     nodespace3 = netapi.create_nodespace(nodespace2.uid, "TestName3")
@@ -142,9 +141,9 @@ def test_node_netapi_get_nodespace_multi(fixed_nodenet):
     assert nodespace3.uid not in [x.uid for x in queried_nodespaces]
 
 
-def test_node_netapi_get_node(fixed_nodenet):
+def test_node_netapi_get_node(runtime, test_nodenet):
     # test register node creation
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     node = netapi.create_node("Register", None, "TestName")
 
     queried_node = netapi.get_node(node.uid)
@@ -154,9 +153,9 @@ def test_node_netapi_get_node(fixed_nodenet):
     assert queried_node.type == node.type
 
 
-def test_node_netapi_get_nodes(fixed_nodenet):
+def test_node_netapi_get_nodes(runtime, test_nodenet):
     # test get_nodes plain
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     node1 = netapi.create_node("Register", None, "TestName1")
     node2 = netapi.create_node("Register", None, "TestName2")
 
@@ -165,9 +164,9 @@ def test_node_netapi_get_nodes(fixed_nodenet):
     assert node2.uid in [n.uid for n in nodes]
 
 
-def test_node_netapi_get_nodes_by_name(fixed_nodenet):
+def test_node_netapi_get_nodes_by_name(runtime, test_nodenet):
     # test get_nodes by name
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     node1 = netapi.create_node("Register", None, "TestName1")
     node2 = netapi.create_node("Register", None, "TestName2")
 
@@ -177,9 +176,9 @@ def test_node_netapi_get_nodes_by_name(fixed_nodenet):
     assert node2.uid in [n.uid for n in nodes]
 
 
-def test_node_netapi_get_nodes_by_nodespace(fixed_nodenet):
+def test_node_netapi_get_nodes_by_nodespace(runtime, test_nodenet):
     # test get_nodes by name and nodespace
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     nodespace = netapi.create_nodespace(None, "NestedNodespace")
     node1 = netapi.create_node("Register", nodespace.uid, "TestName1")
     node2 = netapi.create_node("Register", nodespace.uid, "TestName2")
@@ -190,9 +189,9 @@ def test_node_netapi_get_nodes_by_nodespace(fixed_nodenet):
     assert node2.uid in [n.uid for n in nodes]
 
 
-def test_node_netapi_get_nodes_by_nodetype(fixed_nodenet):
+def test_node_netapi_get_nodes_by_nodetype(runtime, test_nodenet):
     # test get_nodes by name and nodespace
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     nodespace = netapi.create_nodespace(None, "NestedNodespace")
     node1 = netapi.create_node("Pipe", nodespace.uid, "TestName1")
     node2 = netapi.create_node("Register", nodespace.uid, "TestName2")
@@ -205,9 +204,9 @@ def test_node_netapi_get_nodes_by_nodetype(fixed_nodenet):
     assert source.uid in uids
 
 
-def test_node_netapi_get_nodes_by_name_and_nodespace(fixed_nodenet):
+def test_node_netapi_get_nodes_by_name_and_nodespace(runtime, test_nodenet):
     # test get_nodes by name and nodespace
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     nodespace = netapi.create_nodespace(None, "NestedNodespace")
     node1 = netapi.create_node("Register", None, "TestName1")
     node2 = netapi.create_node("Register", nodespace.uid, "TestName2")
@@ -217,9 +216,9 @@ def test_node_netapi_get_nodes_by_name_and_nodespace(fixed_nodenet):
     assert node2.uid in [n.uid for n in nodes]
 
 
-def test_node_netapi_get_nodes_in_gate_field(fixed_nodenet):
+def test_node_netapi_get_nodes_in_gate_field(runtime, test_nodenet):
     # test get_nodes_in_gate_field
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     node1 = netapi.create_node("Pipe", None, "TestName1")
     node2 = netapi.create_node("Pipe", None, "TestName2")
     node3 = netapi.create_node("Pipe", None, "TestName3")
@@ -236,9 +235,9 @@ def test_node_netapi_get_nodes_in_gate_field(fixed_nodenet):
     assert node4.uid in [n.uid for n in nodes]
 
 
-def test_node_netapi_get_nodes_in_gate_field_all_links(fixed_nodenet):
+def test_node_netapi_get_nodes_in_gate_field_all_links(runtime, test_nodenet):
     # test get_nodes_in_gate_field without specifying a gate parameter
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     node1 = netapi.create_node("Pipe", None, "TestName1")
     node2 = netapi.create_node("Pipe", None, "TestName2")
     node3 = netapi.create_node("Pipe", None, "TestName3")
@@ -254,9 +253,9 @@ def test_node_netapi_get_nodes_in_gate_field_all_links(fixed_nodenet):
     assert node3.uid in [n.uid for n in nodes]
 
 
-def test_node_netapi_get_nodes_in_gate_field_with_limitations(fixed_nodenet):
+def test_node_netapi_get_nodes_in_gate_field_with_limitations(runtime, test_nodenet):
     # test get_nodes_in_gate_field with limitations: no por links
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     node1 = netapi.create_node("Pipe", None, "TestName1")
     node2 = netapi.create_node("Pipe", None, "TestName2")
     node3 = netapi.create_node("Pipe", None, "TestName3")
@@ -272,9 +271,9 @@ def test_node_netapi_get_nodes_in_gate_field_with_limitations(fixed_nodenet):
     assert node4.uid in [n.uid for n in nodes]
 
 
-def test_node_netapi_get_nodes_in_gate_field_with_limitations_and_nodespace(fixed_nodenet):
+def test_node_netapi_get_nodes_in_gate_field_with_limitations_and_nodespace(runtime, test_nodenet):
     # test get_nodes_in_gate_field with limitations: no por links
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     nodespace = netapi.create_nodespace(None, "NestedNodespace")
     node1 = netapi.create_node("Pipe", None, "TestName1")
     node2 = netapi.create_node("Pipe", None, "TestName2")
@@ -289,9 +288,9 @@ def test_node_netapi_get_nodes_in_gate_field_with_limitations_and_nodespace(fixe
     assert node3.uid in [n.uid for n in nodes]
 
 
-def test_node_netapi_get_nodes_in_slot_field(fixed_nodenet):
+def test_node_netapi_get_nodes_in_slot_field(runtime, test_nodenet):
     # test get_nodes_in_slot_field
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     node1 = netapi.create_node("Register", None, "TestName1")
     node2 = netapi.create_node("Register", None, "TestName2")
     node3 = netapi.create_node("Register", None, "TestName3")
@@ -308,10 +307,9 @@ def test_node_netapi_get_nodes_in_slot_field(fixed_nodenet):
     assert node4.uid in [n.uid for n in nodes]
 
 
-def test_node_netapi_get_nodes_in_slot_field_all_links(fixed_nodenet):
+def test_node_netapi_get_nodes_in_slot_field_all_links(runtime, test_nodenet):
     # test get_nodes_in_slot_field without a gate parameter
-    net, netapi, source = prepare(fixed_nodenet)
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     node1 = netapi.create_node("Pipe", None, "TestName1")
     node2 = netapi.create_node("Pipe", None, "TestName2")
     node3 = netapi.create_node("Pipe", None, "TestName3")
@@ -328,9 +326,9 @@ def test_node_netapi_get_nodes_in_slot_field_all_links(fixed_nodenet):
     assert node4.uid in [n.uid for n in nodes]
 
 
-def test_node_netapi_get_nodes_with_nodespace_limitation(fixed_nodenet):
+def test_node_netapi_get_nodes_with_nodespace_limitation(runtime, test_nodenet):
     # test get_nodes_feed with nodespace limitation
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     nodespace = netapi.create_nodespace(None, "NestedNodespace")
     node1 = netapi.create_node("Register", None, "TestName1")
     node2 = netapi.create_node("Register", None, "TestName2")
@@ -347,9 +345,9 @@ def test_node_netapi_get_nodes_with_nodespace_limitation(fixed_nodenet):
     assert node3.uid in [n.uid for n in nodes]
 
 
-def test_node_netapi_get_nodes_in_slot_field_with_limitations_and_nodespace(fixed_nodenet):
+def test_node_netapi_get_nodes_in_slot_field_with_limitations_and_nodespace(runtime, test_nodenet):
     # test get_nodes_in_gate_field with limitations: no por links
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     nodespace = netapi.create_nodespace(None, "NestedNodespace")
     node1 = netapi.create_node("Pipe", None, "TestName1")
     node2 = netapi.create_node("Pipe", None, "TestName2")
@@ -364,9 +362,9 @@ def test_node_netapi_get_nodes_in_slot_field_with_limitations_and_nodespace(fixe
     assert node3.uid in [n.uid for n in nodes]
 
 
-def test_node_netapi_get_nodes_active(fixed_nodenet):
+def test_node_netapi_get_nodes_active(runtime, test_nodenet):
     # test get_nodes_active
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     nodespace = netapi.create_nodespace(None, "NestedNodespace")
     node1 = netapi.create_node("Register", None, "TestName1")
     node2 = netapi.create_node("Register", None, "TestName2")
@@ -393,9 +391,9 @@ def test_node_netapi_get_nodes_active(fixed_nodenet):
     assert source.uid in [n.uid for n in nodes]
 
 
-def test_node_netapi_get_nodes_active_with_nodespace_limitation(fixed_nodenet):
+def test_node_netapi_get_nodes_active_with_nodespace_limitation(runtime, test_nodenet):
     # test get_nodes_active with nodespace filtering
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     nodespace = netapi.create_nodespace(None, "NestedNodespace")
     node1 = netapi.create_node("Register", None, "TestName1")
     node2 = netapi.create_node("Register", None, "TestName2")
@@ -416,9 +414,9 @@ def test_node_netapi_get_nodes_active_with_nodespace_limitation(fixed_nodenet):
     assert node4.uid in [n.uid for n in nodes]
 
 
-def test_node_netapi_delete_node(fixed_nodenet):
+def test_node_netapi_delete_node(runtime, test_nodenet):
     # test simple delete node case
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     node1 = netapi.create_node("Register", None, "TestName1")
     node2 = netapi.create_node("Register", None, "TestName2")
     node3 = netapi.create_node("Register", None, "TestName3")
@@ -433,9 +431,9 @@ def test_node_netapi_delete_node(fixed_nodenet):
     assert len(node2.get_gate("gen").get_links()) == 0
 
 
-def test_node_netapi_delete_nodespace(fixed_nodenet):
+def test_node_netapi_delete_nodespace(runtime, test_nodenet):
     # test delete node case deleting a nodespace
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     nodespace = netapi.create_nodespace(None, "NestedNodespace")
     node1 = netapi.create_node("Register", None, "TestName1")
     node2 = netapi.create_node("Register", None, "TestName2")
@@ -452,9 +450,9 @@ def test_node_netapi_delete_nodespace(fixed_nodenet):
         netapi.get_node(node4uid)
 
 
-def test_node_netapi_link(fixed_nodenet):
+def test_node_netapi_link(runtime, test_nodenet):
     # test linking nodes
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     node1 = netapi.create_node("Register", None, "TestName1")
     node2 = netapi.create_node("Register", None, "TestName2")
     netapi.link(node2, "gen", node1, "gen")
@@ -481,9 +479,9 @@ def test_node_netapi_link(fixed_nodenet):
         assert link.get_data(complete=True)['source_gate_name'] == 'gen'
 
 
-def test_node_netapi_link_change_weight(fixed_nodenet):
+def test_node_netapi_link_change_weight(runtime, test_nodenet):
     # test linking nodes, the changing weights
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     node1 = netapi.create_node("Register", None, "TestName1")
     node2 = netapi.create_node("Register", None, "TestName2")
     netapi.link(node2, "gen", node1, "gen")
@@ -511,9 +509,9 @@ def test_node_netapi_link_change_weight(fixed_nodenet):
         assert link.get_data()['target_slot_name'] == 'gen'
 
 
-def test_node_netapi_link_with_reciprocal(fixed_nodenet):
+def test_node_netapi_link_with_reciprocal(runtime, test_nodenet):
     # test linking pipe and concept nodes with reciprocal links
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     n_head = netapi.create_node("Pipe", None, "Head")
     n_a = netapi.create_node("Pipe", None, "A")
     n_b = netapi.create_node("Pipe", None, "B")
@@ -546,9 +544,9 @@ def test_node_netapi_link_with_reciprocal(fixed_nodenet):
 
 
 @pytest.mark.engine("dict_engine")
-def test_node_netapi_link_with_reciprocal_and_concepts(fixed_nodenet):
+def test_node_netapi_link_with_reciprocal_and_concepts(runtime, test_nodenet):
     # test linking pipe and concept nodes with reciprocal links
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     n_head = netapi.create_node("Pipe", None, "Head")
 
     n_d = netapi.create_node("Concept", None, "D")
@@ -561,9 +559,9 @@ def test_node_netapi_link_with_reciprocal_and_concepts(fixed_nodenet):
     assert len(n_head.get_slot("exp").get_links()) == 1
 
 
-def test_node_netapi_unlink(fixed_nodenet):
+def test_node_netapi_unlink(runtime, test_nodenet):
     # test completely unlinking a node
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     n_head = netapi.create_node("Pipe", None, "Head")
     n_a = netapi.create_node("Pipe", None, "A")
     n_b = netapi.create_node("Pipe", None, "B")
@@ -583,9 +581,9 @@ def test_node_netapi_unlink(fixed_nodenet):
     assert len(n_d.get_slot('por').get_links()) == 3
 
 
-def test_node_netapi_unlink_specific_link(fixed_nodenet):
+def test_node_netapi_unlink_specific_link(runtime, test_nodenet):
     # test removing a specific link
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     n_head = netapi.create_node("Pipe", None, "Head")
     n_a = netapi.create_node("Pipe", None, "A")
     n_b = netapi.create_node("Pipe", None, "B")
@@ -605,9 +603,9 @@ def test_node_netapi_unlink_specific_link(fixed_nodenet):
     assert len(n_d.get_slot('por').get_links()) == 4
 
 
-def test_node_netapi_unlink_gate(fixed_nodenet):
+def test_node_netapi_unlink_gate(runtime, test_nodenet):
     # test unlinking a gate
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     n_head = netapi.create_node("Pipe", None, "Head")
     n_a = netapi.create_node("Pipe", None, "A")
     n_b = netapi.create_node("Pipe", None, "B")
@@ -627,9 +625,9 @@ def test_node_netapi_unlink_gate(fixed_nodenet):
     assert len(n_d.get_slot('por').get_links()) == 3
 
 
-def test_node_netapi_unlink_direction(fixed_nodenet):
+def test_node_netapi_unlink_direction(runtime, test_nodenet):
     # test unlinking a gate
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
     n_head = netapi.create_node("Pipe", None, "Head")
     n_a = netapi.create_node("Pipe", None, "A")
     n_b = netapi.create_node("Pipe", None, "B")
@@ -663,10 +661,10 @@ def test_node_netapi_unlink_direction(fixed_nodenet):
     assert len(n_c.get_slot('sub').get_links()) == 0
 
 
-def test_node_netapi_import_actuators(fixed_nodenet, test_world):
+def test_node_netapi_import_actuators(runtime, test_nodenet, test_world):
     # test importing data targets as actuators
-    net, netapi, source = prepare(fixed_nodenet)
-    micropsi.set_nodenet_properties(fixed_nodenet, world_uid=test_world, worldadapter='Braitenberg')
+    net, netapi, source = prepare(runtime, test_nodenet)
+    runtime.set_nodenet_properties(test_nodenet, world_uid=test_world, worldadapter='Braitenberg')
     root_ns = netapi.get_nodespace(None)
     netapi.import_actuators(root_ns.uid)
     actuators = netapi.get_nodes(root_ns.uid, nodetype="Actuator")
@@ -679,10 +677,10 @@ def test_node_netapi_import_actuators(fixed_nodenet, test_world):
     assert len(actuators) == 2
 
 
-def test_node_netapi_import_sensors(fixed_nodenet, test_world):
+def test_node_netapi_import_sensors(runtime, test_nodenet, test_world):
     # test importing data sources as sensors
-    net, netapi, source = prepare(fixed_nodenet)
-    micropsi.set_nodenet_properties(fixed_nodenet, world_uid=test_world, worldadapter='Braitenberg')
+    net, netapi, source = prepare(runtime, test_nodenet)
+    runtime.set_nodenet_properties(test_nodenet, world_uid=test_world, worldadapter='Braitenberg')
     root_ns = netapi.get_nodespace(None)
     netapi.import_sensors(root_ns.uid)
     sensors = netapi.get_nodes(root_ns.uid, nodetype="Sensor")
@@ -695,10 +693,10 @@ def test_node_netapi_import_sensors(fixed_nodenet, test_world):
     assert len(sensors) == 2
 
 
-def test_set_gate_function(fixed_nodenet):
+def test_set_gate_function(runtime, test_nodenet):
     # test setting a custom gate function
     from micropsi_core.nodenet.gatefunctions import sigmoid
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(runtime, test_nodenet)
 
     some_other_node_type = netapi.create_node("Pipe", None)
     netapi.unlink(source, "gen")
@@ -716,16 +714,27 @@ def test_set_gate_function(fixed_nodenet):
     assert some_other_node_type.get_gate("gen").activation == 0
 
 
-def test_autoalign(fixed_nodenet):
-    net, netapi, source = prepare(fixed_nodenet)
-    for uid in net.get_node_uids():
-        net.get_node(uid).position = [12, 13, 11]
+def test_autoalign(runtime, test_nodenet):
+    net = runtime.nodenets[test_nodenet]
+    netapi = net.netapi
+    nodes = []
+    # create a tiny script
+    for i in range(3):
+        nodes.append(netapi.create_node('Pipe', None, 'p%d' % i))
+        nodes[i].position = [i * 10, i * 10, i * 10]
+    n1, n2, n3 = nodes
+    netapi.link_with_reciprocal(n1, n2, 'subsur')
+    netapi.link_with_reciprocal(n1, n3, 'subsur')
+    netapi.link_with_reciprocal(n2, n3, 'porret')
     netapi.autoalign_nodespace(netapi.get_nodespace(None).uid)
     positions = []
-    for uid in net.get_node_uids():
-        if net.get_node(uid).parent_nodespace == netapi.get_nodespace(None).uid:
-            positions.extend(net.get_node(uid).position)
-    assert set(positions) != set([12, 13, 11])
+    for n in nodes:
+        positions.append(netapi.get_node(n.uid).position)
+
+    assert positions[0][0] == positions[1][0]  # topnode x-aligned with first porret
+    assert positions[0][1] != positions[1][1]  # but different y
+    assert positions[1][0] != positions[2][0]  # porret-nodes have different x
+    assert positions[1][1] == positions[2][1]  # but same y
 
     for uid in net.get_node_uids():
         net.get_node(uid).position = [12, 13, 11]
@@ -736,24 +745,34 @@ def test_autoalign(fixed_nodenet):
     assert set(positions) == set([12, 13, 11])
 
 
-def test_autoalign_updates_last_changed(fixed_nodenet):
-    net, netapi, source = prepare(fixed_nodenet)
-    for uid in net.get_node_uids():
-        net.get_node(uid).position = [12, 13, 11]
+def test_autoalign_updates_last_changed(runtime, test_nodenet):
+    net = runtime.nodenets[test_nodenet]
+    netapi = net.netapi
+    nodes = []
+    # create a tiny script
+    for i in range(3):
+        nodes.append(netapi.create_node('Pipe', None, 'p%d' % i))
+        nodes[i].position = [i * 10, i * 10, i * 10]
+    n1, n2, n3 = nodes
+    netapi.link_with_reciprocal(n1, n2, 'subsur')
+    netapi.link_with_reciprocal(n1, n3, 'subsur')
+    netapi.link_with_reciprocal(n2, n3, 'porret')
     net.step()
     net.step()
     netapi.autoalign_nodespace(netapi.get_nodespace(None).uid)
     changes = net.get_nodespace_changes([None], 2)
     for uid in net.get_node_uids():
-        if net.get_node(uid).position != [12, 13, 11]:
-            assert uid in changes['nodes_dirty']
+        assert uid in changes['nodes_dirty']
 
 
-def test_copy_nodes(fixed_nodenet):
-    net, netapi, source = prepare(fixed_nodenet)
+def test_copy_nodes(runtime, test_nodenet):
+    netapi = runtime.nodenets[test_nodenet].netapi
     nodespace = netapi.create_nodespace(None, name='copy')
-    a1 = netapi.get_node('n0001')
-    a2 = netapi.get_node('n0002')
+    a1 = netapi.create_node('Pipe', None, "a1")
+    a2 = netapi.create_node('Pipe', None, "a2")
+    a3 = netapi.create_node('Pipe', None, "a3")
+    netapi.link(a3, 'gen', a1, 'gen')
+    netapi.link(a1, 'por', a2, 'por')
     a1.set_parameter('expecation', 0.6)
     a1.set_gate_parameter('gen', 'amplification', 0.27)
     mapping = netapi.copy_nodes([a1, a2], nodespace.uid)
@@ -769,8 +788,8 @@ def test_copy_nodes(fixed_nodenet):
     assert a1.get_gate_parameters() == mapping[a1].get_gate_parameters()
 
 
-def test_group_nodes_by_names(fixed_nodenet):
-    net, netapi, source = prepare(fixed_nodenet)
+def test_group_nodes_by_names(runtime, test_nodenet):
+    net, netapi, source = prepare(runtime, test_nodenet)
     sepp1 = netapi.create_node("Register", None, "sepp1")
     sepp2 = netapi.create_node("Register", None, "sepp2")
     sepp3 = netapi.create_node("Register", None, "sepp3")
@@ -779,23 +798,27 @@ def test_group_nodes_by_names(fixed_nodenet):
     assert len(seppen_act) == 3
 
 
-def test_group_nodes_by_ids(fixed_nodenet):
-    net, netapi, source = prepare(fixed_nodenet)
-    ids = ["n0001", "n0002"]
+def test_group_nodes_by_ids(runtime, test_nodenet):
+    net, netapi, source = prepare(runtime, test_nodenet)
+    reg = netapi.create_node("Register", None, 'reg')
+    ids = [source.uid, reg.uid]
     netapi.group_nodes_by_ids(None, ids, "some")
     some_act = netapi.get_activations(None, "some")
     assert len(some_act) == 2
 
 
-def test_ungroup_nodes(fixed_nodenet):
-    net, netapi, source = prepare(fixed_nodenet)
-    ids = ["n0001", "n0002"]
+def test_ungroup_nodes(runtime, test_nodenet):
+    net, netapi, source = prepare(runtime, test_nodenet)
+    reg = netapi.create_node("Register", None, 'reg')
+    ids = [source.uid, reg.uid]
     netapi.group_nodes_by_ids(None, ids, "some")
     netapi.ungroup_nodes(None, "some")
+    with pytest.raises(ValueError):
+        netapi.get_activations(None, "some")
 
 
-def test_get_activations(fixed_nodenet):
-    net, netapi, source = prepare(fixed_nodenet)
+def test_get_activations(runtime, test_nodenet):
+    net, netapi, source = prepare(runtime, test_nodenet)
     sepp1 = netapi.create_node("Register", None, "sepp1")
     sepp2 = netapi.create_node("Register", None, "sepp2")
     sepp3 = netapi.create_node("Register", None, "sepp3")
@@ -815,8 +838,8 @@ def test_get_activations(fixed_nodenet):
     assert seppen_act[2] == 0
 
 
-def test_substitute_activations(fixed_nodenet):
-    net, netapi, source = prepare(fixed_nodenet)
+def test_substitute_activations(runtime, test_nodenet):
+    net, netapi, source = prepare(runtime, test_nodenet)
     sepp1 = netapi.create_node("Register", None, "sepp1").uid
     sepp2 = netapi.create_node("Register", None, "sepp2").uid
     sepp3 = netapi.create_node("Register", None, "sepp3").uid
@@ -841,8 +864,8 @@ def test_substitute_activations(fixed_nodenet):
     assert round(seppen_act[2], 2) == -1
 
 
-def test_get_thetas(fixed_nodenet):
-    net, netapi, source = prepare(fixed_nodenet)
+def test_get_thetas(runtime, test_nodenet):
+    net, netapi, source = prepare(runtime, test_nodenet)
     sepp1 = netapi.create_node("Register", None, "sepp1")
     sepp2 = netapi.create_node("Register", None, "sepp2")
     sepp3 = netapi.create_node("Register", None, "sepp3")
@@ -854,8 +877,8 @@ def test_get_thetas(fixed_nodenet):
     assert seppen_theta[2] == 0
 
 
-def test_set_thetas(fixed_nodenet):
-    net, netapi, source = prepare(fixed_nodenet)
+def test_set_thetas(runtime, test_nodenet):
+    net, netapi, source = prepare(runtime, test_nodenet)
     sepp1 = netapi.create_node("Register", None, "sepp1")
     sepp2 = netapi.create_node("Register", None, "sepp2")
     sepp3 = netapi.create_node("Register", None, "sepp3")
@@ -872,8 +895,8 @@ def test_set_thetas(fixed_nodenet):
     assert round(seppen_theta[2], 2) == 3
 
 
-def test_get_link_weights(fixed_nodenet):
-    net, netapi, source = prepare(fixed_nodenet)
+def test_get_link_weights(runtime, test_nodenet):
+    net, netapi, source = prepare(runtime, test_nodenet)
 
     sepp1 = netapi.create_node("Register", None, "sepp1")
     sepp2 = netapi.create_node("Register", None, "sepp2")
@@ -904,8 +927,8 @@ def test_get_link_weights(fixed_nodenet):
     assert value == 0.4
 
 
-def test_set_link_weights(fixed_nodenet):
-    net, netapi, source = prepare(fixed_nodenet)
+def test_set_link_weights(runtime, test_nodenet):
+    net, netapi, source = prepare(runtime, test_nodenet)
 
     sepp1 = netapi.create_node("Register", None, "sepp1")
     sepp2 = netapi.create_node("Register", None, "sepp2")
@@ -967,8 +990,8 @@ def test_set_link_weights(fixed_nodenet):
     assert len(netapi.get_node(sepp2.uid).get_gate('gen').get_links()) == 1
 
 
-def test_get_node_ids(fixed_nodenet):
-    net, netapi, source = prepare(fixed_nodenet)
+def test_get_node_ids(runtime, test_nodenet):
+    net, netapi, source = prepare(runtime, test_nodenet)
     sepp1 = netapi.create_node("Register", None, "sepp1")
     sepp2 = netapi.create_node("Register", None, "sepp2")
     sepp3 = netapi.create_node("Register", None, "sepp3")
@@ -980,8 +1003,8 @@ def test_get_node_ids(fixed_nodenet):
     assert seppen_ids[2] == sepp3.uid
 
 
-def test_add_gate_monitor(test_nodenet, node):
-    nodenet = micropsi.get_nodenet(test_nodenet)
+def test_add_gate_monitor(runtime, test_nodenet, node):
+    nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
     uid = netapi.add_gate_monitor(node, 'gen', name='sepp', color='#987654')
     assert nodenet.get_monitor(uid).name == 'sepp'
@@ -990,22 +1013,22 @@ def test_add_gate_monitor(test_nodenet, node):
 
 
 @pytest.mark.engine("dict_engine")
-def test_add_slot_monitor(test_nodenet, node):
-    nodenet = micropsi.get_nodenet(test_nodenet)
+def test_add_slot_monitor(runtime, test_nodenet, node):
+    nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
     uid = netapi.add_slot_monitor(node, 'gen')
     assert nodenet.get_monitor(uid).type == 'slot'
 
 
-def test_add_link_monitor(test_nodenet, node):
-    nodenet = micropsi.get_nodenet(test_nodenet)
+def test_add_link_monitor(runtime, test_nodenet, node):
+    nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
     uid = netapi.add_link_monitor(node, 'gen', node, 'gen', name='sepplink')
     assert nodenet.get_monitor(uid).name == 'sepplink'
 
 
-def test_add_modulator_monitor(test_nodenet):
-    nodenet = micropsi.get_nodenet(test_nodenet)
+def test_add_modulator_monitor(runtime, test_nodenet):
+    nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
     nodenet.step()
     uid = netapi.add_modulator_monitor('base_age', 'age')
@@ -1013,8 +1036,8 @@ def test_add_modulator_monitor(test_nodenet):
     assert nodenet.get_monitor(uid).name == 'age'
 
 
-def test_add_custom_monitor(test_nodenet):
-    nodenet = micropsi.get_nodenet(test_nodenet)
+def test_add_custom_monitor(runtime, test_nodenet):
+    nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
     function = "return len(netapi.get_nodes())"
     uid = netapi.add_custom_monitor(function, 'number_of_nodes', color=None)
@@ -1022,30 +1045,30 @@ def test_add_custom_monitor(test_nodenet):
     assert nodenet.get_monitor(uid).function == function
 
 
-def test_get_monitor(test_nodenet, node):
-    nodenet = micropsi.get_nodenet(test_nodenet)
+def test_get_monitor(runtime, test_nodenet, node):
+    nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
     uid = netapi.add_gate_monitor(node, 'gen')
     assert nodenet.get_monitor(uid) == netapi.get_monitor(uid)
 
 
-def test_remove_monitor(test_nodenet, node):
-    nodenet = micropsi.get_nodenet(test_nodenet)
+def test_remove_monitor(runtime, test_nodenet, node):
+    nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
     uid = netapi.add_gate_monitor(node, 'gen')
     netapi.remove_monitor(uid)
     assert nodenet.get_monitor(uid) is None
 
 
-def test_set_dashboard_value(test_nodenet, node):
-    nodenet = micropsi.get_nodenet(test_nodenet)
+def test_set_dashboard_value(runtime, test_nodenet, node):
+    nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
     netapi.set_dashboard_value('foo', 'bar')
     assert nodenet.dashboard_values['foo'] == 'bar'
 
 
-def test_decay_porret_links(test_nodenet):
-    nodenet = micropsi.get_nodenet(test_nodenet)
+def test_decay_porret_links(runtime, test_nodenet):
+    nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
     pipes = []
     netapi.set_modulator('base_porret_decay_factor', 0.1)
@@ -1067,8 +1090,8 @@ def test_decay_porret_links(test_nodenet):
     assert round(pipes[7].get_gate('ret').get_links()[0].weight, 3) == 0.7
 
 
-def test_unlink_gate(test_nodenet):
-    nodenet = micropsi.get_nodenet(test_nodenet)
+def test_unlink_gate(runtime, test_nodenet):
+    nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
     node = netapi.create_node("Pipe", None)
     pipe1 = netapi.create_node("Pipe", None)
@@ -1078,26 +1101,26 @@ def test_unlink_gate(test_nodenet):
     netapi.link(node, 'por', pipe1, 'gen')
     netapi.link(node, 'por', pipe2, 'gen')
     netapi.link(node, 'por', pipe1, 'sur')
-    micropsi.save_nodenet(test_nodenet)
+    runtime.save_nodenet(test_nodenet)
     netapi.unlink_gate(node, 'por')
     assert node.get_gate('por').empty
     assert not node.get_gate('sub').empty
-    micropsi.revert_nodenet(test_nodenet)
-    netapi = micropsi.nodenets[test_nodenet].netapi
+    runtime.revert_nodenet(test_nodenet)
+    netapi = runtime.nodenets[test_nodenet].netapi
     node = netapi.get_node(node.uid)
     netapi.unlink_gate(node, 'por', target_node_uid=pipe1.uid)
     assert len(node.get_gate('por').get_links()) == 1
     assert node.get_gate('por').get_links()[0].target_node.uid == pipe2.uid
-    micropsi.revert_nodenet(test_nodenet)
-    netapi = micropsi.nodenets[test_nodenet].netapi
+    runtime.revert_nodenet(test_nodenet)
+    netapi = runtime.nodenets[test_nodenet].netapi
     node = netapi.get_node(node.uid)
     netapi.unlink_gate(node, 'por', target_slot_name='sur')
     assert len(node.get_gate('por').get_links()) == 2  # pipe1:gen, pipe2:gen
     assert len(node.get_gate('sub').get_links()) == 2  # only por->sub unlinked
 
 
-def test_unlink_slot(test_nodenet):
-    nodenet = micropsi.get_nodenet(test_nodenet)
+def test_unlink_slot(runtime, test_nodenet):
+    nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
     node = netapi.create_node("Pipe", None)
     pipe1 = netapi.create_node("Pipe", None)
@@ -1107,26 +1130,26 @@ def test_unlink_slot(test_nodenet):
     netapi.link(pipe1, 'gen', node, 'por')
     netapi.link(pipe2, 'gen', node, 'por')
     netapi.link(pipe1, 'sur', node, 'por')
-    micropsi.save_nodenet(test_nodenet)
+    runtime.save_nodenet(test_nodenet)
     netapi.unlink_slot(node, 'por')
     assert node.get_slot('por').empty
     assert not node.get_slot('sur').empty
-    micropsi.revert_nodenet(test_nodenet)
-    netapi = micropsi.nodenets[test_nodenet].netapi
+    runtime.revert_nodenet(test_nodenet)
+    netapi = runtime.nodenets[test_nodenet].netapi
     node = netapi.get_node(node.uid)
     netapi.unlink_slot(node, 'por', source_node_uid=pipe1.uid)
     assert len(node.get_slot('por').get_links()) == 1
     assert node.get_slot('por').get_links()[0].source_node.uid == pipe2.uid
-    micropsi.revert_nodenet(test_nodenet)
-    netapi = micropsi.nodenets[test_nodenet].netapi
+    runtime.revert_nodenet(test_nodenet)
+    netapi = runtime.nodenets[test_nodenet].netapi
     node = netapi.get_node(node.uid)
     netapi.unlink_slot(node, 'por', source_gate_name='sur')
     assert len(node.get_slot('por').get_links()) == 2  # pipe1:gen, pipe2:gen
     assert len(node.get_slot('sur').get_links()) == 2  # only sur->por unlinked
 
 
-def test_nodespace_properties(test_nodenet):
-    nodenet = micropsi.get_nodenet(test_nodenet)
+def test_nodespace_properties(runtime, test_nodenet):
+    nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
     rootns = netapi.get_nodespace(None)
     netapi.set_nodespace_properties(None, {'foo': 'bar'})
@@ -1135,7 +1158,7 @@ def test_nodespace_properties(test_nodenet):
 
 
 @pytest.mark.engine("theano_engine")
-def test_group_highdim_elements(test_nodenet, resourcepath):
+def test_group_highdim_elements(runtime, test_nodenet, resourcepath):
     import numpy as np
     import os
     with open(os.path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
@@ -1160,8 +1183,8 @@ def test_group_highdim_elements(test_nodenet, resourcepath):
 def phatNM(netapi, node, **_):
     pass""")
 
-    micropsi.reload_native_modules()
-    nodenet = micropsi.get_nodenet(test_nodenet)
+    runtime.reload_native_modules()
+    nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
     node = netapi.create_node("PhatNM", None, 'fatnode')
     registers = []

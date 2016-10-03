@@ -279,7 +279,6 @@ def test_modulators_sensor_actuator_connection(runtime, test_nodenet, test_world
     s2 = nodenet.get_node(s2_id)
     r1 = nodenet.get_node(r1_id)
     r2 = nodenet.get_node(r2_id)
-    s2.set_gate_parameter('gen', 'maximum', 999)
     runtime.add_link(test_nodenet, r1_id, 'gen', a1_id, 'gen')
     runtime.add_link(test_nodenet, r2_id, 'gen', a2_id, 'gen')
     r1.activation = 0.3

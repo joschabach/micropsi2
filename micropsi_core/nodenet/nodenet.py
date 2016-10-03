@@ -287,7 +287,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
+    def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_configuration=None):
         """
         Creates a new node of the given node type (string), in the given nodespace, at the given
         position and returns the uid of the new node
@@ -408,14 +408,7 @@ class Nodenet(metaclass=ABCMeta):
             "name": "Name of the Native Module",
             "slottypes": ["trigger"],
             "nodefunction_name": "native_module_function",
-            "gatetypes": ["done"],
-            "gate_defaults": {
-                "done": {
-                    "minimum": -100,
-                    "maximum": 100,
-                    "threshold": -100
-                }
-            }
+            "gatetypes": ["done"]
         }
 
         """
@@ -516,18 +509,23 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_thetas(self, nodespace_uid, group):
+    def get_gate_configurations(self, nodespace_uid, group, gatefunction_parameter=None):
         """
-        Returns a list of theta values for the given group.
-        For multi-gate nodes, the thetas of the gen gates will be returned
+        Returns a dictionary containing a list of gatefunction names, and a list of the values
+        of the given gatefunction_parameter (if given)
         """
         pass  # pragma: no cover
 
     @abstractmethod
-    def set_thetas(self, nodespace_uid, group, thetas):
+    def set_gate_configurations(self, nodespace_uid, group, gatefunctions, gatefunction_parameter=None, parameter_values=None):
         """
-        Bulk-sets thetas for the given group.
-        new_thetas dimensionality has to match the group length
+        Bulk-sets gatefunctions and a gatefunction_parameter for the given group.
+        Arguments:
+            nodespace_uid (string) - id of the parent nodespace
+            group (string) - name of the group
+            gatefunctions (list) - list of gatefunction names
+            gatefunction_parameter (optinoal) - name of the gatefunction_paramr to set
+            parameter_values (optional) - values to set for the gatefunction_parameetr
         """
         pass  # pragma: no cover
 

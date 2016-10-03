@@ -1203,24 +1203,14 @@ def set_node_parameters(nodenet_uid, node_uid, parameters):
     return runtime.set_node_parameters(nodenet_uid, node_uid, parameters)
 
 
-@rpc("get_gatefunction")
-def get_gatefunction(nodenet_uid, node_uid, gate_type):
-    return True, runtime.get_gatefunction(nodenet_uid, node_uid, gate_type)
-
-
-@rpc("set_gatefunction", permission_required="manage nodenets")
-def set_gatefunction(nodenet_uid, node_uid, gate_type, gatefunction=None):
-    return runtime.set_gatefunction(nodenet_uid, node_uid, gate_type, gatefunction=gatefunction)
+@rpc("set_gate_configuration", permission_required="manage nodenets")
+def set_gate_configuration(nodenet_uid, node_uid, gate_type, gatefunction=None, gatefunction_parameters=None):
+    return runtime.set_gate_configuration(nodenet_uid, node_uid, gate_type, gatefunction, gatefunction_parameters)
 
 
 @rpc("get_available_gatefunctions")
 def get_available_gatefunctions(nodenet_uid):
     return True, runtime.get_available_gatefunctions(nodenet_uid)
-
-
-@rpc("set_gate_parameters", permission_required="manage nodenets")
-def set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters):
-    return runtime.set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters)
 
 
 @rpc("get_available_datasources")

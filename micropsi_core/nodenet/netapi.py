@@ -334,16 +334,16 @@ class NetAPI(object):
                 all_sensors.append(sensor)
         return all_sensors
 
-    def set_gatefunction(self, nodespace, nodetype, gatetype, gatefunction):
-        """Sets the gatefunction for gates of type gatetype of nodes of type nodetype, in the given
-            nodespace.
-            The gatefunction needs to be given as a string.
-        """
-        nodespace = self.get_nodespace(nodespace)
-        for uid in nodespace.get_known_ids(entitytype="nodes"):
-            node = self.get_node(uid)
-            if node.type == nodetype:
-                node.set_gatefunction_name(gatetype, gatefunction)
+    # def set_gatefunction(self, nodespace, nodetype, gatetype, gatefunction):
+    #     """Sets the gatefunction for gates of type gatetype of nodes of type nodetype, in the given
+    #         nodespace.
+    #         The gatefunction needs to be given as a string.
+    #     """
+    #     nodespace = self.get_nodespace(nodespace)
+    #     for uid in nodespace.get_known_ids(entitytype="nodes"):
+    #         node = self.get_node(uid)
+    #         if node.type == nodetype:
+    #             node.set_gatefunction_name(gatetype, gatefunction)
 
     def notify_user(self, node, msg):
         """
@@ -427,7 +427,7 @@ class NetAPI(object):
         uids = [node.uid for node in nodes]
         uidmap = {}
         for node in nodes:
-            new_uid = self.__nodenet.create_node(node.type, nodespace_uid, node.position, name=node.name, parameters=node.clone_parameters(), gate_parameters=node.get_gate_parameters())
+            new_uid = self.__nodenet.create_node(node.type, nodespace_uid, node.position, name=node.name, parameters=node.clone_parameters(), gate_configuration=node.get_gate_configuration())
             uidmap[node.uid] = new_uid
         for node in nodes:
             for g in node.get_gate_types():
@@ -481,19 +481,24 @@ class NetAPI(object):
         """
         return self.__nodenet.set_activations(nodespace_uid, group, new_activations)
 
-    def get_thetas(self, nodespace_uid, group):
+    def get_gate_configurations(self, nodespace_uid, group, gatefunction_parameter=None):
         """
-        Returns an array of theta values for the given group.
-        For multi-gate nodes, the thetas of the gen gates will be returned
+        Returns a dictionary containing a list of gatefunction names, and a list of the values
+        of the given gatefunction_parameter (if given)
         """
-        return self.__nodenet.get_thetas(nodespace_uid, group)
+        return self.__nodenet.get_gate_configurations(nodespace_uid, group, gatefunction_parameter)
 
-    def set_thetas(self, nodespace_uid, group, new_thetas):
+    def set_gate_configurations(self, nodespace_uid, group, gatefunctions, gatefunction_parameter=None, parameter_values=None):
         """
-        Bulk-sets thetas for the given group.
-        new_thetas dimensionality has to match the group length
+        Bulk-sets gatefunctions and a gatefunction_parameter for the given group.
+        Arguments:
+            nodespace_uid (string) - id of the parent nodespace
+            group (string) - name of the group
+            gatefunctions (list) - list of gatefunction names
+            gatefunction_parameter (optinoal) - name of the gatefunction_paramr to set
+            parameter_values (optional) - values to set for the gatefunction_parameetr
         """
-        self.__nodenet.set_thetas(nodespace_uid, group, new_thetas)
+        self.__nodenet.set_gate_configurations(nodespace_uid, group, gatefunctions, gatefunction_parameter, parameter_values)
 
     def get_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to):
         """

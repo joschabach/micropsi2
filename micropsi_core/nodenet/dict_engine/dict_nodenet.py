@@ -714,7 +714,7 @@ class DictNodenet(Nodenet):
             config = node.get_gate_configuration(gate)
             data['gatefunction'].add(config['gatefunction'])
             if gatefunction_parameter is not None:
-                data['parameter_values'].append(config['gatefunction_parameters'].get(gatefunction_parameter))
+                data['parameter_values'].append(config['gatefunction_parameters'].get(gatefunction_parameter, 0))
         if len(data['gatefunction']) > 1:
             raise RuntimeError("Heterogenous gatefunction configuration")
         data['gatefunction'] = data['gatefunction'].pop()

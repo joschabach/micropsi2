@@ -209,13 +209,15 @@ class TheanoPartition():
         self.a_prev = None       # vector of output activations at t-1 (not all gate types maintain this)
 
         self.g_factor = None     # vector of gate factors, controlled by activators, semantics differ by node type
+
+        # gatefunction parameters
         self.g_bias = None      # vector of biases
-        self.g_threshold = None  # vector of thresholds (gate parameters)
+        self.g_threshold = None  # vector of thresholds
         self.g_amplification = None  # vector of amplification factors
         self.g_min = None        # vector of lower bounds
         self.g_max = None        # vector of upper bounds
 
-        self.g_function_selector = None # vector of gate function selectors
+        self.g_function_selector = None  # vector of gate function selectors
 
         self.g_expect = None     # vector of expectations
         self.g_countdown = None  # vector of number of steps until expectation needs to be met

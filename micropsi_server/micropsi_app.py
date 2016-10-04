@@ -1205,6 +1205,11 @@ def set_node_parameters(nodenet_uid, node_uid, parameters):
 
 @rpc("set_gate_configuration", permission_required="manage nodenets")
 def set_gate_configuration(nodenet_uid, node_uid, gate_type, gatefunction=None, gatefunction_parameters=None):
+    for key in list(gatefunction_parameters.keys()):
+        try:
+            gatefunction_parameters[key] = float(gatefunction_parameters[key])
+        except ValueError:
+            del gatefunction_parameters[key]
     return runtime.set_gate_configuration(nodenet_uid, node_uid, gate_type, gatefunction, gatefunction_parameters)
 
 

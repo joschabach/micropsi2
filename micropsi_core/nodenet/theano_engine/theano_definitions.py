@@ -237,7 +237,7 @@ def get_string_gatefunction_type(type):
     elif type == GATE_FUNCTION_ELU:
         return "elu"
     elif type == GATE_FUNCTION_THRESHOLD:
-        return "threhold"
+        return "threshold"
     else:
         raise ValueError("Supplied gatefunction type is not a valid type: "+str(type))
 

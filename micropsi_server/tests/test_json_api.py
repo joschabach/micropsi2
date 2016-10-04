@@ -973,7 +973,7 @@ def test_set_gate_configuration(app, test_nodenet, node):
         'gate_type': 'gen',
         'gatefunction': 'sigmoid',
         'gatefunction_parameters': {
-            'bias': 1
+            'bias': '1'
         }
     })
     assert_success(response)
@@ -984,6 +984,23 @@ def test_set_gate_configuration(app, test_nodenet, node):
     data = response.json_body['data']
     assert data['gate_configuration']['gen']['gatefunction'] == 'sigmoid'
     assert data['gate_configuration']['gen']['gatefunction_parameters'] == {'bias': 1}
+    # setting a non-value leads to using the default
+    response = app.post_json('/rpc/set_gate_configuration', params={
+        'nodenet_uid': test_nodenet,
+        'node_uid': node,
+        'gate_type': 'gen',
+        'gatefunction': 'sigmoid',
+        'gatefunction_parameters': {
+            'bias': ''
+        }
+    })
+    response = app.post_json('/rpc/get_node', params={
+        'nodenet_uid': test_nodenet,
+        'node_uid': node,
+    })
+    data = response.json_body['data']
+    assert data['gate_configuration']['gen']['gatefunction'] == 'sigmoid'
+    assert data['gate_configuration']['gen']['gatefunction_parameters'] == {'bias': 0}
 
 
 def test_get_available_gatefunctions(app, test_nodenet):
@@ -992,6 +1009,10 @@ def test_get_available_gatefunctions(app, test_nodenet):
     assert 'sigmoid' in funcs
     assert 'identity' in funcs
     assert 'absolute' in funcs
+    assert 'threshold' in funcs
+    assert 'elu' in funcs
+    assert 'relu' in funcs
+    assert 'one_over_x' in funcs
 
 
 def test_get_available_datasources(app, test_nodenet, test_world):

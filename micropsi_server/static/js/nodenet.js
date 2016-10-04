@@ -61,15 +61,6 @@ links = {};
 selection = {};
 monitors = {};
 
-GATE_DEFAULTS = {
-    "minimum": -1,
-    "maximum": 1,
-    "amplification": 1,
-    "threshold": -1,
-    "theta": 0,
-    "rho": 0
-}
-
 
 gatefunction_icons = {
     'sigmoid': 'Σ',
@@ -77,7 +68,8 @@ gatefunction_icons = {
     'relu': 'R',
     'absolute': '|x|',
     'one_over_x': '1/x',
-    'identity': ''
+    'identity': '',
+    'threshold': 'T'
 }
 
 gridLayer = new Layer();
@@ -404,7 +396,7 @@ function setNodespaceData(data, changed){
         }
         var links_data = {}
         for(uid in data.nodes){
-            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions, data.nodes[uid].is_highdimensional, data.nodes[uid].inlinks, data.nodes[uid].outlinks);
+            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_configuration, data.nodes[uid].is_highdimensional, data.nodes[uid].inlinks, data.nodes[uid].outlinks);
             if(uid in nodes){
                 if(nodeRedrawNeeded(item)) {
                     nodes[uid].update(item);
@@ -492,7 +484,7 @@ function setNodespaceDiffData(data, changed){
             links_data = {}
             for(var uid in data.changes.nodes_dirty){
                 var nodedata = data.changes.nodes_dirty[uid];
-                item = new Node(uid, nodedata['position'][0], nodedata['position'][1], nodedata.parent_nodespace, nodedata.name, nodedata.type, nodedata.activation, nodedata.state, nodedata.parameters, nodedata.gate_activations, nodedata.gate_parameters, nodedata.gate_functions, nodedata.is_highdimensional, nodedata.inlinks, nodedata.outlinks);
+                item = new Node(uid, nodedata['position'][0], nodedata['position'][1], nodedata.parent_nodespace, nodedata.name, nodedata.type, nodedata.activation, nodedata.state, nodedata.parameters, nodedata.gate_activations, nodedata.gate_configuration, nodedata.is_highdimensional, nodedata.inlinks, nodedata.outlinks);
                 if(uid in nodes){
                     for (var gateName in nodes[uid].gates) {
                         for (linkUid in nodes[uid].gates[gateName].outgoing) {
@@ -595,6 +587,7 @@ function addLinks(link_data){
         }
     }
 }
+
 
 function get_nodenet_params(){
     return {
@@ -703,7 +696,7 @@ function updateModulators(data){
 
 
 // data structure for net entities
-function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters, gate_activations, gate_parameters, gatefunctions, is_highdim, inlinks, outlinks) {
+function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters, gate_activations, gate_configuration, is_highdim, inlinks, outlinks) {
 	this.uid = uid;
 	this.x = x;
 	this.y = y;
@@ -723,9 +716,8 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
     this.bounds = null; // current bounding box (after scaling)
     this.slotIndexes = [];
     this.gateIndexes = [];
-    this.gate_parameters = gate_parameters || {};
+    this.gate_configuration = gate_configuration || {};
     this.gate_activations = gate_activations || {};
-    this.gatefunctions = gatefunctions || {};
     this.is_highdim = is_highdim;
     this.inlinks = inlinks || 0;
     this.outlinks = outlinks || 0;
@@ -738,19 +730,8 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
         var gatetype = nodetypes[type].gatetypes[i]
         parameters = {};
         activation = this.gate_activations[gatetype];
-        parameters = jQuery.extend({}, GATE_DEFAULTS);
-        if(nodetypes[type].gate_defaults && nodetypes[type].gate_defaults[gatetype]) {
-            for(var key in nodetypes[type].gate_defaults[gatetype]){
-                parameters[key] = nodetypes[type].gate_defaults[gatetype][key];
-            }
-        }
-        if(this.gate_parameters[gatetype]){
-            for(var key in this.gate_parameters[gatetype]){
-                parameters[key] = this.gate_parameters[gatetype][key];
-            }
-        }
         var highdim = is_highdim && gatetype in nodetypes[type].dimensionality.gates;
-        this.gates[gatetype] = new Gate(gatetype, i, activation, parameters, this.gatefunctions[gatetype], highdim);
+        this.gates[gatetype] = new Gate(gatetype, i, activation, this.gate_configuration[gatetype], highdim);
     }
     this.slotIndexes = Object.keys(this.slots);
     this.gateIndexes = Object.keys(this.gates);
@@ -765,16 +746,14 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
         this.activation = item.activation;
         this.state = item.state;
         this.parameters = item.parameters;
-        this.gate_parameters = jQuery.extend(jQuery.extend({}, GATE_DEFAULTS), item.gate_parameters || {});;
+        this.gate_configuration = item.gate_configuration || {};
         this.gate_activations = item.gate_activations;
-        this.gatefunctions = item.gatefunctions;
         this.outlinks = item.outlinks;
         this.inlinks = item.inlinks;
         for(var i in nodetypes[type].gatetypes){
             var gatetype = nodetypes[type].gatetypes[i];
-            this.gates[gatetype].parameters = jQuery.extend(jQuery.extend({}, GATE_DEFAULTS), this.gate_parameters[gatetype]);
+            this.gates[gatetype].gate_configuration = this.gate_configuration[gatetype];
             this.gates[gatetype].activation = this.gate_activations[gatetype];
-            this.gates[gatetype].gatefunction = this.gatefunctions[gatetype];
 
         }
     };
@@ -784,7 +763,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
         for(var i in nodetypes[type].gatetypes){
             var gatetype = nodetypes[type].gatetypes[i];
             gatechecksum += "-" + this.gates[gatetype].activation;
-            gatechecksum += ':' + this.gates[gatetype].gatefunction;
+            gatechecksum += ':' + this.gates[gatetype].gate_cgatefunction;
         }
         return gatechecksum;
     };
@@ -798,17 +777,21 @@ function Slot(name) {
 }
 
 // source for links, part of a net entity
-function Gate(name, index, activation, parameters, gatefunction, is_highdim) {
+function Gate(name, index, activation, gate_configuration, is_highdim) {
 	this.name = name;
     this.index = index;
 	this.outgoing = {};
 	this.activation = activation;
     this.is_highdim = is_highdim;
-    this.gatefunction = gatefunction || 'identity';
-    if(parameters){
-        this.parameters = parameters;
-    } else {
-        this.parameters = jQuery.extend({}, GATE_DEFAULTS);
+    this.gatefunction = 'identity';
+    this.gatefunction_parameters = {}
+    if (gate_configuration) {
+        if(gate_configuration.gatefunction){
+            this.gatefunction = gate_configuration.gatefunction;
+        }
+        if(gate_configuration.gatefunction_parameters){
+            this.gatefunction_parameters = gate_configuration.gatefunction_parameters;
+        }
     }
 }
 
@@ -1537,9 +1520,9 @@ function createGateAnnotation(node){
     for (i = 0; i< node.gateIndexes.length; i++){
         var g = node.gateIndexes[i];
         var gatebounds = getGateBounds(node, i);
-        if (node.gatefunctions[g] && node.gatefunctions[g] != 'identity'){
+        if (node.gates[g].gatefunction && node.gates[g].gatefunction != 'identity'){
             var gatefuncHint = new PointText(new Point(gatebounds.right-(8*viewProperties.zoomFactor),gatebounds.center.y - 2*viewProperties.zoomFactor));
-            gatefuncHint.content = gatefunction_icons[node.gatefunctions[g]];
+            gatefuncHint.content = gatefunction_icons[node.gates[g].gatefunction];
             gatefuncHint.fillColor = viewProperties.nodeForegroundColor;
             gatefuncHint.fontSize = (viewProperties.fontSize-2) * viewProperties.zoomFactor;
             labels.push(gatefuncHint);
@@ -1707,10 +1690,10 @@ function createCompactNodeBodyLabel(node) {
     gatefuncHint.fillColor = viewProperties.nodeForegroundColor;
     gatefuncHint.fontSize = viewProperties.fontSize*viewProperties.zoomFactor;
     var non_standard_gatefunc = [];
-    for (var k in node.gatefunctions){
-        if(node.gatefunctions[k] && node.gatefunctions[k] != 'identity'){
-            if(non_standard_gatefunc.indexOf(node.gatefunctions[k]) < 0){
-                non_standard_gatefunc.push(node.gatefunctions[k]);
+    for (var g in node.gates){
+        if(node.gates[g].gatefunction && node.gates[g].gatefunction != 'identity'){
+            if(non_standard_gatefunc.indexOf(node.gates[g].gatefunction) < 0){
+                non_standard_gatefunc.push(node.gates[g].gatefunction);
             }
         }
     }
@@ -2479,7 +2462,7 @@ function loadLinksForSelection(callback, force_load, show_node_form){
         } else {
             skipped.push(uid)
         }
-        if(nodes[uid].inlinks > 0 || nodes[uid].outlinks > 0){
+        if(skipped.indexOf(uid) < 0 && (nodes[uid].inlinks > 0 || nodes[uid].outlinks > 0)){
             load_links = true;
         }
     }
@@ -2500,7 +2483,7 @@ function loadLinksForSelection(callback, force_load, show_node_form){
                     callback(data);
                 } else {
                     for(var uid in data.nodes){
-                        addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions, data.nodes[uid].is_highdimensional, data.nodes[uid].inlinks, data.nodes[uid].outlinks));
+                        addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_configuration, data.nodes[uid].is_highdimensional, data.nodes[uid].inlinks, data.nodes[uid].outlinks));
                     }
                     var linkdict = {};
                     for(var i = 0; i < data.links.length; i++){
@@ -2515,7 +2498,7 @@ function loadLinksForSelection(callback, force_load, show_node_form){
                 view.draw(true);
             }
         );
-    } else if(skipped.length == 1 && skipped[0] in selection && clickType != "gate" && show_node_form){
+    } else if(skipped.length == 1 && skipped[0] in nodes && skipped[0] in selection && clickType != "gate" && show_node_form){
         showNodeForm(skipped[0]);
     }
 }
@@ -2536,16 +2519,6 @@ function initializeMenus() {
     $("#nodenet").on('dblclick', onDoubleClick);
     $("#nodespace_up").on('click', handleNodespaceUp);
     gate_form_trigger = $('.gate_additional_trigger');
-    gate_params = $('.gate_additional');
-    gate_form_trigger.on('click', function(){
-        if(gate_params.hasClass('hide')){
-            gate_form_trigger.text("Hide additional parameters");
-            gate_params.removeClass('hide');
-        } else {
-            gate_form_trigger.text("Show additional parameters");
-            gate_params.addClass('hide');
-        }
-    });
 }
 
 function initializeControls(){
@@ -3392,7 +3365,7 @@ function createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot){
                     'nodenet_uid': currentNodenet,
                     'node_uid': targetUid
                 }, function(data){
-                    nodes[targetUid] = new Node(data.uid, data.position[0], data.position[1], data.parent_nodespace, data.name, data.type, data.activation, data.state, data.parameters, data.gate_activations, data.gate_parameters, data.is_highdimensional, data.inlinks, data.outlinks);
+                    nodes[targetUid] = new Node(data.uid, data.position[0], data.position[1], data.parent_nodespace, data.name, data.type, data.activation, data.state, data.parameters, data.gate_activations, data.gate_configuration, data.is_highdimensional, data.inlinks, data.outlinks);
                     createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot);
                 });
             } else {
@@ -3410,7 +3383,7 @@ function createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot){
                             'nodenet_uid': currentNodenet,
                             'node_uid': targetUid
                         }, function(data){
-                            nodes[targetUid] = new Node(data.uid, data.position[0], data.position[1], data.parent_nodespace, data.name, data.type, data.activation, data.state, data.parameters, data.gate_activations, data.gate_parameters, data.is_highdimensional, data.inlinks, data.outlinks);
+                            nodes[targetUid] = new Node(data.uid, data.position[0], data.position[1], data.parent_nodespace, data.name, data.type, data.activation, data.state, data.parameters, data.gate_activations, data.gate_configuration, data.is_highdimensional, data.inlinks, data.outlinks);
                             nodes[targetUid].linksFromOutside.push(uid);
                         });
                     } else if(nodes[targetUid].parent != currentNodeSpace){
@@ -3635,42 +3608,32 @@ function handleEditGate(event){
         return false;
     }
     var data = form.serializeArray();
-    var params = {};
-    var old_params = gate.parameters;
-    for(var i in data){
-        if(!data[i].value && data[i].name in GATE_DEFAULTS){
-            data[i].value = GATE_DEFAULTS[data[i].name];
-        }
-        params[data[i].name] = parseFloat(data[i].value);
-    }
-    var gatefunc = $('#gate_gatefunction').val();
-    if(gatefunc != gate.gatefunction){
-        api.call('set_gatefunction', {
-            nodenet_uid: currentNodenet,
-            node_uid: node.uid,
-            gate_type: gate.name,
-            gatefunction: gatefunc
-        }, function(data){
-            node.gatefunctions[gate.name] = gatefunc;
-            gate.gatefunction = gatefunc;
-            api.defaultSuccessCallback();
-            redrawNode(node, true);
-            view.draw();
-        }, api.defaultErrorCallback);
-    }
-    api.call('set_gate_parameters', {
+    params = {
         nodenet_uid: currentNodenet,
         node_uid: node.uid,
         gate_type: gate.name,
-        parameters: params
-    }, api.defaultSuccessCallback, function(err){
-        api.defaultErrorCallback(err);
-        gate.parameters = old_params;
-        if(form.css('display') == 'block'){
-            showGateForm(node, gate);
+        gatefunction: 'identity',
+        gatefunction_parameters: {}
+    }
+    for(var i=0; i < data.length; i++){
+        if(data[i].name == 'gate_gatefunction'){
+            params.gatefunction = data[i].value;
+        } else {
+            params.gatefunction_parameters[data[i].name.substr(23)] = data[i].value
         }
-    });
-    gate.parameters = params;
+    }
+    api.call('set_gate_configuration', params, function(data){
+        config = {
+            'gatefunction': params.gatefunction,
+            'gatefunction_parameters': params.gatefunction_parameters
+        }
+        node.gate_configuration[gate.name] = config;
+        gate.gatefunction = params.gatefunction;
+        gate.gatefunction_parameters = params.gatefunction_parameters;
+        api.defaultSuccessCallback();
+        redrawNode(node, true);
+        view.draw();
+    }, api.defaultErrorCallback);
 }
 
 function setNodeActivation(nodeUid, activation){
@@ -3926,6 +3889,7 @@ function initializeSidebarForms(){
     $('#edit_link_form .deleteLink').on('click', handleDeleteLink);
     $('#edit_node_form').submit(handleEditNode);
     $('#edit_gate_form').submit(handleEditGate);
+    $('#gate_gatefunction').on('change', updateGatefunctionParams);
     $('#edit_nodenet_form').submit(handleEditNodenet);
     $('#edit_nodespace_form').submit(handleEditNodespace);
     $('#native_add_param').click(function(){
@@ -3988,7 +3952,7 @@ function showNodeForm(nodeUid, refresh){
             nodenet_uid:currentNodenet,
             node_uid: nodeUid
         }, function(data){
-            item = new Node(nodeUid, data['position'][0], data['position'][1], data.parent_nodespace, data.name, data.type, data.activation, data.state, data.parameters, data.gate_activations, data.gate_parameters, data.gate_functions, data.is_highdimensional, data.inlinks, data.outlinks);
+            item = new Node(nodeUid, data['position'][0], data['position'][1], data.parent_nodespace, data.name, data.type, data.activation, data.state, data.parameters, data.gate_activations, data.gate_configuration, data.is_highdimensional, data.inlinks, data.outlinks);
             redrawNode(item);
             nodes[nodeUid].update(item);
             if(clickType == 'gate'){
@@ -4149,21 +4113,20 @@ function showGateForm(node, gate){
     var form = $('#edit_gate_form');
     $('.gate_nodetype', form).html('<strong>'+ node.type +'</strong>');
     $('.gate_gatetype', form).html('<strong>'+ gate.name +'</strong>');
+    $('#gate_gatefunction').val(gate.gatefunction);
     $.each($('input, select, textarea', form), function(index, el){
         el = $(el);
-        el.val('');
-        if(el.attr('name') in gate.parameters){
-            el.val(gate.parameters[el.attr('name')]);
-        } else if(el.attr('name') == 'activation'){
+        if(el.attr('name') == 'activation'){
             el.val(gate.activation || '0');
-        } else if(nodetypes[node.type].gate_defaults && el.attr('name') in nodetypes[node.type].gate_defaults[gate.name]){
-            el.val(nodetypes[node.type].gate_defaults[gate.name][el.attr('name')]);
+        } else if(el.attr('name').substr(0, 23) == "gatefunction_parameter_"){
+            if(gate.gatefunction_parameters){
+                el.val(gate.gatefunction_parameters[el.attr('name').substr(23)]);
+            }
         }
         if(gate.is_highdim){
             el.attr('disabled', 'disabled');
-        } else {
-            if(el.attr('name') != 'activation')
-                el.removeAttr('disabled');
+        } else if(el.attr('name') != 'activation'){
+            el.removeAttr('disabled');
         }
     });
     if(gate.is_highdim){
@@ -4171,10 +4134,18 @@ function showGateForm(node, gate){
     } else {
         $('.highdim', form).hide();
     }
-    $('#gate_gatefunction').val(gate.gatefunction);
+    updateGatefunctionParams();
+
     form.attr('data-node', node.uid);
     form.attr('data-gate', gate.name);
     form.show();
+}
+
+function updateGatefunctionParams(){
+    $('.gatefunction_parameters').hide()
+    $('.gatefunction_parameters input').attr('disabled', 'disabled')
+    $('.gatefunction_' + $('#gate_gatefunction').val()).show()
+    $('.gatefunction_' + $('#gate_gatefunction').val() + ' input').removeAttr('disabled')
 }
 
 function updateNodespaceForm(){

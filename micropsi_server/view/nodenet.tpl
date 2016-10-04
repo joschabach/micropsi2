@@ -157,38 +157,31 @@
                         <td><input type="text" class="" name="activation" id="gate_activation" disabled="disabled"></td>
                     </tr>
                     <tr>
-                        <td><label for="gate_minimum">Minimum</label></td>
-                        <td><input type="text" class="" name="minimum" id="gate_minimum"></td>
-                    </tr>
-                    <tr>
-                        <td><label for="gate_maximum">Maximum</label></td>
-                        <td><input type="text" class="" name="maximum" id="gate_maximum"></td>
-                    </tr>
-                    <tr>
-                        <td><label for="gate_amplification">Amplification</label></td>
-                        <td><input type="text" class="" name="amplification" id="gate_amplification"></td>
-                    </tr>
-                    <tr>
-                        <td><label for="gate_threshold">Threshold</label></td>
-                        <td><input type="text" class="" name="threshold" id="gate_threshold"></td>
-                    </tr>
-                    <tr>
-                        <td colspan="2"><a href="#" class="gate_additional_trigger">Show additional parameters</a> (for gatefunction)</td>
-                    </tr>
-                    <tr class="gate_additional hide">
-                        <td><label for="gate_rho">Rho</label></td>
-                        <td><input type="text" class="" name="rho" id="gate_rho"></td>
-                    </tr>
-                    <tr class="gate_additional hide">
-                        <td><label for="gate_theta">Theta</label></td>
-                        <td><input type="text" class="" name="theta" id="gate_theta"></td>
-                    </tr>
-                    <tr>
                         <td><label for="">Gatefunction</label></td>
                         <td>
                            <select name="gate_gatefunction" id="gate_gatefunction">
                            </select>
                         </td>
+                    </tr>
+                    <tr class="gatefunction_parameters gatefunction_elu gatefunction_relu gatefunction_sigmoid">
+                        <td><label for="gatefunction_parameter_bias">Bias</label></td>
+                        <td><input type="text" name="gatefunction_parameter_bias" id="gatefunction_parameter_bias" /></td>
+                    </tr>
+                    <tr class="gatefunction_parameters gatefunction_threshold">
+                        <td><label for="gatefunction_parameter_minimum">Minimum</label></td>
+                        <td><input type="text" name="gatefunction_parameter_minimum" id="gatefunction_parameter_minimum" /></td>
+                    </tr>
+                    <tr class="gatefunction_parameters gatefunction_threshold">
+                        <td><label for="gatefunction_parameter_maximum">Maximum</label></td>
+                        <td><input type="text" name="gatefunction_parameter_maximum" id="gatefunction_parameter_maximum" /></td>
+                    </tr>
+                    <tr class="gatefunction_parameters gatefunction_threshold">
+                        <td><label for="gatefunction_parameter_threshold">Threshold</label></td>
+                        <td><input type="text" name="gatefunction_parameter_threshold" id="gatefunction_parameter_threshold" /></td>
+                    </tr>
+                    <tr class="gatefunction_parameters gatefunction_threshold">
+                        <td><label for="gatefunction_parameter_amplification">Amplification</label></td>
+                        <td><input type="text" name="gatefunction_parameter_amplification" id="gatefunction_parameter_amplification"></td>
                     </tr>
                 </table>
                 <div class="controls">

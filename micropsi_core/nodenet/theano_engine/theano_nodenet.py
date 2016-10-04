@@ -61,43 +61,6 @@ STANDARD_NODETYPES = {
         "slottypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
         "nodefunction_name": "pipe",
         "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
-        "gate_defaults": {
-            "gen": {
-                "minimum": -1,
-                "maximum": 1,
-                "threshold": -1
-            },
-            "por": {
-                "minimum": -1,
-                "maximum": 1,
-                "threshold": -1
-            },
-            "ret": {
-                "minimum": -1,
-                "maximum": 1,
-                "threshold": -1
-            },
-            "sub": {
-                "minimum": -1,
-                "maximum": 1,
-                "threshold": -1
-            },
-            "sur": {
-                "minimum": -1,
-                "maximum": 1,
-                "threshold": -1
-            },
-            "cat": {
-                "minimum": -1,
-                "maximum": 1,
-                "threshold": -1
-            },
-            "exp": {
-                "minimum": -1,
-                "maximum": 1,
-                "threshold": -1
-            }
-        },
         "parameters": ["expectation", "wait"],
         "parameter_defaults": {
             "expectation": 1,
@@ -117,34 +80,7 @@ STANDARD_NODETYPES = {
         "slottypes": ["gen", "por", "gin", "gou", "gfg"],
         "gatetypes": ["gen", "por", "gin", "gou", "gfg"],
         "nodefunction_name": "lstm",
-        "symbol": "◷",
-        "gate_defaults": {
-            "gen": {
-                "minimum": -1000,
-                "maximum": 1000,
-                "threshold": -1000
-            },
-            "por": {
-                "minimum": -1000,
-                "maximum": 1000,
-                "threshold": -1000
-            },
-            "gin": {
-                "minimum": -1000,
-                "maximum": 1000,
-                "threshold": -1000
-            },
-            "gou": {
-                "minimum": -1000,
-                "maximum": 1000,
-                "threshold": -1000
-            },
-            "gfg": {
-                "minimum": -1000,
-                "maximum": 1000,
-                "threshold": -1000
-            }
-        }
+        "symbol": "◷"
     }
 }
 
@@ -280,8 +216,6 @@ class TheanoNodenet(Nodenet):
     def get_data(self, complete=False, include_links=True):
         data = super().get_data(complete=complete, include_links=include_links)
         data['nodes'] = self.construct_nodes_dict(complete=complete, include_links=include_links)
-        # for uid in data['nodes']:
-        #    data['nodes'][uid]['gate_parameters'] = self.get_node(uid).clone_non_default_gate_parameters()
         data['nodespaces'] = self.construct_nodespaces_dict(None, transitive=True)
         data['version'] = self._version
         data['modulators'] = self.construct_modulators_dict()
@@ -698,7 +632,6 @@ class TheanoNodenet(Nodenet):
                     'comment': 'There was a %s node here' % data['type']
                 }
                 data['type'] = 'Comment'
-                del data['gate_parameters']
                 invalid_nodes.append(uid)
             if native_module_instances_only:
                 node = TheanoNode(self, self.get_partition(uid), parent_uid, uid, get_numerical_node_type(data['type'], nativemodules=self.native_modules), parameters=data.get('parameters'))
@@ -712,8 +645,7 @@ class TheanoNodenet(Nodenet):
                     name=data['name'],
                     uid=id_to_pass,
                     parameters=data.get('parameters'),
-                    gate_parameters=data.get('gate_parameters'),
-                    gate_functions=data.get('gate_functions'))
+                    gate_configuration=data.get('gate_configuration'))
             uidmap[uid] = new_uid
             node_proxy = self.get_node(new_uid)
             for gatetype in data.get('gate_activations', {}):
@@ -854,7 +786,7 @@ class TheanoNodenet(Nodenet):
         partition = self.get_partition(nodespace_uid)
         partition.announce_nodes(number_of_nodes, average_elements_per_node)
 
-    def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_parameters=None, gate_functions=None):
+    def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_configuration=None):
         nodespace_uid = self.get_nodespace(nodespace_uid).uid
         partition = self.get_partition(nodespace_uid)
         nodespace_id = nodespace_from_id(nodespace_uid)
@@ -863,7 +795,7 @@ class TheanoNodenet(Nodenet):
         if uid is not None:
             id_to_pass = node_from_id(uid)
 
-        id = partition.create_node(nodetype, nodespace_id, id_to_pass, parameters, gate_parameters, gate_functions)
+        id = partition.create_node(nodetype, nodespace_id, id_to_pass, parameters, gate_configuration)
         uid = node_to_id(id, partition.pid)
 
         if position is not None:
@@ -1007,16 +939,6 @@ class TheanoNodenet(Nodenet):
                     proxy.get_slot(s).invalidate_caches()
             if uid_to_clear in self.proxycache:
                 del self.proxycache[uid_to_clear]
-
-    def set_node_gate_parameter(self, uid, gate_type, parameter, value):
-        partition = self.get_partition(uid)
-        id = node_from_id(uid)
-        partition.set_node_gate_parameter(id, gate_type, parameter, value)
-
-    def set_node_gatefunction_name(self, uid, gate_type, gatefunction_name):
-        partition = self.get_partition(uid)
-        id = node_from_id(uid)
-        partition.set_node_gatefunction_name(id, gate_type, gatefunction_name)
 
     def set_nodespace_gatetype_activator(self, nodespace_uid, gate_type, activator_uid):
         partition = self.get_partition(nodespace_uid)
@@ -1729,17 +1651,17 @@ class TheanoNodenet(Nodenet):
         partition = self.get_partition(nodespace_uid)
         partition.set_activations(nodespace_uid, group, new_activations)
 
-    def get_thetas(self, nodespace_uid, group):
+    def get_gate_configurations(self, nodespace_uid, group, gatefunction_parameter=None):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
         partition = self.get_partition(nodespace_uid)
-        return partition.get_thetas(nodespace_uid, group)
+        return partition.get_gate_configurations(nodespace_uid, group, gatefunction_parameter)
 
-    def set_thetas(self, nodespace_uid, group, new_thetas):
+    def set_gate_configurations(self, nodespace_uid, group, gatefunction, gatefunction_parameter=None, parameter_values=None):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
         partition = self.get_partition(nodespace_uid)
-        partition.set_thetas(nodespace_uid, group, new_thetas)
+        partition.set_gate_configurations(nodespace_uid, group, gatefunction, gatefunction_parameter, parameter_values)
 
     def get_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to):
         if nodespace_from_uid is None:

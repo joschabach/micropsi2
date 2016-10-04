@@ -209,14 +209,13 @@ class TheanoPartition():
         self.a_prev = None       # vector of output activations at t-1 (not all gate types maintain this)
 
         self.g_factor = None     # vector of gate factors, controlled by activators, semantics differ by node type
+        self.g_bias = None      # vector of biases
         self.g_threshold = None  # vector of thresholds (gate parameters)
         self.g_amplification = None  # vector of amplification factors
         self.g_min = None        # vector of lower bounds
         self.g_max = None        # vector of upper bounds
 
         self.g_function_selector = None # vector of gate function selectors
-
-        self.g_theta = None      # vector of thetas (i.e. biases, use depending on gate function)
 
         self.g_expect = None     # vector of expectations
         self.g_countdown = None  # vector of number of steps until expectation needs to be met
@@ -275,11 +274,11 @@ class TheanoPartition():
         a_prev_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
         self.a_prev = theano.shared(value=a_prev_array.astype(T.config.floatX), name="a_prev", borrow=True)
 
-        g_theta_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
-        self.g_theta = theano.shared(value=g_theta_array.astype(T.config.floatX), name="theta", borrow=True)
+        g_bias_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
+        self.g_bias = theano.shared(value=g_bias_array.astype(T.config.floatX), name="bias", borrow=True)
 
-        g_theta_shifted_matrix = np.lib.stride_tricks.as_strided(g_theta_array, shape=(self.NoE, 7), strides=(nodenet.byte_per_float, nodenet.byte_per_float))
-        self.g_theta_shifted = theano.shared(value=g_theta_shifted_matrix.astype(T.config.floatX), name="g_theta_shifted_shifted", borrow=True)
+        g_bias_shifted_matrix = np.lib.stride_tricks.as_strided(g_bias_array, shape=(self.NoE, 7), strides=(nodenet.byte_per_float, nodenet.byte_per_float))
+        self.g_bias_shifted = theano.shared(value=g_bias_shifted_matrix.astype(T.config.floatX), name="g_bias_shifted_shifted", borrow=True)
 
         g_factor_array = np.ones(self.NoE, dtype=nodenet.numpyfloatX)
         self.g_factor = theano.shared(value=g_factor_array.astype(T.config.floatX), name="g_factor", borrow=True)
@@ -347,7 +346,7 @@ class TheanoPartition():
 
     def compile_calculate_nodes(self):
         slots = self.a_shifted
-        biases = self.g_theta_shifted
+        biases = self.g_bias_shifted
         countdown = self.g_countdown
         por_linked = self.n_node_porlinked
         ret_linked = self.n_node_retlinked
@@ -550,15 +549,15 @@ class TheanoPartition():
             gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_ABSOLUTE), abs(gate_function_output), gate_function_output)
         # apply GATE_FUNCTION_SIGMOID to masked gates
         if self.has_gatefunction_sigmoid:
-            x = gate_function_output + self.g_theta
+            x = gate_function_output + self.g_bias
             gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_SIGMOID), N.sigmoid(x), gate_function_output)
         # apply GATE_FUNCTION_ELU to masked gates
         if self.has_gatefunction_elu:
-            x = gate_function_output + self.g_theta
+            x = gate_function_output + self.g_bias
             gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_ELU), T.switch(gate_function_output > 0., x, T.exp(x) - 1.), gate_function_output)
         # apply GATE_FUNCTION_RELU to masked gates
         if self.has_gatefunction_relu:
-            x = gate_function_output + self.g_theta
+            x = gate_function_output + self.g_bias
             gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_RELU), T.maximum(x, 0.), gate_function_output)
             # wait for theano 0.7.1 for this to work
             #gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_RELU), T.nnet.relu(x), gate_function_output)
@@ -569,14 +568,14 @@ class TheanoPartition():
         if self.has_gatefunction_threshold:
 
             # apply threshold
-            thresholded_gate_function_output = \
-                T.switch(T.ge(gate_function_output, self.g_threshold), gate_function_output, 0)
+            thresholded_gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_THRESHOLD), \
+                T.switch(T.ge(gate_function_output, self.g_threshold), gate_function_output, 0), gate_function_output)
 
             # apply amplification
-            amplified_gate_function_output = thresholded_gate_function_output * self.g_amplification
+            amplified_gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_THRESHOLD), thresholded_gate_function_output * self.g_amplification, thresholded_gate_function_output)
 
             # apply minimum and maximum
-            limited_gate_function_output = T.clip(amplified_gate_function_output, self.g_min, self.g_max)
+            limited_gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_THRESHOLD), T.clip(amplified_gate_function_output, self.g_min, self.g_max), amplified_gate_function_output)
 
             gatefunctions = limited_gate_function_output
         else:
@@ -645,10 +644,10 @@ class TheanoPartition():
         a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(self.NoE, 14), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
         self.a_shifted.set_value(a_shifted_matrix, borrow=True)
 
-        g_theta_array = self.g_theta.get_value(borrow=True)
-        g_theta_rolled_array = np.roll(g_theta_array, 7)
-        g_theta_shifted_matrix = np.lib.stride_tricks.as_strided(g_theta_rolled_array, shape=(self.NoE, 14), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
-        self.g_theta_shifted.set_value(g_theta_shifted_matrix, borrow=True)
+        g_bias_array = self.g_bias.get_value(borrow=True)
+        g_bias_rolled_array = np.roll(g_bias_array, 7)
+        g_bias_shifted_matrix = np.lib.stride_tricks.as_strided(g_bias_rolled_array, shape=(self.NoE, 14), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
+        self.g_bias_shifted.set_value(g_bias_shifted_matrix, borrow=True)
 
     def rebuild_por_linked(self):
 
@@ -749,7 +748,7 @@ class TheanoPartition():
             w = sp.csr_matrix(w)
 
         a = self.a.get_value(borrow=True)
-        g_theta = self.g_theta.get_value(borrow=True)
+        g_bias = self.g_bias.get_value(borrow=True)
         g_factor = self.g_factor.get_value(borrow=True)
         g_threshold = self.g_threshold.get_value(borrow=True)
         g_amplification = self.g_amplification.get_value(borrow=True)
@@ -785,7 +784,7 @@ class TheanoPartition():
                  w_indices=w.indices,
                  w_indptr=w.indptr,
                  a=a,
-                 g_theta=g_theta,
+                 g_bias=g_bias,
                  g_factor=g_factor,
                  g_threshold=g_threshold,
                  g_amplification=g_amplification,
@@ -918,10 +917,10 @@ class TheanoPartition():
         else:
             self.logger.warning("no w_data, w_indices or w_indptr in file, falling back to defaults")  # pragma: no cover
 
-        if 'g_theta' in datafile:
-            self.g_theta = theano.shared(value=datafile['g_theta'].astype(T.config.floatX), name="theta", borrow=False)
+        if 'g_bias' in datafile:
+            self.g_bias = theano.shared(value=datafile['g_bias'].astype(T.config.floatX), name="bias", borrow=False)
         else:
-            self.logger.warning("no g_theta in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no g_bias in file, falling back to defaults")  # pragma: no cover
 
         if 'g_factor' in datafile:
             self.g_factor = theano.shared(value=datafile['g_factor'].astype(T.config.floatX), name="g_factor", borrow=False)
@@ -1128,12 +1127,12 @@ class TheanoPartition():
         new_a_prev[0:self.NoE] = self.a_prev.get_value(borrow=True)
         self.a_prev.set_value(new_a_prev, borrow=True)
 
-        new_g_theta = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
-        new_g_theta[0:self.NoE] = self.g_theta.get_value(borrow=True)
-        self.g_theta.set_value(new_g_theta, borrow=True)
+        new_g_bias = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_bias[0:self.NoE] = self.g_bias.get_value(borrow=True)
+        self.g_bias.set_value(new_g_bias, borrow=True)
 
-        new_g_theta_shifted = np.lib.stride_tricks.as_strided(new_g_theta, shape=(self.NoE, 7), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
-        self.g_theta_shifted.set_value(new_g_theta_shifted, borrow=True)
+        new_g_bias_shifted = np.lib.stride_tricks.as_strided(new_g_bias, shape=(self.NoE, 7), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
+        self.g_bias_shifted.set_value(new_g_bias_shifted, borrow=True)
 
         new_g_factor = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
         new_g_factor[0:self.NoE] = self.g_factor.get_value(borrow=True)
@@ -1205,7 +1204,7 @@ class TheanoPartition():
             self.logger.info("Per announcement in partition %i, growing elements vectors by %d elements" % (self.pid, growby))
             self.grow_number_of_elements(gap + (gap //3))
 
-    def create_node(self, nodetype, nodespace_id, id=None, parameters=None, gate_parameters=None, gate_functions=None):
+    def create_node(self, nodetype, nodespace_id, id=None, parameters=None, gate_configuration=None):
 
         # find a free ID / index in the allocated_nodes vector to hold the node type
         if id is None:
@@ -1279,6 +1278,8 @@ class TheanoPartition():
 
         if parameters is None:
             parameters = {}
+        if gate_configuration is None:
+            gate_configuration = {}
 
         nto = self.nodenet.get_nodetype(nodetype)
 
@@ -1361,20 +1362,10 @@ class TheanoPartition():
             for key in self.nodenet.get_standard_nodetype_definitions()[nodetype]['parameters']:
                 node_proxy.set_parameter(key, parameters.get(key, ''))
 
-        for gate, parameters in nto.gate_defaults.items():
-            if gate in nto.gatetypes:
-                for gate_parameter in parameters:
-                    self.set_node_gate_parameter(id, gate, gate_parameter, parameters[gate_parameter])
-        if gate_parameters is not None:
-            for gate, parameters in gate_parameters.items():
-                if gate in nto.gatetypes:
-                    for gate_parameter in parameters:
-                        self.set_node_gate_parameter(id, gate, gate_parameter, parameters[gate_parameter])
-
-        if gate_functions is not None:
-            for gate, gate_function in gate_functions.items():
-                if gate in nto.gatetypes:
-                    self.set_node_gatefunction_name(id, gate, gate_function)
+        for gate, conf in gate_configuration.items():
+            idx = offset + get_numerical_gate_type(gate)
+            for param, value in conf['gatefunction_parameters'].items():
+                self._set_gate_config_for_elements([idx], conf['gatefunction'], param, [value])
 
         # initialize activation to zero
         a_array = self.a.get_value(borrow=True)
@@ -1550,57 +1541,6 @@ class TheanoPartition():
         self.nodenet._track_deletion('nodespaces', nodespace_to_id(nodespace_id, self.pid))
         self.nodespaces_contents_last_changed[self.allocated_nodespaces[nodespace_id]] = self.nodenet.current_step
 
-    def set_node_gate_parameter(self, id, gate_type, parameter, value):
-        numerical_node_type = self.allocated_nodes[id]
-        nodetype = None
-        if numerical_node_type > MAX_STD_NODETYPE:
-            nodetype = self.nodenet.get_nodetype(get_string_node_type(numerical_node_type, self.nodenet.native_modules))
-
-        elementindex = self.allocated_node_offsets[id] + get_numerical_gate_type(gate_type, nodetype)
-        if parameter == 'threshold':
-            g_threshold_array = self.g_threshold.get_value(borrow=True)
-            g_threshold_array[elementindex] = value
-            self.g_threshold.set_value(g_threshold_array, borrow=True)
-        elif parameter == 'amplification':
-            g_amplification_array = self.g_amplification.get_value(borrow=True)
-            g_amplification_array[elementindex] = value
-            self.g_amplification.set_value(g_amplification_array, borrow=True)
-        elif parameter == 'minimum':
-            g_min_array = self.g_min.get_value(borrow=True)
-            g_min_array[elementindex] = value
-            self.g_min.set_value(g_min_array, borrow=True)
-        elif parameter == 'maximum':
-            g_max_array = self.g_max.get_value(borrow=True)
-            g_max_array[elementindex] = value
-            self.g_max.set_value(g_max_array, borrow=True)
-        elif parameter == 'theta':
-            g_theta_array = self.g_theta.get_value(borrow=True)
-            g_theta_array[elementindex] = value
-            self.g_theta.set_value(g_theta_array, borrow=True)
-
-    def set_node_gatefunction_name(self, id, gate_type, gatefunction_name):
-        numerical_node_type = self.allocated_nodes[id]
-        nodetype = None
-        if numerical_node_type > MAX_STD_NODETYPE:
-            nodetype = self.nodenet.get_nodetype(get_string_node_type(numerical_node_type, self.nodenet.native_modules))
-
-        elementindex = self.allocated_node_offsets[id] + get_numerical_gate_type(gate_type, nodetype)
-        g_function_selector = self.g_function_selector.get_value(borrow=True)
-        g_function_selector[elementindex] = get_numerical_gatefunction_type(gatefunction_name)
-        self.g_function_selector.set_value(g_function_selector, borrow=True)
-        if g_function_selector[elementindex] == GATE_FUNCTION_ABSOLUTE:
-            self.has_gatefunction_absolute = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_SIGMOID:
-            self.has_gatefunction_sigmoid = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_RELU:
-            self.has_gatefunction_relu = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_ELU:
-            self.has_gatefunction_elu = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_DIST:
-            self.has_gatefunction_one_over_x = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_THRESHOLD:
-            self.has_gatefunction_threshold = True
-
     def set_nodespace_gatetype_activator(self, nodespace_id, gate_type, activator_id):
         if gate_type == "por":
             self.allocated_nodespaces_por_activators[nodespace_id] = activator_id
@@ -1741,18 +1681,88 @@ class TheanoPartition():
         a_array[self.nodegroups[nodespace_uid][group]] = new_activations
         self.a.set_value(a_array, borrow=True)
 
-    def get_thetas(self, nodespace_uid, group):
+    def get_gate_configurations(self, nodespace_uid, group, gatefunction_parameter=None):
         if nodespace_uid not in self.nodegroups or group not in self.nodegroups[nodespace_uid]:
             raise ValueError("Group %s does not exist in nodespace %s." % (group, nodespace_uid))
-        g_theta_array = self.g_theta.get_value(borrow=True)
-        return g_theta_array[self.nodegroups[nodespace_uid][group]]
 
-    def set_thetas(self, nodespace_uid, group, thetas):
+        groupindexes = self.nodegroups[nodespace_uid][group]
+        g_function_selector = self.g_function_selector.get_value(borrow=True)
+        num_gatefunc = g_function_selector[groupindexes]
+        if len(np.unique(num_gatefunc)) > 1:
+            raise("Heterogenous gatefunction configuration") 
+        data = {'gatefunction': get_string_gatefunction_type(np.unique(num_gatefunc)[0])}
+        if gatefunction_parameter == 'bias':
+            g_bias = self.g_bias.get_value(borrow=True)
+            data['parameter_values'] = g_bias[groupindexes]
+        if gatefunction_parameter == 'minimum':
+            g_min = self.g_min.get_value(borrow=True)
+            data['parameter_values'] = g_min[groupindexes]
+        if gatefunction_parameter == 'maximum':
+            g_max = self.g_max.get_value(borrow=True)
+            data['parameter_values'] = g_max[groupindexes]
+        if gatefunction_parameter == 'amplification':
+            g_amplification = self.g_amplification.get_value(borrow=True)
+            data['parameter_values'] = g_amplification[groupindexes]
+        if gatefunction_parameter == 'threshold':
+            g_threshold = self.g_threshold.get_value(borrow=True)
+            data['parameter_values'] = g_threshold[groupindexes]
+        return data
+
+    def set_gate_configurations(self, nodespace_uid, group, gatefunction, gatefunction_parameter=None, parameter_values=None):
         if nodespace_uid not in self.nodegroups or group not in self.nodegroups[nodespace_uid]:
             raise ValueError("Group %s does not exist in nodespace %s." % (group, nodespace_uid))
-        g_theta_array = self.g_theta.get_value(borrow=True)
-        g_theta_array[self.nodegroups[nodespace_uid][group]] = thetas
-        self.g_theta.set_value(g_theta_array, borrow=True)
+
+        groupindexes = self.nodegroups[nodespace_uid][group]
+        self._set_gate_config_for_elements(groupindexes, gatefunction, gatefunction_parameter, parameter_values)
+
+    def _set_gate_config_for_elements(self, elements, gatefunction, gatefunction_parameter=None, parameter_values=None):
+        g_function_selector = self.g_function_selector.get_value(borrow=True)
+        g_bias = self.g_bias.get_value(borrow=True)
+        g_threshold = self.g_threshold.get_value(borrow=True)
+        g_amplification = self.g_amplification.get_value(borrow=True)
+        g_min = self.g_min.get_value(borrow=True)
+        g_max = self.g_max.get_value(borrow=True)
+
+        # set gatefunction
+        num_gatefunc = get_numerical_gatefunction_type(gatefunction)
+        g_function_selector[elements] = num_gatefunc
+        self.g_function_selector.set_value(g_function_selector, borrow=True)
+
+        # first, unset any old values
+        g_bias[elements] = 0
+        if num_gatefunc != GATE_FUNCTION_THRESHOLD:
+            g_threshold[elements] = 0
+            g_amplification[elements] = 1
+            g_min[elements] = 0
+            g_max[elements] = 1
+
+        if num_gatefunc == GATE_FUNCTION_SIGMOID or num_gatefunc == GATE_FUNCTION_ELU or num_gatefunc == GATE_FUNCTION_RELU:
+            if gatefunction_parameter == 'bias':
+                g_bias[elements] = parameter_values
+            if num_gatefunc == GATE_FUNCTION_ELU:
+                self.has_gatefunction_elu = True
+            elif num_gatefunc == GATE_FUNCTION_RELU:
+                self.has_gatefunction_relu = True
+            elif num_gatefunc == GATE_FUNCTION_SIGMOID:
+                self.has_gatefunction_sigmoid = True
+
+        elif num_gatefunc == GATE_FUNCTION_THRESHOLD:
+            self.has_gatefunction_threshold = True
+            if gatefunction_parameter == 'threshold':
+                g_threshold[elements] = parameter_values
+            if gatefunction_parameter == 'amplification':
+                g_amplification[elements] = parameter_values
+            if gatefunction_parameter == 'minimum':
+                g_min[elements] = parameter_values
+            if gatefunction_parameter == 'maximum':
+                g_max[elements] = parameter_values
+
+        self.g_function_selector.set_value(g_function_selector, borrow=True)
+        self.g_bias.set_value(g_bias, borrow=True)
+        self.g_threshold.set_value(g_threshold, borrow=True)
+        self.g_amplification.set_value(g_amplification, borrow=True)
+        self.g_min.set_value(g_min, borrow=True)
+        self.g_max.set_value(g_max, borrow=True)
 
     def get_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to):
         if nodespace_from_uid not in self.nodegroups or group_from not in self.nodegroups[nodespace_from_uid]:
@@ -1885,11 +1895,11 @@ class TheanoPartition():
 
     def get_node_data(self, ids=None, nodespaces_by_partition=None, complete=False, include_links=True, linked_nodespaces_by_partition={}):
         a = self.a.get_value(borrow=True)
-        g_threshold_array = self.g_threshold.get_value(borrow=True)
-        g_amplification_array = self.g_amplification.get_value(borrow=True)
-        g_min_array = self.g_min.get_value(borrow=True)
-        g_max_array = self.g_max.get_value(borrow=True)
-        g_theta = self.g_theta.get_value(borrow=True)
+        g_threshold = self.g_threshold.get_value(borrow=True)
+        g_amplification = self.g_amplification.get_value(borrow=True)
+        g_min = self.g_min.get_value(borrow=True)
+        g_max = self.g_max.get_value(borrow=True)
+        g_bias = self.g_bias.get_value(borrow=True)
         g_function_selector = self.g_function_selector.get_value(borrow=True)
         w = self.w.get_value(borrow=True)
 
@@ -1915,8 +1925,7 @@ class TheanoPartition():
             strtype = get_string_node_type(self.allocated_nodes[id], self.nodenet.native_modules)
             nodetype = self.nodenet.get_nodetype(strtype)
 
-            gate_functions = {}
-            gate_parameters = {}
+            gate_configurations = {}
             gate_activations = {}
 
             if nodetype.is_highdimensional:
@@ -1928,31 +1937,21 @@ class TheanoPartition():
             for gate in gates:
                 numericalgate = get_numerical_gate_type(gate, nodetype)
                 element = self.allocated_node_offsets[id] + numericalgate
-                gate_functions[gate] = get_string_gatefunction_type(g_function_selector[element])
-
-                parameters = {}
-                threshold = g_threshold_array[element].item()
-                if 'threshold' not in nodetype.gate_defaults[gate] or threshold != nodetype.gate_defaults[gate]['threshold']:
-                    parameters['threshold'] = float(threshold)
-
-                amplification = g_amplification_array[element].item()
-                if 'amplification' not in nodetype.gate_defaults[gate] or amplification != nodetype.gate_defaults[gate]['amplification']:
-                    parameters['amplification'] = float(amplification)
-
-                minimum = g_min_array[element].item()
-                if 'minimum' not in nodetype.gate_defaults[gate] or minimum != nodetype.gate_defaults[gate]['minimum']:
-                    parameters['minimum'] = float(minimum)
-
-                maximum = g_max_array[element].item()
-                if 'maximum' not in nodetype.gate_defaults[gate] or maximum != nodetype.gate_defaults[gate]['maximum']:
-                    parameters['maximum'] = float(maximum)
-
-                theta = g_theta[element].item()
-                if 'theta' not in nodetype.gate_defaults[gate] or theta != nodetype.gate_defaults[gate]['theta']:
-                    parameters['theta'] = float(theta)
-
-                if not len(parameters) == 0:
-                    gate_parameters[gate] = parameters
+                num_gatefunc = g_function_selector[element]
+                if num_gatefunc != GATE_FUNCTION_IDENTITY:
+                    gate_configurations[gate] = {
+                        'gatefunction': get_string_gatefunction_type(num_gatefunc),
+                        'gatefunction_parameters': {}
+                    }
+                    if num_gatefunc == GATE_FUNCTION_SIGMOID or num_gatefunc == GATE_FUNCTION_ELU or num_gatefunc == GATE_FUNCTION_RELU:
+                        gate_configurations[gate]['gatefunction_parameters'] = {'bias': float(g_bias[element])}
+                    elif num_gatefunc == GATE_FUNCTION_THRESHOLD:
+                        gate_configurations[gate]['gatefunction_parameters'] = {
+                            'minimum': float(g_min[element]),
+                            'maximum': float(g_max[element]),
+                            'threshold': float(g_threshold[element]),
+                            'amplification': float(g_amplification[element])
+                        }
 
                 gate_activations[gate] = float(a[element])
 
@@ -2010,10 +2009,9 @@ class TheanoPartition():
                     "type": strtype,
                     "parameters": parameters,
                     "state": state,
-                    "gate_parameters": gate_parameters,
                     "activation": float(a[self.allocated_node_offsets[id] + GEN]),
                     "gate_activations": gate_activations,
-                    "gate_functions": gate_functions,
+                    "gate_configuration": gate_configurations,
                     "is_highdimensional": nodetype.is_highdimensional}
             if complete:
                 data['index'] = int(id)

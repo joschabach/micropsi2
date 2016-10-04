@@ -83,14 +83,14 @@ def test_linkweight_recorder(runtime, test_nodenet, resourcepath):
     runtime.step_nodenet(test_nodenet)
     values = recorder.values
     assert set(["%.2f" % item for row in values['linkweights'][0] for item in row]) == {"0.89"}
-    assert len(values['from_thetas'][0]) == 10
-    assert len(values['to_thetas'][0]) == 10
+    assert len(values['from_bias'][0]) == 10
+    assert len(values['to_bias'][0]) == 10
     runtime.save_nodenet(test_nodenet)
     runtime.revert_nodenet(test_nodenet)
     recorder = netapi.get_recorder(recorder.uid)
     assert set(["%.2f" % item for row in recorder.values['linkweights'][0] for item in row]) == {"0.89"}
-    assert len(values['from_thetas'][0]) == 10
-    assert len(values['to_thetas'][0]) == 10
+    assert len(values['from_bias'][0]) == 10
+    assert len(values['to_bias'][0]) == 10
 
 
 @pytest.mark.engine("theano_engine")

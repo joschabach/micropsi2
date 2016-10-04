@@ -617,9 +617,6 @@ class Nodetype(object):
                 'gates': dict(("%s0" % g, self.dimensionality['gates'][g]) for g in self.dimensionality['gates']),
                 'slots': dict(("%s0" % s, self.dimensionality['slots'][s]) for s in self.dimensionality['slots']),
             }
-            data['gate_defaults'] = {}
-            for g in self.gategroups:
-                data['gate_defaults'][g] = self.gate_defaults[g]
         else:
             data['gatetypes'] = self.gatetypes
             data['slottypes'] = self.slottypes

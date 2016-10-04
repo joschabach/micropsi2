@@ -689,27 +689,6 @@ def test_node_netapi_import_sensors(runtime, test_nodenet, test_world):
     assert len(sensors) == 2
 
 
-# def test_set_gate_function(runtime, test_nodenet):
-#     # test setting a custom gate function
-#     from micropsi_core.nodenet.gatefunctions import sigmoid
-#     net, netapi, source = prepare(runtime, test_nodenet)
-
-#     some_other_node_type = netapi.create_node("Pipe", None)
-#     netapi.unlink(source, "gen")
-
-#     net.step()
-#     assert source.get_gate("gen").activation == 0
-
-#     netapi.set_gatefunction(netapi.get_nodespace(None).uid, "Register", "gen", "sigmoid")
-
-#     source.set_gate_parameter('gen', 'theta', 1)
-
-#     net.step()
-
-#     assert round(source.get_gate("gen").activation, 5) == round(sigmoid(0, 0, 1), 5)
-#     assert some_other_node_type.get_gate("gen").activation == 0
-
-
 def test_autoalign(runtime, test_nodenet):
     net = runtime.nodenets[test_nodenet]
     netapi = net.netapi
@@ -868,7 +847,9 @@ def test_set_gate_get_gate_config(runtime, test_nodenet):
     netapi.group_nodes_by_names(None, node_name_prefix="sepp")
     data = netapi.get_gate_configurations(None, "sepp", 'bias')
     assert data['gatefunction'] == 'identity'
-    assert data['parameter_values'] == [None, None, None]
+    assert data['parameter_values'][0] == 0
+    assert data['parameter_values'][1] == 0
+    assert data['parameter_values'][2] == 0
 
 
 def test_set_gate_config(runtime, test_nodenet):
@@ -885,10 +866,12 @@ def test_set_gate_config(runtime, test_nodenet):
 
     data = netapi.get_gate_configurations(None, "sepp", 'bias')
     assert data['gatefunction'] == 'sigmoid'
-    assert data['parameter_values'] == [1, 2, 3]
-    assert sepp1.get_gate('gen').activation == sigmoid(0, 1)
-    assert sepp2.get_gate('gen').activation == sigmoid(0, 2)
-    assert sepp3.get_gate('gen').activation == sigmoid(0, 3)
+    assert data['parameter_values'][0] == 1
+    assert data['parameter_values'][1] == 2
+    assert data['parameter_values'][2] == 3
+    assert round(sepp1.get_gate('gen').activation, 5) == round(sigmoid(0, 1), 5)
+    assert round(sepp2.get_gate('gen').activation, 5) == round(sigmoid(0, 2), 5)
+    assert round(sepp3.get_gate('gen').activation, 5) == round(sigmoid(0, 3), 5)
 
 
 def test_get_link_weights(runtime, test_nodenet):

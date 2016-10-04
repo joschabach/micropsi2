@@ -272,7 +272,7 @@ def test_engine_specific_nodetype_theano(runtime, test_nodenet, resourcepath):
             "slottypes": ["gen", "foo", "bar"],
             "nodefunction_name": "testnodefunc",
             "gatetypes": ["gen", "foo", "bar"],
-            "symbol": "t",
+            "symbol": "t"
             }}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")

@@ -152,44 +152,21 @@
                 <h4>Gate <span class="gate_gatetype"></span></h4>
                 <p class="highdim"></p>
                 <table>
-                    <tr>
-                        <td><label for="gate_activation">Activation</label></td>
-                        <td><input type="text" class="" name="activation" id="gate_activation" disabled="disabled"></td>
-                    </tr>
-                    <tr>
-                        <td><label for="gate_minimum">Minimum</label></td>
-                        <td><input type="text" class="" name="minimum" id="gate_minimum"></td>
-                    </tr>
-                    <tr>
-                        <td><label for="gate_maximum">Maximum</label></td>
-                        <td><input type="text" class="" name="maximum" id="gate_maximum"></td>
-                    </tr>
-                    <tr>
-                        <td><label for="gate_amplification">Amplification</label></td>
-                        <td><input type="text" class="" name="amplification" id="gate_amplification"></td>
-                    </tr>
-                    <tr>
-                        <td><label for="gate_threshold">Threshold</label></td>
-                        <td><input type="text" class="" name="threshold" id="gate_threshold"></td>
-                    </tr>
-                    <tr>
-                        <td colspan="2"><a href="#" class="gate_additional_trigger">Show additional parameters</a> (for gatefunction)</td>
-                    </tr>
-                    <tr class="gate_additional hide">
-                        <td><label for="gate_rho">Rho</label></td>
-                        <td><input type="text" class="" name="rho" id="gate_rho"></td>
-                    </tr>
-                    <tr class="gate_additional hide">
-                        <td><label for="gate_theta">Theta</label></td>
-                        <td><input type="text" class="" name="theta" id="gate_theta"></td>
-                    </tr>
-                    <tr>
-                        <td><label for="">Gatefunction</label></td>
-                        <td>
-                           <select name="gate_gatefunction" id="gate_gatefunction">
-                           </select>
-                        </td>
-                    </tr>
+                    <tbody>
+                        <tr>
+                            <td><label for="gate_activation">Activation</label></td>
+                            <td><input type="text" class="" name="activation" id="gate_activation" disabled="disabled"></td>
+                        </tr>
+                        <tr>
+                            <td><label for="">Gatefunction</label></td>
+                            <td>
+                               <select name="gate_gatefunction" id="gate_gatefunction">
+                               </select>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tbody id="gatefunction_param_container">
+                    </tbody>
                 </table>
                 <div class="controls">
                     <button type="submit" class="btn btn-primary">Apply</button>

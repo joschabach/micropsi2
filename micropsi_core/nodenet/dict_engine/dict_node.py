@@ -11,8 +11,6 @@ default Nodetypes
 
 """
 
-import copy
-
 from micropsi_core.nodenet.node import Node, Gate, Slot
 from .dict_link import DictLink
 from micropsi_core.nodenet.dict_engine.dict_netentity import NetEntity
@@ -64,9 +62,7 @@ class DictNode(NetEntity, Node):
             gengate.activation = float(activation)
 
     def __init__(self, nodenet, parent_nodespace, position, state=None, activation=0,
-                 name="", type="Concept", uid=None, index=None, parameters=None, gate_parameters=None, gate_activations=None, gate_functions=None, **_):
-        if not gate_parameters:
-            gate_parameters = {}
+                 name="", type="Concept", uid=None, index=None, parameters=None, gate_activations=None, gate_configuration=None, **_):
 
         if nodenet.is_node(uid):
             raise KeyError("Node with uid %s already exists" % uid)
@@ -78,53 +74,21 @@ class DictNode(NetEntity, Node):
 
         self.position = position
 
-        self.__non_default_gate_parameters = {}
-
         self.__state = {}
         self.__activation = 0
 
         self.__gates = {}
         self.__slots = {}
-        self.__gatefunctions = {}
-        if gate_functions is None:
-            gate_functions = {}
+        self._gate_configuration = gate_configuration or {}
+
         self.__parameters = dict((key, self.nodetype.parameter_defaults.get(key)) for key in self.nodetype.parameters)
         if parameters is not None:
             for key in parameters:
                 if parameters[key] is not None:
                     self.set_parameter(key, parameters[key])
 
-        for gate_name in gate_parameters:
-            for key in gate_parameters[gate_name]:
-                if gate_parameters[gate_name][key] != self.nodetype.gate_defaults[gate_name].get(key, None):
-                    if gate_name not in self.__non_default_gate_parameters:
-                        self.__non_default_gate_parameters[gate_name] = {}
-                    self.__non_default_gate_parameters[gate_name][key] = gate_parameters[gate_name][key]
-
-        gate_parameters = copy.deepcopy(self.nodetype.gate_defaults)
-        for gate_name in gate_parameters:
-            if gate_name in self.__non_default_gate_parameters:
-                gate_parameters[gate_name].update(self.__non_default_gate_parameters[gate_name])
-
-        gate_parameters_for_validation = copy.deepcopy(gate_parameters)
-        for gate_name in gate_parameters_for_validation:
-            for key in gate_parameters_for_validation[gate_name]:
-                if key in self.nodetype.gate_defaults:
-                    try:
-                        gate_parameters[gate_name][key] = float(gate_parameters[gate_name][key])
-                    except:
-                        self.logger.warning('Invalid gate parameter value for gate %s, param %s, node %s' % (gate_name, key, self.uid))
-                        gate_parameters[gate_name][key] = self.nodetype.gate_defaults[gate_name].get(key, 0)
-                else:
-                    gate_parameters[gate_name][key] = float(gate_parameters[gate_name][key])
-
         for gate in self.nodetype.gatetypes:
-            if gate not in gate_functions:
-                self.__gatefunctions[gate] = gatefunctions.identity
-            else:
-                self.__gatefunctions[gate] = getattr(gatefunctions, gate_functions[gate])
-
-            self.__gates[gate] = DictGate(gate, self, parameters=gate_parameters.get(gate))
+            self.__gates[gate] = DictGate(gate, self)
         for slot in self.nodetype.slottypes:
             self.__slots[slot] = DictSlot(slot, self)
         if state:
@@ -187,68 +151,34 @@ class DictNode(NetEntity, Node):
         if gate is not None:
             gate.activation = activation
 
-    def get_gate_parameters(self):
-        """Looks into the gates and returns gate parameters if these are defined"""
-        gate_parameters = {}
-        for gatetype in self.get_gate_types():
-            if self.get_gate(gatetype).parameters:
-                gate_parameters[gatetype] = self.get_gate(gatetype).parameters
-        if len(gate_parameters):
-            return gate_parameters
+    def set_gate_configuration(self, gate_type, gatefunction, gatefunction_parameters={}):
+        gatefuncs = self.nodenet.get_available_gatefunctions()
+        if gatefunction == 'identity' or gatefunction is None:
+            self._gate_configuration.pop(gate_type, None)
+        elif gatefunction in gatefuncs:
+            for param, default in gatefuncs[gatefunction].items():
+                if param not in gatefunction_parameters:
+                    gatefunction_parameters[param] = default
+            self._gate_configuration[gate_type] = {
+                'gatefunction': gatefunction,
+                'gatefunction_parameters': gatefunction_parameters
+            }
         else:
-            return None
+            raise NameError("Unknown Gatefunction")
 
-    def clone_non_default_gate_parameters(self, gate_type=None):
+    def get_gate_configuration(self, gate_type=None):
         if gate_type is None:
-            return self.__non_default_gate_parameters.copy()
-        if gate_type not in self.__non_default_gate_parameters:
-            return None
-        return {
-            gate_type: self.__non_default_gate_parameters[gate_type].copy()
-        }
-
-    def set_gate_parameter(self, gate_type, parameter, value):
-        if self.__non_default_gate_parameters is None:
-            self.__non_default_gate_parameters = {}
-        if parameter in self.nodetype.gate_defaults[gate_type]:
-            if value is None:
-                value = self.nodetype.gate_defaults[gate_type][parameter]
+            return self._gate_configuration
+        elif self.get_gate(gate_type):
+            if gate_type in self._gate_configuration:
+                return self._gate_configuration[gate_type]
             else:
-                value = float(value)
-            if value != self.nodetype.gate_defaults[gate_type][parameter]:
-                if gate_type not in self.__non_default_gate_parameters:
-                    self.__non_default_gate_parameters[gate_type] = {}
-                self.__non_default_gate_parameters[gate_type][parameter] = value
-            elif parameter in self.__non_default_gate_parameters.get(gate_type, {}):
-                del self.__non_default_gate_parameters[gate_type][parameter]
-        self.get_gate(gate_type).parameters[parameter] = value
-
-    def get_gatefunction(self, gate_type):
-        if self.get_gate(gate_type):
-            return self.__gatefunctions[gate_type]
-        raise KeyError("Wrong Gatetype")
-
-    def get_gatefunction_name(self, gate_type):
-        if self.get_gate(gate_type):
-            return self.__gatefunctions[gate_type].__name__
-        raise KeyError("Wrong Gatetype")
-
-    def set_gatefunction_name(self, gate_type, gatefunction):
-        if self.get_gate(gate_type):
-            if gatefunction is None:
-                self.__gatefunctions[gate_type] = gatefunctions.identity
-            elif hasattr(gatefunctions, gatefunction):
-                self.__gatefunctions[gate_type] = getattr(gatefunctions, gatefunction)
-            else:
-                raise NameError("Unknown Gatefunction")
+                return {
+                    'gatefunction': 'identity',
+                    'gatefunction_parameters': {}
+                }
         else:
             raise KeyError("Wrong Gatetype")
-
-    def get_gatefunction_names(self):
-        ret = {}
-        for key in self.__gatefunctions:
-            ret[key] = self.__gatefunctions[key].__name__
-        return ret
 
     def reset_slots(self):
         for slottype in self.get_slot_types():
@@ -387,19 +317,17 @@ class DictGate(Gate):
     def activation(self, activation):
         self.__activation = activation
 
-    def __init__(self, type, node, parameters=None):
+    def __init__(self, type, node):
         """create a gate.
 
         Parameters:
             type: a string that refers to a node type
             node: the parent node
-            parameters: an optional dictionary of parameters for the gate function
         """
         self.__type = type
         self.__node = node
         self.__activation = 0
         self.__outgoing = {}
-        self.parameters = parameters.copy()
         self.monitor = None
 
     def get_links(self):
@@ -434,23 +362,14 @@ class DictGate(Gate):
             self.__activation = 0.0
             return 0  # if the gate is closed, we don't need to execute the gate function
 
-        gatefunction = self.__node.get_gatefunction(self.__type)
+        config = self.__node.get_gate_configuration(self.__type)
 
-        if gatefunction:
-            activation = gatefunction(input_activation, self.parameters.get('rho', 0), self.parameters.get('theta', 0))
-        else:
-            activation = input_activation
+        gatefunction = getattr(gatefunctions, config['gatefunction'])
 
-        if activation * gate_factor < self.parameters['threshold']:
-            activation = 0
-        else:
-            activation = activation * self.parameters["amplification"] * gate_factor
+        self.__activation = gate_factor * gatefunction(input_activation, **config['gatefunction_parameters'])
 
-        activation = min(self.parameters["maximum"], max(self.parameters["minimum"], activation))
+        return self.__activation
 
-        self.__activation = activation
-
-        return activation
 
 class DictSlot(Slot):
     """The entrance of activation into a node. Nodes may have many slots, in which links terminate.

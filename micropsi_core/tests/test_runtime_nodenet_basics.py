@@ -43,19 +43,6 @@ def test_new_nodenet(runtime, test_nodenet, resourcepath, engine):
     assert not os.path.exists(n_path)
 
 
-# def test_nodenet_data_gate_parameters(runtime, fixed_nodenet):
-#     from micropsi_core.nodenet.node import Nodetype
-#     data = runtime.nodenets[fixed_nodenet].get_data()
-#     assert data['nodes']['n0005']['gate_parameters'] == {}
-#     runtime.set_gate_parameters(fixed_nodenet, 'n0005', 'gen', {'threshold': 1})
-#     data = runtime.nodenets[fixed_nodenet].get_data()
-#     assert data['nodes']['n0005']['gate_parameters'] == {'gen': {'threshold': 1}}
-#     defaults = Nodetype.GATE_DEFAULTS.copy()
-#     defaults.update({'threshold': 1})
-#     data = runtime.nodenets[fixed_nodenet].get_node('n0005').get_data()['gate_parameters']
-#     assert data == {'gen': {'threshold': 1}}
-
-
 def test_user_prompt(runtime, test_nodenet, resourcepath):
     import os
     nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
@@ -234,15 +221,6 @@ def test_clone_nodes_to_new_nodespace(runtime, test_nodenet):
     assert register_copy.parent_nodespace == testspace_uid
 
 
-# def test_clone_nodes_copies_gate_params(fixed_nodenet):
-#     nodenet = micropsi.get_nodenet(fixed_nodenet)
-#     micropsi.set_gate_parameters(fixed_nodenet, 'n0001', 'gen', {'maximum': 0.1})
-#     success, result = micropsi.clone_nodes(fixed_nodenet, ['n0001'], 'internal')
-#     assert success
-#     copy = nodenet.get_node(list(result.keys())[0])
-#     assert round(copy.get_gate_parameters()['gen']['maximum'], 2) == 0.1
-
-
 def test_modulators(runtime, test_nodenet, engine):
     nodenet = runtime.get_nodenet(test_nodenet)
     # assert modulators are instantiated from the beginning
@@ -279,7 +257,6 @@ def test_modulators_sensor_actuator_connection(runtime, test_nodenet, test_world
     s2 = nodenet.get_node(s2_id)
     r1 = nodenet.get_node(r1_id)
     r2 = nodenet.get_node(r2_id)
-    s2.set_gate_parameter('gen', 'maximum', 999)
     runtime.add_link(test_nodenet, r1_id, 'gen', a1_id, 'gen')
     runtime.add_link(test_nodenet, r2_id, 'gen', a2_id, 'gen')
     r1.activation = 0.3

@@ -54,21 +54,7 @@ STANDARD_NODETYPES = {
         "name": "Script",
         "slottypes": ["gen", "por", "ret", "sub", "sur"],
         "nodefunction_name": "script",
-        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"],
-        "gate_defaults": {
-            "por": {
-                "threshold": -1
-            },
-            "ret": {
-                "threshold": -1
-            },
-            "sub": {
-                "threshold": -1
-            },
-            "sur": {
-                "threshold": -1
-            }
-        }
+        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]
     },
     "Pipe": {
         "name": "Pipe",
@@ -95,34 +81,6 @@ STANDARD_NODETYPES = {
         "slottypes": ["gen", "por", "gin", "gou", "gfg"],
         "gatetypes": ["gen", "por", "gin", "gou", "gfg"],
         "nodefunction_name": "lstm",
-        "symbol": "◷",
-        "gate_defaults": {
-            "gen": {
-                "minimum": -1000,
-                "maximum": 1000,
-                "threshold": -1000
-            },
-            "por": {
-                "minimum": -1000,
-                "maximum": 1000,
-                "threshold": -1000
-            },
-            "gin": {
-                "minimum": -1000,
-                "maximum": 1000,
-                "threshold": -1000
-            },
-            "gou": {
-                "minimum": -1000,
-                "maximum": 1000,
-                "threshold": -1000
-            },
-            "gfg": {
-                "minimum": -1000,
-                "maximum": 1000,
-                "threshold": -1000
-            }
-        }
     }
 }
 
@@ -478,7 +436,6 @@ class DictNodenet(Nodenet):
                     'comment': 'There was a %s node here' % data['type']
                 }
                 data['type'] = 'Comment'
-                data.pop('gate_parameters', '')
                 invalid_nodes.append(uid)
             self._nodes[newuid] = DictNode(self, **data)
 
@@ -532,7 +489,7 @@ class DictNodenet(Nodenet):
                 else:
                     del self.deleted_items[i]
 
-    def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
+    def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_configuration=None):
         nodespace_uid = self.get_nodespace(nodespace_uid).uid
         node = DictNode(
             self,
@@ -541,7 +498,7 @@ class DictNodenet(Nodenet):
             type=nodetype,
             uid=uid,
             parameters=parameters,
-            gate_parameters=gate_parameters)
+            gate_configuration=gate_configuration)
         return node.uid
 
     def create_nodespace(self, parent_uid, name="", uid=None, options=None):
@@ -742,20 +699,28 @@ class DictNodenet(Nodenet):
         for i in range(len(nodes)):
             nodes[i].set_gate_activation(gate, new_activations[i])
 
-    def get_thetas(self, nodespace_uid, group):
+    def get_gate_configurations(self, nodespace_uid, group, gatefunction_parameter=None):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
 
         if group not in self.nodegroups[nodespace_uid]:
             raise ValueError("Group %s does not exist in nodespace %s" % (group, nodespace_uid))
-        thetas = []
         nodes = self.nodegroups[nodespace_uid][group][0]
         gate = self.nodegroups[nodespace_uid][group][1]
+        data = {'gatefunction': set()}
+        if gatefunction_parameter:
+            data['parameter_values'] = []
         for node in nodes:
-            thetas.append(node.get_gate(gate).get_parameter('theta'))
-        return thetas
+            config = node.get_gate_configuration(gate)
+            data['gatefunction'].add(config['gatefunction'])
+            if gatefunction_parameter is not None:
+                data['parameter_values'].append(config['gatefunction_parameters'].get(gatefunction_parameter, 0))
+        if len(data['gatefunction']) > 1:
+            raise RuntimeError("Heterogenous gatefunction configuration")
+        data['gatefunction'] = data['gatefunction'].pop()
+        return data
 
-    def set_thetas(self, nodespace_uid, group, thetas):
+    def set_gate_configurations(self, nodespace_uid, group, gatefunction, gatefunction_parameter=None, parameter_values=None):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
 
@@ -764,7 +729,10 @@ class DictNodenet(Nodenet):
         nodes = self.nodegroups[nodespace_uid][group][0]
         gate = self.nodegroups[nodespace_uid][group][1]
         for i in range(len(nodes)):
-            nodes[i].set_gate_parameter(gate, 'theta', thetas[i])
+            parameter = {}
+            if gatefunction_parameter:
+                parameter[gatefunction_parameter] = parameter_values[i]
+            nodes[i].set_gate_configuration(gate, gatefunction, parameter)
 
     def get_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to):
         if nodespace_from_uid is None:
@@ -837,11 +805,17 @@ class DictNodenet(Nodenet):
 
     def get_available_gatefunctions(self):
         """
-        Returns a list of available gate functions
+        Returns a dict of the available gatefunctions and their parameters and parameter-defaults
         """
-        from inspect import getmembers, isfunction
+        from inspect import getmembers, getargspec, isfunction
         from micropsi_core.nodenet import gatefunctions
-        return sorted([name for name, func in getmembers(gatefunctions, isfunction)])
+        data = {}
+        for name, func in getmembers(gatefunctions, isfunction):
+            argspec = getargspec(func)
+            data[name] = {}
+            for idx, arg in enumerate(argspec.args[1:]):
+                data[name][arg] = argspec.defaults[idx]
+        return data
 
     def has_nodespace_changes(self, nodespace_uids=[], since_step=0):
         if nodespace_uids == []:

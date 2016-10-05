@@ -63,10 +63,6 @@ def test_node_netapi_create_pipe_node(runtime, test_nodenet):
     # frontend/persistency-oriented data dictionary test
     data = node.get_data()
     assert data['uid'] == node.uid
-    for key in node.get_gate_types():
-        assert key not in data['gate_parameters']
-        for parameter, value in node.nodetype.gate_defaults[key].items():
-            assert node.get_gate(key).get_parameter(parameter) == value
     assert data['name'] == node.name
     assert data['type'] == node.type
 
@@ -693,27 +689,6 @@ def test_node_netapi_import_sensors(runtime, test_nodenet, test_world):
     assert len(sensors) == 2
 
 
-def test_set_gate_function(runtime, test_nodenet):
-    # test setting a custom gate function
-    from micropsi_core.nodenet.gatefunctions import sigmoid
-    net, netapi, source = prepare(runtime, test_nodenet)
-
-    some_other_node_type = netapi.create_node("Pipe", None)
-    netapi.unlink(source, "gen")
-
-    net.step()
-    assert source.get_gate("gen").activation == 0
-
-    netapi.set_gatefunction(netapi.get_nodespace(None).uid, "Register", "gen", "sigmoid")
-
-    source.set_gate_parameter('gen', 'theta', 1)
-
-    net.step()
-
-    assert round(source.get_gate("gen").activation, 5) == round(sigmoid(0, 0, 1), 5)
-    assert some_other_node_type.get_gate("gen").activation == 0
-
-
 def test_autoalign(runtime, test_nodenet):
     net = runtime.nodenets[test_nodenet]
     netapi = net.netapi
@@ -774,7 +749,7 @@ def test_copy_nodes(runtime, test_nodenet):
     netapi.link(a3, 'gen', a1, 'gen')
     netapi.link(a1, 'por', a2, 'por')
     a1.set_parameter('expecation', 0.6)
-    a1.set_gate_parameter('gen', 'amplification', 0.27)
+    a1.set_gate_configuration('gen', 'sigmoid', {'bias': 1.3})
     mapping = netapi.copy_nodes([a1, a2], nodespace.uid)
     assert a1 in mapping
     assert a2 in mapping
@@ -785,7 +760,7 @@ def test_copy_nodes(runtime, test_nodenet):
     assert len(mapping[a1].get_slot('gen').get_links()) == 0  # incoming link from outside not copied
     assert mapping[a1].get_gate('por').get_links()[0].target_node.uid == mapping[a2].uid
     assert a1.clone_parameters() == mapping[a1].clone_parameters()
-    assert a1.get_gate_parameters() == mapping[a1].get_gate_parameters()
+    assert mapping[a1].get_gate_configuration() == a1.get_gate_configuration()
 
 
 def test_group_nodes_by_names(runtime, test_nodenet):
@@ -864,35 +839,39 @@ def test_substitute_activations(runtime, test_nodenet):
     assert round(seppen_act[2], 2) == -1
 
 
-def test_get_thetas(runtime, test_nodenet):
+def test_set_gate_get_gate_config(runtime, test_nodenet):
     net, netapi, source = prepare(runtime, test_nodenet)
     sepp1 = netapi.create_node("Register", None, "sepp1")
     sepp2 = netapi.create_node("Register", None, "sepp2")
     sepp3 = netapi.create_node("Register", None, "sepp3")
     netapi.group_nodes_by_names(None, node_name_prefix="sepp")
-    seppen_theta = netapi.get_thetas(None, "sepp")
-    assert len(seppen_theta) == 3
-    assert seppen_theta[0] == 0
-    assert seppen_theta[1] == 0
-    assert seppen_theta[2] == 0
+    data = netapi.get_gate_configurations(None, "sepp", 'bias')
+    assert data['gatefunction'] == 'identity'
+    assert data['parameter_values'][0] == 0
+    assert data['parameter_values'][1] == 0
+    assert data['parameter_values'][2] == 0
 
 
-def test_set_thetas(runtime, test_nodenet):
+def test_set_gate_config(runtime, test_nodenet):
+    from micropsi_core.nodenet.gatefunctions import sigmoid
     net, netapi, source = prepare(runtime, test_nodenet)
     sepp1 = netapi.create_node("Register", None, "sepp1")
     sepp2 = netapi.create_node("Register", None, "sepp2")
     sepp3 = netapi.create_node("Register", None, "sepp3")
     netapi.group_nodes_by_names(None, node_name_prefix="sepp")
 
-    some_thetas = [1, 2, 3]
-    netapi.set_thetas(None, "sepp", some_thetas)
+    netapi.set_gate_configurations(None, "sepp", 'sigmoid', 'bias', [1, 2, 3])
 
     net.step()
 
-    seppen_theta = netapi.get_thetas(None, "sepp")
-    assert round(seppen_theta[0], 2) == 1
-    assert round(seppen_theta[1], 2) == 2
-    assert round(seppen_theta[2], 2) == 3
+    data = netapi.get_gate_configurations(None, "sepp", 'bias')
+    assert data['gatefunction'] == 'sigmoid'
+    assert data['parameter_values'][0] == 1
+    assert data['parameter_values'][1] == 2
+    assert data['parameter_values'][2] == 3
+    assert round(sepp1.get_gate('gen').activation, 5) == round(sigmoid(0, 1), 5)
+    assert round(sepp2.get_gate('gen').activation, 5) == round(sigmoid(0, 2), 5)
+    assert round(sepp3.get_gate('gen').activation, 5) == round(sigmoid(0, 3), 5)
 
 
 def test_get_link_weights(runtime, test_nodenet):

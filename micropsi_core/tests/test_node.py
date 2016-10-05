@@ -112,7 +112,9 @@ def phatNM(netapi, node, **_):
     assert np.all(node.load_data() == new_activation)
 
     # test setting gate details, get_gate_activation
-    node.set_gatefunction_name("A_out0", "sigmoid")
+    node.set_gate_configuration("A_out0", "sigmoid")
+    config = node.get_gate_configuration()
+    assert config['A_out0']['gatefunction'] == 'sigmoid'
     runtime.step_nodenet(test_nodenet)
     act = node.get_gate_activations()
     assert act[3] == 0.5
@@ -140,5 +142,4 @@ def phatNM(netapi, node, **_):
     assert result['dimensionality']['slots']['A_in0'] == 1024
     assert result['dimensionality']['slots']['B_in0'] == 62
     assert result['gatetypes'] == ['gen', 'sub', 'sur', 'A_out0', 'B_out0']
-    assert set(result['gate_defaults'].keys()) == set(result['gatetypes'])
     assert result['is_highdimensional']

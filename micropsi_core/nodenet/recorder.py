@@ -203,8 +203,8 @@ class LinkweightRecorder(Recorder):
         to_uids = self._nodenet.get_node_uids(self.to_nodespace, self.to_name)
         self.shapes = {
             'linkweights': (self.initial_size, weights.shape[0], weights.shape[1]),
-            'from_thetas': (self.initial_size, len(from_uids)),
-            'to_thetas': (self.initial_size, len(to_uids))
+            'from_bias': (self.initial_size, len(from_uids)),
+            'to_bias': (self.initial_size, len(to_uids))
         }
 
     def get_data(self):
@@ -216,8 +216,10 @@ class LinkweightRecorder(Recorder):
         return data
 
     def get_values(self):
+        from_config = self._nodenet.get_gate_configurations(self.from_nodespace, self.from_name, 'bias')
+        to_config = self._nodenet.get_gate_configurations(self.to_nodespace, self.to_name, 'bias')
         return {
             'linkweights': self._nodenet.get_link_weights(self.from_nodespace, self.from_name, self.to_nodespace, self.to_name),
-            'from_thetas': self._nodenet.get_thetas(self.from_nodespace, self.from_name),
-            'to_thetas': self._nodenet.get_thetas(self.to_nodespace, self.to_name)
+            'from_bias': from_config['parameter_values'],
+            'to_bias': to_config['parameter_values']
         }

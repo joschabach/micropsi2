@@ -967,52 +967,59 @@ def test_set_node_parameters(app, test_nodenet):
     assert response.json_body['data']['parameters']['type'] == 'sub'
 
 
-def test_get_gatefunction(app, test_nodenet, node):
-    response = app.post_json('/rpc/get_gatefunction', params={
-        'nodenet_uid': test_nodenet,
-        'node_uid': node,
-        'gate_type': 'gen'
-    })
-    assert_success(response)
-    assert response.json_body['data'] == 'identity'
-
-
-def test_set_gatefunction(app, test_nodenet, node):
+def test_set_gate_configuration(app, test_nodenet, node):
     app.set_auth()
-    response = app.post_json('/rpc/set_gatefunction', params={
+    response = app.post_json('/rpc/set_gate_configuration', params={
         'nodenet_uid': test_nodenet,
         'node_uid': node,
         'gate_type': 'gen',
-        'gatefunction': 'sigmoid'
+        'gatefunction': 'sigmoid',
+        'gatefunction_parameters': {
+            'bias': '1'
+        }
     })
     assert_success(response)
-    response = app.post_json('/rpc/get_gatefunction', params={
+    response = app.post_json('/rpc/get_node', params={
+        'nodenet_uid': test_nodenet,
+        'node_uid': node,
+    })
+    data = response.json_body['data']
+    assert data['gate_configuration']['gen']['gatefunction'] == 'sigmoid'
+    assert data['gate_configuration']['gen']['gatefunction_parameters'] == {'bias': 1}
+    # setting a non-value leads to using the default
+    response = app.post_json('/rpc/set_gate_configuration', params={
         'nodenet_uid': test_nodenet,
         'node_uid': node,
         'gate_type': 'gen',
+        'gatefunction': 'sigmoid',
+        'gatefunction_parameters': {
+            'bias': ''
+        }
     })
-    assert response.json_body['data'] == 'sigmoid'
+    response = app.post_json('/rpc/get_node', params={
+        'nodenet_uid': test_nodenet,
+        'node_uid': node,
+    })
+    data = response.json_body['data']
+    assert data['gate_configuration']['gen']['gatefunction'] == 'sigmoid'
+    assert data['gate_configuration']['gen']['gatefunction_parameters'] == {'bias': 0}
 
 
 def test_get_available_gatefunctions(app, test_nodenet):
     response = app.post_json('/rpc/get_available_gatefunctions', params={'nodenet_uid': test_nodenet})
     funcs = response.json_body['data']
-    assert 'sigmoid' in funcs
-    assert 'identity' in funcs
-    assert 'absolute' in funcs
-
-
-def test_set_gate_parameters(app, test_nodenet, node):
-    app.set_auth()
-    response = app.post_json('/rpc/set_gate_parameters', params={
-        'nodenet_uid': test_nodenet,
-        'node_uid': node,
-        'gate_type': 'gen',
-        'parameters': {'minimum': -2}
-    })
-    assert_success(response)
-    response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="%s")' % (test_nodenet, node))
-    assert response.json_body['data']['gate_parameters']['gen']['minimum'] == -2
+    assert funcs['identity'] == {}
+    assert funcs['absolute'] == {}
+    assert funcs['one_over_x'] == {}
+    assert funcs['sigmoid'] == {'bias': 0}
+    assert funcs['elu'] == {'bias': 0}
+    assert funcs['relu'] == {'bias': 0}
+    assert funcs['threshold'] == {
+        'minimum': 0,
+        'maximum': 1,
+        'amplification': 1,
+        'threshold': 0
+    }
 
 
 def test_get_available_datasources(app, test_nodenet, test_world):
@@ -1402,8 +1409,6 @@ def test_nodenet_data_structure(app, test_nodenet, resourcepath, node):
     # gates
     for key in ['gen', 'por', 'ret', 'sub', 'sur', 'cat', 'exp']:
         assert data['nodenet']['nodes'][node]['gate_activations'][key] == 0
-        assert key not in data['nodenet']['nodes'][node]['gate_parameters']
-        assert data['nodenet']['nodes'][node]['gate_functions'][key] == 'identity'
 
     assert data['nodenet']['nodes'][node]['parameters']['expectation'] == 1
     assert data['nodenet']['nodes'][node]['parameters']['wait'] == 10

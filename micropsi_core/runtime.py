@@ -797,10 +797,9 @@ def get_node(nodenet_uid, node_uid, include_links=True):
         "type" (string): the type of this node,
         "parameters" (dict): a dictionary of the node parameters
         "activation" (float): the activation of this node,
-        "gate_parameters" (dict): a dictionary containing dicts of parameters for each gate of this node
         "name" (str): display name
         "gate_activations" (dict): a dictionary containing dicts of activations for each gate of this node
-        "gate_functions"(dict): a dictionary containing the name of the gatefunction for each gate of this node
+        "gate_configuration"(dict): a dictionary containing the name of the gatefunction and its parameters for each gate
         "position" (list): the x, y, z coordinates of this node, as a list
         "parent_nodespace" (str): the uid of the nodespace this node lives in
     }
@@ -886,7 +885,7 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
 
     for _, n in copynodes.items():
         target_nodespace = nodespace if nodespace is not None else n.parent_nodespace
-        uid = nodenet.create_node(n.type, target_nodespace, [n.position[0] + offset[0], n.position[1] + offset[1], n.position[2] + offset[2]], name=n.name, uid=None, parameters=n.clone_parameters().copy(), gate_parameters=n.get_gate_parameters())
+        uid = nodenet.create_node(n.type, target_nodespace, [n.position[0] + offset[0], n.position[1] + offset[1], n.position[2] + offset[2]], name=n.name, uid=None, parameters=n.clone_parameters().copy(), gate_configuration=n.get_gate_configuration())
         if uid:
             uidmap[n.uid] = uid
         else:
@@ -985,10 +984,9 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
         else:
             lines.append("%s = netapi.create_node('%s', None)" % (varname, node.type))
 
-        ndgps = node.clone_non_default_gate_parameters()
-        for gatetype in ndgps.keys():
-            for parameter, value in ndgps[gatetype].items():
-                lines.append("%s.set_gate_parameter('%s', \"%s\", %.2f)" % (varname, gatetype, parameter, value))
+        gate_config = node.get_gate_configuration()
+        for gatetype, gconfig in gate_config.items():
+            lines.append("%s.set_gate_configuration('%s', \"%s\", %.2f)" % (varname, gatetype, gconfig['gatefunction'], gconfig.get('gatefunction_parameters', {})))
 
         nps = node.clone_parameters()
         for parameter, value in nps.items():
@@ -1153,33 +1151,17 @@ def set_node_parameters(nodenet_uid, node_uid, parameters):
     return True
 
 
-def get_gatefunction(nodenet_uid, node_uid, gate_type):
-    """
-    Returns the name of the gate function configured for that given node and gate
-    """
-    return get_nodenet(nodenet_uid).get_node(node_uid).get_gatefunction_name(gate_type)
-
-
-def set_gatefunction(nodenet_uid, node_uid, gate_type, gatefunction=None):
-    """
-    Sets the gate function of the given node and gate.
-    """
-    get_nodenet(nodenet_uid).get_node(node_uid).set_gatefunction_name(gate_type, gatefunction)
-    return True
-
-
 def get_available_gatefunctions(nodenet_uid):
     """
-    Returns a list of names of the available gatefunctions
+    Returns a dict of the available gatefunctions and their parameters and parameter-defaults
     """
     return get_nodenet(nodenet_uid).get_available_gatefunctions()
 
 
-def set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters):
-    """Sets the gate parameters of the given gate of the given node to the supplied dictionary."""
+def set_gate_configuration(nodenet_uid, node_uid, gate_type, gatefunction=None, gatefunction_parameters=None):
+    """Sets the configuration of the given gate of the given node to the supplied gatefunction and -parameters."""
     nodenet = get_nodenet(nodenet_uid)
-    for key, value in parameters.items():
-        nodenet.get_node(node_uid).set_gate_parameter(gate_type, key, value)
+    nodenet.get_node(node_uid).set_gate_configuration(gate_type, gatefunction, gatefunction_parameters)
     return True
 
 

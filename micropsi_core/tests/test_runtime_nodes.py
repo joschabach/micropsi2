@@ -202,63 +202,6 @@ def test_native_module_and_recipe_categories(runtime, test_nodenet, resourcepath
     assert res['testrecipe']['category'] == 'Test/Test2'
 
 
-@pytest.mark.engine("dict_engine")
-# This behavior is not available in theano_engine: Default inheritance at runtime is not implemented for
-# performance reasons, changed defaults will only affect newly created nodes.
-# This test will have to be replaced when the generic solution proposed in TOL-90 has been
-# implemented.
-def test_gate_defaults_change_with_nodetype(runtime, test_nodenet, resourcepath,):
-    # gate_parameters are a property of the nodetype, and should change with
-    # the nodetype definition if not explicitly overwritten for a given node
-    import os
-    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
-    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
-    with open(nodetype_file, 'w') as fp:
-        fp.write("""{"Testnode": {
-            "name": "Testnode",
-            "slottypes": ["gen", "foo", "bar"],
-            "nodefunction_name": "testnodefunc",
-            "gatetypes": ["gen", "foo", "bar"],
-            "symbol": "t",
-            "gate_defaults":{
-              "foo": {
-                "amplification": 13
-              }
-            }}}""")
-    with open(nodefunc_file, 'w') as fp:
-        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
-    runtime.reload_native_modules()
-    res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Testnode")
-    with open(nodetype_file, 'w') as fp:
-        fp.write("""{"Testnode": {
-            "name": "Testnode",
-            "slottypes": ["gen", "foo", "bar"],
-            "nodefunction_name": "testnodefunc",
-            "gatetypes": ["gen", "foo", "bar"],
-            "symbol": "t",
-            "gate_defaults":{
-              "foo": {
-                "amplification": 5
-              }
-            }}}""")
-    runtime.reload_native_modules()
-    params = runtime.nodenets[test_nodenet].get_node(uid).get_gate_parameters()
-    assert params["foo"]["amplification"] == 5
-
-
-def test_non_standard_gate_defaults(runtime, test_nodenet):
-    nodenet = runtime.nodenets[test_nodenet]
-    res, uid = runtime.add_node(test_nodenet, 'Register', [30, 30, 10], name='test')
-    node = nodenet.netapi.get_node(uid)
-    genparams = {'maximum': 0.5}
-    runtime.set_gate_parameters(nodenet.uid, node.uid, 'gen', genparams)
-    assert node.clone_non_default_gate_parameters()['gen']['maximum'] == 0.5
-    assert node.get_data()['gate_parameters'] == {'gen': {'maximum': 0.5}}
-    assert nodenet.get_data()['nodes'][uid]['gate_parameters'] == {'gen': {'maximum': 0.5}}
-    data = runtime.get_nodes(test_nodenet)
-    assert data['nodes'][uid]['gate_parameters'] == {'gen': {'maximum': 0.5}}
-
-
 def test_ignore_links(runtime, test_nodenet):
     nodes = prepare_nodenet(runtime, test_nodenet)
     runtime.add_link(test_nodenet, nodes['a'], "por", nodes['b'], "gen", 0.5)
@@ -282,12 +225,8 @@ def test_remove_and_reload_native_module(runtime, test_nodenet, resourcepath):
             "slottypes": ["gen", "foo", "bar"],
             "nodefunction_name": "testnodefunc",
             "gatetypes": ["gen", "foo", "bar"],
-            "symbol": "t",
-            "gate_defaults":{
-              "foo": {
-                "amplification": 13
-              }
-            }}}""")
+            "symbol": "t"
+            }}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
@@ -311,12 +250,8 @@ def test_engine_specific_nodetype_dict(runtime, test_nodenet, resourcepath):
             "slottypes": ["gen", "foo", "bar"],
             "nodefunction_name": "testnodefunc",
             "gatetypes": ["gen", "foo", "bar"],
-            "symbol": "t",
-            "gate_defaults":{
-              "foo": {
-                "amplification": 13
-              }
-            }}}""")
+            "symbol": "t"
+            }}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
@@ -337,12 +272,8 @@ def test_engine_specific_nodetype_theano(runtime, test_nodenet, resourcepath):
             "slottypes": ["gen", "foo", "bar"],
             "nodefunction_name": "testnodefunc",
             "gatetypes": ["gen", "foo", "bar"],
-            "symbol": "t",
-            "gate_defaults":{
-              "foo": {
-                "amplification": 13
-              }
-            }}}""")
+            "symbol": "t"
+            }}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 

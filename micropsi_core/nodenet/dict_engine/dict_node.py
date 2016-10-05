@@ -11,8 +11,6 @@ default Nodetypes
 
 """
 
-import inspect
-
 from micropsi_core.nodenet.node import Node, Gate, Slot
 from .dict_link import DictLink
 from micropsi_core.nodenet.dict_engine.dict_netentity import NetEntity
@@ -154,13 +152,13 @@ class DictNode(NetEntity, Node):
             gate.activation = activation
 
     def set_gate_configuration(self, gate_type, gatefunction, gatefunction_parameters={}):
+        gatefuncs = self.nodenet.get_available_gatefunctions()
         if gatefunction == 'identity' or gatefunction is None:
             self._gate_configuration.pop(gate_type, None)
-        elif hasattr(gatefunctions, gatefunction):
-            argspec = inspect.getargspec(getattr(gatefunctions, gatefunction))
-            for idx, param in enumerate(argspec.args[1:]):
+        elif gatefunction in gatefuncs:
+            for param, default in gatefuncs[gatefunction].items():
                 if param not in gatefunction_parameters:
-                    gatefunction_parameters[param] = argspec.defaults[idx]
+                    gatefunction_parameters[param] = default
             self._gate_configuration[gate_type] = {
                 'gatefunction': gatefunction,
                 'gatefunction_parameters': gatefunction_parameters

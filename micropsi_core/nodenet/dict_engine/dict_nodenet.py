@@ -805,11 +805,17 @@ class DictNodenet(Nodenet):
 
     def get_available_gatefunctions(self):
         """
-        Returns a list of available gate functions
+        Returns a dict of the available gatefunctions and their parameters and parameter-defaults
         """
-        from inspect import getmembers, isfunction
+        from inspect import getmembers, getargspec, isfunction
         from micropsi_core.nodenet import gatefunctions
-        return sorted([name for name, func in getmembers(gatefunctions, isfunction)])
+        data = {}
+        for name, func in getmembers(gatefunctions, isfunction):
+            argspec = getargspec(func)
+            data[name] = {}
+            for idx, arg in enumerate(argspec.args[1:]):
+                data[name][arg] = argspec.defaults[idx]
+        return data
 
     def has_nodespace_changes(self, nodespace_uids=[], since_step=0):
         if nodespace_uids == []:

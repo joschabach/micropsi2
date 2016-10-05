@@ -550,7 +550,7 @@ class Nodenet(metaclass=ABCMeta):
     @abstractmethod
     def get_available_gatefunctions(self):
         """
-        Returns a list of available gate functions
+        Returns a dict of the available gatefunctions and their parameters and parameter-defaults
         """
         pass  # pragma: no cover
 

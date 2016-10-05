@@ -1153,7 +1153,7 @@ def set_node_parameters(nodenet_uid, node_uid, parameters):
 
 def get_available_gatefunctions(nodenet_uid):
     """
-    Returns a list of names of the available gatefunctions
+    Returns a dict of the available gatefunctions and their parameters and parameter-defaults
     """
     return get_nodenet(nodenet_uid).get_available_gatefunctions()
 

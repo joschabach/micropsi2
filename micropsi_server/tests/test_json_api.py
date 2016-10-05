@@ -1008,13 +1008,18 @@ def test_set_gate_configuration(app, test_nodenet, node):
 def test_get_available_gatefunctions(app, test_nodenet):
     response = app.post_json('/rpc/get_available_gatefunctions', params={'nodenet_uid': test_nodenet})
     funcs = response.json_body['data']
-    assert 'sigmoid' in funcs
-    assert 'identity' in funcs
-    assert 'absolute' in funcs
-    assert 'threshold' in funcs
-    assert 'elu' in funcs
-    assert 'relu' in funcs
-    assert 'one_over_x' in funcs
+    assert funcs['identity'] == {}
+    assert funcs['absolute'] == {}
+    assert funcs['one_over_x'] == {}
+    assert funcs['sigmoid'] == {'bias': 0}
+    assert funcs['elu'] == {'bias': 0}
+    assert funcs['relu'] == {'bias': 0}
+    assert funcs['threshold'] == {
+        'minimum': 0,
+        'maximum': 1,
+        'amplification': 1,
+        'threshold': 0
+    }
 
 
 def test_get_available_datasources(app, test_nodenet, test_world):

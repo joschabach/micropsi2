@@ -61,7 +61,7 @@ links = {};
 selection = {};
 monitors = {};
 
-
+available_gatefunctions = {}
 gatefunction_icons = {
     'sigmoid': 'Σ',
     'elu': 'E',
@@ -219,8 +219,9 @@ function get_available_worldadapters(world_uid, callback){
 function get_available_gatefunctions(){
     api.call('get_available_gatefunctions', {nodenet_uid: currentNodenet}, function(data){
         html = '';
-        for(var i=0; i < data.length; i++){
-            html += '<option>'+data[i]+'</option>';
+        available_gatefunctions = data;
+        for(var key in available_gatefunctions){
+            html += '<option>'+key+'</option>';
         }
         $('#gate_gatefunction').html(html);
     });
@@ -3619,7 +3620,7 @@ function handleEditGate(event){
         if(data[i].name == 'gate_gatefunction'){
             params.gatefunction = data[i].value;
         } else {
-            params.gatefunction_parameters[data[i].name.substr(23)] = data[i].value
+            params.gatefunction_parameters[data[i].name] = data[i].value
         }
     }
     api.call('set_gate_configuration', params, function(data){
@@ -4134,18 +4135,37 @@ function showGateForm(node, gate){
     } else {
         $('.highdim', form).hide();
     }
-    updateGatefunctionParams();
+    updateGatefunctionParams(gate);
 
     form.attr('data-node', node.uid);
     form.attr('data-gate', gate.name);
     form.show();
 }
 
-function updateGatefunctionParams(){
-    $('.gatefunction_parameters').hide()
-    $('.gatefunction_parameters input').attr('disabled', 'disabled')
-    $('.gatefunction_' + $('#gate_gatefunction').val()).show()
-    $('.gatefunction_' + $('#gate_gatefunction').val() + ' input').removeAttr('disabled')
+function updateGatefunctionParams(gate){
+    if(!gate && clickType == 'gate'){
+        node = nodes[clickOriginUid];
+        gate = node.gates[node.gateIndexes[clickIndex]];
+    } else if(!gate) {
+        // click on gate in sidebar
+        node = nodes[form.attr('data-node')];
+        gate = node.gates[form.attr('data-gate')];
+    }
+    var selected_gatefunc = $('#gate_gatefunction').val();
+    var container = $('#gatefunction_param_container');
+    var html = '';
+    foo = gate;
+    for(var param in available_gatefunctions[selected_gatefunc]){
+        var val = available_gatefunctions[selected_gatefunc][param];
+        if(selected_gatefunc == gate.gatefunction && param in gate.gatefunction_parameters){
+            val = gate.gatefunction_parameters[param]
+        }
+        html += '<tr>' +
+            '<td><label for="gatefunction_param_'+param+'">'+param.charAt(0).toUpperCase()+param.slice(1)+'</label></td>'+
+            '<td><input type="text" id="gatefunction_param_'+param+'" name="'+param+'" value="'+val+'" /></td>'+
+            '</tr>';
+    }
+    container.html(html)
 }
 
 function updateNodespaceForm(){

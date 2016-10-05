@@ -951,7 +951,16 @@ def step_nodenets_in_world(world_uid, nodenet_uid=None, steps=1):
 def get_available_worlds(user_id=None):
     data = {}
     for uid, world in runtime.get_available_worlds(user_id).items():
-        data[uid] = {'name': world.name}  # fixme
+        data[uid] = dict(
+                uid=world.uid,
+                name=world.name,
+                world_type=world.world_type,
+                filename=world.filename,
+                config={},
+                owner=world.owner)  # fixme
+                                    # ok I might but couldcha tell me more about wat is broken wid ya?
+        if hasattr(world, 'config'):
+            data[uid]['config'] = world.config
     return True, data
 
 
@@ -1011,7 +1020,10 @@ def new_world(world_name, world_type, owner=None, config={}):
 
 @rpc("get_available_world_types")
 def get_available_world_types():
-    return True, sorted(runtime.get_available_world_types().keys())
+    data = runtime.get_available_world_types()
+    for key in data:
+        del data[key]['class']  # remove class reference for json
+    return True, data
 
 
 @rpc("delete_world", permission_required="manage worlds")
@@ -1025,8 +1037,8 @@ def get_world_view(world_uid, step):
 
 
 @rpc("set_world_properties", permission_required="manage worlds")
-def set_world_properties(world_uid, world_name=None, owner=None):
-    return runtime.set_world_properties(world_uid, world_name, owner)
+def set_world_properties(world_uid, world_name=None, owner=None, config=None):
+    return runtime.set_world_properties(world_uid, world_name, owner, config)
 
 
 @rpc("set_world_data")

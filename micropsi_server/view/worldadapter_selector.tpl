@@ -3,7 +3,7 @@
 % if not world_uid in worlds:
                             <option value="None">None</option>
 % else:
-   % for type in sorted(worldtypes[worlds[world_uid].world_type].get_supported_worldadapters().keys()):
+   % for type in sorted(worldtypes[worlds[world_uid].world_type]['class'].get_supported_worldadapters().keys()):
        % if defined("nodenet_uid") and nodenet_uid in nodenets and nodenets[nodenet_uid].worldadapter == type:
                             <option value="{{type}}" selected="selected">{{type}}</option>
        % else:
@@ -19,7 +19,7 @@
 <script type="text/javascript">
 $(function(){
     var adapters = {};
-    %for name, data in worldtypes[worlds[world_uid].world_type].get_supported_worldadapters().items():
+    %for name, data in worldtypes[worlds[world_uid].world_type]['class'].get_supported_worldadapters().items():
         adapters["{{name}}"] = "{{(data.__doc__ or '').replace('\n', ' ')}}";
     %end
     var el = $('#nn_worldadapter');

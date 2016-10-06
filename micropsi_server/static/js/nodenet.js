@@ -2493,6 +2493,7 @@ function initializeMenus() {
     $("#edit_link_modal form").on('submit', handleEditLink);
     $("#nodenet").on('dblclick', onDoubleClick);
     $("#nodespace_up").on('click', handleNodespaceUp);
+    $("#nodespace_add").on('click', createNodespace);
     gate_form_trigger = $('.gate_additional_trigger');
 }
 
@@ -3089,6 +3090,27 @@ function get_datatarget_options(worldadapter, value){
     return html;
 }
 
+function createNodespace(event){
+    event.preventDefault();
+    api.call("add_nodespace", {
+        'nodenet_uid': currentNodenet,
+        'nodespace': null,
+        'name': 'new nodespace'
+    }, success=function(data) {
+        var uid = data;
+        nodespaceProperties[uid] = nodespace_property_defaults
+        nodespaces[uid] = {
+            'name': 'new nodespace',
+            'parent': currentNodeSpace
+        };
+        handleEnterNodespace(uid, function(){
+            dialogs.notification('Nodespace created', 'success');
+            $('#nodespace_name').select().focus();
+        });
+
+    });
+}
+
 // let user create a new node
 function createNodeHandler(x, y, name, type, parameters, callback) {
     params = {};
@@ -3681,10 +3703,10 @@ function handleSelectDatatargetModal(event){
 }
 
 // handler for entering a nodespace
-function handleEnterNodespace(nodespaceUid) {
-    if (nodespaceUid in nodes) {
+function handleEnterNodespace(nodespaceUid, callback) {
+    if (nodespaceUid in nodespaces) {
         deselectAll();
-        refreshNodespace(nodespaceUid, -1);
+        refreshNodespace(nodespaceUid, -1, callback);
     }
 }
 
@@ -3855,6 +3877,7 @@ function initializeSidebarForms(){
     $('#gate_gatefunction').on('change', updateGatefunctionParams);
     $('#edit_nodenet_form').submit(handleEditNodenet);
     $('#edit_nodespace_form').submit(handleEditNodespace);
+    $('#edit_nodespace_form #delete_nodespace').on('click', deleteNodespace);
     $('#native_add_param').click(function(){
         $('#native_parameters').append('<tr><td><input name="param_name" type="text" class="inplace"/></td><td><input name="param_value" type="text"  class="inplace" /></td></tr>');
     });
@@ -4131,10 +4154,12 @@ function updateNodespaceForm(){
     if(Object.keys(nodespaces).length){
         $('#nodespace_uid').val(currentNodeSpace);
         $('#nodespace_name').val(nodespaces[currentNodeSpace].name);
-        if(currentNodeSpace == 'Root'){
+        if(nodespaces[currentNodeSpace].name == 'Root'){
             $('#nodespace_name').attr('disabled', 'disabled');
+            $('#delete_nodespace').hide();
         } else {
             $('#nodespace_name').removeAttr('disabled');
+            $('#delete_nodespace').show();
         }
         $('#nodespace_renderlinks').val(nodespaceProperties[currentNodeSpace].renderlinks);
         $('#nodespace_activation_display').val(nodespaceProperties[currentNodeSpace].activation_display);

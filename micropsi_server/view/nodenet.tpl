@@ -18,6 +18,11 @@
                             </td>
                             <td> &nbsp; &nbsp; Nodespace:
                             </td>
+                            <td>
+                                <a href="#" id="nodespace_add" title="Add new nodespace" class="btn" data-nodenet-control>
+                                    <i class="icon-plus-sign"></i>
+                                </a>
+                            </td>
                             <td style="white-space:nowrap;">
                                 <div id="nodespace_control" class="btn-group">
                                     <a href="#" class="btn dropdown-toggle" data-toggle="dropdown" data-nodenet-control>
@@ -30,7 +35,7 @@
                             </td>
                             <td>
                                 <a href="#" id="nodespace_up" title="Go to parent nodespace" class="btn" data-nodenet-control>
-                                    <i class="icon-share"></i>
+                                    <i class="icon-eject"></i>
                                 </a>
                             </td>
                             <td> &nbsp; &nbsp; Zoom:</td>
@@ -123,6 +128,7 @@
                 </table>
                 <div class="controls">
                     <button type="submit" class="btn btn-primary">Apply</button>
+                    <button type="button" id="delete_nodespace" class="btn btn-danger">Delete</button>
                 </div>
             </form>
 

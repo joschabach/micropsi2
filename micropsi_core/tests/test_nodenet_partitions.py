@@ -5,8 +5,8 @@ import pytest
 def prepare(netapi, partition_options={}):
     partition_options.update({'new_partition': True})
     nodespace = netapi.create_nodespace(None, name="partition", options=partition_options)
-    source = netapi.create_node('Register', None, "Source")
-    register = netapi.create_node('Register', nodespace.uid, "Register")
+    source = netapi.create_node('Neuron', None, "Source")
+    register = netapi.create_node('Neuron', nodespace.uid, "Neuron")
     netapi.link(source, 'gen', register, 'gen')
     netapi.link(source, 'gen', source, 'gen')
     source.activation = 1
@@ -62,7 +62,7 @@ def test_delete_node_deletes_inlinks(runtime, test_nodenet):
     nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
     nodespace, source, register = prepare(netapi)
-    target = netapi.create_node("Register", None, "target")
+    target = netapi.create_node("Neuron", None, "target")
     netapi.link(register, 'gen', target, 'gen')
     netapi.delete_node(register)
     links = netapi.get_node(source.uid).get_gate('gen').get_links()
@@ -78,9 +78,9 @@ def test_delete_node_modifies_inlinks(runtime, test_nodenet):
     nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
     nodespace, source, register = prepare(netapi)
-    target = netapi.create_node("Register", None, "target")
+    target = netapi.create_node("Neuron", None, "target")
 
-    register2 = netapi.create_node("Register", nodespace.uid, "reg2")
+    register2 = netapi.create_node("Neuron", nodespace.uid, "reg2")
     netapi.link(register, 'gen', target, 'gen')
     netapi.link(register2, 'gen', target, 'gen')
     netapi.link(source, 'gen', register2, 'gen')
@@ -227,9 +227,9 @@ def test_delete_subnodespace_removes_x_partition_links(runtime, test_nodenet, re
     netapi = nodenet.netapi
     nodespace = netapi.create_nodespace(None, "partition", options={'new_partition': True})
     subnodespace = netapi.create_nodespace(nodespace.uid, "foo")
-    r1 = netapi.create_node("Register", None)
-    r2 = netapi.create_node("Register", subnodespace.uid)
-    r3 = netapi.create_node("Register", None)
+    r1 = netapi.create_node("Neuron", None)
+    r2 = netapi.create_node("Neuron", subnodespace.uid)
+    r3 = netapi.create_node("Neuron", None)
     netapi.link(r1, 'gen', r2, 'gen')
     netapi.link(r2, 'gen', r3, 'gen')
     netapi.delete_nodespace(subnodespace)
@@ -250,7 +250,7 @@ def test_sensor_actuator_indices(runtime, test_nodenet):
     sensor.set_parameter("datasource", "static_on")
     actuator = netapi.create_node("Actuator", None, "echo_actuator")
     actuator.set_parameter("datatarget", "echo")
-    register = netapi.create_node("Register", None, "source")
+    register = netapi.create_node("Neuron", None, "source")
     register.activation = 0.8
     netapi.link(register, 'gen', register, 'gen', weight=0.5)
     netapi.link(register, 'gen', actuator, 'gen')
@@ -288,7 +288,7 @@ def test_partition_get_node_data(runtime, test_nodenet):
 
     # 3rd nodespace, with a node linked from root
     third_ns = netapi.create_nodespace(None, "third")
-    third = netapi.create_node("Register", third_ns.uid, "third")
+    third = netapi.create_node("Neuron", third_ns.uid, "third")
     netapi.link(nodes[4], 'gen', third, 'gen')
 
     n1, n3, n4, n5, n9 = nodes[1], nodes[3], nodes[4], nodes[5], nodes[9]

@@ -11,11 +11,11 @@ def test_activation_recorder(runtime, test_nodenet, resourcepath):
     nodes = []
     for i in range(10):
         runtime.step_nodenet(test_nodenet)
-        node = netapi.create_node('Register', None, "testnode_%d" % i)
+        node = netapi.create_node('Neuron', None, "testnode_%d" % i)
         nodes.append(node)
         if i > 0:
             netapi.link(nodes[i - 1], 'gen', node, 'gen')
-    source = netapi.create_node("Register", None, "Source")
+    source = netapi.create_node("Neuron", None, "Source")
     netapi.link(source, 'gen', source, 'gen')
     netapi.link(source, 'gen', nodes[0], 'gen')
     source.activation = 1
@@ -42,7 +42,7 @@ def test_nodeactivation_recorder(runtime, test_nodenet, resourcepath):
     nodenet = runtime.nodenets[test_nodenet]
     netapi = nodenet.netapi
     nodes = []
-    source = netapi.create_node("Register", None, 'source')
+    source = netapi.create_node("Neuron", None, 'source')
     source.activation = 1
     for i in range(10):
         node = netapi.create_node('Pipe', None, "testnode_%d" % i)
@@ -69,8 +69,8 @@ def test_linkweight_recorder(runtime, test_nodenet, resourcepath):
     layer1 = []
     layer2 = []
     for i in range(10):
-        layer1.append(netapi.create_node('Register', None, "l1_%d" % i))
-        layer2.append(netapi.create_node('Register', None, "l2_%d" % i))
+        layer1.append(netapi.create_node('Neuron', None, "l1_%d" % i))
+        layer2.append(netapi.create_node('Neuron', None, "l2_%d" % i))
     for i in range(10):
         for j in range(10):
             netapi.link(layer1[i], 'gen', layer2[j], 'gen', weight=0.89)
@@ -99,7 +99,7 @@ def test_clear_recorder(runtime, test_nodenet, resourcepath):
     netapi = nodenet.netapi
     nodespace = netapi.get_nodespace(None)
     for i in range(5):
-        netapi.create_node('Register', None, "testnode_%d" % i)
+        netapi.create_node('Neuron', None, "testnode_%d" % i)
     recorder = netapi.add_gate_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder")
     for i in range(3):
         runtime.step_nodenet(test_nodenet)
@@ -114,7 +114,7 @@ def test_remove_recorder(runtime, test_nodenet, resourcepath):
     netapi = nodenet.netapi
     nodespace = netapi.get_nodespace(None)
     for i in range(5):
-        netapi.create_node('Register', None, "testnode_%d" % i)
+        netapi.create_node('Neuron', None, "testnode_%d" % i)
     recorder = netapi.add_gate_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder")
     for i in range(3):
         runtime.step_nodenet(test_nodenet)
@@ -129,7 +129,7 @@ def test_grow_recorder_values(runtime, test_nodenet, resourcepath):
     netapi = nodenet.netapi
     nodespace = netapi.get_nodespace(None)
     for i in range(5):
-        netapi.create_node('Register', None, "testnode_%d" % i)
+        netapi.create_node('Neuron', None, "testnode_%d" % i)
     Recorder.initial_size = 5
     recorder = netapi.add_gate_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder")
     runtime.step_nodenet(test_nodenet)
@@ -150,7 +150,7 @@ def test_export_recorders(runtime, test_nodenet):
         runtime.step_nodenet(test_nodenet)
     nodespace = netapi.get_nodespace(None)
     for i in range(5):
-        netapi.create_node('Register', None, "testnode_%d" % i)
+        netapi.create_node('Neuron', None, "testnode_%d" % i)
     Recorder.initial_size = 5
     recorder = netapi.add_gate_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, interval=2, name="recorder")
     runtime.step_nodenet(test_nodenet)

@@ -164,7 +164,7 @@ def test_reload_native_modules(runtime, test_nodenet, resourcepath):
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
     runtime.reload_native_modules()
-    reg = netapi.create_node("Register", None, "reg")
+    reg = netapi.create_node("Neuron", None, "reg")
     test = netapi.create_node("Testnode", None, "test")
     netapi.link(reg, 'gen', test, 'gen')
     netapi.link(test, 'bar', reg, 'gen')

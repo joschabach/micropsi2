@@ -9,7 +9,7 @@ Tests for node activation propagation and gate arithmetic
 def prepare(runtime, test_nodenet):
     nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
-    source = netapi.create_node("Register", None, "Source")
+    source = netapi.create_node("Neuron", None, "Source")
     netapi.link(source, "gen", source, "gen")
     source.activation = 1
     nodenet.step()
@@ -41,9 +41,9 @@ def test_node_logic_sum(runtime, test_nodenet):
     # propagate positive activation, expect sum
     net, netapi, source = prepare(runtime, test_nodenet)
 
-    reg_a = netapi.create_node("Register", None, "RegA")
-    reg_b = netapi.create_node("Register", None, "RegB")
-    reg_result = netapi.create_node("Register", None, "RegResult")
+    reg_a = netapi.create_node("Neuron", None, "RegA")
+    reg_b = netapi.create_node("Neuron", None, "RegB")
+    reg_result = netapi.create_node("Neuron", None, "RegResult")
 
     netapi.link(source, "gen", reg_a, "gen", 0.5)
     netapi.link(source, "gen", reg_b, "gen", 0.5)
@@ -59,9 +59,9 @@ def test_node_logic_cancel(runtime, test_nodenet):
     # propagate positive and negative activation, expect cancellation
     net, netapi, source = prepare(runtime, test_nodenet)
 
-    reg_a = netapi.create_node("Register", None, "RegA")
-    reg_b = netapi.create_node("Register", None, "RegB")
-    reg_result = netapi.create_node("Register", None, "RegResult")
+    reg_a = netapi.create_node("Neuron", None, "RegA")
+    reg_b = netapi.create_node("Neuron", None, "RegB")
+    reg_result = netapi.create_node("Neuron", None, "RegResult")
 
     netapi.link(source, "gen", reg_a, "gen", 1)
     netapi.link(source, "gen", reg_b, "gen", -1)
@@ -77,9 +77,9 @@ def test_node_logic_store_and_forward(runtime, test_nodenet):
     # collect activation in one node, go forward only if both dependencies are met
     net, netapi, source = prepare(runtime, test_nodenet)
 
-    reg_a = netapi.create_node("Register", None, "RegA")
-    reg_b = netapi.create_node("Register", None, "RegB")
-    reg_result = netapi.create_node("Register", None, "RegResult")
+    reg_a = netapi.create_node("Neuron", None, "RegA")
+    reg_b = netapi.create_node("Neuron", None, "RegB")
+    reg_result = netapi.create_node("Neuron", None, "RegResult")
 
     netapi.link(source, "gen", reg_a, "gen")
     netapi.link(reg_a, "gen", reg_result, "gen")
@@ -107,7 +107,7 @@ def test_node_logic_activators(runtime, test_nodenet):
 
 def test_node_logic_sensor_modulator(runtime, test_nodenet, default_world):
     net, netapi, source = prepare(runtime, test_nodenet)
-    register = netapi.create_node("Register", None)
+    register = netapi.create_node("Neuron", None)
     netapi.link_sensor(register, "emo_activation", "gen")
     runtime.step_nodenet(test_nodenet)
     runtime.step_nodenet(test_nodenet)
@@ -118,7 +118,7 @@ def test_node_logic_sensor_modulator(runtime, test_nodenet, default_world):
 def test_node_logic_sensor_datasource(runtime, test_nodenet, default_world):
     net, netapi, source = prepare(runtime, test_nodenet)
     runtime.set_nodenet_properties(test_nodenet, worldadapter="Default", world_uid=default_world)
-    register = netapi.create_node("Register", None)
+    register = netapi.create_node("Neuron", None)
     netapi.link_sensor(register, "static_on", "gen", weight=0.35)
     runtime.step_nodenet(test_nodenet)
     runtime.step_nodenet(test_nodenet)
@@ -136,7 +136,7 @@ def test_node_logic_actuator_datatarget(runtime, test_nodenet, default_world):
     net, netapi, source = prepare(runtime, test_nodenet)
     runtime.set_nodenet_properties(test_nodenet, worldadapter="Default", world_uid=default_world)
     netapi.link_actuator(source, "echo", weight=0.5, gate="gen")
-    register = netapi.create_node("Register", None)
+    register = netapi.create_node("Neuron", None)
     actuator = netapi.get_nodes(node_name_prefix="echo")[0]
     netapi.link(actuator, "gen", register, "gen")
     runtime.step_nodenet(test_nodenet)
@@ -148,7 +148,7 @@ def test_node_logic_actuator_datatarget(runtime, test_nodenet, default_world):
 def test_node_logic_sensor_nomodulators(runtime, engine, default_world):
     result, nnuid = runtime.new_nodenet("adf", engine, "Default", world_uid=default_world, use_modulators=False)
     net, netapi, source = prepare(runtime, nnuid)
-    register = netapi.create_node("Register", None)
+    register = netapi.create_node("Neuron", None)
     netapi.link_sensor(register, "static_on", "gen", weight=0.4)
     runtime.step_nodenet(nnuid)
     runtime.step_nodenet(nnuid)
@@ -159,7 +159,7 @@ def test_node_logic_actuator_nomodulators(runtime, engine, default_world):
     result, nnuid = runtime.new_nodenet("adf", engine, "Default", world_uid=default_world, use_modulators=False)
     net, netapi, source = prepare(runtime, nnuid)
     netapi.link_actuator(source, "echo", weight=0.7, gate="gen")
-    register = netapi.create_node("Register", None)
+    register = netapi.create_node("Neuron", None)
     actuator = netapi.get_nodes(node_name_prefix="echo")[0]
     netapi.link(actuator, "gen", register, "gen")
     runtime.step_nodenet(nnuid)

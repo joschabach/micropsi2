@@ -14,8 +14,8 @@ __date__ = '29.10.12'
 def prepare(runtime, test_nodenet):
     net = runtime.nodenets[test_nodenet]
     netapi = net.netapi
-    source = netapi.create_node("Register", None, "source")
-    register = netapi.create_node("Register", None, "reg")
+    source = netapi.create_node("Neuron", None, "source")
+    register = netapi.create_node("Neuron", None, "reg")
     netapi.link(source, 'gen', source, 'gen')
     netapi.link(source, 'gen', register, 'gen')
     return net, netapi, source, register
@@ -106,8 +106,8 @@ def test_user_notification(runtime, test_nodenet, node):
 
 def test_nodespace_removal(runtime, test_nodenet):
     res, uid = runtime.add_nodespace(test_nodenet, nodespace=None, name="testspace")
-    res, n1_uid = runtime.add_node(test_nodenet, 'Register', [100, 100], nodespace=uid, name="sub1")
-    res, n2_uid = runtime.add_node(test_nodenet, 'Register', [100, 200], nodespace=uid, name="sub2")
+    res, n1_uid = runtime.add_node(test_nodenet, 'Neuron', [100, 100], nodespace=uid, name="sub1")
+    res, n2_uid = runtime.add_node(test_nodenet, 'Neuron', [100, 200], nodespace=uid, name="sub2")
     runtime.add_link(test_nodenet, n1_uid, 'gen', n2_uid, 'gen', weight=1)
     res, sub_uid = runtime.add_nodespace(test_nodenet, nodespace=uid, name="subsubspace")
     runtime.delete_nodespace(test_nodenet, uid)
@@ -152,7 +152,7 @@ def test_clone_nodes_nolinks(runtime, test_nodenet):
 def test_clone_nodes_all_links(runtime, test_nodenet):
     net, netapi, source, register = prepare(runtime, test_nodenet)
     nodenet = runtime.get_nodenet(test_nodenet)
-    thirdnode = netapi.create_node('Register', None, 'third')
+    thirdnode = netapi.create_node('Neuron', None, 'third')
     netapi.link(thirdnode, 'gen', register, 'gen')
     success, result = runtime.clone_nodes(test_nodenet, [source.uid, register.uid], 'all')
     assert success
@@ -177,7 +177,7 @@ def test_clone_nodes_all_links(runtime, test_nodenet):
 
 def test_clone_nodes_internal_links(runtime, test_nodenet):
     net, netapi, source, register = prepare(runtime, test_nodenet)
-    thirdnode = netapi.create_node('Register', None, 'third')
+    thirdnode = netapi.create_node('Neuron', None, 'third')
     netapi.link(thirdnode, 'gen', register, 'gen')
     success, result = runtime.clone_nodes(test_nodenet, [source.uid, register.uid], 'internal')
     assert success
@@ -199,7 +199,7 @@ def test_clone_nodes_internal_links(runtime, test_nodenet):
 
 def test_clone_nodes_to_new_nodespace(runtime, test_nodenet):
     net, netapi, source, register = prepare(runtime, test_nodenet)
-    thirdnode = netapi.create_node('Register', None, 'third')
+    thirdnode = netapi.create_node('Neuron', None, 'third')
     netapi.link(thirdnode, 'gen', register, 'gen')
     success, result = runtime.clone_nodes(test_nodenet, [source.uid, register.uid], 'internal')
 
@@ -251,8 +251,8 @@ def test_modulators_sensor_actuator_connection(runtime, test_nodenet, test_world
     res, s2_id = runtime.add_node(test_nodenet, "Sensor", [20, 20], None, name="emo_activation", parameters={'datasource': 'emo_activation'})
     res, a1_id = runtime.add_node(test_nodenet, "Actuator", [30, 30], None, name="engine_l", parameters={'datatarget': 'engine_l'})
     res, a2_id = runtime.add_node(test_nodenet, "Actuator", [40, 40], None, name="base_importance_of_intention", parameters={'datatarget': 'base_importance_of_intention'})
-    res, r1_id = runtime.add_node(test_nodenet, "Register", [10, 30], None, name="r1")
-    res, r2_id = runtime.add_node(test_nodenet, "Register", [10, 30], None, name="r2")
+    res, r1_id = runtime.add_node(test_nodenet, "Neuron", [10, 30], None, name="r1")
+    res, r2_id = runtime.add_node(test_nodenet, "Neuron", [10, 30], None, name="r2")
     s1 = nodenet.get_node(s1_id)
     s2 = nodenet.get_node(s2_id)
     r1 = nodenet.get_node(r1_id)
@@ -361,11 +361,11 @@ def test_multiple_nodenet_interference(runtime, engine, resourcepath):
     n2 = runtime.nodenets[n2_uid]
 
     nativemodule = n1.netapi.create_node("Testnode", None, "Testnode")
-    register1 = n1.netapi.create_node("Register", None, "Register1")
+    register1 = n1.netapi.create_node("Neuron", None, "Neuron1")
     n1.netapi.link(nativemodule, 'gen', register1, 'gen', weight=1.2)
 
-    source2 = n2.netapi.create_node("Register", None, "Source2")
-    register2 = n2.netapi.create_node("Register", None, "Register2")
+    source2 = n2.netapi.create_node("Neuron", None, "Source2")
+    register2 = n2.netapi.create_node("Neuron", None, "Neuron2")
     n2.netapi.link(source2, 'gen', source2, 'gen')
     n2.netapi.link(source2, 'gen', register2, 'gen', weight=0.9)
     source2.activation = 0.7
@@ -374,20 +374,20 @@ def test_multiple_nodenet_interference(runtime, engine, resourcepath):
 
     assert n1.current_step == 0
     assert register1.activation == 0
-    assert register1.name == "Register1"
+    assert register1.name == "Neuron1"
     assert nativemodule.name == "Testnode"
     assert round(register1.get_slot('gen').get_links()[0].weight, 2) == 1.2
     assert register1.get_slot('gen').get_links()[0].source_node.name == 'Testnode'
-    assert n1.get_node(register1.uid).name == "Register1"
+    assert n1.get_node(register1.uid).name == "Neuron1"
 
     assert n2.current_step == 1
     assert round(source2.activation, 2) == 0.7
     assert round(register2.activation, 2) == 0.63
-    assert register2.name == "Register2"
+    assert register2.name == "Neuron2"
     assert source2.name == "Source2"
     assert round(register2.get_slot('gen').get_links()[0].weight, 2) == 0.9
     assert register2.get_slot('gen').get_links()[0].source_node.name == 'Source2'
-    assert n2.get_node(register2.uid).name == "Register2"
+    assert n2.get_node(register2.uid).name == "Neuron2"
 
 
 def test_get_nodespace_changes(runtime, test_nodenet):
@@ -400,7 +400,7 @@ def test_get_nodespace_changes(runtime, test_nodenet):
     assert result['nodespaces_deleted'] == []
     net.netapi.unlink(source, 'gen', register, 'gen')
     net.netapi.delete_node(register)
-    newnode = net.netapi.create_node('Register', None, "new thing")
+    newnode = net.netapi.create_node('Neuron', None, "new thing")
     net.netapi.link(newnode, 'gen', source, 'gen')
     newspace = net.netapi.create_nodespace(None, "nodespace")
     net.step()

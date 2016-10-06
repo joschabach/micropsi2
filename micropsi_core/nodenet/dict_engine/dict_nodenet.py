@@ -21,10 +21,10 @@ STANDARD_NODETYPES = {
         "shape": "Rectangle"
     },
 
-    "Register": {
-        "name": "Register",
+    "Neuron": {
+        "name": "Neuron",
         "slottypes": ["gen"],
-        "nodefunction_name": "register",
+        "nodefunction_name": "neuron",
         "gatetypes": ["gen"]
     },
     "Sensor": {

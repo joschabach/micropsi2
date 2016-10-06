@@ -1447,7 +1447,7 @@ function createCompactNodeShape(node) {
         case "Concept": // draw circle
         case "Pipe": // draw circle
         case "Script": // draw circle
-        case "Register":
+        case "Neuron":
             shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
             break;
         default:

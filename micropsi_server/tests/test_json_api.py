@@ -688,7 +688,7 @@ def test_add_group_monitor_by_name(app, test_nodenet):
     for i in range(3):
         response = app.post_json('/rpc/add_node', params={
             'nodenet_uid': test_nodenet,
-            'type': 'Register',
+            'type': 'Neuron',
             'position': [23, 23, 12],
             'nodespace': None,
             'name': 'Testnode %d' % i
@@ -715,7 +715,7 @@ def test_add_group_monitor_by_ids(app, test_nodenet):
     for i in range(3):
         response = app.post_json('/rpc/add_node', params={
             'nodenet_uid': test_nodenet,
-            'type': 'Register',
+            'type': 'Neuron',
             'position': [23, 23, 12],
             'nodespace': None,
             'name': 'Testnode %d' % i
@@ -915,7 +915,7 @@ def test_align_nodes(app, test_nodenet):
     # TODO: Why does autoalign only move a node if it has no links?
     response = app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
-        'type': 'Register',
+        'type': 'Neuron',
         'position': [5, 5, 0],
         'nodespace': None,
         'name': 'N2'
@@ -934,7 +934,7 @@ def test_get_available_node_types(app, test_nodenet):
     response = app.get_json('/rpc/get_available_node_types(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
     assert 'Pipe' in response.json_body['data']['nodetypes']
-    assert 'Register' in response.json_body['data']['nodetypes']
+    assert 'Neuron' in response.json_body['data']['nodetypes']
     assert 'Sensor' in response.json_body['data']['nodetypes']
 
 
@@ -1439,7 +1439,7 @@ def test_nodenet_data_structure(app, test_nodenet, resourcepath, node):
     assert 'gatetypes' not in metadata['nodetypes']['Comment']
     assert 'slottypes' not in metadata['nodetypes']['Comment']
 
-    for key in ['Pipe', 'Register', 'Actuator']:
+    for key in ['Pipe', 'Neuron', 'Actuator']:
         assert 'gatetypes' in metadata['nodetypes'][key]
         assert 'slottypes' in metadata['nodetypes'][key]
 
@@ -1486,7 +1486,7 @@ def test_get_state_diff(app, test_nodenet, node):
     assert 'activations' in data
     assert 'changes' in data
     assert node in data['changes']['nodes_dirty']
-    node2 = nodenet.create_node("Register", None, [10, 10], name="node2")
+    node2 = nodenet.create_node("Neuron", None, [10, 10], name="node2")
     runtime.step_nodenet(test_nodenet)
     response = app.post_json('/rpc/get_calculation_state', params={
         'nodenet_uid': test_nodenet,
@@ -1512,7 +1512,7 @@ def test_get_nodenet_diff(app, test_nodenet, node):
     assert 'activations' in data
     assert 'changes' in data
     assert node in data['changes']['nodes_dirty']
-    node2 = nodenet.create_node("Register", None, [10, 10], name="node2")
+    node2 = nodenet.create_node("Neuron", None, [10, 10], name="node2")
     runtime.step_nodenet(test_nodenet)
     response = app.post_json('/rpc/get_nodenet_changes', params={
         'nodenet_uid': test_nodenet,
@@ -1554,7 +1554,7 @@ def test_add_gate_activation_recorder(app, test_nodenet, resourcepath):
     netapi = nodenet.netapi
     nodespace = netapi.get_nodespace(None)
     for i in range(3):
-        netapi.create_node('Register', None, "testnode_%d" % i)
+        netapi.create_node('Neuron', None, "testnode_%d" % i)
     response = app.post_json('/rpc/add_gate_activation_recorder', {
         'nodenet_uid': test_nodenet,
         'group_definition': {'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'},
@@ -1602,8 +1602,8 @@ def test_add_linkweight_recorder(app, test_nodenet, resourcepath):
     layer1 = []
     layer2 = []
     for i in range(3):
-        layer1.append(netapi.create_node('Register', None, "l1_%d" % i))
-        layer2.append(netapi.create_node('Register', None, "l2_%d" % i))
+        layer1.append(netapi.create_node('Neuron', None, "l1_%d" % i))
+        layer2.append(netapi.create_node('Neuron', None, "l2_%d" % i))
     for i in range(3):
         for j in range(3):
             netapi.link(layer1[i], 'gen', layer2[j], 'gen', weight=0.89)
@@ -1631,7 +1631,7 @@ def test_clear_recorder(app, test_nodenet, resourcepath):
     netapi = nodenet.netapi
     nodespace = netapi.get_nodespace(None)
     for i in range(3):
-        netapi.create_node('Register', None, "testnode_%d" % i)
+        netapi.create_node('Neuron', None, "testnode_%d" % i)
     recorder = netapi.add_gate_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder")
     for i in range(3):
         runtime.step_nodenet(test_nodenet)
@@ -1652,7 +1652,7 @@ def test_remove_recorder(app, test_nodenet, resourcepath):
     netapi = nodenet.netapi
     nodespace = netapi.get_nodespace(None)
     for i in range(3):
-        netapi.create_node('Register', None, "testnode_%d" % i)
+        netapi.create_node('Neuron', None, "testnode_%d" % i)
     recorder = netapi.add_gate_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder")
     for i in range(3):
         runtime.step_nodenet(test_nodenet)
@@ -1672,7 +1672,7 @@ def test_get_recorders(app, test_nodenet):
     netapi = nodenet.netapi
     nodespace = netapi.get_nodespace(None)
     for i in range(3):
-        netapi.create_node('Register', None, "testnode_%d" % i)
+        netapi.create_node('Neuron', None, "testnode_%d" % i)
     runtime.step_nodenet(test_nodenet)
     recorder = netapi.add_gate_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder", interval=3)
     runtime.step_nodenet(test_nodenet)

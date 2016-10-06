@@ -103,7 +103,7 @@ def test_register_runner_condition_step(runtime, test_nodenet):
 def test_register_runner_condition_monitor(runtime, test_nodenet):
     import time
     nn = runtime.nodenets[test_nodenet]
-    node = nn.netapi.create_node('Register', None)
+    node = nn.netapi.create_node('Neuron', None)
     nn.netapi.link(node, 'gen', node, 'gen', weight=2)
     node.activation = 0.1
     uid = runtime.add_gate_monitor(test_nodenet, node.uid, 'gen')
@@ -148,7 +148,7 @@ def test_create_nodenet_from_template(runtime, test_nodenet, node, engine):
     runtime.cfg['micropsi2'].update({'single_agent_mode': '1'})
     api = runtime.nodenets[test_nodenet].netapi
     node1 = api.get_node(node)
-    node2 = api.create_node("Register", None, "node2")
+    node2 = api.create_node("Neuron", None, "node2")
     api.link(node1, 'gen', node2, 'gen')
     runtime.save_nodenet(test_nodenet)
     result, uid = runtime.new_nodenet('copynet', engine=engine, template=test_nodenet)
@@ -163,8 +163,8 @@ def test_create_nodenet_from_template(runtime, test_nodenet, node, engine):
 
 def test_export_json_does_not_send_duplicate_links(runtime, test_nodenet):
     import json
-    _, uid1 = runtime.add_node(test_nodenet, "Register", [10, 10], None)
-    _, uid2 = runtime.add_node(test_nodenet, "Register", [20, 20], None)
+    _, uid1 = runtime.add_node(test_nodenet, "Neuron", [10, 10], None)
+    _, uid2 = runtime.add_node(test_nodenet, "Neuron", [20, 20], None)
     runtime.add_link(test_nodenet, uid1, 'gen', uid2, 'gen')
     runtime.add_link(test_nodenet, uid1, 'gen', uid2, 'gen')
     runtime.add_link(test_nodenet, uid2, 'gen', uid1, 'gen')
@@ -183,7 +183,7 @@ def test_generate_netapi_fragment(runtime, test_nodenet, engine, resourcepath):
         p2 = netapi.create_node('Pipe', None, t + '2')
         nodes.extend([p1, p2])
         netapi.link_with_reciprocal(p1, p2, t)
-    reg = netapi.create_node('Register', None, 'reg')
+    reg = netapi.create_node('Neuron', None, 'reg')
     netapi.link(reg, 'gen', nodes[0], 'gen')
     # remember their names
     names = [n.name for n in nodes]
@@ -243,7 +243,7 @@ def test_run_netapi_command(runtime, test_nodenet):
     result, msg = runtime.run_netapi_command(test_nodenet, command)
     assert not result
     assert msg.startswith("TypeError")
-    command = "for i in range(3): netapi.create_node('Register', None, 'test%d' % i)"
+    command = "for i in range(3): netapi.create_node('Neuron', None, 'test%d' % i)"
     result, msg = runtime.run_netapi_command(test_nodenet, command)
     assert result
     assert len(netapi.get_nodes()) == 4
@@ -254,7 +254,7 @@ def test_get_netapi_autocomplete(runtime, test_nodenet):
     runtime.run_netapi_command(test_nodenet, "foogate = foonode.get_gate('gen')")
     runtime.run_netapi_command(test_nodenet, "fooslot = foonode.get_slot('gen')")
     runtime.run_netapi_command(test_nodenet, "nodespace = netapi.create_nodespace(None, 'foospace')")
-    runtime.run_netapi_command(test_nodenet, "barnode = netapi.create_node('Register', None, 'foo')")
+    runtime.run_netapi_command(test_nodenet, "barnode = netapi.create_node('Neuron', None, 'foo')")
     data = runtime.get_netapi_autocomplete_data(test_nodenet)
     data['types']['foonode'] = 'Node'
     data['types']['foogate'] = 'Gate'

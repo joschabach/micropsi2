@@ -10,8 +10,8 @@ import pytest
 def prepare(runtime, test_nodenet):
     net = runtime.nodenets[test_nodenet]
     netapi = net.netapi
-    source = netapi.create_node("Register", None, "source")
-    register = netapi.create_node("Register", None, "reg")
+    source = netapi.create_node("Neuron", None, "source")
+    register = netapi.create_node("Neuron", None, "reg")
     netapi.link(source, 'gen', source, 'gen')
     netapi.link(source, 'gen', register, 'gen')
     return net, netapi, source, register
@@ -205,11 +205,11 @@ def test_add_group_monitor(runtime, test_nodenet):
     nodespace = netapi.get_nodespace(None)
     nodes = []
     for i in range(10):
-        node = netapi.create_node('Register', None, "testnode_%d" % i)
+        node = netapi.create_node('Neuron', None, "testnode_%d" % i)
         nodes.append(node)
         if i > 0:
             netapi.link(nodes[i - 1], 'gen', node, 'gen')
-    source = netapi.create_node("Register", None, "Source")
+    source = netapi.create_node("Neuron", None, "Source")
     netapi.link(source, 'gen', source, 'gen')
     netapi.link(source, 'gen', nodes[0], 'gen')
     source.activation = 1

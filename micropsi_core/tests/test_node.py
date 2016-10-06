@@ -6,19 +6,19 @@ Tests for node, nodefunction and the like
 """
 
 from micropsi_core.nodenet.node import Nodetype
-from micropsi_core.nodenet.nodefunctions import register, concept
+from micropsi_core.nodenet.nodefunctions import neuron, concept
 import pytest
 
 
 @pytest.mark.engine("theano_engine")
 def test_nodetype_function_definition_overwrites_default_function_name_theano(runtime, test_nodenet):
     nodenet = runtime.get_nodenet(test_nodenet)
-    nodetype = nodenet.get_standard_nodetype_definitions()['Register'].copy()
+    nodetype = nodenet.get_standard_nodetype_definitions()['Neuron'].copy()
     foo = Nodetype(nodenet=nodenet, **nodetype)
-    assert foo.nodefunction == register
+    assert foo.nodefunction == neuron
     nodetype['nodefunction_definition'] = 'return 17'
     foo = Nodetype(nodenet=nodenet, **nodetype)
-    assert foo.nodefunction != register
+    assert foo.nodefunction != neuron
     assert foo.nodefunction(nodenet, None) == 17
 
 
@@ -93,7 +93,7 @@ def phatNM(netapi, node, **_):
 
     # test set_gate_activation
     node.set_gate_activations(new_activation)
-    target = netapi.create_node("Register", None, "Target")
+    target = netapi.create_node("Neuron", None, "Target")
     for g in node.get_gate_types():
         netapi.link(node, g, target, 'gen')
     runtime.step_nodenet(test_nodenet)

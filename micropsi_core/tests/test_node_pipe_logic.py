@@ -9,7 +9,7 @@ Tests for node activation propagation and gate arithmetic
 def prepare(runtime, test_nodenet):
     nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
-    source = netapi.create_node("Register", None, "Source")
+    source = netapi.create_node("Neuron", None, "Source")
     netapi.link(source, "gen", source, "gen")
     source.activation = 1
     nodenet.step()

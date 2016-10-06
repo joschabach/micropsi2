@@ -11,23 +11,23 @@ import pytest
 def prepare(runtime, test_nodenet):
     nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
-    source = netapi.create_node("Register", None, "Source")
+    source = netapi.create_node("Neuron", None, "Source")
     netapi.link(source, "gen", source, "gen")
     source.activation = 1
     nodenet.step()
     return nodenet, netapi, source
 
 
-def test_node_netapi_create_register_node(runtime, test_nodenet):
-    # test register node creation
+def test_node_netapi_create_neuron_node(runtime, test_nodenet):
+    # test neuron node creation
     net, netapi, source = prepare(runtime, test_nodenet)
-    node = netapi.create_node("Register", None, "TestName")
+    node = netapi.create_node("Neuron", None, "TestName")
 
     # basic logic tests
     assert node is not None
     root_ns = netapi.get_nodespace(None)
     assert node.parent_nodespace == root_ns.uid
-    assert node.type == "Register"
+    assert node.type == "Neuron"
     assert node.uid is not None
     assert len(node.get_gate('gen').get_links()) == 0
 
@@ -37,7 +37,7 @@ def test_node_netapi_create_register_node(runtime, test_nodenet):
     assert data['name'] == node.name
     assert data['type'] == node.type
 
-    node = netapi.create_node("Register", None)
+    node = netapi.create_node("Neuron", None)
     # TODO: teh weirdness, server-internally, we return uids as names, clients don't see this, confusion ensues
     # assert data['name'] == node.name
 
@@ -104,10 +104,10 @@ def test_node_netapi_create_concept_node(runtime, test_nodenet):
 
 
 def test_node_netapi_create_node_in_nodespace(runtime, test_nodenet):
-    # test register node in nodespace creation
+    # test neuron node in nodespace creation
     net, netapi, source = prepare(runtime, test_nodenet)
     nodespace = netapi.create_nodespace(None, "NestedNodespace")
-    node = netapi.create_node("Register", nodespace.uid, "TestName")
+    node = netapi.create_node("Neuron", nodespace.uid, "TestName")
 
     assert node.parent_nodespace == nodespace.uid
     assert node.get_data()['parent_nodespace'] == nodespace.uid
@@ -138,9 +138,9 @@ def test_node_netapi_get_nodespace_multi(runtime, test_nodenet):
 
 
 def test_node_netapi_get_node(runtime, test_nodenet):
-    # test register node creation
+    # test neuron node creation
     net, netapi, source = prepare(runtime, test_nodenet)
-    node = netapi.create_node("Register", None, "TestName")
+    node = netapi.create_node("Neuron", None, "TestName")
 
     queried_node = netapi.get_node(node.uid)
     assert queried_node.uid == node.uid
@@ -152,8 +152,8 @@ def test_node_netapi_get_node(runtime, test_nodenet):
 def test_node_netapi_get_nodes(runtime, test_nodenet):
     # test get_nodes plain
     net, netapi, source = prepare(runtime, test_nodenet)
-    node1 = netapi.create_node("Register", None, "TestName1")
-    node2 = netapi.create_node("Register", None, "TestName2")
+    node1 = netapi.create_node("Neuron", None, "TestName1")
+    node2 = netapi.create_node("Neuron", None, "TestName2")
 
     nodes = netapi.get_nodes(netapi.get_nodespace(None).uid)
     assert node1.uid in [n.uid for n in nodes]
@@ -163,8 +163,8 @@ def test_node_netapi_get_nodes(runtime, test_nodenet):
 def test_node_netapi_get_nodes_by_name(runtime, test_nodenet):
     # test get_nodes by name
     net, netapi, source = prepare(runtime, test_nodenet)
-    node1 = netapi.create_node("Register", None, "TestName1")
-    node2 = netapi.create_node("Register", None, "TestName2")
+    node1 = netapi.create_node("Neuron", None, "TestName1")
+    node2 = netapi.create_node("Neuron", None, "TestName2")
 
     nodes = netapi.get_nodes(netapi.get_nodespace(None).uid, node_name_prefix="TestName")
     assert len(nodes) == 2
@@ -176,8 +176,8 @@ def test_node_netapi_get_nodes_by_nodespace(runtime, test_nodenet):
     # test get_nodes by name and nodespace
     net, netapi, source = prepare(runtime, test_nodenet)
     nodespace = netapi.create_nodespace(None, "NestedNodespace")
-    node1 = netapi.create_node("Register", nodespace.uid, "TestName1")
-    node2 = netapi.create_node("Register", nodespace.uid, "TestName2")
+    node1 = netapi.create_node("Neuron", nodespace.uid, "TestName1")
+    node2 = netapi.create_node("Neuron", nodespace.uid, "TestName2")
 
     nodes = netapi.get_nodes(nodespace.uid)
     assert len(nodes) == 2
@@ -190,9 +190,9 @@ def test_node_netapi_get_nodes_by_nodetype(runtime, test_nodenet):
     net, netapi, source = prepare(runtime, test_nodenet)
     nodespace = netapi.create_nodespace(None, "NestedNodespace")
     node1 = netapi.create_node("Pipe", nodespace.uid, "TestName1")
-    node2 = netapi.create_node("Register", nodespace.uid, "TestName2")
+    node2 = netapi.create_node("Neuron", nodespace.uid, "TestName2")
 
-    nodes = netapi.get_nodes(nodetype="Register")
+    nodes = netapi.get_nodes(nodetype="Neuron")
     assert len(nodes) == 2
     uids = [n.uid for n in nodes]
     assert node1.uid not in uids
@@ -204,8 +204,8 @@ def test_node_netapi_get_nodes_by_name_and_nodespace(runtime, test_nodenet):
     # test get_nodes by name and nodespace
     net, netapi, source = prepare(runtime, test_nodenet)
     nodespace = netapi.create_nodespace(None, "NestedNodespace")
-    node1 = netapi.create_node("Register", None, "TestName1")
-    node2 = netapi.create_node("Register", nodespace.uid, "TestName2")
+    node1 = netapi.create_node("Neuron", None, "TestName1")
+    node2 = netapi.create_node("Neuron", nodespace.uid, "TestName2")
 
     nodes = netapi.get_nodes(nodespace.uid, "TestName")
     assert len(nodes) == 1
@@ -287,10 +287,10 @@ def test_node_netapi_get_nodes_in_gate_field_with_limitations_and_nodespace(runt
 def test_node_netapi_get_nodes_in_slot_field(runtime, test_nodenet):
     # test get_nodes_in_slot_field
     net, netapi, source = prepare(runtime, test_nodenet)
-    node1 = netapi.create_node("Register", None, "TestName1")
-    node2 = netapi.create_node("Register", None, "TestName2")
-    node3 = netapi.create_node("Register", None, "TestName3")
-    node4 = netapi.create_node("Register", None, "TestName4")
+    node1 = netapi.create_node("Neuron", None, "TestName1")
+    node2 = netapi.create_node("Neuron", None, "TestName2")
+    node3 = netapi.create_node("Neuron", None, "TestName3")
+    node4 = netapi.create_node("Neuron", None, "TestName4")
     netapi.link(node2, "gen", node1, "gen")
     netapi.link(node3, "gen", node1, "gen")
     netapi.link(node3, "gen", node1, "gen")
@@ -326,10 +326,10 @@ def test_node_netapi_get_nodes_with_nodespace_limitation(runtime, test_nodenet):
     # test get_nodes_feed with nodespace limitation
     net, netapi, source = prepare(runtime, test_nodenet)
     nodespace = netapi.create_nodespace(None, "NestedNodespace")
-    node1 = netapi.create_node("Register", None, "TestName1")
-    node2 = netapi.create_node("Register", None, "TestName2")
-    node3 = netapi.create_node("Register", None, "TestName3")
-    node4 = netapi.create_node("Register", nodespace.uid, "TestName4")
+    node1 = netapi.create_node("Neuron", None, "TestName1")
+    node2 = netapi.create_node("Neuron", None, "TestName2")
+    node3 = netapi.create_node("Neuron", None, "TestName3")
+    node4 = netapi.create_node("Neuron", nodespace.uid, "TestName4")
     netapi.link(node2, "gen", node1, "gen")
     netapi.link(node3, "gen", node1, "gen")
     netapi.link(node3, "gen", node1, "gen")
@@ -362,10 +362,10 @@ def test_node_netapi_get_nodes_active(runtime, test_nodenet):
     # test get_nodes_active
     net, netapi, source = prepare(runtime, test_nodenet)
     nodespace = netapi.create_nodespace(None, "NestedNodespace")
-    node1 = netapi.create_node("Register", None, "TestName1")
-    node2 = netapi.create_node("Register", None, "TestName2")
-    node3 = netapi.create_node("Register", None, "TestName3")
-    node4 = netapi.create_node("Register", nodespace.uid, "TestName4")
+    node1 = netapi.create_node("Neuron", None, "TestName1")
+    node2 = netapi.create_node("Neuron", None, "TestName2")
+    node3 = netapi.create_node("Neuron", None, "TestName3")
+    node4 = netapi.create_node("Neuron", nodespace.uid, "TestName4")
     netapi.link(node2, "gen", node1, "gen")
     netapi.link(node3, "gen", node1, "gen")
     netapi.link(node3, "gen", node1, "gen")
@@ -376,12 +376,12 @@ def test_node_netapi_get_nodes_active(runtime, test_nodenet):
     net.step()
     net.step()
 
-    nodes = netapi.get_nodes_active(netapi.get_nodespace(None).uid, "Register", 0.7, "gen")
+    nodes = netapi.get_nodes_active(netapi.get_nodespace(None).uid, "Neuron", 0.7, "gen")
     assert len(nodes) == 2
     assert node1.uid in [n.uid for n in nodes]
     assert source.uid in [n.uid for n in nodes]
 
-    nodes = netapi.get_nodes_active(netapi.get_nodespace(None).uid, "Register")
+    nodes = netapi.get_nodes_active(netapi.get_nodespace(None).uid, "Neuron")
     assert len(nodes) == 2
     assert node1.uid in [n.uid for n in nodes]
     assert source.uid in [n.uid for n in nodes]
@@ -391,10 +391,10 @@ def test_node_netapi_get_nodes_active_with_nodespace_limitation(runtime, test_no
     # test get_nodes_active with nodespace filtering
     net, netapi, source = prepare(runtime, test_nodenet)
     nodespace = netapi.create_nodespace(None, "NestedNodespace")
-    node1 = netapi.create_node("Register", None, "TestName1")
-    node2 = netapi.create_node("Register", None, "TestName2")
-    node3 = netapi.create_node("Register", None, "TestName3")
-    node4 = netapi.create_node("Register", nodespace.uid, "TestName4")
+    node1 = netapi.create_node("Neuron", None, "TestName1")
+    node2 = netapi.create_node("Neuron", None, "TestName2")
+    node3 = netapi.create_node("Neuron", None, "TestName3")
+    node4 = netapi.create_node("Neuron", nodespace.uid, "TestName4")
     netapi.link(node2, "gen", node1, "gen")
     netapi.link(node3, "gen", node1, "gen")
     netapi.link(node3, "gen", node1, "gen")
@@ -405,7 +405,7 @@ def test_node_netapi_get_nodes_active_with_nodespace_limitation(runtime, test_no
     net.step()
     net.step()
 
-    nodes = netapi.get_nodes_active(nodespace.uid, "Register", 0.4)
+    nodes = netapi.get_nodes_active(nodespace.uid, "Neuron", 0.4)
     assert len(nodes) == 1
     assert node4.uid in [n.uid for n in nodes]
 
@@ -413,9 +413,9 @@ def test_node_netapi_get_nodes_active_with_nodespace_limitation(runtime, test_no
 def test_node_netapi_delete_node(runtime, test_nodenet):
     # test simple delete node case
     net, netapi, source = prepare(runtime, test_nodenet)
-    node1 = netapi.create_node("Register", None, "TestName1")
-    node2 = netapi.create_node("Register", None, "TestName2")
-    node3 = netapi.create_node("Register", None, "TestName3")
+    node1 = netapi.create_node("Neuron", None, "TestName1")
+    node2 = netapi.create_node("Neuron", None, "TestName2")
+    node3 = netapi.create_node("Neuron", None, "TestName3")
     netapi.link(node2, "gen", node1, "gen")
     netapi.link(node3, "gen", node1, "gen")
     netapi.link(node3, "gen", node1, "gen")
@@ -431,10 +431,10 @@ def test_node_netapi_delete_nodespace(runtime, test_nodenet):
     # test delete node case deleting a nodespace
     net, netapi, source = prepare(runtime, test_nodenet)
     nodespace = netapi.create_nodespace(None, "NestedNodespace")
-    node1 = netapi.create_node("Register", None, "TestName1")
-    node2 = netapi.create_node("Register", None, "TestName2")
-    node3 = netapi.create_node("Register", None, "TestName3")
-    node4 = netapi.create_node("Register", nodespace.uid, "TestName4")
+    node1 = netapi.create_node("Neuron", None, "TestName1")
+    node2 = netapi.create_node("Neuron", None, "TestName2")
+    node3 = netapi.create_node("Neuron", None, "TestName3")
+    node4 = netapi.create_node("Neuron", nodespace.uid, "TestName4")
     netapi.link(node2, "gen", node1, "gen")
     netapi.link(node3, "gen", node1, "gen")
     netapi.link(node3, "gen", node1, "gen")
@@ -449,8 +449,8 @@ def test_node_netapi_delete_nodespace(runtime, test_nodenet):
 def test_node_netapi_link(runtime, test_nodenet):
     # test linking nodes
     net, netapi, source = prepare(runtime, test_nodenet)
-    node1 = netapi.create_node("Register", None, "TestName1")
-    node2 = netapi.create_node("Register", None, "TestName2")
+    node1 = netapi.create_node("Neuron", None, "TestName1")
+    node2 = netapi.create_node("Neuron", None, "TestName2")
     netapi.link(node2, "gen", node1, "gen")
 
     assert len(node2.get_gate("gen").get_links()) == 1
@@ -478,8 +478,8 @@ def test_node_netapi_link(runtime, test_nodenet):
 def test_node_netapi_link_change_weight(runtime, test_nodenet):
     # test linking nodes, the changing weights
     net, netapi, source = prepare(runtime, test_nodenet)
-    node1 = netapi.create_node("Register", None, "TestName1")
-    node2 = netapi.create_node("Register", None, "TestName2")
+    node1 = netapi.create_node("Neuron", None, "TestName1")
+    node2 = netapi.create_node("Neuron", None, "TestName2")
     netapi.link(node2, "gen", node1, "gen")
 
     net.step()
@@ -765,9 +765,9 @@ def test_copy_nodes(runtime, test_nodenet):
 
 def test_group_nodes_by_names(runtime, test_nodenet):
     net, netapi, source = prepare(runtime, test_nodenet)
-    sepp1 = netapi.create_node("Register", None, "sepp1")
-    sepp2 = netapi.create_node("Register", None, "sepp2")
-    sepp3 = netapi.create_node("Register", None, "sepp3")
+    sepp1 = netapi.create_node("Neuron", None, "sepp1")
+    sepp2 = netapi.create_node("Neuron", None, "sepp2")
+    sepp3 = netapi.create_node("Neuron", None, "sepp3")
     netapi.group_nodes_by_names(None, node_name_prefix="sepp")
     seppen_act = netapi.get_activations(None, "sepp")
     assert len(seppen_act) == 3
@@ -775,7 +775,7 @@ def test_group_nodes_by_names(runtime, test_nodenet):
 
 def test_group_nodes_by_ids(runtime, test_nodenet):
     net, netapi, source = prepare(runtime, test_nodenet)
-    reg = netapi.create_node("Register", None, 'reg')
+    reg = netapi.create_node("Neuron", None, 'reg')
     ids = [source.uid, reg.uid]
     netapi.group_nodes_by_ids(None, ids, "some")
     some_act = netapi.get_activations(None, "some")
@@ -784,7 +784,7 @@ def test_group_nodes_by_ids(runtime, test_nodenet):
 
 def test_ungroup_nodes(runtime, test_nodenet):
     net, netapi, source = prepare(runtime, test_nodenet)
-    reg = netapi.create_node("Register", None, 'reg')
+    reg = netapi.create_node("Neuron", None, 'reg')
     ids = [source.uid, reg.uid]
     netapi.group_nodes_by_ids(None, ids, "some")
     netapi.ungroup_nodes(None, "some")
@@ -794,9 +794,9 @@ def test_ungroup_nodes(runtime, test_nodenet):
 
 def test_get_activations(runtime, test_nodenet):
     net, netapi, source = prepare(runtime, test_nodenet)
-    sepp1 = netapi.create_node("Register", None, "sepp1")
-    sepp2 = netapi.create_node("Register", None, "sepp2")
-    sepp3 = netapi.create_node("Register", None, "sepp3")
+    sepp1 = netapi.create_node("Neuron", None, "sepp1")
+    sepp2 = netapi.create_node("Neuron", None, "sepp2")
+    sepp3 = netapi.create_node("Neuron", None, "sepp3")
     netapi.group_nodes_by_names(None, node_name_prefix="sepp")
     seppen_act = netapi.get_activations(None, "sepp")
     assert len(seppen_act) == 3
@@ -815,9 +815,9 @@ def test_get_activations(runtime, test_nodenet):
 
 def test_substitute_activations(runtime, test_nodenet):
     net, netapi, source = prepare(runtime, test_nodenet)
-    sepp1 = netapi.create_node("Register", None, "sepp1").uid
-    sepp2 = netapi.create_node("Register", None, "sepp2").uid
-    sepp3 = netapi.create_node("Register", None, "sepp3").uid
+    sepp1 = netapi.create_node("Neuron", None, "sepp1").uid
+    sepp2 = netapi.create_node("Neuron", None, "sepp2").uid
+    sepp3 = netapi.create_node("Neuron", None, "sepp3").uid
     netapi.group_nodes_by_names(None, node_name_prefix="sepp")
 
     netapi.link(source, "gen", netapi.get_node(sepp2), "gen")
@@ -841,9 +841,9 @@ def test_substitute_activations(runtime, test_nodenet):
 
 def test_set_gate_get_gate_config(runtime, test_nodenet):
     net, netapi, source = prepare(runtime, test_nodenet)
-    sepp1 = netapi.create_node("Register", None, "sepp1")
-    sepp2 = netapi.create_node("Register", None, "sepp2")
-    sepp3 = netapi.create_node("Register", None, "sepp3")
+    sepp1 = netapi.create_node("Neuron", None, "sepp1")
+    sepp2 = netapi.create_node("Neuron", None, "sepp2")
+    sepp3 = netapi.create_node("Neuron", None, "sepp3")
     netapi.group_nodes_by_names(None, node_name_prefix="sepp")
     data = netapi.get_gate_configurations(None, "sepp", 'bias')
     assert data['gatefunction'] == 'identity'
@@ -855,9 +855,9 @@ def test_set_gate_get_gate_config(runtime, test_nodenet):
 def test_set_gate_config(runtime, test_nodenet):
     from micropsi_core.nodenet.gatefunctions import sigmoid
     net, netapi, source = prepare(runtime, test_nodenet)
-    sepp1 = netapi.create_node("Register", None, "sepp1")
-    sepp2 = netapi.create_node("Register", None, "sepp2")
-    sepp3 = netapi.create_node("Register", None, "sepp3")
+    sepp1 = netapi.create_node("Neuron", None, "sepp1")
+    sepp2 = netapi.create_node("Neuron", None, "sepp2")
+    sepp3 = netapi.create_node("Neuron", None, "sepp3")
     netapi.group_nodes_by_names(None, node_name_prefix="sepp")
 
     netapi.set_gate_configurations(None, "sepp", 'sigmoid', 'bias', [1, 2, 3])
@@ -877,13 +877,13 @@ def test_set_gate_config(runtime, test_nodenet):
 def test_get_link_weights(runtime, test_nodenet):
     net, netapi, source = prepare(runtime, test_nodenet)
 
-    sepp1 = netapi.create_node("Register", None, "sepp1")
-    sepp2 = netapi.create_node("Register", None, "sepp2")
-    sepp3 = netapi.create_node("Register", None, "sepp3")
+    sepp1 = netapi.create_node("Neuron", None, "sepp1")
+    sepp2 = netapi.create_node("Neuron", None, "sepp2")
+    sepp3 = netapi.create_node("Neuron", None, "sepp3")
     netapi.group_nodes_by_names(None, node_name_prefix="sepp")
 
-    hugo1 = netapi.create_node("Register", None, "hugo1")
-    hugo2 = netapi.create_node("Register", None, "hugo2")
+    hugo1 = netapi.create_node("Neuron", None, "hugo1")
+    hugo2 = netapi.create_node("Neuron", None, "hugo2")
     netapi.group_nodes_by_names(None, node_name_prefix="hugo")
 
     netapi.link(sepp2, "gen", hugo1, "gen", 0.4)
@@ -909,13 +909,13 @@ def test_get_link_weights(runtime, test_nodenet):
 def test_set_link_weights(runtime, test_nodenet):
     net, netapi, source = prepare(runtime, test_nodenet)
 
-    sepp1 = netapi.create_node("Register", None, "sepp1")
-    sepp2 = netapi.create_node("Register", None, "sepp2")
-    sepp3 = netapi.create_node("Register", None, "sepp3")
+    sepp1 = netapi.create_node("Neuron", None, "sepp1")
+    sepp2 = netapi.create_node("Neuron", None, "sepp2")
+    sepp3 = netapi.create_node("Neuron", None, "sepp3")
     netapi.group_nodes_by_names(None, node_name_prefix="sepp")
 
-    hugo1 = netapi.create_node("Register", None, "hugo1")
-    hugo2 = netapi.create_node("Register", None, "hugo2")
+    hugo1 = netapi.create_node("Neuron", None, "hugo1")
+    hugo2 = netapi.create_node("Neuron", None, "hugo2")
     netapi.group_nodes_by_names(None, node_name_prefix="hugo")
 
     netapi.link(sepp2, "gen", hugo1, "gen", 0.4)
@@ -971,9 +971,9 @@ def test_set_link_weights(runtime, test_nodenet):
 
 def test_get_node_ids(runtime, test_nodenet):
     net, netapi, source = prepare(runtime, test_nodenet)
-    sepp1 = netapi.create_node("Register", None, "sepp1")
-    sepp2 = netapi.create_node("Register", None, "sepp2")
-    sepp3 = netapi.create_node("Register", None, "sepp3")
+    sepp1 = netapi.create_node("Neuron", None, "sepp1")
+    sepp2 = netapi.create_node("Neuron", None, "sepp2")
+    sepp3 = netapi.create_node("Neuron", None, "sepp3")
     netapi.group_nodes_by_names(None, node_name_prefix="sepp")
     seppen_ids = netapi.get_node_ids(None, "sepp")
     assert len(seppen_ids) == 3
@@ -1058,7 +1058,7 @@ def test_decay_porret_links(runtime, test_nodenet):
             netapi.link_with_reciprocal(pipes[i - 1], node, 'porret', weight=0.1 * i)
 
     netapi.link_with_reciprocal(pipes[0], pipes[1], 'subsur', weight=0.5)
-    reg = netapi.create_node("Register", None, "source")
+    reg = netapi.create_node("Neuron", None, "source")
     netapi.link(reg, 'gen', pipes[0], 'gen', 0.4)
     netapi.decay_por_links(None)
     for i in range(9):
@@ -1168,7 +1168,7 @@ def phatNM(netapi, node, **_):
     node = netapi.create_node("PhatNM", None, 'fatnode')
     registers = []
     for i in range(10):
-        registers.append(netapi.create_node("Register", None, 'reg%d' % i))
+        registers.append(netapi.create_node("Neuron", None, 'reg%d' % i))
     netapi.group_nodes_by_names(None, node_name_prefix='reg', gate='gen')
     netapi.group_node_slots(node.uid, slot_prefix='inbound', group_name='fat_in')
     netapi.set_link_weights(None, 'reg', None, 'fat_in', np.eye(10))

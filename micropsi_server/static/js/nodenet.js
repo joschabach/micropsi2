@@ -417,18 +417,6 @@ function setNodespaceData(data, changed){
                 }
             }
         }
-        /*for(uid in data.nodespaces){
-            if(!(uid in nodespaces)){
-                nodespaces[uid] = data.nodespaces[uid];
-            }
-            item = new Node(uid, data.nodespaces[uid]['position'][0], data.nodespaces[uid]['position'][1], data.nodespaces[uid].parent_nodespace, data.nodespaces[uid].name, "Nodespace", 0, data.nodespaces[uid].state);
-            if(uid in nodes){
-                redrawNode(item);
-                nodes[uid].update(item);
-            } else{
-                addNode(item);
-            }
-        }*/
 
         if(nodespaceProperties[currentNodeSpace].renderlinks != 'none'){
             loadLinksForSelection(function(data){
@@ -509,20 +497,6 @@ function setNodespaceDiffData(data, changed){
                 }
             }
             addLinks(links_data);
-            /*
-            for(var uid in data.changes.nodespaces_dirty){
-                var nodespacedata = data.changes.nodespaces_dirty[uid];
-                if(!(uid in nodespaces)){
-                    nodespaces[uid] = nodespacedata;
-                }
-                item = new Node(uid, nodespacedata['position'][0], nodespacedata['position'][1], nodespacedata.parent_nodespace, nodespacedata.name, "Nodespace", 0, nodespacedata.state);
-                if(uid in nodes){
-                    redrawNode(item);
-                    nodes[uid].update(item);
-                } else{
-                    addNode(item);
-                }
-            }*/
         }
         // activations:
         for(var uid in nodes){
@@ -3134,23 +3108,14 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
         nodenet_uid: currentNodenet,
         nodespace: currentNodeSpace,
         name: name}
-    if(type == "Nodespace"){
-        method = "add_nodespace";
-        params.name = "New Nodespace";
-    } else {
-        method = "add_node"
-        params.type = type;
-        params.position = [x,y,0];
-        params.parameters = parameters;
-    }
+    method = "add_node"
+    params.type = type;
+    params.position = [x,y,0];
+    params.parameters = parameters;
     api.call(method, params,
         success=function(uid){
-            if(type == 'Nodespace'){
-                nodespaceProperties[uid] = nodespace_property_defaults
-            } else {
-                addNode(new Node(uid, x, y, currentNodeSpace, name || '', type, null, null, parameters));
-                selectNode(uid);
-            }
+            addNode(new Node(uid, x, y, currentNodeSpace, name || '', type, null, null, parameters));
+            selectNode(uid);
             if(callback) callback(uid);
             view.draw();
             showNodeForm(uid);
@@ -3226,35 +3191,32 @@ function handlePasteNodes(pastemode){
 }
 
 // let user delete the current node, or all selected nodes
-function deleteNodeHandler(nodeUid) {
-    function deleteNodespaceOnServer(nodespace_uid){
-        var params = {
-            nodenet_uid: currentNodenet,
-            nodespace: nodespace_uid
-        }
-        api.call("delete_nodespace", params,
-            success=function(data){
-                dialogs.notification('nodespace deleted', 'success');
-                getNodespaceList();
-                refreshNodespace(currentNodeSpace, -1);
-            }
-        );
+function deleteNodespace(event, nodespace_uid){
+    if(!nodespace_uid){
+        nodespace_uid = currentNodeSpace;
     }
+    var params = {
+        nodenet_uid: currentNodenet,
+        nodespace: nodespace_uid
+    }
+    var parent = nodespaces[nodespace_uid].parent;
+    api.call("delete_nodespace", params,
+        success=function(data){
+            dialogs.notification('nodespace deleted', 'success');
+            getNodespaceList();
+            refreshNodespace(parent, -1);
+        }
+    );
+}
+
+function deleteNodeHandler(nodeUid) {
     var deletedNodes = [];
-    var deletedNodespaces = [];
     for (var selected in selection) {
         if(selection[selected].constructor == Node){
-            if(nodes[selected].type == "Nodespace"){
-                deletedNodespaces.push(selected);
-            } else{
-                deletedNodes.push(selected);
-            }
+            deletedNodes.push(selected);
             removeNode(nodes[selected]);
             delete selection[selected];
         }
-    }
-    for(var i=0; i < deletedNodespaces.length; i++){
-        deleteNodespaceOnServer(deletedNodespaces[i]);
     }
     if(deletedNodes.length){
         api.call('delete_nodes', {nodenet_uid: currentNodenet, node_uids: deletedNodes}, function(){
@@ -3579,13 +3541,13 @@ function handleEditNode(event){
     if(name && nodes[nodeUid].name != name){
         renameNode(nodeUid, name);
     }
-    if(!jQuery.isEmptyObject(parameters) && nodes[nodeUid].type != 'Nodespace'){
+    if(!jQuery.isEmptyObject(parameters)){
         updateNodeParameters(nodeUid, parameters);
     }
-    if(nodes[nodeUid].state != state  && nodes[nodeUid].type != 'Nodespace'){
+    if(nodes[nodeUid].state != state){
         setNodeState(nodeUid, state);
     }
-    if(nodes[nodeUid].activation != activation && nodes[nodeUid].type != 'Nodespace'){
+    if(nodes[nodeUid].activation != activation){
         setNodeActivation(nodeUid, activation);
     }
     redrawNode(nodes[nodeUid], true);
@@ -3970,10 +3932,7 @@ function showNodeForm(nodeUid, refresh){
     $('#node_name_input', form).val(nodes[nodeUid].name);
     $('#node_uid_input', form).val(nodeUid);
     $('#node_type_input', form).val(nodes[nodeUid].type);
-    if(nodes[nodeUid].type == 'Nodespace'){
-        $('tr.node', form).hide();
-        $('tr.comment', form).hide();
-    } else if(nodes[nodeUid].type == "Comment"){
+    if(nodes[nodeUid].type == "Comment"){
         $('tr.comment', form).show();
         $('tr.node', form).hide();
         $('#node_comment_input').val(nodes[nodeUid].parameters.comment || '');

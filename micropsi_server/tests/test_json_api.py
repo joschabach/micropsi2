@@ -1436,9 +1436,8 @@ def test_nodenet_data_structure(app, test_nodenet, resourcepath, node):
     response = app.get_json('/rpc/get_available_node_types(nodenet_uid="%s")' % test_nodenet)
     node_type_data = response.json_body['data']
 
-    for key in ['Comment', 'Nodespace']:
-        assert 'gatetypes' not in metadata['nodetypes'][key]
-        assert 'slottypes' not in metadata['nodetypes'][key]
+    assert 'gatetypes' not in metadata['nodetypes']['Comment']
+    assert 'slottypes' not in metadata['nodetypes']['Comment']
 
     for key in ['Pipe', 'Register', 'Actuator']:
         assert 'gatetypes' in metadata['nodetypes'][key]

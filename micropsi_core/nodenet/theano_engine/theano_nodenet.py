@@ -28,9 +28,6 @@ from configuration import config as settings
 
 
 STANDARD_NODETYPES = {
-    "Nodespace": {
-        "name": "Nodespace"
-    },
     "Comment": {
         "name": "Comment",
         "symbol": "#",

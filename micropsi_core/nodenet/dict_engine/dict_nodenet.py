@@ -14,10 +14,6 @@ from .dict_nodespace import DictNodespace
 import copy
 
 STANDARD_NODETYPES = {
-    "Nodespace": {
-        "name": "Nodespace"
-    },
-
     "Comment": {
         "name": "Comment",
         "symbol": "#",

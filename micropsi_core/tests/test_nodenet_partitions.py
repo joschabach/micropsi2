@@ -326,3 +326,24 @@ def test_partition_get_node_data(runtime, test_nodenet):
     # source->register + our 4 links:
     assert set(source_uids) == set(['n0001', 'n0002', 'n0003', 'n0004', 'n0005'])
     assert data['nodes'][n9.uid]['links']['gen'][0]['target_node_uid'] == n4.uid
+
+
+@pytest.mark.engine("theano_engine")
+def test_get_links_for_nodes_partitions(runtime, test_nodenet):
+
+    def linkid(linkdict):
+        return "%s:%s:%s:%s" % (linkdict['source_node_uid'], linkdict['source_gate_name'], linkdict['target_slot_name'], linkdict['target_node_uid'])
+
+    nodenet = runtime.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    nodespace, source, register = prepare(netapi)
+
+    root_ns = netapi.get_nodespace(None).uid
+    p0 = netapi.create_node("Pipe", root_ns, "rootpipe")
+    p1 = netapi.create_node("Pipe", nodespace.uid, "partitionpipe")
+    netapi.link_with_reciprocal(p0, p1, 'catexp')
+
+    links, nodes = nodenet.get_links_for_nodes([p1.uid])
+    assert p0.uid in nodes
+    assert len(links) == 2
+    assert set([linkid(l) for l in links]) == set(["%s:%s:%s:%s" % (p0.uid, 'cat', 'cat', p1.uid), "%s:%s:%s:%s" % (p1.uid, 'exp', 'exp', p0.uid)])

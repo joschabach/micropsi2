@@ -472,7 +472,6 @@ class TheanoNodenet(Nodenet):
                             })
                         nodes.update(to_partition.get_node_data(ids=list(node_ids), include_links=False)[0])
 
-
             # search for links terminating at this node
             for from_spid in partition.inlinks:
                 inlinks = partition.inlinks[from_spid]
@@ -499,7 +498,7 @@ class TheanoNodenet(Nodenet):
                         node_ids.add(source_nid)
                         from_nodetype = from_partition.allocated_nodes[source_nid]
                         from_obj_nodetype = self.get_nodetype(get_string_node_type(from_nodetype, self.native_modules))
-                        gate_numerical = from_elements[index] - from_partition.allocated_node_offsets[source_nid]
+                        gate_numerical = from_elements[gate_index] - from_partition.allocated_node_offsets[source_nid]
                         gate_type = get_string_gate_type(gate_numerical, from_obj_nodetype)
                         if from_obj_nodetype.is_highdimensional:
                             if gate_type.rstrip('0123456789') in from_obj_nodetype.dimensionality['gates']:

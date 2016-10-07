@@ -725,7 +725,8 @@ class TheanoPartition():
         self.NoN = new_NoN
         self.has_new_usages = True
 
-    def save(self, datafilename):
+    def save(self):
+        base_path = self.nodenet.get_persistency_path()
 
         allocated_nodes = self.allocated_nodes
         allocated_node_offsets = self.allocated_node_offsets
@@ -765,7 +766,7 @@ class TheanoPartition():
         sizeinformation = [self.NoN, self.NoE, self.NoNS]
 
         for spid, inlinks in self.inlinks.items():
-            filename = os.path.join(os.path.dirname(datafilename), "%s-inlinks-%s-from-%s" % (self.nodenet.uid, self.spid, spid))
+            filename = os.path.join(base_path, "inlinks-%s-from-%s.npz" % (self.spid, spid))
             from_ids = inlinks[0].get_value(borrow=True)
             to_ids = inlinks[1].get_value(borrow=True)
             weights = inlinks[2].get_value(borrow=True) if inlinks[2] else None
@@ -776,7 +777,7 @@ class TheanoPartition():
                 weights=weights,
                 inlink_type=inlinks[4])
 
-        np.savez(datafilename,
+        np.savez(os.path.join(base_path, "partition-%s.npz" % self.spid),
                  allocated_nodes=allocated_nodes,
                  allocated_node_offsets=allocated_node_offsets,
                  allocated_elements_to_nodes=allocated_elements_to_nodes,
@@ -807,20 +808,22 @@ class TheanoPartition():
                  allocated_nodespaces_exp_activators=allocated_nodespaces_exp_activators,
                  allocated_nodespaces_sampling_activators=allocated_nodespaces_sampling_activators)
 
-    def load_data(self, datafilename, nodes_data):
+    def load_data(self, nodes_data):
         """Load the node net from a file"""
         # try to access file
 
+        base_path = self.nodenet.get_persistency_path()
+        filename = os.path.join(base_path, "partition-%s.npz" % self.spid)
         datafile = None
-        if os.path.isfile(datafilename):
+        if os.path.isfile(filename):
             try:
-                self.logger.info("Loading nodenet %s partition %i bulk data from file %s" % (self.nodenet.name, self.pid, datafilename))
-                datafile = np.load(datafilename)
+                self.logger.info("Loading nodenet %s partition %i bulk data from file %s" % (self.nodenet.name, self.pid, filename))
+                datafile = np.load(filename)
             except ValueError:  # pragma: no cover
-                self.logger.warning("Could not read nodenet data from file %s" % datafile)
+                self.logger.warning("Could not read partition data from file %s" % filename)
                 return False
             except IOError:  # pragma: no cover
-                self.logger.warning("Could not open nodenet file %s" % datafile)
+                self.logger.warning("Could not open partition file %s" % filename)
                 return False
 
         if not datafile:
@@ -1030,10 +1033,10 @@ class TheanoPartition():
         if self.has_directional_activators or self.__has_sampling_activators:
             self.__calculate_g_factors()
 
-    def load_inlinks(self, datafilename):
-        base = os.path.dirname(datafilename)
+    def load_inlinks(self):
+        base_path = self.nodenet.get_persistency_path()
         for spid in self.nodenet.partitions:
-            filename = os.path.join(base, "%s-inlinks-%s-from-%s.npz" % (self.nodenet.uid, self.spid, spid))
+            filename = os.path.join(base_path, "inlinks-%s-from-%s.npz" % (self.spid, spid))
             if os.path.isfile(filename):
                 datafile = np.load(filename)
 

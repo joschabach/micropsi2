@@ -1466,7 +1466,7 @@ def test_nodenet_data_structure(app, test_nodenet, resourcepath, node):
     # Nodenet
     assert metadata['current_step'] == 0  # TODO:
     assert 'step' not in data  # current_step && step?
-    assert metadata['version'] == 1
+    assert metadata['version'] == 2
     assert metadata['world'] is None
     assert metadata['worldadapter'] is None
 

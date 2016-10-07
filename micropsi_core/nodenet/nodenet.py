@@ -20,7 +20,7 @@ from .node import Nodetype
 __author__ = 'joscha'
 __date__ = '09.05.12'
 
-NODENET_VERSION = 1
+NODENET_VERSION = 2
 
 
 class NodenetLockException(Exception):
@@ -193,6 +193,13 @@ class Nodenet(metaclass=ABCMeta):
             for modulator in emo.writeable_modulators + emo.readable_modulators:
                 self._modulators[modulator] = 1
 
+        if not os.path.isdir(self.get_persistency_path()):
+            os.mkdir(self.get_persistency_path())
+
+    def get_persistency_path(self):
+        from micropsi_core.runtime import RESOURCE_PATH, NODENET_DIRECTORY
+        return os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, self.uid)
+
     def get_data(self, complete=False, include_links=True):
         """
         Returns a dict representing the whole node net.
@@ -229,24 +236,16 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def save(self, filename):
+    def save(self):
         """
         Saves the nodenet to the given main metadata json file.
         """
         pass  # pragma: no cover
 
     @abstractmethod
-    def load(self, filename):
+    def load(self):
         """
         Loads the node net from the given main metadata json file.
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def remove(self, filename):
-        """
-        Removes the node net's given main metadata json file, plus any additional files the node net may
-        have created for persistency
         """
         pass  # pragma: no cover
 

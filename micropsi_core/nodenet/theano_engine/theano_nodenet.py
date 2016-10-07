@@ -452,10 +452,11 @@ class TheanoNodenet(Nodenet):
             self.stepoperators.append(DoernerianEmotionalModulators())
         self.stepoperators.sort(key=lambda op: op.priority)
 
-    def save(self, filename):
+    def save(self):
+        base_path = self.get_persistency_path()
 
         # write json metadata, which will be used by runtime to manage the net
-        with open(filename, 'w+', encoding="utf-8") as fp:
+        with open(os.path.join(base_path, 'nodenet.json'), 'w+', encoding="utf-8") as fp:
             metadata = self.metadata
             metadata['positions'] = self.positions
             metadata['names'] = self.names
@@ -472,14 +473,14 @@ class TheanoNodenet(Nodenet):
             self._recorders[recorder_uid].save()
 
         for partition in self.partitions.values():
-            # write bulk data to our own numpy-based file format
-            datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + partition.spid)
-            partition.save(datafilename)
+            # save partitions
+            partition.save()
 
-    def load(self, filename):
+    def load(self):
         """Load the node net from a file"""
         # try to access file
 
+        filename = os.path.join(self.get_persistency_path(), 'nodenet.json')
         with self.netlock:
             initfrom = {}
             if os.path.isfile(filename):
@@ -504,12 +505,10 @@ class TheanoNodenet(Nodenet):
             self.initialize_nodenet(initfrom)
 
             for partition in self.partitions.values():
-                datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + partition.spid + ".npz")
-                partition.load_data(datafilename, nodes_data)
+                partition.load_data(nodes_data)
 
             for partition in self.partitions.values():
-                datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + partition.spid + ".npz")
-                partition.load_inlinks(datafilename)
+                partition.load_inlinks()
 
             # reloading native modules ensures the types in allocated_nodes are up to date
             # (numerical native module types are runtime dependent and may differ from when allocated_nodes
@@ -534,12 +533,6 @@ class TheanoNodenet(Nodenet):
             self._rebuild_sensor_actuator_indices()
 
             return True
-
-    def remove(self, filename):
-        neighbors = os.listdir(os.path.dirname(filename))
-        for neighbor in neighbors:
-            if neighbor.startswith(self.uid):
-                os.remove(os.path.join(os.path.dirname(filename), neighbor))
 
     def initialize_nodenet(self, initfrom):
 

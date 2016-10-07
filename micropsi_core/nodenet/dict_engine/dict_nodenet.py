@@ -210,7 +210,9 @@ class DictNodenet(Nodenet):
 
         return data
 
-    def save(self, filename):
+    def save(self):
+        base_path = self.get_persistency_path()
+        filename = os.path.join(base_path, 'nodenet.json')
         # dict_engine saves everything to json, just dump the json export
         data = json.dumps(self.export_json(), sort_keys=True, indent=4)
         with open(filename, 'w+', encoding="utf-8") as fp:
@@ -219,9 +221,10 @@ class DictNodenet(Nodenet):
             # kind of hacky, but we don't really know what was going on
             raise RuntimeError("Error writing nodenet file")
 
-    def load(self, filename):
+    def load(self):
         """Load the node net from a file"""
         # try to access file
+        filename = os.path.join(self.get_persistency_path(), 'nodenet.json')
         with self.netlock:
 
             initfrom = {}
@@ -243,9 +246,6 @@ class DictNodenet(Nodenet):
                 return True
             else:
                 raise NotImplementedError("Wrong version of nodenet data, cannot import.")
-
-    def remove(self, filename):
-        os.remove(filename)
 
     def reload_native_modules(self, native_modules):
         """ reloads the native-module definition, and their nodefunctions

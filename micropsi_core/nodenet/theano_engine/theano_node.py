@@ -3,7 +3,6 @@
 import os
 import numpy as np
 
-from micropsi_core.runtime import PERSISTENCY_PATH, NODENET_DIRECTORY
 from micropsi_core.nodenet.node import Node, Gate, Slot
 from micropsi_core.nodenet.theano_engine.theano_link import TheanoLink
 from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
@@ -36,7 +35,7 @@ class TheanoNode(Node):
 
         self.is_highdimensional = self._nodetype.is_highdimensional
 
-        self.datafile = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, '%s_node_%s.npz' % (self._nodenet.uid, self.uid))
+        self.datafile = os.path.join(nodenet.get_persistency_path(), '%s_node_%s.npz' % (self._nodenet.uid, self.uid))
 
         if strtype in nodenet.native_modules or strtype == "Comment":
             self.slot_activation_snapshot = {}

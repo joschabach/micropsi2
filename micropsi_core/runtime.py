@@ -358,7 +358,7 @@ def load_nodenet(nodenet_uid):
                 else:
                     return False, "Nodenet %s requires unknown engine %s" % (nodenet_uid, engine)
 
-                nodenets[nodenet_uid].load(os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid + ".json"))
+                nodenets[nodenet_uid].load()
 
                 netapi_consoles[nodenet_uid] = NetapiShell(nodenets[nodenet_uid].netapi)
 
@@ -390,7 +390,6 @@ def load_world(world_uid):
             else:
                 worlds[world_uid] = world.World(**world_data[world_uid])
     return worlds.get(world_uid)
-
 
 
 def get_nodenet_metadata(nodenet_uid):
@@ -521,7 +520,6 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
         use_modulators=use_modulators,
         worldadapter_config=worldadapter_config)
 
-    filename = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
     nodenet_data[data['uid']] = Bunch(**data)
     load_nodenet(data['uid'])
     if template is not None and template in nodenet_data:
@@ -531,7 +529,7 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
         load_nodenet(uid)
         nodenets[uid].merge_data(data_to_merge)
 
-    nodenets[uid].save(filename)
+    nodenets[uid].save()
     return True, data['uid']
 
 
@@ -540,11 +538,12 @@ def delete_nodenet(nodenet_uid):
 
     Simple unloading is maintained automatically when a nodenet is suspended and another one is accessed.
     """
-    filename = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid + '.json')
-    nodenet = get_nodenet(nodenet_uid)
-    nodenet.remove(filename)
-    unload_nodenet(nodenet_uid)
+    import shutil
+    if nodenet_uid in nodenets:
+        unload_nodenet(nodenet_uid)
     del nodenet_data[nodenet_uid]
+    nodenet_directory = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid)
+    shutil.rmtree(nodenet_directory)
     return True
 
 
@@ -703,7 +702,7 @@ def revert_nodenet(nodenet_uid, also_revert_world=False):
 def save_nodenet(nodenet_uid):
     """Stores the nodenet on the server (but keeps it open)."""
     nodenet = get_nodenet(nodenet_uid)
-    nodenet.save(os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'))
+    nodenet.save()
     nodenet_data[nodenet_uid] = Bunch(**nodenet.metadata)
     return True
 
@@ -1422,10 +1421,8 @@ def crawl_definition_files(path, type="definition"):
     """Traverse the directories below the given path for JSON definitions of nodenets and worlds,
     and return a dictionary with the signatures of these nodenets or worlds.
     """
-
     result = {}
     os.makedirs(path, exist_ok=True)
-
     for user_directory_name, user_directory_names, file_names in os.walk(path):
         for definition_file_name in file_names:
             if definition_file_name.endswith(".json"):

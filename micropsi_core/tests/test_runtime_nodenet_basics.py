@@ -26,7 +26,7 @@ def test_new_nodenet(runtime, test_nodenet, resourcepath, engine):
     assert success
     assert nodenet_uid != test_nodenet
     assert runtime.get_available_nodenets("tester")[nodenet_uid].name == "Test_Nodenet"
-    n_path = os.path.join(resourcepath, runtime.NODENET_DIRECTORY, nodenet_uid + ".json")
+    n_path = os.path.join(resourcepath, runtime.NODENET_DIRECTORY, nodenet_uid, "nodenet.json")
     assert os.path.exists(n_path)
 
     # get_available_nodenets

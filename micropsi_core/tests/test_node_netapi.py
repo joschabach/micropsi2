@@ -621,42 +621,6 @@ def test_node_netapi_unlink_gate(runtime, test_nodenet):
     assert len(n_d.get_slot('por').get_links()) == 3
 
 
-def test_node_netapi_unlink_direction(runtime, test_nodenet):
-    # test unlinking a gate
-    net, netapi, source = prepare(runtime, test_nodenet)
-    n_head = netapi.create_node("Pipe", None, "Head")
-    n_a = netapi.create_node("Pipe", None, "A")
-    n_b = netapi.create_node("Pipe", None, "B")
-    n_c = netapi.create_node("Pipe", None, "C")
-
-    netapi.link_with_reciprocal(n_head, n_a, "subsur")
-    netapi.link_with_reciprocal(n_head, n_b, "subsur")
-    netapi.link_with_reciprocal(n_head, n_c, "subsur")
-
-    nodes = [n_a, n_b, n_c]
-    for source in nodes:
-        for target in nodes:
-            netapi.link_with_reciprocal(source, target, "porret")
-
-    netapi.unlink_direction(n_b, "por")
-
-    assert len(n_head.get_gate('sub').get_links()) == 3
-    assert len(n_head.get_slot('sur').get_links()) == 3
-
-    assert len(n_a.get_slot('por').get_links()) == 2
-    assert len(n_b.get_slot('por').get_links()) == 0
-    assert len(n_c.get_slot('por').get_links()) == 2
-
-    netapi.unlink_direction(n_head, "sub")
-
-    assert len(n_head.get_gate('sub').get_links()) == 0
-    assert len(n_head.get_slot('sur').get_links()) == 3
-
-    assert len(n_a.get_slot('sub').get_links()) == 0
-    assert len(n_b.get_slot('sub').get_links()) == 0
-    assert len(n_c.get_slot('sub').get_links()) == 0
-
-
 def test_node_netapi_import_actuators(runtime, test_nodenet, test_world):
     # test importing data targets as actuators
     net, netapi, source = prepare(runtime, test_nodenet)

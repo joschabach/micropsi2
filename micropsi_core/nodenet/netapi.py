@@ -240,23 +240,6 @@ class NetAPI(object):
                 if source_gate_name is None or l.source_gate.type == source_gate_name:
                     l.source_node.unlink(l.source_gate.type, target_node_uid=node.uid, slot_name=slot_name)
 
-    def unlink_direction(self, node, gateslot=None):
-        """
-        Deletes all links from a node ending at the given slot or originating at the given gate
-        Read this as 'delete all por linkage from this node'
-        """
-        self.logger.warning("unlink direction is deprecated. use unlink_gate and unlink_slot")
-        node.unlink(gateslot)
-
-        links_to_delete = set()
-        for slottype in node.get_slot_types():
-            if gateslot is None or gateslot == slottype:
-                for link in node.get_slot(slottype).get_links():
-                    links_to_delete.add(link)
-
-        for link in links_to_delete:
-            link.source_node.unlink(target_node_uid=node.uid, slot_name=gateslot)
-
     def link_actuator(self, node, datatarget, weight=1, gate='sub', slot='sur'):
         """
         Links a node to an actuator. If no actuator exists in the node's nodespace for the given datatarget,

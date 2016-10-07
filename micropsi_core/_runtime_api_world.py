@@ -117,7 +117,7 @@ def new_world(world_name, world_type, owner="", config={}):
 
     filename = os.path.join(micropsi_core.runtime.PERSISTENCY_PATH, micropsi_core.runtime.WORLD_DIRECTORY, uid + ".json")
     micropsi_core.runtime.world_data[uid] = Bunch(uid=uid, name=world_name, world_type=world_type, filename=filename,
-                                                  owner=owner, config=config)
+                    version=world.WORLD_VERSION, owner=owner, config=config)
     with open(filename, 'w+', encoding="utf-8") as fp:
         fp.write(json.dumps(micropsi_core.runtime.world_data[uid], sort_keys=True, indent=4))
     try:

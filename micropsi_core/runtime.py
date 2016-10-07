@@ -348,6 +348,8 @@ def load_nodenet(nodenet_uid):
                     'native_modules': native_modules,
                     'use_modulators': data.get('use_modulators', True)  # getter for compatibility
                 }
+                if hasattr(data, 'version'):
+                    params['version'] = data.version
                 if engine == 'dict_engine':
                     from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
                     nodenets[nodenet_uid] = DictNodenet(**params)
@@ -508,7 +510,6 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
     uid = tools.generate_uid()
 
     data = dict(
-        version=1,
         step=0,
         uid=uid,
         name=nodenet_name,
@@ -1417,10 +1418,12 @@ def get_netapi_autocomplete_data(nodenet_uid, name=None):
 # --- end of API
 
 
-def crawl_definition_files(path, type="definition"):
+def crawl_definition_files(path, datatype="definition"):
     """Traverse the directories below the given path for JSON definitions of nodenets and worlds,
     and return a dictionary with the signatures of these nodenets or worlds.
     """
+    from micropsi_core.world.world import WORLD_VERSION
+    from micropsi_core.nodenet.nodenet import NODENET_VERSION
     result = {}
     os.makedirs(path, exist_ok=True)
     for user_directory_name, user_directory_names, file_names in os.walk(path):
@@ -1430,11 +1433,16 @@ def crawl_definition_files(path, type="definition"):
                     filename = os.path.join(user_directory_name, definition_file_name)
                     with open(filename, encoding="utf-8") as file:
                         data = parse_definition(json.load(file), filename)
-                        result[data.uid] = data
+                        if datatype == 'world' and data.version != WORLD_VERSION:
+                            logging.getLogger("system").warning("Wrong Version of world data in file %s" % definition_file_name)
+                        elif datatype == 'nodenet' and data.version != NODENET_VERSION:
+                            logging.getLogger("system").warning("Wrong Version of nodenet data in file %s" % definition_file_name)
+                        else:
+                            result[data.uid] = data
                 except ValueError:
-                    logging.getLogger('system').warning("Invalid %s data in file '%s'" % (type, definition_file_name))
+                    logging.getLogger('system').warning("Invalid %s data in file '%s'" % (datatype, definition_file_name))
                 except IOError:
-                    logging.getLogger('system').warning("Could not open %s data file '%s'" % (type, definition_file_name))
+                    logging.getLogger('system').warning("Could not open %s data file '%s'" % (datatype, definition_file_name))
     return result
 
 
@@ -1459,14 +1467,16 @@ def parse_definition(json, filename=None):
             result['config'] = json['config']
         if 'use_modulators' in json:
             result['use_modulators'] = json['use_modulators']
+        if 'version' in json:
+            result['version'] = json['version']
         return Bunch(**result)
 
 
 # Set up the MicroPsi runtime
 def load_definitions():
     global nodenet_data, world_data
-    nodenet_data = crawl_definition_files(path=os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY), type="nodenet")
-    world_data = crawl_definition_files(path=os.path.join(PERSISTENCY_PATH, WORLD_DIRECTORY), type="world")
+    nodenet_data = crawl_definition_files(path=os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY), datatype="nodenet")
+    world_data = crawl_definition_files(path=os.path.join(PERSISTENCY_PATH, WORLD_DIRECTORY), datatype="world")
     if not world_data:
         # create a default world for convenience.
         uid = tools.generate_uid()

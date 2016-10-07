@@ -19,7 +19,7 @@ from micropsi_core.tools import generate_uid
 import logging
 
 
-WORLD_VERSION = 1.0
+WORLD_VERSION = 1
 
 
 class World(object):
@@ -98,7 +98,7 @@ class World(object):
 
         # persistent data
         self.data = {
-            "version": WORLD_VERSION,  # used to check compatibility of the world data
+            "version": version,  # used to check compatibility of the world data
             "objects": {},
             "agents": {},
             "current_step": 0,

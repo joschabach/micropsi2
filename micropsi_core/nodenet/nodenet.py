@@ -20,6 +20,7 @@ from .node import Nodetype
 __author__ = 'joscha'
 __date__ = '09.05.12'
 
+
 NODENET_VERSION = 2
 
 
@@ -67,7 +68,7 @@ class Nodenet(metaclass=ABCMeta):
             'current_step': self.current_step,
             'world': self._world_uid,
             'worldadapter': self._worldadapter_uid,
-            'version': NODENET_VERSION,
+            'version': self._version,
             'runner_condition': self._runner_condition,
             'use_modulators': self.use_modulators,
             'nodespace_ui_properties': self._nodespace_ui_properties,
@@ -143,7 +144,7 @@ class Nodenet(metaclass=ABCMeta):
         if self._worldadapter_instance:
             self._worldadapter_instance.nodenet = self
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None):
+    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None):
         """
         Constructor for the abstract base class, must be called by implementations
         """
@@ -157,7 +158,7 @@ class Nodenet(metaclass=ABCMeta):
         self.is_active = False
         self.use_modulators = use_modulators
 
-        self._version = NODENET_VERSION  # used to check compatibility of the node net data
+        self._version = version or NODENET_VERSION  # used to check compatibility of the node net data
         self._uid = uid
         self._runner_condition = None
 

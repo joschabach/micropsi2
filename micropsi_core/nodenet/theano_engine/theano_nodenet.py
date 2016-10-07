@@ -14,7 +14,7 @@ import scipy
 
 from micropsi_core.nodenet import monitor
 from micropsi_core.nodenet import recorder
-from micropsi_core.nodenet.nodenet import Nodenet
+from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION
 from micropsi_core.nodenet.node import Nodetype
 from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators
 from micropsi_core.nodenet.theano_engine.theano_node import *
@@ -81,8 +81,6 @@ STANDARD_NODETYPES = {
     }
 }
 
-NODENET_VERSION = 1
-
 
 class TheanoNodenet(Nodenet):
     """
@@ -108,7 +106,7 @@ class TheanoNodenet(Nodenet):
     def current_step(self):
         return self._step
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None):
+    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None):
 
         # map of string uids to positions. Not all nodes necessarily have an entry.
         self.positions = {}
@@ -122,7 +120,7 @@ class TheanoNodenet(Nodenet):
         # map of data targets to string node IDs
         self.actuatormap = {}
 
-        super().__init__(name, worldadapter, world, owner, uid, native_modules=native_modules, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance)
+        super().__init__(name, worldadapter, world, owner, uid, native_modules=native_modules, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance, version=version)
 
         self.nodetypes = {}
         for type, data in STANDARD_NODETYPES.items():
@@ -193,7 +191,6 @@ class TheanoNodenet(Nodenet):
         self.inverted_partitionmap = {}
         self._rebuild_sensor_actuator_indices(rootpartition)
 
-        self._version = NODENET_VERSION  # used to check compatibility of the node net data
         self._step = 0
 
         self.proxycache = {}
@@ -478,8 +475,12 @@ class TheanoNodenet(Nodenet):
 
     def load(self):
         """Load the node net from a file"""
-        # try to access file
 
+        if self._version != NODENET_VERSION:
+            self.logger.error("Wrong version of nodenet data in nodenet %s, cannot load." % self.uid)
+            return False
+
+        # try to access file
         filename = os.path.join(self.get_persistency_path(), 'nodenet.json')
         with self.netlock:
             initfrom = {}

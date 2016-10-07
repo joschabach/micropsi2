@@ -110,7 +110,7 @@ class DictNodenet(Nodenet):
     def current_step(self):
         return self._step
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None):
+    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None):
         """Create a new MicroPsi agent.
 
         Arguments:
@@ -120,7 +120,7 @@ class DictNodenet(Nodenet):
             uid (optional): unique handle of the agent; if none is given, it will be generated
         """
 
-        super().__init__(name, worldadapter, world, owner, uid, native_modules=native_modules, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance)
+        super().__init__(name, worldadapter, world, owner, uid, native_modules=native_modules, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance, version=version)
 
         self.nodetypes = {}
         for type, data in STANDARD_NODETYPES.items():
@@ -131,7 +131,6 @@ class DictNodenet(Nodenet):
             self.stepoperators.append(DoernerianEmotionalModulators())
         self.stepoperators.sort(key=lambda op: op.priority)
 
-        self._version = NODENET_VERSION  # used to check compatibility of the node net data
         self._step = 0
 
         self._nodes = {}
@@ -145,7 +144,6 @@ class DictNodenet(Nodenet):
         data = super().get_data(**params)
         data['nodes'] = self.construct_nodes_dict(**params)
         data['nodespaces'] = self.construct_nodespaces_dict("Root", transitive=True)
-        data['version'] = self._version
         data['modulators'] = self.construct_modulators_dict()
         return data
 
@@ -224,6 +222,9 @@ class DictNodenet(Nodenet):
     def load(self):
         """Load the node net from a file"""
         # try to access file
+        if self._version != NODENET_VERSION:
+            self.logger.error("Wrong version of nodenet data in nodenet %s, cannot load." % self.uid)
+            return False
         filename = os.path.join(self.get_persistency_path(), 'nodenet.json')
         with self.netlock:
 
@@ -241,11 +242,8 @@ class DictNodenet(Nodenet):
                     self.logger.warning("Could not open nodenet file")
                     return False
 
-            if self._version == NODENET_VERSION:
-                self.initialize_nodenet(initfrom)
-                return True
-            else:
-                raise NotImplementedError("Wrong version of nodenet data, cannot import.")
+            self.initialize_nodenet(initfrom)
+            return True
 
     def reload_native_modules(self, native_modules):
         """ reloads the native-module definition, and their nodefunctions

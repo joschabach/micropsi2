@@ -557,11 +557,6 @@ class TheanoNodenet(Nodenet):
                 self.names = initfrom['names']
             if 'positions' in initfrom:
                 self.positions = initfrom['positions']
-                # compatibility:
-                for key in self.positions:
-                    if len(self.positions[key]) == 3:
-                        break  # already 3d coordinates
-                    self.positions[key] = (self.positions[key] + [0] * 3)[:3]
             if 'actuatormap' in initfrom:
                 self.actuatormap = initfrom['actuatormap']
             if 'sensormap' in initfrom:
@@ -655,9 +650,6 @@ class TheanoNodenet(Nodenet):
 
         # merge in links
         links = nodenet_data.get('links', [])
-        if isinstance(links, dict):
-            # compatibility
-            links = links.values()
         for link in links:
             if link['source_node_uid'] in invalid_nodes or link['target_node_uid'] in invalid_nodes:
                 continue

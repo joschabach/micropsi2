@@ -463,10 +463,6 @@ class DictNodenet(Nodenet):
                     self._monitors[mon.uid] = mon
                 else:
                     self.logger.warning('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], monitorid))
-            else:
-                # Compatibility mode
-                mon = monitor.NodeMonitor(self, name=data['node_name'], **data)
-                self._monitors[mon.uid] = mon
 
     def step(self):
         """perform a calculation step"""

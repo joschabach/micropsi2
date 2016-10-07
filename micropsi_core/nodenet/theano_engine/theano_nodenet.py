@@ -1836,6 +1836,14 @@ class TheanoNodenet(Nodenet):
         if nodespace_uids == []:
             nodespace_uids = self.get_nodespace_uids()
 
+        nodespaces_by_partition = {}
+        for nodespace_uid in nodespace_uids:
+            spid = self.get_partition(nodespace_uid).spid
+            if spid not in nodespaces_by_partition:
+                nodespaces_by_partition[spid] = []
+            nodespace_uid = self.get_nodespace(nodespace_uid).uid  # b/c of None == Root
+            nodespaces_by_partition[spid].append(nodespace_from_id(nodespace_uid))
+
         for nsuid in nodespace_uids:
             nodespace = self.get_nodespace(nsuid)
             partition = self.get_partition(nodespace.uid)
@@ -1844,7 +1852,7 @@ class TheanoNodenet(Nodenet):
                     result['nodespaces_deleted'].extend(self.deleted_items[i].get('nodespaces_deleted', []))
                     result['nodes_deleted'].extend(self.deleted_items[i].get('nodes_deleted', []))
             changed_nodes, changed_nodespaces = partition.get_nodespace_changes(nodespace.uid, since_step)
-            nodes, _ = partition.get_node_data(ids=changed_nodes, include_links=include_links)
+            nodes, _ = partition.get_node_data(ids=changed_nodes, nodespaces_by_partition=nodespaces_by_partition, include_links=include_links)
             result['nodes_dirty'].update(nodes)
             for uid in changed_nodespaces:
                 uid = nodespace_to_id(uid, partition.pid)

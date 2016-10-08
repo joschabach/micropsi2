@@ -200,7 +200,7 @@ def test_generate_netapi_fragment(runtime, test_nodenet, engine, resourcepath):
     assert set(names) == set([n.name for n in pastnetapi.get_nodes()])
 
 
-def test_get_nodes(runtime, test_nodenet):
+def test_get_nodes(runtime, engine, test_nodenet):
     nodenet = runtime.nodenets[test_nodenet]
     netapi = nodenet.netapi
     ns1 = netapi.create_nodespace(None, "ns1")
@@ -219,6 +219,11 @@ def test_get_nodes(runtime, test_nodenet):
     result = runtime.get_nodes(test_nodenet, [ns1.uid])
     assert set(result['nodes'].keys()) == {n1.uid}
     assert set(result['nodespaces'].keys()) == {ns3.uid}
+    if engine == "dict_engine":
+        # test with followupnodes:
+        netapi.link_with_reciprocal(n1, n2, 'subsur')
+        result = runtime.get_nodes(test_nodenet, [ns1.uid])
+        assert n2.uid in result['nodes']
 
 
 def test_run_netapi_command(runtime, test_nodenet):

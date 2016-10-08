@@ -300,14 +300,10 @@ class DictNodenet(Nodenet):
                 data.extend([l.get_data(complete=True) for l in node.get_gate(g).get_links()])
         return data
 
-    def construct_nodes_dict(self, max_nodes=-1, **params):
+    def construct_nodes_dict(self, **params):
         data = {}
-        i = 0
         for node_uid in self.get_node_uids():
-            i += 1
             data[node_uid] = self.get_node(node_uid).get_data(**params)
-            if max_nodes > 0 and i > max_nodes:
-                break
         return data
 
     def construct_nodespaces_dict(self, nodespace_uid, transitive=False):

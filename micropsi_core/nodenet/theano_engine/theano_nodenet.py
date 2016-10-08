@@ -1412,9 +1412,8 @@ class TheanoNodenet(Nodenet):
                 data[node_uid] = self.get_node(node_uid).get_data(complete=True)
         return data
 
-    def construct_nodes_dict(self, nodespace_uid=None, max_nodes=-1, complete=False, include_links=True):
+    def construct_nodes_dict(self, nodespace_uid=None, complete=False, include_links=True):
         data = {}
-        i = 0
         for partition in self.partitions.values():
             if nodespace_uid is not None:
                 nodespace_partition = self.get_partition(nodespace_uid)
@@ -1426,11 +1425,8 @@ class TheanoNodenet(Nodenet):
                 parent_id = nodespace_from_id(nodespace_uid)
                 nodeids = np.where(partition.allocated_node_parents == parent_id)[0]
             for node_id in nodeids:
-                i += 1
                 node_uid = node_to_id(node_id, partition.pid)
                 data[node_uid] = self.get_node(node_uid).get_data(complete=complete, include_links=include_links)
-                if max_nodes > 0 and i > max_nodes:
-                    break
         return data
 
     def construct_nodespaces_dict(self, nodespace_uid, transitive=False):

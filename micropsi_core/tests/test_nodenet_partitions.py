@@ -347,3 +347,59 @@ def test_get_links_for_nodes_partitions(runtime, test_nodenet):
     assert p0.uid in nodes
     assert len(links) == 2
     assert set([linkid(l) for l in links]) == set(["%s:%s:%s:%s" % (p0.uid, 'cat', 'cat', p1.uid), "%s:%s:%s:%s" % (p1.uid, 'exp', 'exp', p0.uid)])
+
+
+def prepare_linkweight_tests(netapi):
+    nodespace = netapi.create_nodespace(None, name="partition", options={'new_partition': True})
+    rootpipes = []
+    partitionpipes = []
+    for i in range(3):
+        rootpipes.append(netapi.create_node("Pipe", None, "rootpipe%d" % i))
+    for i in range(5):
+        partitionpipes.append(netapi.create_node("Pipe", nodespace.uid, "partitionpipe%d" % i))
+    netapi.group_nodes_by_names(None, "rootpipe", sortby="name")
+    netapi.group_nodes_by_names(nodespace.uid, "partitionpipe", sortby="name")
+    return nodespace, rootpipes, partitionpipes
+
+
+@pytest.mark.engine("theano_engine")
+def test_set_link_weights_across_unlinked_partitions(runtime, test_nodenet):
+    # first case: unlinked partitions:
+    import numpy as np
+    nodenet = runtime.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    nodespace, rootpipes, partitionpipes = prepare_linkweight_tests(netapi)
+    weights = netapi.get_link_weights(None, "rootpipe", nodespace.uid, "partitionpipe")
+    assert np.all(weights == np.zeros((5, 3)))
+    weights[0, 0] = 0.3
+    weights[1, 1] = 0.5
+    netapi.set_link_weights(None, "rootpipe", nodespace.uid, "partitionpipe", weights)
+    data = nodenet.get_nodes()
+    l0 = data['nodes'][rootpipes[0].uid]['links']['gen'][0]
+    l1 = data['nodes'][rootpipes[1].uid]['links']['gen'][0]
+    assert round(l0['weight'], 3) == 0.3
+    assert l0['target_node_uid'] == partitionpipes[0].uid
+    assert round(l1['weight'], 3) == 0.5
+    assert l1['target_node_uid'] == partitionpipes[1].uid
+
+
+@pytest.mark.engine("theano_engine")
+def test_set_link_weights_across_already_linked_partitions(runtime, test_nodenet):
+    # second case: already linked partitions:
+    import numpy as np
+    nodenet = runtime.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    nodespace, rootpipes, partitionpipes = prepare_linkweight_tests(netapi)
+    netapi.link_with_reciprocal(rootpipes[0], partitionpipes[0], 'subsur')
+    weights = netapi.get_link_weights(None, "rootpipe", nodespace.uid, "partitionpipe")
+    assert np.all(weights == np.zeros((5, 3)))
+    weights[0, 0] = 0.3
+    weights[1, 1] = 0.5
+    netapi.set_link_weights(None, "rootpipe", nodespace.uid, "partitionpipe", weights)
+    data = nodenet.get_nodes()
+    l0 = data['nodes'][rootpipes[0].uid]['links']['gen'][0]
+    l1 = data['nodes'][rootpipes[1].uid]['links']['gen'][0]
+    assert round(l0['weight'], 3) == 0.3
+    assert l0['target_node_uid'] == partitionpipes[0].uid
+    assert round(l1['weight'], 3) == 0.5
+    assert l1['target_node_uid'] == partitionpipes[1].uid

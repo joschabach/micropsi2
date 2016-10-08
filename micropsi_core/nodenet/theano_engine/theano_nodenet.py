@@ -1643,10 +1643,26 @@ class TheanoNodenet(Nodenet):
             if nodespace_to_uid not in partition_to.nodegroups or group_to not in partition_to.nodegroups[nodespace_to_uid]:
                 raise ValueError("Group %s does not exist in nodespace %s." % (group_to, nodespace_to_uid))
 
+            from_els = partition_from.nodegroups[nodespace_from_uid][group_from]
+            to_els = partition_to.nodegroups[nodespace_to_uid][group_to]
+            zero_weights = np.zeros((len(to_els), len(from_els)))
+
+            if partition_from.spid not in partition_to.inlinks:
+                return zero_weights
+
             inlinks = partition_to.inlinks[partition_from.spid]
-            indices_from = np.searchsorted(inlinks[0].get_value(borrow=True), partition_from.nodegroups[nodespace_from_uid][group_from])
-            indices_to = np.searchsorted(inlinks[1].get_value(borrow=True), partition_to.nodegroups[nodespace_to_uid][group_to])
-            cols, rows = np.meshgrid(indices_from, indices_to)
+            from_indices = inlinks[0].get_value(borrow=True)
+            to_indices = inlinks[1].get_value(borrow=True)
+
+            if len(np.union1d(from_indices, from_els)) > len(from_indices) or len(np.union1d(to_indices, to_els)) > len(to_indices):
+                self.set_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to, zero_weights)
+                inlinks = partition_to.inlinks[partition_from.spid]
+                from_indices = inlinks[0].get_value(borrow=True)
+                to_indices = inlinks[1].get_value(borrow=True)
+
+            search_from = np.searchsorted(from_indices, from_els)
+            search_to = np.searchsorted(to_indices, to_els)
+            cols, rows = np.meshgrid(search_from, search_to)
             return inlinks[2].get_value(borrow=True)[rows, cols]
         else:
             return partition_from.get_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to)
@@ -1675,12 +1691,6 @@ class TheanoNodenet(Nodenet):
 
         self.proxycache.clear()
 
-        # uids_to_invalidate = self.get_node_uids(nodespace_from_uid, group_from)
-        # uids_to_invalidate.extend(self.get_node_uids(nodespace_to_uid, group_to))
-
-        # for uid in uids_to_invalidate:
-        #     if uid in self.proxycache:
-        #         del self.proxycache[uid]
 
     def get_available_gatefunctions(self):
         return {

@@ -127,28 +127,17 @@ class World(object):
 
         self.load()
 
-    def load(self, string=None):
-        """Load the world state from a file
-
-        Arguments:
-            string (optional): if given, the world state is taken from the string instead.
-        """
+    def load(self):
+        """ Load the world state from persistance """
         # try to access file
-        if string:
-            try:
-                self.data.update(json.loads(string))
-            except ValueError:
-                self.logger.warning("Could not read world data from string")
-                return False
-        else:
-            try:
-                with open(self.filename, encoding="utf-8") as file:
-                    self.data.update(json.load(file))
-            except ValueError:
-                self.logger.warning("Could not read world data")
-                return False
-            except IOError:
-                self.logger.warning("Could not open world file: " + self.filename)
+        try:
+            with open(self.filename, encoding="utf-8") as file:
+                self.data.update(json.load(file))
+        except ValueError:
+            self.logger.warning("Could not read world data")
+            return False
+        except IOError:
+            self.logger.warning("Could not open world file: " + self.filename)
         self.data['world_type'] = self.__class__.__name__
         if "version" in self.data and self.data["version"] == WORLD_VERSION:
             self.initialize_world()

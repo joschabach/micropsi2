@@ -1605,18 +1605,6 @@ class TheanoNodenet(Nodenet):
         partition = self.get_partition(nodespace_uid)
         partition.ungroup_nodes(nodespace_uid, group)
 
-    def dump_group(self, nodespace_uid, group):
-        if nodespace_uid is None:
-            nodespace_uid = self.get_nodespace(None).uid
-        partition = self.get_partition(nodespace_uid)
-
-        ids = partition.nodegroups[nodespace_uid][group]
-        for element in ids:
-            nid = partition.allocated_elements_to_nodes[element]
-            uid = node_to_id(nid, partition.pid)
-            node = self.get_node(uid)
-            print("%s %s" % (node.uid, node.name))
-
     def get_activations(self, nodespace_uid, group):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid

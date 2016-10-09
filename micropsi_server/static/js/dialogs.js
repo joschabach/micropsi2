@@ -672,6 +672,9 @@ unregister_stepping_function = function(type){
 
 busy = false;
 fetch_stepping_info = function(){
+    if(!currentNodenet){
+        return false;
+    }
     params = {
         nodenet_uid: currentNodenet
     };

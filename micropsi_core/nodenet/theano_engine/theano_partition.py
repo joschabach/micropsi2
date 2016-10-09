@@ -450,7 +450,7 @@ class TheanoPartition():
         pipe_cat = pipe_cat + slots[:, 7]                                           # add cat
         pipe_cat = pipe_cat * pipe_cat_cond                                         # apply conditions
                                                                                     # add cat (for search) if sub=sur=0
-        pipe_cat = pipe_cat + (slots[:, 7] * T.eq(slots[:, 5], 0) * T.eq(slots[:, 6], 0))
+        pipe_cat = pipe_cat + (slots[:, 7] * T.eq(slots[:, 5], 0) * T.eq(slots[:, 6], 0) * T.eq(pipe_cat, 0))
 
         ### exp plumbing
         pipe_exp = slots[:, 5]                                                      # start with sur

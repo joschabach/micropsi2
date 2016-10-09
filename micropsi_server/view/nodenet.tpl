@@ -12,7 +12,7 @@
                             <td>
                                 <div class="btn-group nodenet_list">
                                     <a class="btn" href="#">
-                                        (no nodenet selected)
+                                        (no agent selected)
                                     </a>
                                 </div>
                             </td>
@@ -62,7 +62,7 @@
         <div class="editor_field " id="nodenet_forms">
 
             <form class="form-horizontal default_form hide" id="edit_nodenet_form">
-                <h4>Nodenet</h4>
+                <h4>Agent</h4>
                 <table>
                     <tr>
                         <td><label for="nodenet_uid">UID</label></td>
@@ -73,7 +73,7 @@
                         <td><input type="text" name="nodenet_nodenet_name" id="nodenet_nodenet_name"></td>
                     </tr>
                     <tr>
-                        <td><label for="nodenet_world_uid">World</label></td>
+                        <td><label for="nodenet_world_uid">Environment</label></td>
                         <td><select name="nodenet_world_uid" id="nodenet_world_uid"></select></td>
                     </tr>
                     <tr>

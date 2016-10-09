@@ -15,11 +15,11 @@
                     <td><span data-toggle="collapse" data-target="#monitor, #monitor_controls"><i
                             class="icon-chevron-right"></i></span></td>
 
-                    <td data-toggle="collapse" data-target="#monitor, #monitor_controls"> Nodenet Monitor &nbsp;</td>
+                    <td data-toggle="collapse" data-target="#monitor, #monitor_controls"> Agent Monitor &nbsp;</td>
                     <td>
                         <div class="btn-group nodenet_list">
                             <a class="btn" href="#">
-                                (no nodenet selected)
+                                (no agent selected)
                             </a>
                         </div>
                     </td>

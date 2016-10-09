@@ -165,14 +165,14 @@ class MicropsiRunner(threading.Thread):
                             nodenet.update_monitors_and_recorders()
                         except:
                             nodenet.is_active = False
-                            logging.getLogger("agent.%s" % uid).error("Exception in NodenetRunner:", exc_info=1)
+                            logging.getLogger("agent.%s" % uid).error("Exception in Agent:", exc_info=1)
                             MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
                         if nodenet.world and nodenet.current_step % runner['factor'] == 0:
                             try:
                                 worlds[nodenet.world].step()
                             except:
                                 nodenet.is_active = False
-                                logging.getLogger("world").error("Exception in WorldRunner:", exc_info=1)
+                                logging.getLogger("world").error("Exception in Environment:", exc_info=1)
                                 MicropsiRunner.last_world_exception[nodenets[uid].world] = sys.exc_info()
                         if self.profiler:
                             self.profiler.disable()
@@ -324,7 +324,7 @@ def load_nodenet(nodenet_uid):
                         world_uid = data.world
                         worldadapter = data.get('worldadapter')
                     else:
-                        logging.getLogger("system").warning("World %s for nodenet %s not found" % (data.world, data.uid))
+                        logging.getLogger("system").warning("Environment %s for agent %s not found" % (data.world, data.uid))
 
                 if world_uid:
                     result, worldadapter_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet_uid, nodenet_name=data['name'], config=data.get('worldadapter_config', {}))
@@ -358,7 +358,7 @@ def load_nodenet(nodenet_uid):
                     nodenets[nodenet_uid] = TheanoNodenet(**params)
                 # Add additional engine types here
                 else:
-                    return False, "Nodenet %s requires unknown engine %s" % (nodenet_uid, engine)
+                    return False, "Agent %s requires unknown engine %s" % (nodenet_uid, engine)
 
                 nodenets[nodenet_uid].load()
 
@@ -373,7 +373,7 @@ def load_nodenet(nodenet_uid):
                 worldadapter = nodenets[nodenet_uid].worldadapter
 
         return True, nodenet_uid
-    return False, "Nodenet %s not found in %s" % (nodenet_uid, PERSISTENCY_PATH)
+    return False, "Agent %s not found in %s" % (nodenet_uid, PERSISTENCY_PATH)
 
 
 def load_world(world_uid):
@@ -472,7 +472,7 @@ def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=No
             data['recorders'] = nodenet_obj.construct_recorders_dict()
         return True, data
     else:
-        return False, "No such nodenet"
+        return False, "No such agent"
 
 
 def unload_nodenet(nodenet_uid):
@@ -729,7 +729,7 @@ def import_nodenet(string, owner=None):
         import_data['uid'] = tools.generate_uid()
     else:
         if import_data['uid'] in nodenets:
-            raise RuntimeError("A nodenet with this ID already exists.")
+            raise RuntimeError("An agent with this ID already exists.")
     if 'owner':
         import_data['owner'] = owner
     nodenet_uid = import_data['uid']
@@ -1434,9 +1434,9 @@ def crawl_definition_files(path, datatype="definition"):
                     with open(filename, encoding="utf-8") as file:
                         data = parse_definition(json.load(file), filename)
                         if datatype == 'world' and data.version != WORLD_VERSION:
-                            logging.getLogger("system").warning("Wrong Version of world data in file %s" % definition_file_name)
+                            logging.getLogger("system").warning("Wrong Version of environment data in file %s" % definition_file_name)
                         elif datatype == 'nodenet' and data.version != NODENET_VERSION:
-                            logging.getLogger("system").warning("Wrong Version of nodenet data in file %s" % definition_file_name)
+                            logging.getLogger("system").warning("Wrong Version of agent data in file %s" % definition_file_name)
                         else:
                             result[data.uid] = data
                 except ValueError:

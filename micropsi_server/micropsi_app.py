@@ -197,7 +197,7 @@ def index():
     return _add_world_list("viewer", mode="all", first_user=first_user, logging_levels=runtime.get_logging_levels(), version=VERSION, user_id=user_id, permissions=permissions, console=INCLUDE_CONSOLE)
 
 
-@micropsi_app.route("/nodenet")
+@micropsi_app.route("/agent")
 def nodenet():
     user_id, permissions, token = get_request_data()
     return template("viewer", mode="nodenet", version=VERSION, user_id=user_id, permissions=permissions, console=INCLUDE_CONSOLE)
@@ -216,7 +216,7 @@ def document(filepath):
         content=minidoc.get_documentation_body(filepath), title="Minidoc: " + filepath)
 
 
-@micropsi_app.route("/world")
+@micropsi_app.route("/environment")
 def world():
     user_id, permissions, token = get_request_data()
     return _add_world_list("viewer", mode="world", version=VERSION, user_id=user_id, permissions=permissions)
@@ -489,7 +489,7 @@ def login_as_user(userid):
     return template("error", msg="Insufficient rights to access user console")
 
 
-@micropsi_app.route("/nodenet_mgt")
+@micropsi_app.route("/agent_mgt")
 def nodenet_mgt():
     user_id, permissions, token = get_request_data()
     if "manage nodenets" in permissions:
@@ -500,7 +500,7 @@ def nodenet_mgt():
         return template("nodenet_mgt", version=VERSION, permissions=permissions,
             user_id=user_id,
             nodenet_list=runtime.get_available_nodenets(), notification=notification)
-    return template("error", msg="Insufficient rights to access nodenet console")
+    return template("error", msg="Insufficient rights to access agent console")
 
 
 @micropsi_app.route("/select_nodenet_from_console/<nodenet_uid>")
@@ -508,7 +508,7 @@ def select_nodenet_from_console(nodenet_uid):
     user_id, permissions, token = get_request_data()
     result, uid = runtime.load_nodenet(nodenet_uid)
     if not result:
-        return template("error", msg="Could not select nodenet")
+        return template("error", msg="Could not select agent")
     response.set_cookie("selected_nodenet", nodenet_uid + "/", path="/")
     redirect("/")
 
@@ -518,9 +518,9 @@ def delete_nodenet_from_console(nodenet_uid):
     user_id, permissions, token = get_request_data()
     if "manage nodenets" in permissions:
         runtime.delete_nodenet(nodenet_uid)
-        response.set_cookie('notification', '{"msg":"Nodenet deleted", "status":"success"}', path='/')
-        redirect('/nodenet_mgt')
-    return template("error", msg="Insufficient rights to access nodenet console")
+        response.set_cookie('notification', '{"msg":"Agent deleted", "status":"success"}', path='/')
+        redirect('/agent_mgt')
+    return template("error", msg="Insufficient rights to access agent console")
 
 
 @micropsi_app.route("/save_all_nodenets")
@@ -529,51 +529,51 @@ def save_all_nodenets():
     if "manage nodenets" in permissions:
         for uid in runtime.nodenets:
             runtime.save_nodenet(uid)
-        response.set_cookie('notification', '{"msg":"All nodenets saved", "status":"success"}', path='/')
-        redirect('/nodenet_mgt')
-    return template("error", msg="Insufficient rights to access nodenet console")
+        response.set_cookie('notification', '{"msg":"All agents saved", "status":"success"}', path='/')
+        redirect('/agent_mgt')
+    return template("error", msg="Insufficient rights to access agent console")
 
 
-@micropsi_app.route("/nodenet/import")
+@micropsi_app.route("/agent/import")
 def import_nodenet_form():
     token = request.get_cookie("token")
-    return template("upload.tpl", title='Import Nodenet', message='Select a file to upload and use for importing', action='/nodenet/import',
+    return template("upload.tpl", title='Import Agent', message='Select a file to upload and use for importing', action='/agent/import',
         version=VERSION,
         userid=usermanager.get_user_id_for_session_token(token),
         permissions=usermanager.get_permissions_for_session_token(token))
 
 
-@micropsi_app.route("/nodenet/import", method="POST")
+@micropsi_app.route("/agent/import", method="POST")
 def import_nodenet():
     user_id, p, t = get_request_data()
     data = request.files['file_upload'].file.read()
     data = data.decode('utf-8')
     nodenet_uid = runtime.import_nodenet(data, owner=user_id)
-    return dict(status='success', msg="Nodenet imported", nodenet_uid=nodenet_uid)
+    return dict(status='success', msg="Agent imported", nodenet_uid=nodenet_uid)
 
 
-@micropsi_app.route("/nodenet/merge/<nodenet_uid>")
+@micropsi_app.route("/agent/merge/<nodenet_uid>")
 def merge_nodenet_form(nodenet_uid):
     token = request.get_cookie("token")
-    return template("upload.tpl", title='Merge Nodenet', message='Select a file to upload and use for merging',
-        action='/nodenet/merge/%s' % nodenet_uid,
+    return template("upload.tpl", title='Merge Agent', message='Select a file to upload and use for merging',
+        action='/agent/merge/%s' % nodenet_uid,
         version=VERSION,
         userid=usermanager.get_user_id_for_session_token(token),
         permissions=usermanager.get_permissions_for_session_token(token))
 
 
-@micropsi_app.route("/nodenet/merge/<nodenet_uid>", method="POST")
+@micropsi_app.route("/agent/merge/<nodenet_uid>", method="POST")
 def merge_nodenet(nodenet_uid):
     data = request.files['file_upload'].file.read()
     data = data.decode('utf-8')
     runtime.merge_nodenet(nodenet_uid, data)
-    return dict(status='success', msg="Nodenet merged")
+    return dict(status='success', msg="Agent merged")
 
 
-@micropsi_app.route("/nodenet/export/<nodenet_uid>")
+@micropsi_app.route("/agent/export/<nodenet_uid>")
 def export_nodenet(nodenet_uid):
     response.set_header('Content-type', 'application/json')
-    response.set_header('Content-Disposition', 'attachment; filename="nodenet.json"')
+    response.set_header('Content-Disposition', 'attachment; filename="agent.json"')
     return runtime.export_nodenet(nodenet_uid)
 
 
@@ -598,11 +598,11 @@ def export_recorders(nodenet_uid):
     return data
 
 
-@micropsi_app.route("/nodenet/edit")
+@micropsi_app.route("/agent/edit")
 def edit_nodenet():
     user_id, permissions, token = get_request_data()
     nodenet_uid = request.params.get('id')
-    title = 'Edit Nodenet' if nodenet_uid is not None else 'New Nodenet'
+    title = 'Edit Agent' if nodenet_uid is not None else 'New Agent'
 
     return template("nodenet_form.tpl", title=title,
         # nodenet_uid=nodenet_uid,
@@ -613,7 +613,7 @@ def edit_nodenet():
         version=VERSION, user_id=user_id, permissions=permissions)
 
 
-@micropsi_app.route("/nodenet/edit", method="POST")
+@micropsi_app.route("/agent/edit", method="POST")
 def write_nodenet():
     user_id, permissions, token = get_request_data()
     params = dict((key, request.forms.getunicode(key)) for key in request.forms)
@@ -634,46 +634,46 @@ def write_nodenet():
             use_modulators=params.get('nn_modulators', False),
             worldadapter_config=wa_params)
         if result:
-            return dict(status="success", msg="Nodenet created", nodenet_uid=nodenet_uid)
+            return dict(status="success", msg="Agent created", nodenet_uid=nodenet_uid)
         else:
-            return dict(status="error", msg="Error saving nodenet: %s" % nodenet_uid)
-    return dict(status="error", msg="Insufficient rights to write nodenet")
+            return dict(status="error", msg="Error saving agent: %s" % nodenet_uid)
+    return dict(status="error", msg="Insufficient rights to write agent")
 
 
-@micropsi_app.route("/world/import")
+@micropsi_app.route("/environment/import")
 def import_world_form():
     token = request.get_cookie("token")
-    return template("upload.tpl", title='World import', message='Select a file to upload and use for importing',
-        action='/world/import',
+    return template("upload.tpl", title='Environment import', message='Select a file to upload and use for importing',
+        action='/environment/import',
         version=VERSION,
         user_id=usermanager.get_user_id_for_session_token(token),
         permissions=usermanager.get_permissions_for_session_token(token))
 
 
-@micropsi_app.route("/world/import", method="POST")
+@micropsi_app.route("/environment/import", method="POST")
 def import_world():
     user_id, p, t = get_request_data()
     data = request.files['file_upload'].file.read()
     data = data.decode('utf-8')
     world_uid = runtime.import_world(data, owner=user_id)
-    return dict(status='success', msg="World imported", world_uid=world_uid)
+    return dict(status='success', msg="Environment imported", world_uid=world_uid)
 
 
-@micropsi_app.route("/world/export/<world_uid>")
+@micropsi_app.route("/environment/export/<world_uid>")
 def export_world(world_uid):
     response.set_header('Content-type', 'application/json')
-    response.set_header('Content-Disposition', 'attachment; filename="world.json"')
+    response.set_header('Content-Disposition', 'attachment; filename="environment.json"')
     return runtime.export_world(world_uid)
 
 
-@micropsi_app.route("/world/edit")
+@micropsi_app.route("/environment/edit")
 def edit_world_form():
     token = request.get_cookie("token")
     world_uid = request.params.get('id', None)
     world = None
     if world_uid:
         world = runtime.worlds.get(world_uid)
-    title = 'Edit World' if world is not None else 'New World'
+    title = 'Edit Environment' if world is not None else 'New Environment'
     worldtypes = runtime.get_available_world_types()
     return template("world_form.tpl", title=title,
         worldtypes=worldtypes,
@@ -683,7 +683,7 @@ def edit_world_form():
         permissions=usermanager.get_permissions_for_session_token(token))
 
 
-@micropsi_app.route("/world/edit", method="POST")
+@micropsi_app.route("/environment/edit", method="POST")
 def edit_world():
     params = dict((key, request.forms.getunicode(key)) for key in request.forms)
     world_uid = params.get('world_uid')
@@ -699,33 +699,33 @@ def edit_world():
     if "manage worlds" in permissions:
         if world_uid:
             runtime.set_world_properties(world_uid, world_name=params['world_name'], config=config)
-            return dict(status="success", msg="World changes saved")
+            return dict(status="success", msg="Environment changes saved")
         else:
             result, uid = runtime.new_world(params['world_name'], world_type, user_id, config=config)
             if result:
-                return dict(status="success", msg="World created", world_uid=uid)
+                return dict(status="success", msg="Environment created", world_uid=uid)
             else:
                 return dict(status="error", msg=": %s" % result)
-    return dict(status="error", msg="Insufficient rights to create world")
+    return dict(status="error", msg="Insufficient rights to create environment")
 
 
-@micropsi_app.route("/nodenet_list/")
-@micropsi_app.route("/nodenet_list/<current_nodenet>")
+@micropsi_app.route("/agent_list/")
+@micropsi_app.route("/agent_list/<current_nodenet>")
 def nodenet_list(current_nodenet=None):
     user_id, permissions, token = get_request_data()
     nodenets = runtime.get_available_nodenets()
-    return template("nodenet_list", type="nodenet", user_id=user_id,
+    return template("nodenet_list", type="agent", user_id=user_id,
         current=current_nodenet,
         mine=dict((uid, nodenets[uid]) for uid in nodenets if nodenets[uid].owner == user_id),
         others=dict((uid, nodenets[uid]) for uid in nodenets if nodenets[uid].owner != user_id))
 
 
-@micropsi_app.route("/world_list/")
-@micropsi_app.route("/world_list/<current_world>")
+@micropsi_app.route("/environment_list/")
+@micropsi_app.route("/environment_list/<current_world>")
 def world_list(current_world=None):
     user_id, permissions, token = get_request_data()
     worlds = runtime.get_available_worlds()
-    return template("nodenet_list", type="world", user_id=user_id,
+    return template("nodenet_list", type="environment", user_id=user_id,
         current=current_world,
         mine=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner == user_id),
         others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner != user_id))
@@ -1000,7 +1000,7 @@ def set_worldobject_properties(world_uid, uid, position=None, orientation=None, 
     if runtime.set_worldobject_properties(world_uid, uid, position, int(orientation), name, parameters):
         return dict(status="success")
     else:
-        return dict(status="error", msg="unknown world or world object")
+        return dict(status="error", msg="unknown environment or world object")
 
 
 @rpc("set_worldagent_properties")
@@ -1008,7 +1008,7 @@ def set_worldagent_properties(world_uid, uid, position=None, orientation=None, n
     if runtime.set_worldagent_properties(world_uid, uid, position, orientation, name, parameters):
         return dict(status="success")
     else:
-        return dict(status="error", msg="unknown world or world object")
+        return dict(status="error", msg="unknown environment or world object")
 
 
 @rpc("new_world", permission_required="manage worlds")
@@ -1105,7 +1105,7 @@ def remove_monitor(nodenet_uid, monitor_uid):
         runtime.remove_monitor(nodenet_uid, monitor_uid)
         return dict(status='success')
     except KeyError:
-        return dict(status='error', msg='unknown nodenet or monitor')
+        return dict(status='error', msg='unknown agent or monitor')
 
 
 @rpc("clear_monitor")
@@ -1114,7 +1114,7 @@ def clear_monitor(nodenet_uid, monitor_uid):
         runtime.clear_monitor(nodenet_uid, monitor_uid)
         return dict(status='success')
     except KeyError:
-        return dict(status='error', msg='unknown nodenet or monitor')
+        return dict(status='error', msg='unknown agent or monitor')
 
 
 @rpc("get_monitor_data")

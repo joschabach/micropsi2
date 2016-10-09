@@ -74,10 +74,10 @@
                             <option value="Administrator">Administrator</option>
                             %end
                             %if "create full" in permissions:
-                            <option value="Full">Create environments and nodenets</option>
+                            <option value="Full">Create environments and agents</option>
                             %end
                             %if "create restricted" in permissions:
-                            <option value="Restricted">Create nodenets</option>
+                            <option value="Restricted">Create agents</option>
                             %end
                         </select>
                         <p class="help-block">Set the access rights for this user.</p>

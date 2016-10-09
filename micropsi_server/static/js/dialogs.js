@@ -247,19 +247,19 @@ $(function() {
         event.preventDefault();
         dialogs.remote_form_dialog($(event.target).attr('href'), function(data){
             // refreshNodenetList();  -- TODO: does not work yet (due to paperscript missing proper js integration)
-            dialogs.notification('Nodenet created. ID: ' + data.nodenet_uid, 'success');
+            dialogs.notification('Agent created. ID: ' + data.nodenet_uid, 'success');
             $.cookie('selected_nodenet', data.nodenet_uid+"/", { expires: 7, path: '/' });
             window.location.reload();
         });
     });
 
     $('.navbar a.nodenet_delete').on('click', function(){
-        dialogs.confirm("Do you really want to delete this nodenet?", function(){
+        dialogs.confirm("Do you really want to delete this agent?", function(){
             api.call('delete_nodenet', {nodenet_uid: currentNodenet}, function(data){
                 currentNodenet=null;
                 // refreshNodenetList();  -- TODO: does not work yet (due to paperscript missing proper js integration)
                 $.cookie('selected_nodenet', "", { expires: 7, path: '/' });
-                dialogs.notification('Nodenet deleted');
+                dialogs.notification('Agent deleted');
                 window.location.reload();
             });
         });
@@ -280,7 +280,7 @@ $(function() {
         event.preventDefault();
         $('#loading').show();
         api.call('revert_nodenet', {nodenet_uid: currentNodenet}, function(data){
-            dialogs.notification("nodenet reverted");
+            dialogs.notification("agent reverted");
             //setCurrentNodenet(nodenet_uid);  -- TODO: does not work yet (due to paperscript missing proper js integration)
             window.location.reload();
         });
@@ -320,9 +320,9 @@ $(function() {
     $('.navbar a.world_new').on('click', function(event){
         event.preventDefault();
         dialogs.remote_form_dialog($(event.target).attr('href'), function(data){
-            dialogs.notification('World created. ID: ' + data.world_uid, 'success');
+            dialogs.notification('Environment created. ID: ' + data.world_uid, 'success');
             $(document).trigger('new_world_created', data);
-            var url = '/world_list/' + ($.cookie('selected_world') || '');
+            var url = '/environment_list/' + ($.cookie('selected_world') || '');
             $.get(url, {}, function(data){
                 $('#world_list').html(data);
             });
@@ -336,12 +336,12 @@ $(function() {
 
     $('.navbar a.world_delete').on('click', function(event){
         event.preventDefault();
-        dialogs.confirm("Do you really want to delete this world?", function(){
+        dialogs.confirm("Do you really want to delete this environment?", function(){
             api.call('delete_world',
                 {world_uid: currentWorld},
                 function(){
                     $.cookie('selected_world', '', {expires: -1, path: '/'});
-                    dialogs.notification("World deleted");
+                    dialogs.notification("Environment deleted");
                     window.location.reload();
                 }
             );
@@ -357,10 +357,10 @@ $(function() {
         event.preventDefault();
         api.call('revert_world', {world_uid: currentWorld},
             function(){
-                dialogs.notification("World state reverted");
+                dialogs.notification("Environment state reverted");
                 window.location.reload();
             }, function(){
-                dialogs.notification('Error reverting world', 'error');
+                dialogs.notification('Error reverting environment', 'error');
                 window.location.reload();
             }
         );
@@ -783,7 +783,7 @@ api.call('get_runner_properties', {}, function(data){
 });
 
 function refreshNodenetList(){
-    $.get("/nodenet_list/"+(currentNodenet || ''), function(html){
+    $.get("/agent_list/"+(currentNodenet || ''), function(html){
         $.each($('.nodenet_list'), function(idx, item){
             $(item).html(html);
             $('.nodenet_select', item).on('click', function(event){
@@ -827,7 +827,7 @@ function stepNodenet(event){
                 $(document).trigger('runner_stepped');
             });
     } else {
-        dialogs.notification('No nodenet selected', 'error');
+        dialogs.notification('No agent selected', 'error');
     }
 }
 
@@ -839,7 +839,7 @@ function startNodenetrunner(event){
             $(document).trigger('runner_started');
         });
     } else {
-        dialogs.notification('No nodenet selected', 'error');
+        dialogs.notification('No agent selected', 'error');
     }
 }
 function stopNodenetrunner(event){
@@ -864,7 +864,7 @@ function revertAll(event){
             }
         );
     } else {
-        dialogs.notification('No nodenet selected', 'error');
+        dialogs.notification('No agent selected', 'error');
     }
 }
 $(function() {
@@ -993,7 +993,7 @@ window.addMonitor = function(type, param, val){
 
 function promptUser(data){
     var html = '';
-    html += '<p>Nodenet interrupted by Node ' + (data.node.name || data.node.uid) +' with message:</p>';
+    html += '<p>Agent interrupted by Node ' + (data.node.name || data.node.uid) +' with message:</p>';
     html += "<p>" + data.msg +"</p>";
     html += '<form class="well form-horizontal">';
     if (data.options){
@@ -1017,7 +1017,7 @@ function promptUser(data){
             }
         }
     }
-    html += '<div class="control-group"><label class="control-label">Continue running nodenet?</label>';
+    html += '<div class="control-group"><label class="control-label">Continue running agent?</label>';
     html += '<div class="controls"><input type="checkbox" name="run_nodenet"/></div></div>';
     html += '<input class="hidden" id="user_prompt_node_uid" value="'+data.node.uid+'" />';
     html += '</form>';

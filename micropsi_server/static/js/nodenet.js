@@ -203,13 +203,13 @@ function get_available_worldadapters(world_uid, callback){
                     name = keys[idx];
                     str += '<option title="'+worldadapters[name]['description']+'">'+name+'</option>';
                 }
-                $('#nodenet_worldadapter').html(str);
+                $('#nodenet_worldadapter').html(str).removeAttr('disabled');
                 if(callback){
                     callback(data);
                 }
         });
     } else {
-        $('#nodenet_worldadapter').html('<option>&lt;No world selected&gt;</option>');
+        $('#nodenet_worldadapter').html('<option>&lt;No world selected&gt;</option>').attr('disabled', 'disabled');
         if(callback){
             callback({});
         }

@@ -527,6 +527,23 @@ def test_node_pipe_logic_timeout_fail(runtime, test_nodenet):
     assert round(n_head.get_gate("gen").activation, 2) == -1
 
 
+def test_node_pipe_unrequested_behaviour(runtime, test_nodenet):
+    # two possible choices for sur-activation if not requested:
+    # gen mirrors sur, or gen delivers incoming activation
+    # current decision: gen mirrors sur, no gen-activation w/o being requested
+    net, netapi, source = prepare(runtime, test_nodenet)
+    pipe = netapi.create_node("Pipe", None, "pipe")
+    netapi.link(source, 'gen', pipe, 'sur')
+    net.step()
+    assert round(pipe.get_gate("gen").activation, 2) == 0
+    assert round(pipe.get_gate("por").activation, 2) == 0
+    assert round(pipe.get_gate("ret").activation, 2) == 0
+    assert round(pipe.get_gate("sub").activation, 2) == 0
+    assert round(pipe.get_gate("sur").activation, 2) == 0
+    assert round(pipe.get_gate("cat").activation, 2) == 0
+    assert round(pipe.get_gate("exp").activation, 2) == 1
+
+
 #def test_node_pipe_logic_feature_binding(runtime, test_nodenet):
 #    # check if the same feature can be checked and bound twice
 #    net, netapi, source = prepare(runtime, test_nodenet)

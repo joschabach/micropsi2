@@ -128,7 +128,7 @@ def pipe(netapi, node=None, **params):
         countdown -= 1
 
     gen_sur_exp = node.get_slot("sur").get_activation() + node.get_slot("exp").get_activation()
-    gen_sur_exp * node.get_slot("sub").get_activation()
+    gen_sur_exp *= node.get_slot("sub").get_activation()
     if 0 < gen_sur_exp < expectation:                                   # don't report anything below expectation
         gen_sur_exp = 0
 

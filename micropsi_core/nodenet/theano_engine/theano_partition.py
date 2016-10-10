@@ -380,7 +380,6 @@ class TheanoPartition():
                                                                                     # drop to 0 if < expectation
         pipe_gen_sur_exp = T.switch(T.lt(pipe_gen_sur_exp, self.g_expect) * T.gt(pipe_gen_sur_exp, 0), 0, pipe_gen_sur_exp)
 
-
         pipe_gen = slots[:, 7] * slots[:, 10]                                       # gen * sub
         pipe_gen = T.switch(abs(pipe_gen) > 0.1, pipe_gen, pipe_gen_sur_exp)        # drop to def. if below 0.1
                                                                                     # drop to def. if por == 0 and por slot is linked
@@ -445,8 +444,7 @@ class TheanoPartition():
         pipe_cat_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 3], 0), 1)      # (if linked, por must be > 0)
         pipe_cat_cond = pipe_cat_cond * T.eq(slots[:, 2], 0)                        # and (gen == 0)
 
-        pipe_cat = T.clip(slots[:, 6], 0, 1)                                        # bubble: start with sur if sur > 0
-        pipe_cat = pipe_cat + slots[:, 5]                                           # add sub
+        pipe_cat = slots[:, 5]                                                      # start with sub
         pipe_cat = pipe_cat + slots[:, 7]                                           # add cat
         pipe_cat = pipe_cat * pipe_cat_cond                                         # apply conditions
                                                                                     # add cat (for search) if sub=sur=0

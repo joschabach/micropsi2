@@ -21,9 +21,9 @@
 % for item in sorted(mine.items(), key=lambda foo: foo[1].name.lower()):
     % if item[0] != current:
       % if type=="world":
-        <li><a href="?select_world={{item[0]}}" class="{{type}}_select">{{item[1].name}}</a></li>
+        <li><a href="?select_world={{item[0]}}" class="world_select">{{item[1].name}}</a></li>
       % else:
-        <li><a href="/rpc/select_{{type}}" data="{{item[0]}}" class="{{type}}_select">{{item[1].name}}</a></li>
+        <li><a href="/rpc/select_nodenet" data="{{item[0]}}" class="nodenet_select">{{item[1].name}}</a></li>
       % end
     % end
 % end
@@ -31,9 +31,9 @@
 % for item in sorted(others.items(), key=lambda foo: foo[1].name.lower()):
     % if item[0] != current:
       % if type=="world":
-        <li><a href="?select_world={{item[0]}}" class="{{type}}_select">{{item[1].name}} ({{item[1].owner}})</a></li>
+        <li><a href="?select_world={{item[0]}}" class="world_select">{{item[1].name}} ({{item[1].owner}})</a></li>
       % else:
-        <li><a href="/rpc/select_{{type}}" data="{{item[0]}}" class="{{type}}_select">{{item[1].name}} ({{item[1].owner}})</a></li>
+        <li><a href="/rpc/select_nodenet" data="{{item[0]}}" class="nodenet_select">{{item[1].name}} ({{item[1].owner}})</a></li>
       % end
     % end
 % end

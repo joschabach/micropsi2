@@ -25,13 +25,13 @@ class MinecraftHistogramVision(MinecraftGraphLocomotion, MinecraftProjectionMixi
     num_fov = 6           # the root number of fov__ sensors, ie. there are num_fov x num_fov fov__ sensors
     num_steps_to_keep_vision_stable = 3
 
-    # Note: actors fov_x, fov_y and the saccader's gates fov_x, fov_y ought to be parametrized [0.,2.] w/ threshold 1.
+    # Note: actuators fov_x, fov_y and the saccader's gates fov_x, fov_y ought to be parametrized [0.,2.] w/ threshold 1.
     # -- 0. means inactivity, values between 1. and 2. are the scaled down movement in x/y direction on the image plane
 
     def __init__(self, world, uid=None, **data):
         super().__init__(world, uid, **data)
         self.datasources.update({
-            'fov_x': 0,    # fovea sensors receive their input from the fovea actors
+            'fov_x': 0,    # fovea sensors receive their input from the fovea actuators
             'fov_y': 0,
             'fov_hist__-01': 0,  # these names must be the most commonly observed block types
             'fov_hist__000': 0,
@@ -121,7 +121,7 @@ class MinecraftHistogramVision(MinecraftGraphLocomotion, MinecraftProjectionMixi
                 loco_label = self.current_loco_node['name']  # because python uses call-by-object
                 self.get_visual_input(self.datasources['fov_x'], self.datasources['fov_y'], loco_label)
 
-                # Note: saccading can't fail because fov_x, fov_y are internal actors, hence we return immediate feedback
+                # Note: saccading can't fail because fov_x, fov_y are internal actuators, hence we return immediate feedback
                 if self.datatargets['fov_x'] > 0.0:
                     self.datatarget_feedback['fov_x'] = 1.0
                 if self.datatargets['fov_y'] > 0.0:

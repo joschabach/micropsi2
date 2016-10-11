@@ -19,7 +19,7 @@ delete_nodes.selectioninfo = {
     runtime.reload_native_modules()
     ops = runtime.get_available_operations()
     assert ops['delete_nodes']['category'] == 'foobar'
-    res, uid = runtime.add_node(test_nodenet, "Register", [10, 10], None)
+    res, uid = runtime.add_node(test_nodenet, "Neuron", [10, 10], None)
     runtime.run_operation(test_nodenet, "delete_nodes", {}, [uid])
     assert uid not in runtime.nodenets[test_nodenet].get_node_uids()
 
@@ -65,7 +65,7 @@ def test_add_gate_activation_recorder_operation(test_nodenet):
     netapi = nodenet.netapi
     nodes = []
     for i in range(3):
-        nodes.append(netapi.create_node("Register", None, "node%d" % i))
+        nodes.append(netapi.create_node("Neuron", None, "node%d" % i))
     res, data = runtime.run_operation(test_nodenet, 'add_gate_activation_recorder', {
         'gate': 'gen',
         'interval': 1,
@@ -97,8 +97,8 @@ def test_add_linkweight_recorder_operation(test_nodenet):
     nodes1 = []
     nodes2 = []
     for i in range(3):
-        n1 = netapi.create_node("Register", None, "node1%d" % i)
-        n2 = netapi.create_node("Register", None, "node2%d" % i)
+        n1 = netapi.create_node("Neuron", None, "node1%d" % i)
+        n2 = netapi.create_node("Neuron", None, "node2%d" % i)
         n1.position = [i * 20, 20]
         n2.position = [i * 20, 40]
         nodes1.append(n1)

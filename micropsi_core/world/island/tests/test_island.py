@@ -14,18 +14,18 @@ def test_island(runtime, resourcepath):
     assert success
     world = runtime.worlds[world_uid]
     assert world.__class__.__name__ == 'Island'
-    runtime.add_worldobject(world_uid, "Lightsource", (10, 10), uid='foobar', name='foobar', parameters={})
+    res, light_uid = runtime.add_worldobject(world_uid, "Lightsource", (10, 10), name='foobar', parameters={})
     runtime.save_world(world_uid)
     runtime.revert_world(world_uid)
     world = runtime.worlds[world_uid]
-    assert world.objects["foobar"].__class__.__name__ == 'Lightsource'
-    assert world.objects["foobar"].position == [10, 10]
-    assert world.data['objects']['foobar']['position'] == [10, 10]
+    assert world.objects[light_uid].__class__.__name__ == 'Lightsource'
+    assert world.objects[light_uid].position == [10, 10]
+    assert world.data['objects'][light_uid]['position'] == [10, 10]
     assert world.__class__.__name__ == 'Island'
-    runtime.set_worldobject_properties(world_uid, "foobar", position=(5, 5))
-    assert world.objects["foobar"].position == (5, 5)
-    assert world.data['objects']['foobar']['position'] == (5, 5)
-    assert runtime.get_world_view(world_uid, -1)['objects']['foobar']['position'] == (5, 5)
+    runtime.set_worldobject_properties(world_uid, light_uid, position=(5, 5))
+    assert world.objects[light_uid].position == (5, 5)
+    assert world.data['objects'][light_uid]['position'] == (5, 5)
+    assert runtime.get_world_view(world_uid, -1)['objects'][light_uid]['position'] == (5, 5)
     runtime.delete_world(world_uid)
 
 
@@ -33,7 +33,7 @@ def test_island_braitenberg(runtime, resourcepath, default_nodenet):
     ok, world_uid = runtime.new_world("Misland", "Island", owner="tester")
     world = runtime.worlds[world_uid]
 
-    runtime.add_worldobject(world_uid, "Lightsource", (500, 300), uid='lightsource', name="light")
+    res, light_uid = runtime.add_worldobject(world_uid, "Lightsource", (500, 300), name="light")
 
     nodenet = runtime.nodenets[default_nodenet]
     runtime.set_nodenet_properties(default_nodenet, worldadapter="Braitenberg", world_uid=world_uid)
@@ -43,9 +43,9 @@ def test_island_braitenberg(runtime, resourcepath, default_nodenet):
     # create a tiny braiti
     netapi = nodenet.netapi
     sensors = netapi.import_sensors(None)
-    actors = netapi.import_actors(None)
+    actuators = netapi.import_actuators(None)
     for s in sensors:
-        for a in actors:
+        for a in actuators:
             if s.get_parameter('datasource') == 'brightness_l' and a.get_parameter('datatarget') == 'engine_r':
                 netapi.link(s, 'gen', a, 'gen')
             if s.get_parameter('datasource') == 'brightness_r' and a.get_parameter('datatarget') == 'engine_l':
@@ -67,13 +67,13 @@ def test_island_survivor(runtime, resourcepath, default_nodenet):
 
     # add some objects:
     # north: juniper
-    runtime.add_worldobject(world_uid, "Juniper", (700, 300), uid='juniper', name="juniper")
+    res, juniper_uid = runtime.add_worldobject(world_uid, "Juniper", (700, 300), name="juniper")
     # west: champi
-    runtime.add_worldobject(world_uid, "Champignon", (600, 400), uid='champignon', name="champignon")
+    res, champignon_uid = runtime.add_worldobject(world_uid, "Champignon", (600, 400), name="champignon")
     # east: mehir
-    runtime.add_worldobject(world_uid, "Menhir", (800, 400), uid='menhir', name="menhir")
+    res, menhir_uid = runtime.add_worldobject(world_uid, "Menhir", (800, 400), name="menhir")
     # bottom: waterhole
-    runtime.add_worldobject(world_uid, "Waterhole", (700, 500), uid='waterhole', name="waterhole")
+    res, waterhole_uid = runtime.add_worldobject(world_uid, "Waterhole", (700, 500), name="waterhole")
 
     runtime.set_nodenet_properties(default_nodenet, worldadapter="Survivor", world_uid=world_uid)
     runtime.set_worldagent_properties(world_uid, default_nodenet, position=(700, 400), orientation=0)
@@ -132,7 +132,7 @@ def test_island_structured_objects(runtime, default_nodenet):
     nodenet = runtime.nodenets[default_nodenet]
     worldadapter = nodenet.worldadapter_instance
 
-    runtime.add_worldobject(world_uid, "FlyAgaric", (700, 450), uid='flyagaric', name="flyagaric")
+    res, flyagaric_uid = runtime.add_worldobject(world_uid, "FlyAgaric", (700, 450), name="flyagaric")
 
     runtime.step_nodenet(default_nodenet)
     view = world.get_world_view(1)['agents'][default_nodenet]
@@ -146,8 +146,8 @@ def test_island_structured_objects(runtime, default_nodenet):
     assert view['scene']['shape_name'] == 'FlyAgaric'
 
     # this thing can't move! needs fixing!
-    runtime.delete_worldobject(world_uid, 'flyagaric')
-    runtime.add_worldobject(world_uid, "Stone", (700, 450), uid='menhir', name="menhir")
+    runtime.delete_worldobject(world_uid, flyagaric_uid)
+    res, stone_uid = runtime.add_worldobject(world_uid, "Stone", (700, 450), name="stone")
 
     runtime.step_nodenet(default_nodenet)
     view = world.get_world_view(1)['agents'][default_nodenet]

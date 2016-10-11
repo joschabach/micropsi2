@@ -129,7 +129,7 @@ class NetAPI(object):
                 nodes.append(link.source_node)
         return nodes
 
-    def get_nodes_active(self, nodespace, type=None, min_activation=1, gate=None, sheaf='default'):
+    def get_nodes_active(self, nodespace, type=None, min_activation=1, gate=None):
         """
         Returns all nodes with a min activation, of the given type, active at the given gate, or with node.activation
         """
@@ -138,10 +138,10 @@ class NetAPI(object):
             if type is None or node.type == type:
                 if gate is not None:
                     if gate in node.get_gate_types():
-                        if node.get_gate(gate).activations[sheaf] >= min_activation:
+                        if node.get_gate(gate).activation >= min_activation:
                             nodes.append(node)
                 else:
-                    if node.activations[sheaf] >= min_activation:
+                    if node.activation >= min_activation:
                         nodes.append(node)
         return nodes
 
@@ -175,24 +175,23 @@ class NetAPI(object):
         Create a new nodespace with the given name in the given parent_nodespace
         Options:
             new_partition - Whether or not to create a seperate partition for this nodespace
-                            Attention: Experimental Feature, Sensors & Actors only work in the root-partition
+                            Attention: Experimental Feature, Sensors & Actuators only work in the root-partition
         """
         if name is None:
             name = ""   # TODO: empty names crash the client right now, but really shouldn't
-        pos = [100, 100, 0]  # default so native modules will not be bothered with positions
 
-        uid = self.__nodenet.create_nodespace(parent_nodespace, pos, name=name, options=options)
+        uid = self.__nodenet.create_nodespace(parent_nodespace, name=name, options=options)
         entity = self.__nodenet.get_nodespace(uid)
         return entity
 
-    def link(self, source_node, source_gate, target_node, target_slot, weight=1, certainty=1):
+    def link(self, source_node, source_gate, target_node, target_slot, weight=1):
         """
         Creates a link between two nodes. If the link already exists, it will be updated
-        with the given weight and certainty values (or the default 1 if not given)
+        with the given weight (or the default 1 if not given)
         """
-        self.__nodenet.create_link(source_node.uid, source_gate, target_node.uid, target_slot, weight, certainty)
+        self.__nodenet.create_link(source_node.uid, source_gate, target_node.uid, target_slot, weight)
 
-    def link_with_reciprocal(self, source_node, target_node, linktype, weight=1, certainty=1):
+    def link_with_reciprocal(self, source_node, target_node, linktype, weight=1):
         """
         Creates two (reciprocal) links between two nodes, valid linktypes are subsur, porret, catexp and symref
         """
@@ -201,23 +200,23 @@ class NetAPI(object):
         if linktype == "subsur":
             subslot = "sub" if "sub" in target_slot_types else "gen"
             surslot = "sur" if "sur" in source_slot_types else "gen"
-            self.__nodenet.create_link(source_node.uid, "sub", target_node.uid, subslot, weight, certainty)
-            self.__nodenet.create_link(target_node.uid, "sur", source_node.uid, surslot, weight, certainty)
+            self.__nodenet.create_link(source_node.uid, "sub", target_node.uid, subslot, weight)
+            self.__nodenet.create_link(target_node.uid, "sur", source_node.uid, surslot, weight)
         elif linktype == "porret":
             porslot = "por" if "por" in target_slot_types else "gen"
             retslot = "ret" if "ret" in source_slot_types else "gen"
-            self.__nodenet.create_link(source_node.uid, "por", target_node.uid, porslot, weight, certainty)
-            self.__nodenet.create_link(target_node.uid, "ret", source_node.uid, retslot, weight, certainty)
+            self.__nodenet.create_link(source_node.uid, "por", target_node.uid, porslot, weight)
+            self.__nodenet.create_link(target_node.uid, "ret", source_node.uid, retslot, weight)
         elif linktype == "catexp":
             catslot = "cat" if "cat" in target_slot_types else "gen"
             expslot = "exp" if "exp" in source_slot_types else "gen"
-            self.__nodenet.create_link(source_node.uid, "cat", target_node.uid, catslot, weight, certainty)
-            self.__nodenet.create_link(target_node.uid, "exp", source_node.uid, expslot, weight, certainty)
+            self.__nodenet.create_link(source_node.uid, "cat", target_node.uid, catslot, weight)
+            self.__nodenet.create_link(target_node.uid, "exp", source_node.uid, expslot, weight)
         elif linktype == "symref":
             symslot = "sym" if "sym" in target_slot_types else "gen"
             refslot = "ref" if "ref" in source_slot_types else "gen"
-            self.__nodenet.create_link(source_node.uid, "sym", target_node.uid, symslot, weight, certainty)
-            self.__nodenet.create_link(target_node.uid, "ref", source_node.uid, refslot, weight, certainty)
+            self.__nodenet.create_link(source_node.uid, "sym", target_node.uid, symslot, weight)
+            self.__nodenet.create_link(target_node.uid, "ref", source_node.uid, refslot, weight)
 
     def unlink(self, source_node, source_gate=None, target_node=None, target_slot=None):
         """
@@ -241,38 +240,21 @@ class NetAPI(object):
                 if source_gate_name is None or l.source_gate.type == source_gate_name:
                     l.source_node.unlink(l.source_gate.type, target_node_uid=node.uid, slot_name=slot_name)
 
-    def unlink_direction(self, node, gateslot=None):
+    def link_actuator(self, node, datatarget, weight=1, gate='sub', slot='sur'):
         """
-        Deletes all links from a node ending at the given slot or originating at the given gate
-        Read this as 'delete all por linkage from this node'
+        Links a node to an actuator. If no actuator exists in the node's nodespace for the given datatarget,
+        a new actuator will be created, otherwise the first actuator found will be used
         """
-        self.logger.warning("unlink direction is deprecated. use unlink_gate and unlink_slot")
-        node.unlink(gateslot)
-
-        links_to_delete = set()
-        for slottype in node.get_slot_types():
-            if gateslot is None or gateslot == slottype:
-                for link in node.get_slot(slottype).get_links():
-                    links_to_delete.add(link)
-
-        for link in links_to_delete:
-            link.source_node.unlink(target_node_uid=node.uid, slot_name=gateslot)
-
-    def link_actor(self, node, datatarget, weight=1, certainty=1, gate='sub', slot='sur'):
-        """
-        Links a node to an actor. If no actor exists in the node's nodespace for the given datatarget,
-        a new actor will be created, otherwise the first actor found will be used
-        """
-        actor = None
-        for uid, candidate in self.__nodenet.get_actors(node.parent_nodespace).items():
+        actuator = None
+        for uid, candidate in self.__nodenet.get_actuators(node.parent_nodespace).items():
             if candidate.get_parameter('datatarget') == datatarget:
-                actor = candidate
-        if actor is None:
-            actor = self.create_node("Actor", node.parent_nodespace, datatarget)
-            actor.set_parameter('datatarget', datatarget)
+                actuator = candidate
+        if actuator is None:
+            actuator = self.create_node("Actuator", node.parent_nodespace, datatarget)
+            actuator.set_parameter('datatarget', datatarget)
 
-        self.link(node, gate, actor, 'gen', weight, certainty)
-        # self.link(actor, 'gen', node, slot)
+        self.link(node, gate, actuator, 'gen', weight)
+        # self.link(actuator, 'gen', node, slot)
 
     def link_sensor(self, node, datasource, slot='sur', weight=1):
         """
@@ -289,28 +271,28 @@ class NetAPI(object):
 
         self.link(sensor, 'gen', node, slot, weight)
 
-    def import_actors(self, nodespace, datatarget_prefix=None):
+    def import_actuators(self, nodespace, datatarget_prefix=None):
         """
-        Makes sure an actor for all datatargets whose names start with the given prefix, or all datatargets,
+        Makes sure an actuator for all datatargets whose names start with the given prefix, or all datatargets,
         exists in the given nodespace.
         """
-        all_actors = []
+        all_actuators = []
         if self.worldadapter is None:
-            return all_actors
+            return all_actuators
 
         datatargets = self.worldadapter.get_available_datatargets()
 
         for datatarget in datatargets:
             if datatarget_prefix is None or datatarget.startswith(datatarget_prefix):
-                actor = None
-                for uid, candidate in self.__nodenet.get_actors(nodespace, datatarget).items():
-                    actor = candidate
+                actuator = None
+                for uid, candidate in self.__nodenet.get_actuators(nodespace, datatarget).items():
+                    actuator = candidate
                     break
-                if actor is None:
-                    actor = self.create_node("Actor", nodespace, datatarget)
-                    actor.set_parameter('datatarget', datatarget)
-                all_actors.append(actor)
-        return all_actors
+                if actuator is None:
+                    actuator = self.create_node("Actuator", nodespace, datatarget)
+                    actuator.set_parameter('datatarget', datatarget)
+                all_actuators.append(actuator)
+        return all_actuators
 
     def import_sensors(self, nodespace, datasource_prefix=None):
         """
@@ -335,16 +317,16 @@ class NetAPI(object):
                 all_sensors.append(sensor)
         return all_sensors
 
-    def set_gatefunction(self, nodespace, nodetype, gatetype, gatefunction):
-        """Sets the gatefunction for gates of type gatetype of nodes of type nodetype, in the given
-            nodespace.
-            The gatefunction needs to be given as a string.
-        """
-        nodespace = self.get_nodespace(nodespace)
-        for uid in nodespace.get_known_ids(entitytype="nodes"):
-            node = self.get_node(uid)
-            if node.type == nodetype:
-                node.set_gatefunction_name(gatetype, gatefunction)
+    # def set_gatefunction(self, nodespace, nodetype, gatetype, gatefunction):
+    #     """Sets the gatefunction for gates of type gatetype of nodes of type nodetype, in the given
+    #         nodespace.
+    #         The gatefunction needs to be given as a string.
+    #     """
+    #     nodespace = self.get_nodespace(nodespace)
+    #     for uid in nodespace.get_known_ids(entitytype="nodes"):
+    #         node = self.get_node(uid)
+    #         if node.type == nodetype:
+    #             node.set_gatefunction_name(gatetype, gatefunction)
 
     def notify_user(self, node, msg):
         """
@@ -428,7 +410,7 @@ class NetAPI(object):
         uids = [node.uid for node in nodes]
         uidmap = {}
         for node in nodes:
-            new_uid = self.__nodenet.create_node(node.type, nodespace_uid, node.position, name=node.name, parameters=node.clone_parameters(), gate_parameters=node.get_gate_parameters())
+            new_uid = self.__nodenet.create_node(node.type, nodespace_uid, node.position, name=node.name, parameters=node.clone_parameters(), gate_configuration=node.get_gate_configuration())
             uidmap[node.uid] = new_uid
         for node in nodes:
             for g in node.get_gate_types():
@@ -438,8 +420,7 @@ class NetAPI(object):
                                   l.source_gate.type,
                                   self.get_node(uidmap[l.target_node.uid]),
                                   l.target_slot.type,
-                                  weight=l.weight,
-                                  certainty=l.certainty)
+                                  weight=l.weight)
         mapping = {}
         for node in nodes:
             mapping[node] = self.get_node(uidmap[node.uid])
@@ -483,19 +464,24 @@ class NetAPI(object):
         """
         return self.__nodenet.set_activations(nodespace_uid, group, new_activations)
 
-    def get_thetas(self, nodespace_uid, group):
+    def get_gate_configurations(self, nodespace_uid, group, gatefunction_parameter=None):
         """
-        Returns an array of theta values for the given group.
-        For multi-gate nodes, the thetas of the gen gates will be returned
+        Returns a dictionary containing a list of gatefunction names, and a list of the values
+        of the given gatefunction_parameter (if given)
         """
-        return self.__nodenet.get_thetas(nodespace_uid, group)
+        return self.__nodenet.get_gate_configurations(nodespace_uid, group, gatefunction_parameter)
 
-    def set_thetas(self, nodespace_uid, group, new_thetas):
+    def set_gate_configurations(self, nodespace_uid, group, gatefunction, gatefunction_parameter=None, parameter_values=None):
         """
-        Bulk-sets thetas for the given group.
-        new_thetas dimensionality has to match the group length
+        Bulk-sets gatefunctions and a gatefunction_parameter for the given group.
+        Arguments:
+            nodespace_uid (string) - id of the parent nodespace
+            group (string) - name of the group
+            gatefunction (string) - name of the gatefunction to set
+            gatefunction_parameter (optinoal) - name of the gatefunction_paramr to set
+            parameter_values (optional) - values to set for the gatefunction_parameetr
         """
-        self.__nodenet.set_thetas(nodespace_uid, group, new_thetas)
+        self.__nodenet.set_gate_configurations(nodespace_uid, group, gatefunction, gatefunction_parameter, parameter_values)
 
     def get_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to):
         """
@@ -519,23 +505,22 @@ class NetAPI(object):
         """
         return self.__nodenet.get_node_uids(nodespace_uid, group)
 
-    def add_gate_monitor(self, node_uid, gate, sheaf=None, name=None, color=None):
+    def add_gate_monitor(self, node_uid, gate, name=None, color=None):
         """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation
         value in every calculation step.
         Returns the uid of the new monitor."""
-        return self.__nodenet.add_gate_monitor(node_uid, gate, sheaf=sheaf, name=name, color=color)
+        return self.__nodenet.add_gate_monitor(node_uid, gate, name=name, color=color)
 
-    def add_slot_monitor(self, node_uid, slot, sheaf=None, name=None, color=None):
+    def add_slot_monitor(self, node_uid, slot, name=None, color=None):
         """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
         value in every calculation step.
         Returns the uid of the new monitor."""
-        return self.__nodenet.add_slot_monitor(node_uid, slot, sheaf=sheaf, name=name, color=color)
+        return self.__nodenet.add_slot_monitor(node_uid, slot, name=name, color=color)
 
-    def add_link_monitor(self, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, color=None):
-        """Adds a continuous monitor to a link. You can choose to monitor either weight (default) or certainty
-        The monitor will collect respective value in every calculation step.
+    def add_link_monitor(self, source_node_uid, gate_type, target_node_uid, slot_type, name=None, color=None):
+        """Adds a continuous weightmonitor to a link. The monitor will record the linkweight in every calculation step.
         Returns the uid of the new monitor."""
-        return self.__nodenet.add_link_monitor(source_node_uid, gate_type, target_node_uid, slot_type, property=property, name=name, color=color)
+        return self.__nodenet.add_link_monitor(source_node_uid, gate_type, target_node_uid, slot_type, name=name, color=color)
 
     def add_modulator_monitor(self, modulator, name, color=None):
         """Adds a continuous monitor to a global modulator.

@@ -61,25 +61,15 @@ links = {};
 selection = {};
 monitors = {};
 
-GATE_DEFAULTS = {
-    "minimum": -1,
-    "maximum": 1,
-    "certainty": 1,
-    "amplification": 1,
-    "threshold": -1,
-    "theta": 0,
-    "rho": 0,
-    "spreadsheaves": 0
-}
-
-
+available_gatefunctions = {}
 gatefunction_icons = {
     'sigmoid': 'Σ',
     'elu': 'E',
     'relu': 'R',
     'absolute': '|x|',
     'one_over_x': '1/x',
-    'identity': ''
+    'identity': '',
+    'threshold': 'T'
 }
 
 gridLayer = new Layer();
@@ -114,8 +104,6 @@ nodespace_property_defaults = {
 
 
 currentWorldadapter = null;
-
-var currentSheaf = "default";
 
 var selectionRectangle = new Rectangle(1,1,1,1);
 selectionBox = new Path.Rectangle(selectionRectangle);
@@ -215,13 +203,13 @@ function get_available_worldadapters(world_uid, callback){
                     name = keys[idx];
                     str += '<option title="'+worldadapters[name]['description']+'">'+name+'</option>';
                 }
-                $('#nodenet_worldadapter').html(str);
+                $('#nodenet_worldadapter').html(str).removeAttr('disabled');
                 if(callback){
                     callback(data);
                 }
         });
     } else {
-        $('#nodenet_worldadapter').html('<option>&lt;No world selected&gt;</option>');
+        $('#nodenet_worldadapter').html('<option>&lt;No world selected&gt;</option>').attr('disabled', 'disabled');
         if(callback){
             callback({});
         }
@@ -231,8 +219,9 @@ function get_available_worldadapters(world_uid, callback){
 function get_available_gatefunctions(){
     api.call('get_available_gatefunctions', {nodenet_uid: currentNodenet}, function(data){
         html = '';
-        for(var i=0; i < data.length; i++){
-            html += '<option>'+data[i]+'</option>';
+        available_gatefunctions = data;
+        for(var key in available_gatefunctions){
+            html += '<option>'+key+'</option>';
         }
         $('#gate_gatefunction').html(html);
     });
@@ -408,7 +397,7 @@ function setNodespaceData(data, changed){
         }
         var links_data = {}
         for(uid in data.nodes){
-            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions, data.nodes[uid].is_highdimensional, data.nodes[uid].inlinks, data.nodes[uid].outlinks);
+            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_configuration, data.nodes[uid].is_highdimensional, data.nodes[uid].inlinks, data.nodes[uid].outlinks);
             if(uid in nodes){
                 if(nodeRedrawNeeded(item)) {
                     nodes[uid].update(item);
@@ -426,18 +415,6 @@ function setNodespaceData(data, changed){
                     links_data[luid].source_node_uid = uid
                     links_data[luid].source_gate_name = gate
                 }
-            }
-        }
-        for(uid in data.nodespaces){
-            if(!(uid in nodespaces)){
-                nodespaces[uid] = data.nodespaces[uid];
-            }
-            item = new Node(uid, data.nodespaces[uid]['position'][0], data.nodespaces[uid]['position'][1], data.nodespaces[uid].parent_nodespace, data.nodespaces[uid].name, "Nodespace", 0, data.nodespaces[uid].state);
-            if(uid in nodes){
-                redrawNode(item);
-                nodes[uid].update(item);
-            } else{
-                addNode(item);
             }
         }
 
@@ -496,7 +473,7 @@ function setNodespaceDiffData(data, changed){
             links_data = {}
             for(var uid in data.changes.nodes_dirty){
                 var nodedata = data.changes.nodes_dirty[uid];
-                item = new Node(uid, nodedata['position'][0], nodedata['position'][1], nodedata.parent_nodespace, nodedata.name, nodedata.type, nodedata.sheaves, nodedata.state, nodedata.parameters, nodedata.gate_activations, nodedata.gate_parameters, nodedata.gate_functions, nodedata.is_highdimensional, nodedata.inlinks, nodedata.outlinks);
+                item = new Node(uid, nodedata['position'][0], nodedata['position'][1], nodedata.parent_nodespace, nodedata.name, nodedata.type, nodedata.activation, nodedata.state, nodedata.parameters, nodedata.gate_activations, nodedata.gate_configuration, nodedata.is_highdimensional, nodedata.inlinks, nodedata.outlinks);
                 if(uid in nodes){
                     for (var gateName in nodes[uid].gates) {
                         for (linkUid in nodes[uid].gates[gateName].outgoing) {
@@ -520,19 +497,6 @@ function setNodespaceDiffData(data, changed){
                 }
             }
             addLinks(links_data);
-            for(var uid in data.changes.nodespaces_dirty){
-                var nodespacedata = data.changes.nodespaces_dirty[uid];
-                if(!(uid in nodespaces)){
-                    nodespaces[uid] = nodespacedata;
-                }
-                item = new Node(uid, nodespacedata['position'][0], nodespacedata['position'][1], nodespacedata.parent_nodespace, nodespacedata.name, "Nodespace", 0, nodespacedata.state);
-                if(uid in nodes){
-                    redrawNode(item);
-                    nodes[uid].update(item);
-                } else{
-                    addNode(item);
-                }
-            }
         }
         // activations:
         for(var uid in nodes){
@@ -544,12 +508,12 @@ function setNodespaceDiffData(data, changed){
             for(var i=0; i < nodes[uid].gateIndexes.length; i++){
                 var type = nodes[uid].gateIndexes[i];
                 var gateAct = (activations) ? activations[i] : 0;
-                nodes[uid].gates[type].sheaves['default'].activation = gateAct;
+                nodes[uid].gates[type].activation = gateAct;
                 if(type == 'gen'){
                     gen = gateAct;
                 }
             }
-            nodes[uid].sheaves['default'].activation = gen;
+            nodes[uid].activation = gen;
             setActivation(nodes[uid]);
             redrawNodeLinks(nodes[uid]);
         }
@@ -575,14 +539,14 @@ function addLinks(link_data){
         sourceId = link_data[uid]['source_node_uid'];
         targetId = link_data[uid]['target_node_uid'];
         if (sourceId in nodes && targetId in nodes && nodes[sourceId].parent == nodes[targetId].parent){
-            link = new Link(uid, sourceId, link_data[uid].source_gate_name, targetId, link_data[uid].target_slot_name, link_data[uid].weight, link_data[uid].certainty);
+            link = new Link(uid, sourceId, link_data[uid].source_gate_name, targetId, link_data[uid].target_slot_name, link_data[uid].weight);
             if(uid in links){
                 redrawLink(link);
             } else {
                 addLink(link);
             }
         } else if(sourceId in nodes || targetId in nodes){
-            link = new Link(uid, sourceId, link_data[uid].source_gate_name, targetId, link_data[uid].target_slot_name, link_data[uid].weight, link_data[uid].certainty);
+            link = new Link(uid, sourceId, link_data[uid].source_gate_name, targetId, link_data[uid].target_slot_name, link_data[uid].weight);
             if(targetId in nodes && nodes[targetId].linksFromOutside.indexOf(link.uid) < 0)
                 nodes[targetId].linksFromOutside.push(link.uid);
             if(sourceId in nodes && nodes[sourceId].linksToOutside.indexOf(link.uid) < 0)
@@ -598,6 +562,7 @@ function addLinks(link_data){
         }
     }
 }
+
 
 function get_nodenet_params(){
     return {
@@ -706,11 +671,11 @@ function updateModulators(data){
 
 
 // data structure for net entities
-function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, gate_activations, gate_parameters, gatefunctions, is_highdim, inlinks, outlinks) {
+function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters, gate_activations, gate_configuration, is_highdim, inlinks, outlinks) {
 	this.uid = uid;
 	this.x = x;
 	this.y = y;
-	this.sheaves = sheaves || {"default": {"uid": "default", "name": "default", "activation": 0}};
+	this.activation = activation || 0;
     this.state = state;
 	this.name = name;
 	this.type = type;
@@ -726,44 +691,25 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
     this.bounds = null; // current bounding box (after scaling)
     this.slotIndexes = [];
     this.gateIndexes = [];
-    this.gate_parameters = gate_parameters || {};
+    this.gate_configuration = gate_configuration || {};
     this.gate_activations = gate_activations || {};
-    this.gatefunctions = gatefunctions || {};
     this.is_highdim = is_highdim;
     this.inlinks = inlinks || 0;
     this.outlinks = outlinks || 0;
-	if(type == "Nodespace") {
-        this.symbol = "NS";
-    } else {
-        this.symbol = nodetypes[type].symbol || type.substr(0,1);
-        var i;
-        for(i in nodetypes[type].slottypes){
-            this.slots[nodetypes[type].slottypes[i]] = new Slot(nodetypes[type].slottypes[i]);
-        }
-        for(i in nodetypes[type].gatetypes){
-            var gatetype = nodetypes[type].gatetypes[i]
-            parameters = {};
-            sheaves = this.gate_activations[gatetype];
-            if(!sheaves) {
-                sheaves = {"default":{"uid":"default", "name":"default", "activation": 0}};
-            }
-            parameters = jQuery.extend({}, GATE_DEFAULTS);
-            if(nodetypes[type].gate_defaults && nodetypes[type].gate_defaults[gatetype]) {
-                for(var key in nodetypes[type].gate_defaults[gatetype]){
-                    parameters[key] = nodetypes[type].gate_defaults[gatetype][key];
-                }
-            }
-            if(this.gate_parameters[gatetype]){
-                for(var key in this.gate_parameters[gatetype]){
-                    parameters[key] = this.gate_parameters[gatetype][key];
-                }
-            }
-            var highdim = is_highdim && gatetype in nodetypes[type].dimensionality.gates;
-            this.gates[gatetype] = new Gate(gatetype, i, sheaves, parameters, this.gatefunctions[gatetype], highdim);
-        }
-        this.slotIndexes = Object.keys(this.slots);
-        this.gateIndexes = Object.keys(this.gates);
+    this.symbol = nodetypes[type].symbol || type.substr(0,1);
+    var i;
+    for(i in nodetypes[type].slottypes){
+        this.slots[nodetypes[type].slottypes[i]] = new Slot(nodetypes[type].slottypes[i]);
     }
+    for(i in nodetypes[type].gatetypes){
+        var gatetype = nodetypes[type].gatetypes[i]
+        parameters = {};
+        activation = this.gate_activations[gatetype];
+        var highdim = is_highdim && gatetype in nodetypes[type].dimensionality.gates;
+        this.gates[gatetype] = new Gate(gatetype, i, activation, this.gate_configuration[gatetype], highdim);
+    }
+    this.slotIndexes = Object.keys(this.slots);
+    this.gateIndexes = Object.keys(this.gates);
 
     this.update = function(item){
         this.uid = item.uid;
@@ -772,19 +718,17 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
         this.y = item.y;
         this.parent = item.parent;
         this.name = item.name;
-        this.sheaves = item.sheaves;
+        this.activation = item.activation;
         this.state = item.state;
         this.parameters = item.parameters;
-        this.gate_parameters = jQuery.extend(jQuery.extend({}, GATE_DEFAULTS), item.gate_parameters || {});;
+        this.gate_configuration = item.gate_configuration || {};
         this.gate_activations = item.gate_activations;
-        this.gatefunctions = item.gatefunctions;
         this.outlinks = item.outlinks;
         this.inlinks = item.inlinks;
         for(var i in nodetypes[type].gatetypes){
             var gatetype = nodetypes[type].gatetypes[i];
-            this.gates[gatetype].parameters = jQuery.extend(jQuery.extend({}, GATE_DEFAULTS), this.gate_parameters[gatetype]);
-            this.gates[gatetype].sheaves = this.gate_activations[gatetype];
-            this.gates[gatetype].gatefunction = this.gatefunctions[gatetype];
+            this.gates[gatetype].gate_configuration = this.gate_configuration[gatetype];
+            this.gates[gatetype].activation = this.gate_activations[gatetype];
 
         }
     };
@@ -793,8 +737,8 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
         var gatechecksum = "";
         for(var i in nodetypes[type].gatetypes){
             var gatetype = nodetypes[type].gatetypes[i];
-            gatechecksum += "-" + this.gates[gatetype].sheaves[currentSheaf].activation;
-            gatechecksum += ':' + this.gates[gatetype].gatefunction;
+            gatechecksum += "-" + this.gates[gatetype].activation;
+            gatechecksum += ':' + this.gates[gatetype].gate_cgatefunction;
         }
         return gatechecksum;
     };
@@ -804,33 +748,36 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
 function Slot(name) {
 	this.name = name;
 	this.incoming = {};
-	this.sheaves = {"default": {"uid": "default", "name": "default", "activation": 0}};
+	this.activation = 0;
 }
 
 // source for links, part of a net entity
-function Gate(name, index, sheaves, parameters, gatefunction, is_highdim) {
+function Gate(name, index, activation, gate_configuration, is_highdim) {
 	this.name = name;
     this.index = index;
 	this.outgoing = {};
-	this.sheaves = sheaves;
+	this.activation = activation;
     this.is_highdim = is_highdim;
-    this.gatefunction = gatefunction || 'identity';
-    if(parameters){
-        this.parameters = parameters;
-    } else {
-        this.parameters = jQuery.extend({}, GATE_DEFAULTS);
+    this.gatefunction = 'identity';
+    this.gatefunction_parameters = {}
+    if (gate_configuration) {
+        if(gate_configuration.gatefunction){
+            this.gatefunction = gate_configuration.gatefunction;
+        }
+        if(gate_configuration.gatefunction_parameters){
+            this.gatefunction_parameters = gate_configuration.gatefunction_parameters;
+        }
     }
 }
 
 // link, connects two nodes, from a gate to a slot
-function Link(uid, sourceNodeUid, gateName, targetNodeUid, slotName, weight, certainty){
+function Link(uid, sourceNodeUid, gateName, targetNodeUid, slotName, weight){
     this.uid = uid;
     this.sourceNodeUid = sourceNodeUid;
     this.gateName = gateName;
     this.targetNodeUid = targetNodeUid;
     this.slotName = slotName;
     this.weight = weight;
-    this.certainty = certainty;
 
     this.strokeColor = null;
     this.strokeWidth = null;
@@ -871,10 +818,9 @@ function addLink(link) {
 function redrawLink(link, forceRedraw){
     var oldLink = links[link.uid];
     if (forceRedraw || !oldLink || !(link.uid in linkLayer.children) || oldLink.weight != link.weight ||
-        oldLink.certainty != link.certainty ||
             !nodes[oldLink.sourceNodeUid] || !nodes[link.sourceNodeUid] ||
-            nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].sheaves[currentSheaf].activation !=
-            nodes[link.sourceNodeUid].gates[link.gateName].sheaves[currentSheaf].activation) {
+            nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].activation !=
+            nodes[link.sourceNodeUid].gates[link.gateName].activation) {
         if(link.uid in linkLayer.children){
             linkLayer.children[link.uid].remove();
         }
@@ -1014,9 +960,8 @@ function nodeRedrawNeeded(node){
         if(node.x == nodes[node.uid].x &&
             node.y == nodes[node.uid].y &&
             node.name == nodes[node.uid].name &&
-            node.sheaves[currentSheaf].activation == nodes[node.uid].sheaves[currentSheaf].activation &&
+            node.activation == nodes[node.uid].activation &&
             node.gatechecksum() == nodes[node.uid].gatechecksum() &&
-            Object.keys(node.sheaves).length == Object.keys(nodes[node.uid].sheaves).length &&
             viewProperties.zoomFactor == nodes[node.uid].zoomFactor){
             return false;
         }
@@ -1066,7 +1011,7 @@ function calculateLinkStart(sourceNode, targetNode, gateName) {
     }
     var sourcePoints, startPoint, startAngle;
     if (!isOutsideNodespace(sourceNode) && isCompact(sourceNode)) {
-        if (sourceNode.type=="Sensor" || sourceNode.type == "Actor") {
+        if (sourceNode.type=="Sensor" || sourceNode.type == "Actuator") {
             if (sourceNode.type == "Sensor")
                 startPoint = new Point(sourceBounds.x+sourceBounds.width*0.5,
                     sourceBounds.y);
@@ -1134,7 +1079,7 @@ function calculateLinkEnd(sourceNode, targetNode, slotName, linkType) {
         }
     }
     if (!isOutsideNodespace(targetNode) && isCompact(targetNode)) {
-        if (targetNode.type=="Sensor" || targetNode.type == "Actor") {
+        if (targetNode.type=="Sensor" || targetNode.type == "Actuator") {
             endPoint = new Point(targetBounds.x + targetBounds.width*0.6, targetBounds.y);
             endAngle = 270;
         } else {
@@ -1268,7 +1213,7 @@ function renderLink(link, force) {
 
     link.strokeWidth = Math.max(0.1, Math.min(1.0, Math.abs(link.weight)))*viewProperties.zoomFactor;
     if(sourceNode){
-        link.strokeColor = activationColor(sourceNode.gates[link.gateName].sheaves[currentSheaf].activation * link.weight, viewProperties.linkColor);
+        link.strokeColor = activationColor(sourceNode.gates[link.gateName].activation * link.weight, viewProperties.linkColor);
     } else {
         link.strokeColor = viewProperties.linkColor;
     }
@@ -1285,7 +1230,7 @@ function renderLink(link, force) {
     linkContainer.name = link.uid;
     if (nodespaceProperties[currentNodeSpace].activation_display == 'alpha'){
         if(sourceNode){
-            linkContainer.opacity = Math.max(0.1, sourceNode.sheaves[currentSheaf].activation)
+            linkContainer.opacity = Math.max(0.1, sourceNode.activation)
         } else {
             linkContainer.opacity = 0.1
         }
@@ -1382,9 +1327,8 @@ function renderFullNode(node) {
         var skeleton = createFullNodeSkeleton(node);
         var activations = createFullNodeActivations(node);
         var titleBar = createFullNodeLabel(node);
-        var sheavesAnnotation = createSheavesAnnotation(node);
         var gateAnnotations = createGateAnnotation(node);
-        nodeItem = new Group([activations, skeleton, titleBar, gateAnnotations, sheavesAnnotation]);
+        nodeItem = new Group([activations, skeleton, titleBar, gateAnnotations]);
     }
     nodeItem.name = node.uid;
     nodeItem.isCompact = false;
@@ -1450,9 +1394,6 @@ function calculateNodeBounds(node) {
     if (!isCompact(node)) {
         width = viewProperties.nodeWidth * viewProperties.zoomFactor;
         height = viewProperties.lineHeight*(Math.max(node.slotIndexes.length, node.gateIndexes.length)+2)*viewProperties.zoomFactor;
-        if (node.type == "Nodespace"){
-            height = Math.max(height, viewProperties.lineHeight*4*viewProperties.zoomFactor);
-        }
     } else {
         width = height = viewProperties.compactNodeWidth * viewProperties.zoomFactor;
     }
@@ -1463,7 +1404,7 @@ function calculateNodeBounds(node) {
 
 // determine shape of a full node
 function createFullNodeShape(node) {
-    if (node.type == "Nodespace" || node.type == "Comment"){
+    if (node.type == "Comment"){
         return new Path.Rectangle(node.bounds);
     } else {
         return new Path.RoundRectangle(node.bounds, viewProperties.cornerWidth*viewProperties.zoomFactor);
@@ -1475,7 +1416,6 @@ function createCompactNodeShape(node) {
     var bounds = node.bounds;
     var shape;
     switch (node.type) {
-        case "Nodespace":
         case "Comment":
             shape = new Path.Rectangle(bounds);
             break;
@@ -1486,7 +1426,7 @@ function createCompactNodeShape(node) {
                 new Point(bounds.right, bounds.y-bounds.height * 0.3), bounds.bottomRight);
             shape.closePath();
             break;
-        case "Actor":
+        case "Actuator":
             shape = new Path([bounds.bottomRight,
                 new Point(bounds.x+bounds.width * 0.65, bounds.y),
                 new Point(bounds.x+bounds.width * 0.35, bounds.y),
@@ -1507,7 +1447,7 @@ function createCompactNodeShape(node) {
         case "Concept": // draw circle
         case "Pipe": // draw circle
         case "Script": // draw circle
-        case "Register":
+        case "Neuron":
             shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
             break;
         default:
@@ -1550,39 +1490,14 @@ function createFullNodeLabel(node) {
     return label;
 }
 
-// draw the sheaves annotation of a full node -- this is rather hacky, we will want to find
-// a better way of visualizing sheaves, including sheaf states
-function createSheavesAnnotation(node) {
-    var bounds = node.bounds;
-    var label = new Group();
-    label.name = "sheavesLabel";
-    var titleText = new PointText(new Point(bounds.x+ 80*viewProperties.zoomFactor +viewProperties.padding*viewProperties.zoomFactor,
-        bounds.y+viewProperties.lineHeight*0.8*viewProperties.zoomFactor));
-    titleText.characterStyle = {
-        fillColor: viewProperties.nodeFontColor,
-        fontSize: viewProperties.fontSize*viewProperties.zoomFactor
-    };
-    var sheavesText = "";
-    for(uid in node.sheaves) {
-        name = node.sheaves[uid].name;
-        if(name != "default") {
-            sheavesText += name + "\n";
-        }
-    }
-    titleText.content = sheavesText;
-    titleText.name = "text";
-    label.addChild(titleText);
-    return label;
-}
-
 function createGateAnnotation(node){
     var labels = [];
     for (i = 0; i< node.gateIndexes.length; i++){
         var g = node.gateIndexes[i];
         var gatebounds = getGateBounds(node, i);
-        if (node.gatefunctions[g] && node.gatefunctions[g] != 'identity'){
+        if (node.gates[g].gatefunction && node.gates[g].gatefunction != 'identity'){
             var gatefuncHint = new PointText(new Point(gatebounds.right-(8*viewProperties.zoomFactor),gatebounds.center.y - 2*viewProperties.zoomFactor));
-            gatefuncHint.content = gatefunction_icons[node.gatefunctions[g]];
+            gatefuncHint.content = gatefunction_icons[node.gates[g].gatefunction];
             gatefuncHint.fillColor = viewProperties.nodeForegroundColor;
             gatefuncHint.fontSize = (viewProperties.fontSize-2) * viewProperties.zoomFactor;
             labels.push(gatefuncHint);
@@ -1750,10 +1665,10 @@ function createCompactNodeBodyLabel(node) {
     gatefuncHint.fillColor = viewProperties.nodeForegroundColor;
     gatefuncHint.fontSize = viewProperties.fontSize*viewProperties.zoomFactor;
     var non_standard_gatefunc = [];
-    for (var k in node.gatefunctions){
-        if(node.gatefunctions[k] && node.gatefunctions[k] != 'identity'){
-            if(non_standard_gatefunc.indexOf(node.gatefunctions[k]) < 0){
-                non_standard_gatefunc.push(node.gatefunctions[k]);
+    for (var g in node.gates){
+        if(node.gates[g].gatefunction && node.gates[g].gatefunction != 'identity'){
+            if(non_standard_gatefunc.indexOf(node.gates[g].gatefunction) < 0){
+                non_standard_gatefunc.push(node.gates[g].gatefunction);
             }
         }
     }
@@ -1834,19 +1749,19 @@ function setActivation(node) {
     }
     if (node.uid in nodeLayer.children) {
         var nodeItem = nodeLayer.children[node.uid];
-        if((nodespaceProperties[currentNodeSpace].activation_display != 'alpha') || node.sheaves[currentSheaf].activation > 0.5){
+        if((nodespaceProperties[currentNodeSpace].activation_display != 'alpha') || node.activation > 0.5){
             node.fillColor = nodeItem.children["activation"].children["body"].fillColor =
-                activationColor(node.sheaves[currentSheaf].activation, viewProperties.nodeColor);
+                activationColor(node.activation, viewProperties.nodeColor);
         }
         if(nodespaceProperties[currentNodeSpace].activation_display == 'alpha'){
             for(var i in nodeItem.children){
                 if(nodeItem.children[i].name == 'labelText'){
                     nodeItem.children[i].opacity = 0;
-                    if (node.sheaves[currentSheaf].activation > 0.5){
-                        nodeItem.children[i].opacity = node.sheaves[currentSheaf].activation;
+                    if (node.activation > 0.5){
+                        nodeItem.children[i].opacity = node.activation;
                     }
                 } else {
-                    nodeItem.children[i].opacity = Math.max(0.1, node.sheaves[currentSheaf].activation)
+                    nodeItem.children[i].opacity = Math.max(0.1, node.activation)
                 }
             }
         }
@@ -1856,13 +1771,13 @@ function setActivation(node) {
             var type;
             for (type in node.slots) {
                 nodeItem.children["activation"].children["slots"].children[i++].fillColor =
-                    activationColor(node.slots[type].sheaves[currentSheaf].activation,
+                    activationColor(node.slots[type].activation,
                     viewProperties.nodeColor);
             }
             i=0;
             for (type in node.gates) {
                 nodeItem.children["activation"].children["gates"].children[i++].fillColor =
-                    activationColor(node.gates[type].sheaves[currentSheaf].activation,
+                    activationColor(node.gates[type].activation,
                     viewProperties.nodeColor);
             }
         }
@@ -2152,10 +2067,6 @@ function onMouseDown(event) {
     }
 
     if (linkCreationStart) {
-        // todo: open dialog to link into different nodespaces
-        if(!(clickType == "node" && nodes[path.name].type == "Nodespace")){
-            cancelLinkCreationHandler();
-        }
         return;
     }
 
@@ -2295,14 +2206,10 @@ function onDoubleClick(event) {
         if (nodeUid in nodes) {
             var node = nodes[nodeUid];
             if(node.bounds.contains(p)){
-                if(node.type == "Nodespace"){
-                    handleEnterNodespace(node.uid);
-                } else {
-                    if(isCompact(nodeUid)){
-                        nodes[nodeUid].renderCompact = false;
-                        redrawNode(nodes[nodeUid], true);
-                        view.draw();
-                    }
+                if(isCompact(nodeUid)){
+                    nodes[nodeUid].renderCompact = false;
+                    redrawNode(nodes[nodeUid], true);
+                    view.draw();
                 }
                 return;
             }
@@ -2525,12 +2432,12 @@ function loadLinksForSelection(callback, force_load, show_node_form){
     var skipped = [];
     var load_links = false;
     for(var uid in selection){
-        if(uid in nodes && nodes[uid].type != 'Nodespace' && (force_load || nodes[uid].inlinks < viewProperties.load_link_threshold && nodes[uid].outlinks < viewProperties.load_link_threshold)){
+        if(uid in nodes && (force_load || nodes[uid].inlinks < viewProperties.load_link_threshold && nodes[uid].outlinks < viewProperties.load_link_threshold)){
             uids.push(uid)
         } else {
             skipped.push(uid)
         }
-        if(nodes[uid].inlinks > 0 || nodes[uid].outlinks > 0){
+        if(skipped.indexOf(uid) < 0 && (nodes[uid].inlinks > 0 || nodes[uid].outlinks > 0)){
             load_links = true;
         }
     }
@@ -2551,7 +2458,7 @@ function loadLinksForSelection(callback, force_load, show_node_form){
                     callback(data);
                 } else {
                     for(var uid in data.nodes){
-                        addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions, data.nodes[uid].is_highdimensional, data.nodes[uid].inlinks, data.nodes[uid].outlinks));
+                        addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_configuration, data.nodes[uid].is_highdimensional, data.nodes[uid].inlinks, data.nodes[uid].outlinks));
                     }
                     var linkdict = {};
                     for(var i = 0; i < data.links.length; i++){
@@ -2566,7 +2473,7 @@ function loadLinksForSelection(callback, force_load, show_node_form){
                 view.draw(true);
             }
         );
-    } else if(skipped.length == 1 && skipped[0] in selection && clickType != "gate" && show_node_form){
+    } else if(skipped.length == 1 && skipped[0] in nodes && skipped[0] in selection && clickType != "gate" && show_node_form){
         showNodeForm(skipped[0]);
     }
 }
@@ -2586,17 +2493,8 @@ function initializeMenus() {
     $("#edit_link_modal form").on('submit', handleEditLink);
     $("#nodenet").on('dblclick', onDoubleClick);
     $("#nodespace_up").on('click', handleNodespaceUp);
+    $("#nodespace_add").on('click', createNodespace);
     gate_form_trigger = $('.gate_additional_trigger');
-    gate_params = $('.gate_additional');
-    gate_form_trigger.on('click', function(){
-        if(gate_params.hasClass('hide')){
-            gate_form_trigger.text("Hide additional parameters");
-            gate_params.removeClass('hide');
-        } else {
-            gate_form_trigger.text("Show additional parameters");
-            gate_params.addClass('hide');
-        }
-    });
 }
 
 function initializeControls(){
@@ -2860,7 +2758,7 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     if(node.type == "Sensor"){
         html += '<li><a href="#">Select datasource</li>';
     }
-    if(node.type == "Actor"){
+    if(node.type == "Actuator"){
         html += '<li><a href="#">Select datatarget</li>';
     }
     html += '<li><a href="#">Add Monitor</a></li>' +
@@ -2914,10 +2812,10 @@ function handleContextMenu(event) {
                         source_select.val(nodes[clickOriginUid].parameters['datasource']).select().focus();
                     };
                     break;
-                case "Actor":
+                case "Actuator":
                     callback = function(data){
                         clickOriginUid = data;
-                        dialogs.notification('Please Select a datatarget for this actor');
+                        dialogs.notification('Please Select a datatarget for this actuator');
                         var target_select = $('#select_datatarget_modal select');
                         target_select.html('');
                         $("#select_datatarget_modal").modal("show");
@@ -3044,7 +2942,6 @@ function handleContextMenu(event) {
                     var linkUid = clickOriginUid;
                     if (linkUid in links) {
                         $("#link_weight_input").val(links[linkUid].weight);
-                        $("#link_certainty_input").val(links[linkUid].certainty);
                         $("#link_weight_input").focus();
                     }
                     break;
@@ -3193,6 +3090,27 @@ function get_datatarget_options(worldadapter, value){
     return html;
 }
 
+function createNodespace(event){
+    event.preventDefault();
+    api.call("add_nodespace", {
+        'nodenet_uid': currentNodenet,
+        'nodespace': null,
+        'name': 'new nodespace'
+    }, success=function(data) {
+        var uid = data;
+        nodespaceProperties[uid] = nodespace_property_defaults
+        nodespaces[uid] = {
+            'name': 'new nodespace',
+            'parent': currentNodeSpace
+        };
+        handleEnterNodespace(uid, function(){
+            dialogs.notification('Nodespace created', 'success');
+            $('#nodespace_name').select().focus();
+        });
+
+    });
+}
+
 // let user create a new node
 function createNodeHandler(x, y, name, type, parameters, callback) {
     params = {};
@@ -3210,25 +3128,18 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
     var method = "";
     var params = {
         nodenet_uid: currentNodenet,
-        position: [x,y,0],
         nodespace: currentNodeSpace,
         name: name}
-    if(type == "Nodespace"){
-        method = "add_nodespace";
-    } else {
-        method = "add_node"
-        params.type = type;
-        params.parameters = parameters;
-    }
+    method = "add_node"
+    params.type = type;
+    params.position = [x,y,0];
+    params.parameters = parameters;
     api.call(method, params,
         success=function(uid){
-            if(type == 'Nodespace'){
-                nodespaceProperties[uid] = nodespace_property_defaults
-            }
             addNode(new Node(uid, x, y, currentNodeSpace, name || '', type, null, null, parameters));
-            view.draw();
             selectNode(uid);
             if(callback) callback(uid);
+            view.draw();
             showNodeForm(uid);
             getNodespaceList();
         }
@@ -3302,35 +3213,32 @@ function handlePasteNodes(pastemode){
 }
 
 // let user delete the current node, or all selected nodes
-function deleteNodeHandler(nodeUid) {
-    function deleteNodespaceOnServer(nodespace_uid){
-        var params = {
-            nodenet_uid: currentNodenet,
-            nodespace: nodespace_uid
-        }
-        api.call("delete_nodespace", params,
-            success=function(data){
-                dialogs.notification('nodespace deleted', 'success');
-                getNodespaceList();
-                refreshNodespace(currentNodeSpace, -1);
-            }
-        );
+function deleteNodespace(event, nodespace_uid){
+    if(!nodespace_uid){
+        nodespace_uid = currentNodeSpace;
     }
+    var params = {
+        nodenet_uid: currentNodenet,
+        nodespace: nodespace_uid
+    }
+    var parent = nodespaces[nodespace_uid].parent;
+    api.call("delete_nodespace", params,
+        success=function(data){
+            dialogs.notification('nodespace deleted', 'success');
+            getNodespaceList();
+            refreshNodespace(parent, -1);
+        }
+    );
+}
+
+function deleteNodeHandler(nodeUid) {
     var deletedNodes = [];
-    var deletedNodespaces = [];
     for (var selected in selection) {
         if(selection[selected].constructor == Node){
-            if(nodes[selected].type == "Nodespace"){
-                deletedNodespaces.push(selected);
-            } else{
-                deletedNodes.push(selected);
-            }
+            deletedNodes.push(selected);
             removeNode(nodes[selected]);
             delete selection[selected];
         }
-    }
-    for(var i=0; i < deletedNodespaces.length; i++){
-        deleteNodespaceOnServer(deletedNodespaces[i]);
     }
     if(deletedNodes.length){
         api.call('delete_nodes', {nodenet_uid: currentNodenet, node_uids: deletedNodes}, function(){
@@ -3375,9 +3283,7 @@ function handleEditLink(event){
     var form = event.target.form;
     var linkUid = clickOriginUid;
     var weight = parseFloat($('input[name="link_weight"]', form).val());
-    var certainty = parseFloat($('input[name="link_certainty"]', form).val());
     links[linkUid].weight = weight;
-    links[linkUid].certainty = certainty;
     redrawLink(links[linkUid], true);
     view.draw();
     api.call("set_link_weight", {
@@ -3387,7 +3293,6 @@ function handleEditLink(event){
         target_node_uid: links[linkUid].targetNodeUid,
         slot_type: links[linkUid].slotName,
         weight: weight,
-        certainty: certainty
     });
 }
 
@@ -3445,7 +3350,7 @@ function createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot){
                     'nodenet_uid': currentNodenet,
                     'node_uid': targetUid
                 }, function(data){
-                    nodes[targetUid] = new Node(data.uid, data.position[0], data.position[1], data.parent_nodespace, data.name, data.type, data.sheaves, data.state, data.parameters, data.gate_activations, data.gate_parameters, data.is_highdimensional, data.inlinks, data.outlinks);
+                    nodes[targetUid] = new Node(data.uid, data.position[0], data.position[1], data.parent_nodespace, data.name, data.type, data.activation, data.state, data.parameters, data.gate_activations, data.gate_configuration, data.is_highdimensional, data.inlinks, data.outlinks);
                     createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot);
                 });
             } else {
@@ -3463,7 +3368,7 @@ function createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot){
                             'nodenet_uid': currentNodenet,
                             'node_uid': targetUid
                         }, function(data){
-                            nodes[targetUid] = new Node(data.uid, data.position[0], data.position[1], data.parent_nodespace, data.name, data.type, data.sheaves, data.state, data.parameters, data.gate_activations, data.gate_parameters, data.is_highdimensional, data.inlinks, data.outlinks);
+                            nodes[targetUid] = new Node(data.uid, data.position[0], data.position[1], data.parent_nodespace, data.name, data.type, data.activation, data.state, data.parameters, data.gate_activations, data.gate_configuration, data.is_highdimensional, data.inlinks, data.outlinks);
                             nodes[targetUid].linksFromOutside.push(uid);
                         });
                     } else if(nodes[targetUid].parent != currentNodeSpace){
@@ -3595,14 +3500,14 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
     cancelLinkCreationHandler();
 }
 
-function createLinkIfNotExists(sourceNode, sourceGate, targetNode, targetSlot, weight, certainty){
+function createLinkIfNotExists(sourceNode, sourceGate, targetNode, targetSlot, weight){
     for(var uid in sourceNode.gates[sourceGate].outgoing){
         var link = sourceNode.gates[sourceGate].outgoing[uid];
         if(link.targetNodeUid == targetNode.uid && link.slotName == targetSlot){
             return false;
         }
     }
-    var newlink = new Link('tmp', sourceNode.uid, sourceGate, targetNode.uid, targetSlot, weight || 1, certainty || 1);
+    var newlink = new Link('tmp', sourceNode.uid, sourceGate, targetNode.uid, targetSlot, weight || 1);
     return newlink;
 }
 
@@ -3617,7 +3522,7 @@ function cancelLinkCreationHandler() {
 }
 
 function moveNodesOnServer(position_data){
-    api.call("set_entity_positions", {
+    api.call("set_node_positions", {
         nodenet_uid: currentNodenet,
         positions: position_data
     });
@@ -3658,13 +3563,13 @@ function handleEditNode(event){
     if(name && nodes[nodeUid].name != name){
         renameNode(nodeUid, name);
     }
-    if(!jQuery.isEmptyObject(parameters) && nodes[nodeUid].type != 'Nodespace'){
+    if(!jQuery.isEmptyObject(parameters)){
         updateNodeParameters(nodeUid, parameters);
     }
-    if(nodes[nodeUid].state != state  && nodes[nodeUid].type != 'Nodespace'){
+    if(nodes[nodeUid].state != state){
         setNodeState(nodeUid, state);
     }
-    if(nodes[nodeUid].sheaves[currentSheaf].activation != activation && nodes[nodeUid].type != 'Nodespace'){
+    if(nodes[nodeUid].activation != activation){
         setNodeActivation(nodeUid, activation);
     }
     redrawNode(nodes[nodeUid], true);
@@ -3688,50 +3593,40 @@ function handleEditGate(event){
         return false;
     }
     var data = form.serializeArray();
-    var params = {};
-    var old_params = gate.parameters;
-    for(var i in data){
-        if(!data[i].value && data[i].name in GATE_DEFAULTS){
-            data[i].value = GATE_DEFAULTS[data[i].name];
-        }
-        params[data[i].name] = parseFloat(data[i].value);
-    }
-    var gatefunc = $('#gate_gatefunction').val();
-    if(gatefunc != gate.gatefunction){
-        api.call('set_gatefunction', {
-            nodenet_uid: currentNodenet,
-            node_uid: node.uid,
-            gate_type: gate.name,
-            gatefunction: gatefunc
-        }, function(data){
-            node.gatefunctions[gate.name] = gatefunc;
-            gate.gatefunction = gatefunc;
-            api.defaultSuccessCallback();
-            redrawNode(node, true);
-            view.draw();
-        }, api.defaultErrorCallback);
-    }
-    api.call('set_gate_parameters', {
+    params = {
         nodenet_uid: currentNodenet,
         node_uid: node.uid,
         gate_type: gate.name,
-        parameters: params
-    }, api.defaultSuccessCallback, function(err){
-        api.defaultErrorCallback(err);
-        gate.parameters = old_params;
-        if(form.css('display') == 'block'){
-            showGateForm(node, gate);
+        gatefunction: 'identity',
+        gatefunction_parameters: {}
+    }
+    for(var i=0; i < data.length; i++){
+        if(data[i].name == 'gate_gatefunction'){
+            params.gatefunction = data[i].value;
+        } else {
+            params.gatefunction_parameters[data[i].name] = data[i].value
         }
-    });
-    gate.parameters = params;
+    }
+    api.call('set_gate_configuration', params, function(data){
+        config = {
+            'gatefunction': params.gatefunction,
+            'gatefunction_parameters': params.gatefunction_parameters
+        }
+        node.gate_configuration[gate.name] = config;
+        gate.gatefunction = params.gatefunction;
+        gate.gatefunction_parameters = params.gatefunction_parameters;
+        api.defaultSuccessCallback();
+        redrawNode(node, true);
+        view.draw();
+    }, api.defaultErrorCallback);
 }
 
 function setNodeActivation(nodeUid, activation){
     activation = activation || 0;
-    nodes[nodeUid].sheaves[currentSheaf].activation = activation;
+    nodes[nodeUid].activation = activation;
     //TODO not sure this is generic enough, should probably just take the 0th
     if(nodes[nodeUid].gates["gen"]) {
-        nodes[nodeUid].gates["gen"].sheaves[currentSheaf].activation = activation;
+        nodes[nodeUid].gates["gen"].activation = activation;
     }
     api.call('set_node_activation', {
         'nodenet_uid': currentNodenet,
@@ -3798,9 +3693,9 @@ function handleSelectDatatargetModal(event){
     $("#select_datatarget_modal").modal("hide");
     nodes[nodeUid].parameters['datatarget'] = value;
     showNodeForm(nodeUid);
-    api.call("bind_datatarget_to_actor", {
+    api.call("bind_datatarget_to_actuator", {
         nodenet_uid: currentNodenet,
-        actor_uid: nodeUid,
+        actuator_uid: nodeUid,
         datatarget: value
     }, function(data){
         showNodeForm(nodeUid, true);
@@ -3808,10 +3703,10 @@ function handleSelectDatatargetModal(event){
 }
 
 // handler for entering a nodespace
-function handleEnterNodespace(nodespaceUid) {
-    if (nodespaceUid in nodes) {
+function handleEnterNodespace(nodespaceUid, callback) {
+    if (nodespaceUid in nodespaces) {
         deselectAll();
-        refreshNodespace(nodespaceUid, -1);
+        refreshNodespace(nodespaceUid, -1, callback);
     }
 }
 
@@ -3979,8 +3874,10 @@ function initializeSidebarForms(){
     $('#edit_link_form .deleteLink').on('click', handleDeleteLink);
     $('#edit_node_form').submit(handleEditNode);
     $('#edit_gate_form').submit(handleEditGate);
+    $('#gate_gatefunction').on('change', updateGatefunctionParams);
     $('#edit_nodenet_form').submit(handleEditNodenet);
     $('#edit_nodespace_form').submit(handleEditNodespace);
+    $('#edit_nodespace_form #delete_nodespace').on('click', deleteNodespace);
     $('#native_add_param').click(function(){
         $('#native_parameters').append('<tr><td><input name="param_name" type="text" class="inplace"/></td><td><input name="param_value" type="text"  class="inplace" /></td></tr>');
     });
@@ -4023,7 +3920,6 @@ function showLinkForm(linkUid){
     $('#nodenet_forms .form-horizontal').hide();
     $('#edit_link_form').show();
     $('#link_weight_input').val(links[linkUid].weight);
-    $('#link_certainty_input').val(links[linkUid].certainty);
     $('.link_source_node').html(
         '<a href="#follownode" class="follownode" data="'+links[linkUid].sourceNodeUid+'">'+(nodes[links[linkUid].sourceNodeUid].name || nodes[links[linkUid].sourceNodeUid].uid.substr(0,8))+'</a> : ' +
         '<a href="#followgate" class="followgate" data-node="'+links[linkUid].sourceNodeUid+'" data-gate="'+links[linkUid].gateName+'">'+links[linkUid].gateName+'</a>'
@@ -4042,7 +3938,7 @@ function showNodeForm(nodeUid, refresh){
             nodenet_uid:currentNodenet,
             node_uid: nodeUid
         }, function(data){
-            item = new Node(nodeUid, data['position'][0], data['position'][1], data.parent_nodespace, data.name, data.type, data.sheaves, data.state, data.parameters, data.gate_activations, data.gate_parameters, data.gate_functions, data.is_highdimensional, data.inlinks, data.outlinks);
+            item = new Node(nodeUid, data['position'][0], data['position'][1], data.parent_nodespace, data.name, data.type, data.activation, data.state, data.parameters, data.gate_activations, data.gate_configuration, data.is_highdimensional, data.inlinks, data.outlinks);
             redrawNode(item);
             nodes[nodeUid].update(item);
             if(clickType == 'gate'){
@@ -4059,17 +3955,14 @@ function showNodeForm(nodeUid, refresh){
     $('#node_name_input', form).val(nodes[nodeUid].name);
     $('#node_uid_input', form).val(nodeUid);
     $('#node_type_input', form).val(nodes[nodeUid].type);
-    if(nodes[nodeUid].type == 'Nodespace'){
-        $('tr.node', form).hide();
-        $('tr.comment', form).hide();
-    } else if(nodes[nodeUid].type == "Comment"){
+    if(nodes[nodeUid].type == "Comment"){
         $('tr.comment', form).show();
         $('tr.node', form).hide();
         $('#node_comment_input').val(nodes[nodeUid].parameters.comment || '');
     } else {
         $('tr.node', form).show();
         $('tr.comment', form).hide();
-        $('#node_activation_input').val(nodes[nodeUid].sheaves[currentSheaf].activation);
+        $('#node_activation_input').val(nodes[nodeUid].activation);
         $('#node_parameters').html(getNodeParameterHTML(nodes[nodeUid].parameters, nodetypes[nodes[nodeUid].type].parameter_values));
         $('#node_datatarget').val(nodes[nodeUid].parameters['datatarget']);
         $('#node_datasource').val(nodes[nodeUid].parameters['datasource']);
@@ -4203,21 +4096,20 @@ function showGateForm(node, gate){
     var form = $('#edit_gate_form');
     $('.gate_nodetype', form).html('<strong>'+ node.type +'</strong>');
     $('.gate_gatetype', form).html('<strong>'+ gate.name +'</strong>');
+    $('#gate_gatefunction').val(gate.gatefunction);
     $.each($('input, select, textarea', form), function(index, el){
         el = $(el);
-        el.val('');
-        if(el.attr('name') in gate.parameters){
-            el.val(gate.parameters[el.attr('name')]);
-        } else if(el.attr('name') == 'activation'){
-            el.val(gate.sheaves[currentSheaf].activation || '0');
-        } else if(nodetypes[node.type].gate_defaults && el.attr('name') in nodetypes[node.type].gate_defaults[gate.name]){
-            el.val(nodetypes[node.type].gate_defaults[gate.name][el.attr('name')]);
+        if(el.attr('name') == 'activation'){
+            el.val(gate.activation || '0');
+        } else if(el.attr('name').substr(0, 23) == "gatefunction_parameter_"){
+            if(gate.gatefunction_parameters){
+                el.val(gate.gatefunction_parameters[el.attr('name').substr(23)]);
+            }
         }
         if(gate.is_highdim){
             el.attr('disabled', 'disabled');
-        } else {
-            if(el.attr('name') != 'activation')
-                el.removeAttr('disabled');
+        } else if(el.attr('name') != 'activation'){
+            el.removeAttr('disabled');
         }
     });
     if(gate.is_highdim){
@@ -4225,20 +4117,49 @@ function showGateForm(node, gate){
     } else {
         $('.highdim', form).hide();
     }
-    $('#gate_gatefunction').val(gate.gatefunction);
+    updateGatefunctionParams(gate);
+
     form.attr('data-node', node.uid);
     form.attr('data-gate', gate.name);
     form.show();
+}
+
+function updateGatefunctionParams(gate){
+    if(!gate && clickType == 'gate'){
+        node = nodes[clickOriginUid];
+        gate = node.gates[node.gateIndexes[clickIndex]];
+    } else if(!gate) {
+        // click on gate in sidebar
+        node = nodes[form.attr('data-node')];
+        gate = node.gates[form.attr('data-gate')];
+    }
+    var selected_gatefunc = $('#gate_gatefunction').val();
+    var container = $('#gatefunction_param_container');
+    var html = '';
+    foo = gate;
+    for(var param in available_gatefunctions[selected_gatefunc]){
+        var val = available_gatefunctions[selected_gatefunc][param];
+        if(selected_gatefunc == gate.gatefunction && param in gate.gatefunction_parameters){
+            val = gate.gatefunction_parameters[param]
+        }
+        html += '<tr>' +
+            '<td><label for="gatefunction_param_'+param+'">'+param.charAt(0).toUpperCase()+param.slice(1)+'</label></td>'+
+            '<td><input type="text" id="gatefunction_param_'+param+'" name="'+param+'" value="'+val+'" /></td>'+
+            '</tr>';
+    }
+    container.html(html)
 }
 
 function updateNodespaceForm(){
     if(Object.keys(nodespaces).length){
         $('#nodespace_uid').val(currentNodeSpace);
         $('#nodespace_name').val(nodespaces[currentNodeSpace].name);
-        if(currentNodeSpace == 'Root'){
+        if(nodespaces[currentNodeSpace].name == 'Root'){
             $('#nodespace_name').attr('disabled', 'disabled');
+            $('#delete_nodespace').hide();
         } else {
             $('#nodespace_name').removeAttr('disabled');
+            $('#delete_nodespace').show();
         }
         $('#nodespace_renderlinks').val(nodespaceProperties[currentNodeSpace].renderlinks);
         $('#nodespace_activation_display').val(nodespaceProperties[currentNodeSpace].activation_display);

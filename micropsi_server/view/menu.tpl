@@ -10,10 +10,10 @@
                 %if defined('permissions'):
                 %if "manage nodenets" in permissions:
                 <li class="dropdown" id="menu_nodenet">
-                    <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_nodenet">Nodenet
+                    <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_nodenet">Agent
                         <b class="caret"></b></a>
                     <ul class="dropdown-menu">
-                        <li><a href="/nodenet/edit" class="nodenet_new">New...</a></li>
+                        <li><a href="/agent/edit" class="nodenet_new">New...</a></li>
                         <li class="divider"></li>
                         <li data="nodenet-needed"><a href="#" class="nodenet_delete">Delete</a></li>
                         <li data="nodenet-needed"><a href="#" class="nodenet_save">Save</a></li>
@@ -24,12 +24,12 @@
                         <li><a href="#" class="reload_native_modules">Reload Native Modules</a></li>
                         <li data="nodenet-needed"><a href="#" class="reload_native_modules reload_revert">Reload &amp; Revert</a></li>
                         <li class="divider"></li>
-                        <li data="nodenet-needed"><a href="/nodenet/export" class="nodenet_export">Export to file...</a></li>
-                        <li><a href="/nodenet/import" class="nodenet_import">Import file...</a></li>
-                        <li data="nodenet-needed"><a href="/nodenet/merge" class="nodenet_merge">Merge file...</a></li>
+                        <li data="nodenet-needed"><a href="/agent/export" class="nodenet_export">Export to file...</a></li>
+                        <li><a href="/agent/import" class="nodenet_import">Import file...</a></li>
+                        <li data="nodenet-needed"><a href="/agent/merge" class="nodenet_merge">Merge file...</a></li>
                         %if "manage nodenets" in permissions:
                         <li class="divider"></li>
-                        <li><a href="/nodenet_mgt">Show nodenet console...</a></li>
+                        <li><a href="/agent_mgt">Show agent console...</a></li>
                         %end
                     </ul>
                 </li>
@@ -39,15 +39,15 @@
                     <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_world">Environment
                         <b class="caret"></b></a>
                     <ul class="dropdown-menu">
-                        <li><a href="/world/edit" class="world_new">New...</a></li>
-                        <li data="world-needed"><a href="/world/edit" class="world_edit">Edit</a></li>
+                        <li><a href="/environment/edit" class="world_new">New...</a></li>
+                        <li data="world-needed"><a href="/environment/edit" class="world_edit">Edit</a></li>
                         <li class="divider"></li>
                         <li data="world-needed"><a href="#" class="world_delete">Delete</a></li>
                         <li data="world-needed"><a href="#" class="world_save">Save</a></li>
                         <li data="world-needed"><a href="#" class="world_revert">Revert</a></li>
                         <li class="divider"></li>
-                        <li data="world-needed"><a href="/world/export" class="world_export">Export to file...</a></li>
-                        <li><a href="/world/import" class="world_import">Import from file...</a></li>
+                        <li data="world-needed"><a href="/environment/export" class="world_export">Export to file...</a></li>
+                        <li><a href="/environment/import" class="world_import">Import from file...</a></li>
                     </ul>
                 </li>
                 %end
@@ -75,9 +75,9 @@
                         <b class="caret"></b></a>
                     <ul class="dropdown-menu">
                         <li><a href="/">Default</a></li>
-                        <li><a href="/nodenet">Nodenet</a></li>
+                        <li><a href="/agent">Agent</a></li>
                         <li><a href="/monitors">Monitors</a></li>
-                        <li><a href="/world">World</a></li>
+                        <li><a href="/environment">Environment</a></li>
                         <li><a href="/dashboard">Dashboard</a></li>
                     </ul>
                 </li>
@@ -114,8 +114,8 @@
                         </span>
                     </span>
                     <span class="btn step_counters  disabled">
-                        World:<span class="world_step">0</span><br/>
-                        Net:<span class="nodenet_step">0</span>
+                        Environment:<span class="world_step">0</span><br/>
+                        Agent:<span class="nodenet_step">0</span>
                     </span>
                   <a href="#" id="revert_all" class="btn"  title="revert all" data-nodenet-control><i class="icon-fast-backward"></i></a>
                   <a href="#" id="nodenet_step_forward" class="btn separated" title="step calculation" data-nodenet-control><i class="icon-step-forward"></i></a>

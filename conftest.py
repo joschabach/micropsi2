@@ -17,7 +17,7 @@ try:
 except OSError:
     pass
 
-from micropsi_core import runtime as micropsi
+from micropsi_core import runtime as micropsi_runtime
 from micropsi_core.runtime import cfg
 original_ini_data_directory = cfg['paths']['data_directory']
 
@@ -48,9 +48,9 @@ def pytest_cmdline_main(config):
     implementation will invoke the configure hooks and runtest_mainloop. """
     if config.getoption('agents'):
         config.args = [original_ini_data_directory]
-        micropsi.initialize(persistency_path=testpath, resource_path=original_ini_data_directory)
+        micropsi_runtime.initialize(persistency_path=testpath, resource_path=original_ini_data_directory)
     else:
-        micropsi.initialize(persistency_path=testpath)
+        micropsi_runtime.initialize(persistency_path=testpath)
         from micropsi_server.micropsi_app import usermanager
 
         usermanager.create_user('Pytest User', 'test', 'Administrator', uid='Pytest User')
@@ -91,21 +91,21 @@ def pytest_runtest_setup(item):
                 os.remove(path)
     os.mkdir(os.path.join(testpath, 'Test'))
     open(os.path.join(testpath, 'Test', '__init__.py'), 'w').close()
-    micropsi.reload_native_modules()
-    micropsi.logger.clear_logs()
-    micropsi.set_runner_properties(1, 1)
+    micropsi_runtime.reload_native_modules()
+    micropsi_runtime.logger.clear_logs()
+    micropsi_runtime.set_runner_properties(1, 1)
     set_logging_levels()
 
 
 def pytest_internalerror(excrepr, excinfo):
     """ called for internal errors. """
-    micropsi.kill_runners()
+    micropsi_runtime.kill_runners()
     shutil.rmtree(testpath)
 
 
 def pytest_keyboard_interrupt(excinfo):
     """ called for keyboard interrupt. """
-    micropsi.kill_runners()
+    micropsi_runtime.kill_runners()
     shutil.rmtree(testpath)
 
 
@@ -113,19 +113,19 @@ def set_logging_levels():
     """ sets the logging levels of the default loggers back to WARNING """
     logging.getLogger('system').setLevel(logging.WARNING)
     logging.getLogger('world').setLevel(logging.WARNING)
-    micropsi.cfg['logging']['level_agent'] = 'WARNING'
+    micropsi_runtime.cfg['logging']['level_agent'] = 'WARNING'
 
 
 @pytest.fixture(scope="session")
 def resourcepath():
     """ Fixture: the resource path """
-    return micropsi.RESOURCE_PATH
+    return micropsi_runtime.RESOURCE_PATH
 
 
 @pytest.fixture(scope="session")
 def runtime():
     """ Fixture: The micropsi runtime """
-    return micropsi
+    return micropsi_runtime
 
 
 @pytest.yield_fixture(scope="function")
@@ -134,10 +134,10 @@ def test_world(request):
     Fixture: A test world of type Island
     """
     global world_uid
-    success, world_uid = micropsi.new_world("World of Pain", "Island", "Pytest User", uid=world_uid)
+    success, world_uid = micropsi_runtime.new_world("World of Pain", "Island", "Pytest User")
     yield world_uid
     try:
-        micropsi.delete_world(world_uid)
+        micropsi_runtime.delete_world(world_uid)
     except:
         pass
 
@@ -147,9 +147,9 @@ def default_world(request):
     """
     Fixture: A test world of type default
     """
-    for uid in micropsi.world_data:
-        if micropsi.world_data[uid].get('world_type', 'DefaultWorld') == 'DefaultWorld':
-            micropsi.load_world(uid)
+    for uid in micropsi_runtime.world_data:
+        if micropsi_runtime.world_data[uid].get('world_type', 'DefaultWorld') == 'DefaultWorld':
+            micropsi_runtime.load_world(uid)
             return uid
 
 
@@ -159,11 +159,11 @@ def default_nodenet(request):
     A nodenet with the default engine
     Use this for tests that are engine-agnostic
     """
-    success, nn_uid = micropsi.new_nodenet("Defaultnet", owner="Pytest User", uid='defaultnet')
-    micropsi.save_nodenet(nn_uid)
+    success, nn_uid = micropsi_runtime.new_nodenet("Defaultnet", owner="Pytest User")
+    micropsi_runtime.save_nodenet(nn_uid)
     yield nn_uid
     try:
-        micropsi.delete_nodenet(nn_uid)
+        micropsi_runtime.delete_nodenet(nn_uid)
     except:
         pass
 
@@ -175,11 +175,11 @@ def test_nodenet(request, test_world, engine):
     Use this for tests that should run in both engines
     """
     global nn_uid
-    success, nn_uid = micropsi.new_nodenet("Testnet", engine=engine, owner="Pytest User", uid='Testnet')
-    micropsi.save_nodenet(nn_uid)
+    success, nn_uid = micropsi_runtime.new_nodenet("Testnet", engine=engine, owner="Pytest User")
+    micropsi_runtime.save_nodenet(nn_uid)
     yield nn_uid
     try:
-        micropsi.delete_nodenet(nn_uid)
+        micropsi_runtime.delete_nodenet(nn_uid)
     except:
         pass
 
@@ -189,6 +189,6 @@ def node(request, test_nodenet):
     """
     Fixture: A Pipe node with a genloop
     """
-    res, uid = micropsi.add_node(test_nodenet, 'Pipe', [10, 10, 10], name='N1')
-    micropsi.add_link(test_nodenet, uid, 'gen', uid, 'gen')
+    res, uid = micropsi_runtime.add_node(test_nodenet, 'Pipe', [10, 10, 10], name='N1')
+    micropsi_runtime.add_link(test_nodenet, uid, 'gen', uid, 'gen')
     return uid

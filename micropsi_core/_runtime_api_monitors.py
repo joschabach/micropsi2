@@ -10,28 +10,27 @@ __date__ = '11.12.12'
 import micropsi_core
 
 
-def add_gate_monitor(nodenet_uid, node_uid, gate, sheaf=None, name=None, color=None):
+def add_gate_monitor(nodenet_uid, node_uid, gate, name=None, color=None):
     """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation
     value in every calculation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
-    return nodenet.add_gate_monitor(node_uid, gate, sheaf=sheaf, name=name, color=color)
+    return nodenet.add_gate_monitor(node_uid, gate, name=name, color=color)
 
 
-def add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=None, name=None, color=None):
+def add_slot_monitor(nodenet_uid, node_uid, slot, name=None, color=None):
     """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
     value in every calculation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
-    return nodenet.add_slot_monitor(node_uid, slot, sheaf=sheaf, name=name, color=color)
+    return nodenet.add_slot_monitor(node_uid, slot, name=name, color=color)
 
 
-def add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, property, name, color=None):
-    """Adds a continuous monitor to a link. You can choose to monitor either weight (default) or certainty
-    The monitor will collect respective value in every calculation step.
+def add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, name, color=None):
+    """Adds a continuous weightmonitor to a link. The monitor will record the linkweight in every calculation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
-    return nodenet.add_link_monitor(source_node_uid, gate_type, target_node_uid, slot_type, property, name, color=color)
+    return nodenet.add_link_monitor(source_node_uid, gate_type, target_node_uid, slot_type, name, color=color)
 
 
 def add_modulator_monitor(nodenet_uid, modulator, name, color=None):

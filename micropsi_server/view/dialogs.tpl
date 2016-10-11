@@ -22,7 +22,7 @@
 <div id="nodenet_user_prompt" class="modal hide">
     <div class="modal-header">
       <button type="button" class="close" data-dismiss="modal">×</button>
-      <h3>Nodenet interrupted</h3>
+      <h3>Agent runner interrupted</h3>
     </div>
     <div class="modal-body">
     </div>
@@ -169,17 +169,17 @@
 <div class="modal hide" id="run_nodenet_dialog">
     <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal">×</button>
-        <h3>Run Nodenet</h3>
+        <h3>Run Agent</h3>
     </div>
     <div class="modal-body">
-        <p>Run the nodenet until one of the following conditions is met:</p>
+        <p>Run the agent until one of the following conditions is met:</p>
         <form class="form-horizontal">
             <fieldset>
                 <div class="control-group">
                     <label class="control-label" for="run_condition_steps">Number of steps</label>
                     <div class="controls">
                         <input type="text" name="run_condition_steps" class="input-xlarge" id="run_condition_steps"/>
-                        <p class="help-block">Run until the nodenet was advanced for X number of steps</p>
+                        <p class="help-block">Run until the agent was advanced for X number of steps</p>
                     </div>
                 </div>
                 <div class="control-group">

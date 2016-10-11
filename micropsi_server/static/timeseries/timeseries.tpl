@@ -14,7 +14,7 @@
                 <p>
                     <label for="timeseries_controls_nodenet">
                     <input id="timeseries_controls_nodenet" type="checkbox">
-                     Also advance the nodenet by <input type="number" id="timeseries_controls_nodenet_amount" class="input-small" value="1"/> steps</label>
+                     Also advance the agent by <input type="number" id="timeseries_controls_nodenet_amount" class="input-small" value="1"/> steps</label>
                     </div>
                 </form>
             </div>

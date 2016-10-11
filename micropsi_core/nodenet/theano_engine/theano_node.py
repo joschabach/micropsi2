@@ -3,7 +3,6 @@
 import os
 import numpy as np
 
-from micropsi_core.runtime import PERSISTENCY_PATH, NODENET_DIRECTORY
 from micropsi_core.nodenet.node import Node, Gate, Slot
 from micropsi_core.nodenet.theano_engine.theano_link import TheanoLink
 from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
@@ -36,7 +35,7 @@ class TheanoNode(Node):
 
         self.is_highdimensional = self._nodetype.is_highdimensional
 
-        self.datafile = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, '%s_node_%s.npz' % (self._nodenet.uid, self.uid))
+        self.datafile = os.path.join(nodenet.get_persistency_path(), '%s_node_%s.npz' % (self._nodenet.uid, self.uid))
 
         if strtype in nodenet.native_modules or strtype == "Comment":
             self.slot_activation_snapshot = {}
@@ -100,10 +99,6 @@ class TheanoNode(Node):
     def activation(self):
         return float(self._partition.a.get_value(borrow=True)[self._partition.allocated_node_offsets[self._id] + GEN])
 
-    @property
-    def activations(self):
-        return {"default": self.activation}
-
     @activation.setter
     def activation(self, activation):
         a_array = self._partition.a.get_value(borrow=True)
@@ -124,71 +119,57 @@ class TheanoNode(Node):
             self.__gatecache[type] = TheanoGate(type, self, self._nodenet, self._partition)
         return self.__gatecache[type]
 
-    def set_gatefunction_name(self, gate_type, gatefunction_name):
-        self._nodenet.set_node_gatefunction_name(self.uid, gate_type, gatefunction_name)
+    # def get_gatefunction_names(self):
+    #     result = {}
+    #     g_function_selector = self._partition.g_function_selector.get_value(borrow=True)
+    #     for numericalgate in range(0, get_gates_per_type(self._numerictype, self._nodenet.native_modules)):
+    #         result[get_string_gate_type(numericalgate, self.nodetype)] = \
+    #             get_string_gatefunction_type(g_function_selector[self._partition.allocated_node_offsets[self._id] + numericalgate])
+    #     return result
 
-    def get_gatefunction_name(self, gate_type):
+    def get_gate_configuration(self, gate_type=None):
         g_function_selector = self._partition.g_function_selector.get_value(borrow=True)
-        return get_string_gatefunction_type(g_function_selector[self._partition.allocated_node_offsets[self._id] + get_numerical_gate_type(gate_type, self.nodetype)])
+        offset = self._partition.allocated_node_offsets[self._id]
+        indexes = []
+        gate_types = self.get_gate_types()
+        if gate_type is None:
+            indexes = [offset + get_numerical_gate_type(gate, self.nodetype) for gate in gate_types]
+        else:
+            indexes = [offset + get_numerical_gate_type(gate_type, self.nodetype)]
 
-    def get_gatefunction_names(self):
-        result = {}
-        g_function_selector = self._partition.g_function_selector.get_value(borrow=True)
-        for numericalgate in range(0, get_gates_per_type(self._numerictype, self._nodenet.native_modules)):
-            result[get_string_gate_type(numericalgate, self.nodetype)] = \
-                get_string_gatefunction_type(g_function_selector[self._partition.allocated_node_offsets[self._id] + numericalgate])
-        return result
+        data = {}
+        for i, elementindex in enumerate(indexes):
+            gfunc = g_function_selector[elementindex]
+            if gfunc != GATE_FUNCTION_IDENTITY:
+                data[gate_types[i]] = {
+                    'gatefunction': get_string_gatefunction_type(gfunc),
+                    'gatefunction_parameters': {}
+                }
+                if gfunc == GATE_FUNCTION_SIGMOID or gfunc == GATE_FUNCTION_ELU or gfunc == GATE_FUNCTION_RELU:
+                    g_bias = self._partition.g_bias.get_value(borrow=True)
+                    data[gate_types[i]]['gatefunction_parameters'] = {'bias': g_bias[elementindex]}
+                elif gfunc == GATE_FUNCTION_THRESHOLD:
+                    g_min = self._partition.g_min.get_value(borrow=True)
+                    g_max = self._partition.g_max.get_value(borrow=True)
+                    g_amplification = self._partition.g_amplification.get_value(borrow=True)
+                    g_threshold = self._partition.g_threshold.get_value(borrow=True)
+                    data[gate_types[i]]['gatefunction_parameters'] = {
+                        'minimum': g_min[elementindex],
+                        'maximum': g_max[elementindex],
+                        'amplification': g_amplification[elementindex],
+                        'threshold': g_threshold[elementindex]
+                    }
 
-    def set_gate_parameter(self, gate_type, parameter, value):
-        self._nodenet.set_node_gate_parameter(self.uid, gate_type, parameter, value)
+        if gate_type is None:
+            return data
+        else:
+            return data[gate_type]
 
-    def get_gate_parameters(self):
-        return self.clone_non_default_gate_parameters()
-
-    def clone_non_default_gate_parameters(self, gate_type=None):
-        g_threshold_array = self._partition.g_threshold.get_value(borrow=True)
-        g_amplification_array = self._partition.g_amplification.get_value(borrow=True)
-        g_min_array = self._partition.g_min.get_value(borrow=True)
-        g_max_array = self._partition.g_max.get_value(borrow=True)
-        g_theta = self._partition.g_theta.get_value(borrow=True)
-
-        gatemap = {}
-        gate_types = self.nodetype.gate_defaults.keys()
-
-        if gate_type is not None:
-            if gate_type in gate_types:
-                gate_types = [gate_type]
-            else:
-                return None
-
-        for gate_type in gate_types:
-            numericalgate = get_numerical_gate_type(gate_type, self.nodetype)
-            gate_parameters = {}
-
-            threshold = g_threshold_array[self._partition.allocated_node_offsets[self._id] + numericalgate].item()
-            if 'threshold' not in self.nodetype.gate_defaults[gate_type] or threshold != self.nodetype.gate_defaults[gate_type]['threshold']:
-                gate_parameters['threshold'] = threshold
-
-            amplification = g_amplification_array[self._partition.allocated_node_offsets[self._id] + numericalgate].item()
-            if 'amplification' not in self.nodetype.gate_defaults[gate_type] or amplification != self.nodetype.gate_defaults[gate_type]['amplification']:
-                gate_parameters['amplification'] = amplification
-
-            minimum = g_min_array[self._partition.allocated_node_offsets[self._id] + numericalgate].item()
-            if 'minimum' not in self.nodetype.gate_defaults[gate_type] or minimum != self.nodetype.gate_defaults[gate_type]['minimum']:
-                gate_parameters['minimum'] = minimum
-
-            maximum = g_max_array[self._partition.allocated_node_offsets[self._id] + numericalgate].item()
-            if 'maximum' not in self.nodetype.gate_defaults[gate_type] or maximum != self.nodetype.gate_defaults[gate_type]['maximum']:
-                gate_parameters['maximum'] = maximum
-
-            theta = g_theta[self._partition.allocated_node_offsets[self._id] + numericalgate].item()
-            if 'theta' not in self.nodetype.gate_defaults[gate_type] or theta != self.nodetype.gate_defaults[gate_type]['theta']:
-                gate_parameters['theta'] = theta
-
-            if not len(gate_parameters) == 0:
-                gatemap[gate_type] = gate_parameters
-
-        return gatemap
+    def set_gate_configuration(self, gate_type, gatefunction, gatefunction_parameters={}):
+        elementindex = self._partition.allocated_node_offsets[self._id] + get_numerical_gate_type(gate_type, self.nodetype)
+        self._partition._set_gate_config_for_elements([elementindex], gatefunction)
+        for param, value in gatefunction_parameters.items():
+            self._partition._set_gate_config_for_elements([elementindex], gatefunction, param, [value])
 
     def take_slot_activation_snapshot(self):
         a_array = self._partition.a.get_value(borrow=True)
@@ -311,7 +292,7 @@ class TheanoNode(Node):
                 if self.name is None or self.name == "" or self.name == self.uid:
                     self.name = value
 
-        elif self.type == "Actor" and parameter == "datatarget":
+        elif self.type == "Actuator" and parameter == "datatarget":
             if value is not None and value != "":
                 datatargets = self._nodenet.get_datatargets()
                 actuator_element = self._partition.allocated_node_offsets[self._id] + GEN
@@ -371,7 +352,7 @@ class TheanoNode(Node):
                 parameters['datasource'] = None
             else:
                 parameters['datasource'] = self._nodenet.get_datasources()[datasource_index[0]]
-        elif self.type == "Actor":
+        elif self.type == "Actuator":
             actuator_element = self._partition.allocated_node_offsets[self._id] + GEN
             datatarget_index = np.where(self._partition.actuator_indices == actuator_element)[0]
             if len(datatarget_index) == 0:
@@ -433,12 +414,9 @@ class TheanoNode(Node):
         else:
             return None
 
-    def clone_sheaves(self):
-        return {"default": dict(uid="default", name="default", activation=self.activation)}  # todo: implement sheaves
-
     def node_function(self):
         try:
-            self.nodetype.nodefunction(netapi=self._nodenet.netapi, node=self, sheaf="default", **self.clone_parameters())
+            self.nodetype.nodefunction(netapi=self._nodenet.netapi, node=self, **self.clone_parameters())
         except Exception:
             self._nodenet.is_active = False
             if self.nodetype is not None and self.nodetype.nodefunction is None:
@@ -518,10 +496,6 @@ class TheanoGate(Gate):
         a_array[self.__partition.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype] = value
         self.__partition.a.set_value(a_array, borrow=True)
 
-    @property
-    def activations(self):
-        return {'default': self.activation}  # todo: implement sheaves
-
     def __init__(self, type, node, nodenet, partition):
         self.__type = type
         self.__node = node
@@ -576,21 +550,10 @@ class TheanoGate(Gate):
     def invalidate_caches(self):
         self.__linkcache = None
 
-    def get_parameter(self, parameter_name):
-        gate_parameters = self.__node.nodetype.gate_defaults[self.type]
-        gate_parameters.update(self.__node.clone_non_default_gate_parameters(self.type))
-        return gate_parameters[parameter_name]
-
-    def clone_sheaves(self):
-        return {"default": dict(uid="default", name="default", activation=self.activation)}  # todo: implement sheaves
-
-    def gate_function(self, input_activation, sheaf="default"):
+    def gate_function(self, input_activation):
         # in the theano implementation, this will only be called for native module gates, and simply write
         # the value back to the activation vector for the theano math to take over
         self.activation = input_activation
-
-    def open_sheaf(self, input_activation, sheaf="default"):
-        pass            # todo: implement sheaves
 
 
 class TheanoSlot(Slot):
@@ -619,12 +582,6 @@ class TheanoSlot(Slot):
     def activation(self):
         return self.__node.get_slot_activations(self.__type)
 
-    @property
-    def activations(self):
-        return {
-            "default": self.activation
-        }
-
     def __init__(self, type, node, nodenet, partition):
         self.__type = type
         self.__node = node
@@ -633,7 +590,7 @@ class TheanoSlot(Slot):
         self.__numerictype = get_numerical_slot_type(type, node.nodetype)
         self.__linkcache = None
 
-    def get_activation(self, sheaf="default"):
+    def get_activation(self):
         return self.activation
 
     def get_links(self):

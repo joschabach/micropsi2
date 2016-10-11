@@ -1,6 +1,6 @@
 <div class="dialogform modal">
 
-    <form class="form-horizontal" action="/nodenet/edit" method="POST">
+    <form class="form-horizontal" action="/agent/edit" method="POST">
 
     <div class="modal-header">
       <button type="button" class="close" data-dismiss="modal">×</button>
@@ -51,7 +51,7 @@
                     <label class="control-label" for="nn_modulators">Emotional Modulators</label>
                     <div class="controls">
                         <input class="input-xlarge" id="nn_modulators" name="nn_modulators" type="checkbox" />
-                        <!-- <span class="help-inline">Deselect if this nodenet does not use the emotional model of the PSI Theory</span> -->
+                        <!-- <span class="help-inline">Deselect if this agent does not use the emotional model of the PSI Theory</span> -->
                     </div>
                 </div>
 
@@ -81,7 +81,7 @@
                 </div>
 
                 <div class="control-group">
-                    <label class="control-label" for="nn_world">World</label>
+                    <label class="control-label" for="nn_world">Environment</label>
                     <div class="controls">
                         <select class="input-xlarge" id="nn_world" name="nn_world" onchange="updateWorldAdapterSelector();">
                             <option value="">None</option>
@@ -108,7 +108,7 @@
                 </div>
 
                 <div class="control-group">
-                    <label class="control-label" for="nn_worldadapter">World adapter</label>
+                    <label class="control-label" for="nn_worldadapter">Worldadapter</label>
                     <div class="controls">
                         <select class="input-xlarge" id="nn_worldadapter" name="nn_worldadapter">
                             % if not defined("nodenet") or not defined ("nodenet.world") or not nodenet.world in worlds:

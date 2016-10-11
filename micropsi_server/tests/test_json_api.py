@@ -133,8 +133,8 @@ def test_set_node_activation(app, test_nodenet, node):
     })
     assert_success(response)
     response = app.get_json('/rpc/get_nodes(nodenet_uid="%s")' % test_nodenet)
-    sheaves = response.json_body['data']['nodes'][node]['sheaves']
-    assert float("%.3f" % sheaves['default']['activation']) == 0.734
+    activation = response.json_body['data']['nodes'][node]['activation']
+    assert float("%.3f" % activation) == 0.734
 
 
 def test_start_calculation(app, default_nodenet):
@@ -614,8 +614,7 @@ def test_add_gate_monitor(app, test_nodenet, node):
     response = app.post_json('/rpc/add_gate_monitor', params={
         'nodenet_uid': test_nodenet,
         'node_uid': node,
-        'gate': 'sub',
-        'sheaf': 'default'
+        'gate': 'sub'
     })
     assert_success(response)
     uid = response.json_body['data']
@@ -625,7 +624,6 @@ def test_add_gate_monitor(app, test_nodenet, node):
     assert response.json_body['data']['monitors'][uid]['node_uid'] == node
     assert response.json_body['data']['monitors'][uid]['target'] == 'sub'
     assert response.json_body['data']['monitors'][uid]['type'] == 'gate'
-    assert response.json_body['data']['monitors'][uid]['sheaf'] == 'default'
     assert response.json_body['data']['monitors'][uid]['values'] == {}
 
 
@@ -646,7 +644,6 @@ def test_add_slot_monitor(app, test_nodenet, node):
     assert response.json_body['data']['monitors'][uid]['node_uid'] == node
     assert response.json_body['data']['monitors'][uid]['target'] == 'gen'
     assert response.json_body['data']['monitors'][uid]['type'] == 'slot'
-    assert response.json_body['data']['monitors'][uid]['sheaf'] == 'default'
     assert response.json_body['data']['monitors'][uid]['values'] == {}
 
 
@@ -657,7 +654,6 @@ def test_add_link_monitor(app, test_nodenet, node):
         'gate_type': 'gen',
         'target_node_uid': node,
         'slot_type': 'gen',
-        'property': 'weight',
         'name': 'LinkWeight'
     })
     assert_success(response)
@@ -670,7 +666,6 @@ def test_add_link_monitor(app, test_nodenet, node):
     assert response.json_body['data']['monitors'][uid]['gate_type'] == 'gen'
     assert response.json_body['data']['monitors'][uid]['target_node_uid'] == node
     assert response.json_body['data']['monitors'][uid]['slot_type'] == 'gen'
-    assert response.json_body['data']['monitors'][uid]['property'] == 'weight'
 
 
 def test_add_custom_monitor(app, test_nodenet):
@@ -693,7 +688,7 @@ def test_add_group_monitor_by_name(app, test_nodenet):
     for i in range(3):
         response = app.post_json('/rpc/add_node', params={
             'nodenet_uid': test_nodenet,
-            'type': 'Register',
+            'type': 'Neuron',
             'position': [23, 23, 12],
             'nodespace': None,
             'name': 'Testnode %d' % i
@@ -720,7 +715,7 @@ def test_add_group_monitor_by_ids(app, test_nodenet):
     for i in range(3):
         response = app.post_json('/rpc/add_node', params={
             'nodenet_uid': test_nodenet,
-            'type': 'Register',
+            'type': 'Neuron',
             'position': [23, 23, 12],
             'nodespace': None,
             'name': 'Testnode %d' % i
@@ -838,7 +833,6 @@ def test_add_nodespace(app, test_nodenet):
     app.set_auth()
     response = app.post_json('/rpc/add_nodespace', params={
         'nodenet_uid': test_nodenet,
-        'position': [23, 42, 13],
         'nodespace': None,
         'name': 'nodespace'
     })
@@ -865,9 +859,9 @@ def test_clone_nodes(app, test_nodenet, node):
     assert node['links']['gen'][0]['target_node_uid'] == node['uid']
 
 
-def test_set_entity_positions(app, test_nodenet, node):
+def test_set_node_positions(app, test_nodenet, node):
     app.set_auth()
-    response = app.post_json('/rpc/set_entity_positions', params={
+    response = app.post_json('/rpc/set_node_positions', params={
         'nodenet_uid': test_nodenet,
         'positions': {node: [42, 23, 11]}
     })
@@ -903,7 +897,6 @@ def test_delete_nodespace(app, test_nodenet, node):
     app.set_auth()
     response = app.post_json('/rpc/add_nodespace', params={
         'nodenet_uid': test_nodenet,
-        'position': [23, 42, 13],
         'nodespace': None,
         'name': 'nodespace'
     })
@@ -922,7 +915,7 @@ def test_align_nodes(app, test_nodenet):
     # TODO: Why does autoalign only move a node if it has no links?
     response = app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
-        'type': 'Register',
+        'type': 'Neuron',
         'position': [5, 5, 0],
         'nodespace': None,
         'name': 'N2'
@@ -941,7 +934,7 @@ def test_get_available_node_types(app, test_nodenet):
     response = app.get_json('/rpc/get_available_node_types(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
     assert 'Pipe' in response.json_body['data']['nodetypes']
-    assert 'Register' in response.json_body['data']['nodetypes']
+    assert 'Neuron' in response.json_body['data']['nodetypes']
     assert 'Sensor' in response.json_body['data']['nodetypes']
 
 
@@ -974,52 +967,59 @@ def test_set_node_parameters(app, test_nodenet):
     assert response.json_body['data']['parameters']['type'] == 'sub'
 
 
-def test_get_gatefunction(app, test_nodenet, node):
-    response = app.post_json('/rpc/get_gatefunction', params={
-        'nodenet_uid': test_nodenet,
-        'node_uid': node,
-        'gate_type': 'gen'
-    })
-    assert_success(response)
-    assert response.json_body['data'] == 'identity'
-
-
-def test_set_gatefunction(app, test_nodenet, node):
+def test_set_gate_configuration(app, test_nodenet, node):
     app.set_auth()
-    response = app.post_json('/rpc/set_gatefunction', params={
+    response = app.post_json('/rpc/set_gate_configuration', params={
         'nodenet_uid': test_nodenet,
         'node_uid': node,
         'gate_type': 'gen',
-        'gatefunction': 'sigmoid'
+        'gatefunction': 'sigmoid',
+        'gatefunction_parameters': {
+            'bias': '1'
+        }
     })
     assert_success(response)
-    response = app.post_json('/rpc/get_gatefunction', params={
+    response = app.post_json('/rpc/get_node', params={
+        'nodenet_uid': test_nodenet,
+        'node_uid': node,
+    })
+    data = response.json_body['data']
+    assert data['gate_configuration']['gen']['gatefunction'] == 'sigmoid'
+    assert data['gate_configuration']['gen']['gatefunction_parameters'] == {'bias': 1}
+    # setting a non-value leads to using the default
+    response = app.post_json('/rpc/set_gate_configuration', params={
         'nodenet_uid': test_nodenet,
         'node_uid': node,
         'gate_type': 'gen',
+        'gatefunction': 'sigmoid',
+        'gatefunction_parameters': {
+            'bias': ''
+        }
     })
-    assert response.json_body['data'] == 'sigmoid'
+    response = app.post_json('/rpc/get_node', params={
+        'nodenet_uid': test_nodenet,
+        'node_uid': node,
+    })
+    data = response.json_body['data']
+    assert data['gate_configuration']['gen']['gatefunction'] == 'sigmoid'
+    assert data['gate_configuration']['gen']['gatefunction_parameters'] == {'bias': 0}
 
 
 def test_get_available_gatefunctions(app, test_nodenet):
     response = app.post_json('/rpc/get_available_gatefunctions', params={'nodenet_uid': test_nodenet})
     funcs = response.json_body['data']
-    assert 'sigmoid' in funcs
-    assert 'identity' in funcs
-    assert 'absolute' in funcs
-
-
-def test_set_gate_parameters(app, test_nodenet, node):
-    app.set_auth()
-    response = app.post_json('/rpc/set_gate_parameters', params={
-        'nodenet_uid': test_nodenet,
-        'node_uid': node,
-        'gate_type': 'gen',
-        'parameters': {'minimum': -2}
-    })
-    assert_success(response)
-    response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="%s")' % (test_nodenet, node))
-    assert response.json_body['data']['gate_parameters']['gen']['minimum'] == -2
+    assert funcs['identity'] == {}
+    assert funcs['absolute'] == {}
+    assert funcs['one_over_x'] == {}
+    assert funcs['sigmoid'] == {'bias': 0}
+    assert funcs['elu'] == {'bias': 0}
+    assert funcs['relu'] == {'bias': 0}
+    assert funcs['threshold'] == {
+        'minimum': 0,
+        'maximum': 1,
+        'amplification': 1,
+        'threshold': 0
+    }
 
 
 def test_get_available_datasources(app, test_nodenet, test_world):
@@ -1061,19 +1061,19 @@ def test_bind_datasource_to_sensor(app, test_nodenet, test_world):
     assert response.json_body['data']['parameters']['datasource'] == 'brightness_l'
 
 
-def test_bind_datatarget_to_actor(app, test_nodenet, test_world):
+def test_bind_datatarget_to_actuator(app, test_nodenet, test_world):
     app.set_auth()
     response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, world_uid=test_world, worldadapter="Braitenberg"))
     response = app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
-        'type': 'Actor',
+        'type': 'Actuator',
         'position': [23, 42, 13],
         'nodespace': None,
     })
     uid = response.json_body['data']
-    response = app.post_json('/rpc/bind_datatarget_to_actor', params={
+    response = app.post_json('/rpc/bind_datatarget_to_actuator', params={
         'nodenet_uid': test_nodenet,
-        'actor_uid': uid,
+        'actuator_uid': uid,
         'datatarget': 'engine_l'
     })
     assert_success(response)
@@ -1351,7 +1351,6 @@ def test_nodenet_data_structure(app, test_nodenet, resourcepath, node):
     response = app.get_json('/rpc/reload_native_modules()')
     response = app.post_json('/rpc/add_nodespace', params={
         'nodenet_uid': test_nodenet,
-        'position': [23, 23, 42],
         'nodespace': None,
         'name': 'Test-Node-Space'
     })
@@ -1409,9 +1408,7 @@ def test_nodenet_data_structure(app, test_nodenet, resourcepath, node):
 
     # gates
     for key in ['gen', 'por', 'ret', 'sub', 'sur', 'cat', 'exp']:
-        assert data['nodenet']['nodes'][node]['gate_activations'][key]['default']['activation'] == 0
-        assert key not in data['nodenet']['nodes'][node]['gate_parameters']
-        assert data['nodenet']['nodes'][node]['gate_functions'][key] == 'identity'
+        assert data['nodenet']['nodes'][node]['gate_activations'][key] == 0
 
     assert data['nodenet']['nodes'][node]['parameters']['expectation'] == 1
     assert data['nodenet']['nodes'][node]['parameters']['wait'] == 10
@@ -1434,17 +1431,15 @@ def test_nodenet_data_structure(app, test_nodenet, resourcepath, node):
     # assert data['nodenet']['nodespaces'][nodespace_uid]['index'] == 3
     assert data['nodenet']['nodespaces'][nodespace_uid]['name'] == 'Test-Node-Space'
     # assert data['nodenet']['nodespaces'][nodespace_uid]['parent_nodespace'] == 'Root'
-    assert data['nodenet']['nodespaces'][nodespace_uid]['position'] == [23, 23, 42]
 
     # Nodetypes
     response = app.get_json('/rpc/get_available_node_types(nodenet_uid="%s")' % test_nodenet)
     node_type_data = response.json_body['data']
 
-    for key in ['Comment', 'Nodespace']:
-        assert 'gatetypes' not in metadata['nodetypes'][key]
-        assert 'slottypes' not in metadata['nodetypes'][key]
+    assert 'gatetypes' not in metadata['nodetypes']['Comment']
+    assert 'slottypes' not in metadata['nodetypes']['Comment']
 
-    for key in ['Pipe', 'Register', 'Actor']:
+    for key in ['Pipe', 'Neuron', 'Actuator']:
         assert 'gatetypes' in metadata['nodetypes'][key]
         assert 'slottypes' in metadata['nodetypes'][key]
 
@@ -1471,7 +1466,7 @@ def test_nodenet_data_structure(app, test_nodenet, resourcepath, node):
     # Nodenet
     assert metadata['current_step'] == 0  # TODO:
     assert 'step' not in data  # current_step && step?
-    assert metadata['version'] == 1
+    assert metadata['version'] == 2
     assert metadata['world'] is None
     assert metadata['worldadapter'] is None
 
@@ -1491,7 +1486,7 @@ def test_get_state_diff(app, test_nodenet, node):
     assert 'activations' in data
     assert 'changes' in data
     assert node in data['changes']['nodes_dirty']
-    node2 = nodenet.create_node("Register", None, [10, 10], name="node2")
+    node2 = nodenet.create_node("Neuron", None, [10, 10], name="node2")
     runtime.step_nodenet(test_nodenet)
     response = app.post_json('/rpc/get_calculation_state', params={
         'nodenet_uid': test_nodenet,
@@ -1517,7 +1512,7 @@ def test_get_nodenet_diff(app, test_nodenet, node):
     assert 'activations' in data
     assert 'changes' in data
     assert node in data['changes']['nodes_dirty']
-    node2 = nodenet.create_node("Register", None, [10, 10], name="node2")
+    node2 = nodenet.create_node("Neuron", None, [10, 10], name="node2")
     runtime.step_nodenet(test_nodenet)
     response = app.post_json('/rpc/get_nodenet_changes', params={
         'nodenet_uid': test_nodenet,
@@ -1559,7 +1554,7 @@ def test_add_gate_activation_recorder(app, test_nodenet, resourcepath):
     netapi = nodenet.netapi
     nodespace = netapi.get_nodespace(None)
     for i in range(3):
-        netapi.create_node('Register', None, "testnode_%d" % i)
+        netapi.create_node('Neuron', None, "testnode_%d" % i)
     response = app.post_json('/rpc/add_gate_activation_recorder', {
         'nodenet_uid': test_nodenet,
         'group_definition': {'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'},
@@ -1607,8 +1602,8 @@ def test_add_linkweight_recorder(app, test_nodenet, resourcepath):
     layer1 = []
     layer2 = []
     for i in range(3):
-        layer1.append(netapi.create_node('Register', None, "l1_%d" % i))
-        layer2.append(netapi.create_node('Register', None, "l2_%d" % i))
+        layer1.append(netapi.create_node('Neuron', None, "l1_%d" % i))
+        layer2.append(netapi.create_node('Neuron', None, "l2_%d" % i))
     for i in range(3):
         for j in range(3):
             netapi.link(layer1[i], 'gen', layer2[j], 'gen', weight=0.89)
@@ -1636,7 +1631,7 @@ def test_clear_recorder(app, test_nodenet, resourcepath):
     netapi = nodenet.netapi
     nodespace = netapi.get_nodespace(None)
     for i in range(3):
-        netapi.create_node('Register', None, "testnode_%d" % i)
+        netapi.create_node('Neuron', None, "testnode_%d" % i)
     recorder = netapi.add_gate_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder")
     for i in range(3):
         runtime.step_nodenet(test_nodenet)
@@ -1657,7 +1652,7 @@ def test_remove_recorder(app, test_nodenet, resourcepath):
     netapi = nodenet.netapi
     nodespace = netapi.get_nodespace(None)
     for i in range(3):
-        netapi.create_node('Register', None, "testnode_%d" % i)
+        netapi.create_node('Neuron', None, "testnode_%d" % i)
     recorder = netapi.add_gate_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder")
     for i in range(3):
         runtime.step_nodenet(test_nodenet)
@@ -1677,7 +1672,7 @@ def test_get_recorders(app, test_nodenet):
     netapi = nodenet.netapi
     nodespace = netapi.get_nodespace(None)
     for i in range(3):
-        netapi.create_node('Register', None, "testnode_%d" % i)
+        netapi.create_node('Neuron', None, "testnode_%d" % i)
     runtime.step_nodenet(test_nodenet)
     recorder = netapi.add_gate_activation_recorder(group_definition={'nodespace_uid': nodespace.uid, 'node_name_prefix': 'testnode'}, name="recorder", interval=3)
     runtime.step_nodenet(test_nodenet)

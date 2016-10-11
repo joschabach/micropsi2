@@ -40,7 +40,7 @@ class MinecraftVision(MinecraftGraphLocomotion, MinecraftProjectionMixin):
         super().__init__(world, uid, **data)
 
         # don't use fov_act_00_00 because it complicates debug plots
-        self.fovea_actor = "fov_act__01_03"
+        self.fovea_actuator = "fov_act__01_03"
 
         # add datasources for fovea sensors aka fov__*_*
         for i in range(self.len_x):
@@ -54,7 +54,7 @@ class MinecraftVision(MinecraftGraphLocomotion, MinecraftProjectionMixin):
                 name = "fov_pos__%02d_%02d" % (y, x)
                 self.datasources[name] = 0.
 
-        # add fovea actors to datatargets, datatarget_feedback, datatarget_history, and actions
+        # add fovea actuators to datatargets, datatarget_feedback, datatarget_history, and actions
         for x in range(self.tiling_x):
             for y in range(self.tiling_y):
                 name = "fov_act__%02d_%02d" % (y, x)
@@ -95,28 +95,28 @@ class MinecraftVision(MinecraftGraphLocomotion, MinecraftProjectionMixin):
 
             if not self.waiting_for_spock:
                 # handle fovea actuators and sensors: action feedback, relay to sensors, default actuator
-                active_fovea_actor = None
+                active_fovea_actuator = None
                 for x in range(self.tiling_x):
                     for y in range(self.tiling_y):
-                        actor_name = "fov_act__%02d_%02d" % (y, x)
+                        actuator_name = "fov_act__%02d_%02d" % (y, x)
                         sensor_name = "fov_pos__%02d_%02d" % (y, x)
                         # relay activation of fovea actuators to fovea sensor nodes
-                        self.datasources[sensor_name] = self.datatargets[actor_name]
-                        # provide action feedback for fovea actor nodes
-                        if self.datatargets[actor_name] > 0.:
-                            self.datatarget_feedback[actor_name] = 1.
-                            active_fovea_actor = actor_name
+                        self.datasources[sensor_name] = self.datatargets[actuator_name]
+                        # provide action feedback for fovea actuator nodes
+                        if self.datatargets[actuator_name] > 0.:
+                            self.datatarget_feedback[actuator_name] = 1.
+                            active_fovea_actuator = actuator_name
 
-                # if there's no active_fovea_actor use the last fovea position as default
-                if active_fovea_actor is None:
-                    active_fovea_actor = self.fovea_actor
-                    self.datasources[active_fovea_actor.replace("act", "pos")] = 1.
-                    self.datatarget_feedback[active_fovea_actor] = 1.
+                # if there's no active_fovea_actuator use the last fovea position as default
+                if active_fovea_actuator is None:
+                    active_fovea_actuator = self.fovea_actuator
+                    self.datasources[active_fovea_actuator.replace("act", "pos")] = 1.
+                    self.datatarget_feedback[active_fovea_actuator] = 1.
 
                 # determine if fovea position changed
-                fovea_position_changed = self.fovea_actor != active_fovea_actor
-                # store the currently active fovea actor node name for the next round
-                self.fovea_actor = active_fovea_actor
+                fovea_position_changed = self.fovea_actuator != active_fovea_actuator
+                # store the currently active fovea actuator node name for the next round
+                self.fovea_actuator = active_fovea_actuator
 
                 # change pitch and yaw every x world steps to increase sensory variation
                 # < ensures some stability to enable learning in the autoencoder
@@ -136,8 +136,8 @@ class MinecraftVision(MinecraftGraphLocomotion, MinecraftProjectionMixin):
 
                 # sample all the time
                 loco_label = self.current_loco_node['name']  # because python uses call-by-object
-                # get indices of section currently viewed, i.e. the respective active fovea actor
-                y_sec, x_sec = [int(val) for val in self.fovea_actor.split('_')[-2:]]
+                # get indices of section currently viewed, i.e. the respective active fovea actuator
+                y_sec, x_sec = [int(val) for val in self.fovea_actuator.split('_')[-2:]]
                 # translate x_sec, y_sec, and z_oom to fov_x, fov_y, res_x, res_y
                 fov_x, fov_y, res_x, res_y = self.translate_xyz_to_vision_params(x_sec, y_sec, 1)  # z_oom = 1
                 self.get_visual_input(fov_x, fov_y, res_x, res_y, self.len_x, self.len_y, loco_label)
@@ -157,7 +157,7 @@ class MinecraftVision(MinecraftGraphLocomotion, MinecraftProjectionMixin):
         """
         Visual input can be retrieved given a fovea position in terms of (fov_x, fov_y),
         a resolution for each dimension (res_x, res_y), and a excerpt or patch of the
-        complete visual field (len_x, len_y). This world adapter offers three actors:
+        complete visual field (len_x, len_y). This world adapter offers three actuators:
         x_sec, y_sec, and z_oom. These need to be translated to the parameters which
         determine where to compute the visual input. This translation happens here.
         """
@@ -324,20 +324,20 @@ class MinecraftVision(MinecraftGraphLocomotion, MinecraftProjectionMixin):
         """ Collect the visual data for the current fovea position
         Resets the data if fovea-position is at 0/0
         """
-        # if it's the top-left fovea actor, reset the visual field by emptying the buffer
+        # if it's the top-left fovea actuator, reset the visual field by emptying the buffer
         # ( background: this method only works with scanning for now; scanning starts at
-        #   fov_act__00_00; so if that's the current fovea actor, it's time for a new plot )
-        if self.fovea_actor == 'fov_act__00_00':
+        #   fov_act__00_00; so if that's the current fovea actuator, it's time for a new plot )
+        if self.fovea_actuator == 'fov_act__00_00':
             self.visual_field = {}
 
         # if values for this position in the grid exist already, return
-        if self.fovea_actor in self.visual_field:
+        if self.fovea_actuator in self.visual_field:
             return
 
         keys = sorted(list(self.datasources.keys()))
         activations = [self.datasources[key] for key in keys if key.startswith('fov__')]
 
-        self.visual_field[self.fovea_actor] = activations
+        self.visual_field[self.fovea_actuator] = activations
 
     def plot_visual_field(self):
         """

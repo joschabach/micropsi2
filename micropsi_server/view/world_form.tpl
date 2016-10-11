@@ -1,7 +1,7 @@
 
 <div class="dialogform modal">
 
-    <form class="form-horizontal" action="/world/edit" method="POST">
+    <form class="form-horizontal" action="/environment/edit" method="POST">
 
     <div class="modal-header">
       <button type="button" class="close" data-dismiss="modal">×</button>
@@ -18,7 +18,7 @@
 
             %if world is not None and world.uid:
             <div class="alert alert-info">
-            Please note: Saving this form will immediately write the new values. This world will be saved and re-initialized.
+            Please note: Saving this form will immediately write the new values. This environment will be saved and re-initialized.
             </div>
             %end
 

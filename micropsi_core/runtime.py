@@ -165,14 +165,14 @@ class MicropsiRunner(threading.Thread):
                             nodenet.update_monitors_and_recorders()
                         except:
                             nodenet.is_active = False
-                            logging.getLogger("agent.%s" % uid).error("Exception in NodenetRunner:", exc_info=1)
+                            logging.getLogger("agent.%s" % uid).error("Exception in Agent:", exc_info=1)
                             MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
                         if nodenet.world and nodenet.current_step % runner['factor'] == 0:
                             try:
                                 worlds[nodenet.world].step()
                             except:
                                 nodenet.is_active = False
-                                logging.getLogger("world").error("Exception in WorldRunner:", exc_info=1)
+                                logging.getLogger("world").error("Exception in Environment:", exc_info=1)
                                 MicropsiRunner.last_world_exception[nodenets[uid].world] = sys.exc_info()
                         if self.profiler:
                             self.profiler.disable()
@@ -324,7 +324,7 @@ def load_nodenet(nodenet_uid):
                         world_uid = data.world
                         worldadapter = data.get('worldadapter')
                     else:
-                        logging.getLogger("system").warning("World %s for nodenet %s not found" % (data.world, data.uid))
+                        logging.getLogger("system").warning("Environment %s for agent %s not found" % (data.world, data.uid))
 
                 if world_uid:
                     result, worldadapter_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet_uid, nodenet_name=data['name'], config=data.get('worldadapter_config', {}))
@@ -348,6 +348,8 @@ def load_nodenet(nodenet_uid):
                     'native_modules': native_modules,
                     'use_modulators': data.get('use_modulators', True)  # getter for compatibility
                 }
+                if hasattr(data, 'version'):
+                    params['version'] = data.version
                 if engine == 'dict_engine':
                     from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
                     nodenets[nodenet_uid] = DictNodenet(**params)
@@ -356,9 +358,9 @@ def load_nodenet(nodenet_uid):
                     nodenets[nodenet_uid] = TheanoNodenet(**params)
                 # Add additional engine types here
                 else:
-                    return False, "Nodenet %s requires unknown engine %s" % (nodenet_uid, engine)
+                    return False, "Agent %s requires unknown engine %s" % (nodenet_uid, engine)
 
-                nodenets[nodenet_uid].load(os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid + ".json"))
+                nodenets[nodenet_uid].load()
 
                 netapi_consoles[nodenet_uid] = NetapiShell(nodenets[nodenet_uid].netapi)
 
@@ -371,7 +373,7 @@ def load_nodenet(nodenet_uid):
                 worldadapter = nodenets[nodenet_uid].worldadapter
 
         return True, nodenet_uid
-    return False, "Nodenet %s not found in %s" % (nodenet_uid, PERSISTENCY_PATH)
+    return False, "Agent %s not found in %s" % (nodenet_uid, PERSISTENCY_PATH)
 
 
 def load_world(world_uid):
@@ -390,7 +392,6 @@ def load_world(world_uid):
             else:
                 worlds[world_uid] = world.World(**world_data[world_uid])
     return worlds.get(world_uid)
-
 
 
 def get_nodenet_metadata(nodenet_uid):
@@ -471,7 +472,7 @@ def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=No
             data['recorders'] = nodenet_obj.construct_recorders_dict()
         return True, data
     else:
-        return False, "No such nodenet"
+        return False, "No such agent"
 
 
 def unload_nodenet(nodenet_uid):
@@ -493,7 +494,7 @@ def unload_nodenet(nodenet_uid):
     return True
 
 
-def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=None, owner="", world_uid=None, uid=None, use_modulators=True, worldadapter_config={}):
+def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=None, owner="", world_uid=None, use_modulators=True, worldadapter_config={}):
     """Creates a new node net manager and registers it.
 
     Arguments:
@@ -501,17 +502,14 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
             gate types supported for directional activation spreading of this nodenet, and the initial node types
         owner (optional): the creator of this nodenet
         world_uid (optional): if submitted, attempts to bind the nodenet to this world
-        uid (optional): if submitted, this is used as the UID for the nodenet (normally, this is generated)
 
     Returns
         nodenet_uid if successful,
         None if failure
     """
-    if not uid:
-        uid = tools.generate_uid()
+    uid = tools.generate_uid()
 
     data = dict(
-        version=1,
         step=0,
         uid=uid,
         name=nodenet_name,
@@ -523,7 +521,6 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
         use_modulators=use_modulators,
         worldadapter_config=worldadapter_config)
 
-    filename = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
     nodenet_data[data['uid']] = Bunch(**data)
     load_nodenet(data['uid'])
     if template is not None and template in nodenet_data:
@@ -533,7 +530,7 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
         load_nodenet(uid)
         nodenets[uid].merge_data(data_to_merge)
 
-    nodenets[uid].save(filename)
+    nodenets[uid].save()
     return True, data['uid']
 
 
@@ -542,11 +539,12 @@ def delete_nodenet(nodenet_uid):
 
     Simple unloading is maintained automatically when a nodenet is suspended and another one is accessed.
     """
-    filename = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid + '.json')
-    nodenet = get_nodenet(nodenet_uid)
-    nodenet.remove(filename)
-    unload_nodenet(nodenet_uid)
+    import shutil
+    if nodenet_uid in nodenets:
+        unload_nodenet(nodenet_uid)
     del nodenet_data[nodenet_uid]
+    nodenet_directory = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid)
+    shutil.rmtree(nodenet_directory)
     return True
 
 
@@ -705,7 +703,7 @@ def revert_nodenet(nodenet_uid, also_revert_world=False):
 def save_nodenet(nodenet_uid):
     """Stores the nodenet on the server (but keeps it open)."""
     nodenet = get_nodenet(nodenet_uid)
-    nodenet.save(os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'))
+    nodenet.save()
     nodenet_data[nodenet_uid] = Bunch(**nodenet.metadata)
     return True
 
@@ -731,7 +729,7 @@ def import_nodenet(string, owner=None):
         import_data['uid'] = tools.generate_uid()
     else:
         if import_data['uid'] in nodenets:
-            raise RuntimeError("A nodenet with this ID already exists.")
+            raise RuntimeError("An agent with this ID already exists.")
     if 'owner':
         import_data['owner'] = owner
     nodenet_uid = import_data['uid']
@@ -799,12 +797,10 @@ def get_node(nodenet_uid, node_uid, include_links=True):
         "type" (string): the type of this node,
         "parameters" (dict): a dictionary of the node parameters
         "activation" (float): the activation of this node,
-        "gate_parameters" (dict): a dictionary containing dicts of parameters for each gate of this node
         "name" (str): display name
         "gate_activations" (dict): a dictionary containing dicts of activations for each gate of this node
-        "gate_functions"(dict): a dictionary containing the name of the gatefunction for each gate of this node
+        "gate_configuration"(dict): a dictionary containing the name of the gatefunction and its parameters for each gate
         "position" (list): the x, y, z coordinates of this node, as a list
-        "sheaves" (dict): a dict of sheaf-activations for this node
         "parent_nodespace" (str): the uid of the nodespace this node lives in
     }
     """
@@ -819,7 +815,7 @@ def get_node(nodenet_uid, node_uid, include_links=True):
         return False, "Unknown UID"
 
 
-def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name="", parameters=None):
+def add_node(nodenet_uid, type, pos, nodespace=None, state=None, name="", parameters=None):
     """Creates a new node. (Including native module.)
 
     Arguments:
@@ -836,22 +832,20 @@ def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name=
         None if failure.
     """
     nodenet = get_nodenet(nodenet_uid)
-    uid = nodenet.create_node(type, nodespace, pos, name, uid=uid, parameters=parameters)
+    uid = nodenet.create_node(type, nodespace, pos, name, parameters=parameters)
     return True, uid
 
 
-def add_nodespace(nodenet_uid, pos, nodespace=None, uid=None, name="", options=None):
+def add_nodespace(nodenet_uid, nodespace=None, name="", options=None):
     """Creates a new nodespace
     Arguments:
         nodenet_uid: uid of the nodespace manager
-        position: position of the node in the current nodespace
         nodespace: uid of the parent nodespace
-        uid (optional): if not supplied, a uid will be generated
         name (optional): if not supplied, the uid will be used instead of a display name
         options (optional): a dict of options. TBD
     """
     nodenet = get_nodenet(nodenet_uid)
-    uid = nodenet.create_nodespace(nodespace, pos, name=name, uid=uid, options=options)
+    uid = nodenet.create_nodespace(nodespace, name=name, options=options)
     return True, uid
 
 
@@ -891,7 +885,7 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
 
     for _, n in copynodes.items():
         target_nodespace = nodespace if nodespace is not None else n.parent_nodespace
-        uid = nodenet.create_node(n.type, target_nodespace, [n.position[0] + offset[0], n.position[1] + offset[1], n.position[2] + offset[2]], name=n.name, uid=None, parameters=n.clone_parameters().copy(), gate_parameters=n.get_gate_parameters())
+        uid = nodenet.create_node(n.type, target_nodespace, [n.position[0] + offset[0], n.position[1] + offset[1], n.position[2] + offset[2]], name=n.name, uid=None, parameters=n.clone_parameters().copy(), gate_configuration=n.get_gate_configuration())
         if uid:
             uidmap[n.uid] = uid
         else:
@@ -905,8 +899,7 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
             l.source_gate.type,
             target_uid,
             l.target_slot.type,
-            l.weight,
-            l.certainty)
+            l.weight)
 
     for uid in uidmap.values():
         result[uid] = nodenet.get_node(uid).get_data(include_links=True)
@@ -947,34 +940,37 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     idmap = {}
     nodenet = get_nodenet(nodenet_uid)
     nodes = []
-    nodespaces = []
+    #nodespaces = []
+    #for node_uid in node_uids:
+    #    if not nodenet.is_nodespace(node_uid):
+    #        nodes.append(nodenet.get_node(node_uid))
+    #    else:
+    #        nodespaces.append(nodenet.get_nodespace(node_uid))
+
     for node_uid in node_uids:
-        if not nodenet.is_nodespace(node_uid):
-            nodes.append(nodenet.get_node(node_uid))
-        else:
-            nodespaces.append(nodenet.get_nodespace(node_uid))
+        nodes.append(nodenet.get_node(node_uid))
 
     xpos = []
     ypos = []
     zpos = []
     nodes = sorted(nodes, key=lambda node: node.position[1] * 1000 + node.position[0])
-    nodespaces = sorted(nodespaces, key=lambda node: node.position[1] * 1000 + node.position[0])
+    #nodespaces = sorted(nodespaces, key=lambda node: node.position[1] * 1000 + node.position[0])
 
     # nodespaces
-    for i, nodespace in enumerate(nodespaces):
-        name = nodespace.name.strip() if nodespace.name != nodespace.uid else None
-        varname = "nodespace%i" % i
-        if name:
-            pythonname = __pythonify(name)
-            if pythonname not in idmap.values():
-                varname = pythonname
-            lines.append("%s = netapi.create_nodespace(None, \"%s\")" % (varname, name))
-        else:
-            lines.append("%s = netapi.create_nodespace(None)" % (varname))
-        idmap[nodespace.uid] = varname
-        xpos.append(nodespace.position[0])
-        ypos.append(nodespace.position[1])
-        zpos.append(nodespace.position[2])
+    #for i, nodespace in enumerate(nodespaces):
+    #    name = nodespace.name.strip() if nodespace.name != nodespace.uid else None
+    #    varname = "nodespace%i" % i
+    #    if name:
+    #        pythonname = __pythonify(name)
+    #        if pythonname not in idmap.values():
+    #            varname = pythonname
+    #        lines.append("%s = netapi.create_nodespace(None, \"%s\")" % (varname, name))
+    #    else:
+    #        lines.append("%s = netapi.create_nodespace(None)" % (varname))
+    #    idmap[nodespace.uid] = varname
+    #    xpos.append(nodespace.position[0])
+    #    ypos.append(nodespace.position[1])
+    #    zpos.append(nodespace.position[2])
 
     # nodes and gates
     for i, node in enumerate(nodes):
@@ -988,10 +984,9 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
         else:
             lines.append("%s = netapi.create_node('%s', None)" % (varname, node.type))
 
-        ndgps = node.clone_non_default_gate_parameters()
-        for gatetype in ndgps.keys():
-            for parameter, value in ndgps[gatetype].items():
-                lines.append("%s.set_gate_parameter('%s', \"%s\", %.2f)" % (varname, gatetype, parameter, value))
+        gate_config = node.get_gate_configuration()
+        for gatetype, gconfig in gate_config.items():
+            lines.append("%s.set_gate_configuration('%s', \"%s\", %.2f)" % (varname, gatetype, gconfig['gatefunction'], gconfig.get('gatefunction_parameters', {})))
 
         nps = node.clone_parameters()
         for parameter, value in nps.items():
@@ -1075,7 +1070,7 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     origin = [100, 100, 0]
     factor = [int(min(xpos)), int(min(ypos)), int(min(zpos))]
     lines.append("origin_pos = (%d, %d, %d)" % (origin[0], origin[1], origin[2]))
-    for node in nodes + nodespaces:
+    for node in nodes:
         x = int(node.position[0] - factor[0])
         y = int(node.position[1] - factor[1])
         z = int(node.position[2] - factor[2])
@@ -1084,9 +1079,9 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     return "\n".join(lines)
 
 
-def set_entity_positions(nodenet_uid, positions):
+def set_node_positions(nodenet_uid, positions):
     """ Takes a dict with node_uids as keys and new positions for the nodes as values """
-    get_nodenet(nodenet_uid).set_entity_positions(positions)
+    get_nodenet(nodenet_uid).set_node_positions(positions)
     return True
 
 
@@ -1156,33 +1151,17 @@ def set_node_parameters(nodenet_uid, node_uid, parameters):
     return True
 
 
-def get_gatefunction(nodenet_uid, node_uid, gate_type):
-    """
-    Returns the name of the gate function configured for that given node and gate
-    """
-    return get_nodenet(nodenet_uid).get_node(node_uid).get_gatefunction_name(gate_type)
-
-
-def set_gatefunction(nodenet_uid, node_uid, gate_type, gatefunction=None):
-    """
-    Sets the gate function of the given node and gate.
-    """
-    get_nodenet(nodenet_uid).get_node(node_uid).set_gatefunction_name(gate_type, gatefunction)
-    return True
-
-
 def get_available_gatefunctions(nodenet_uid):
     """
-    Returns a list of names of the available gatefunctions
+    Returns a dict of the available gatefunctions and their parameters and parameter-defaults
     """
     return get_nodenet(nodenet_uid).get_available_gatefunctions()
 
 
-def set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters):
-    """Sets the gate parameters of the given gate of the given node to the supplied dictionary."""
+def set_gate_configuration(nodenet_uid, node_uid, gate_type, gatefunction=None, gatefunction_parameters=None):
+    """Sets the configuration of the given gate of the given node to the supplied gatefunction and -parameters."""
     nodenet = get_nodenet(nodenet_uid)
-    for key, value in parameters.items():
-        nodenet.get_node(node_uid).set_gate_parameter(gate_type, key, value)
+    nodenet.get_node(node_uid).set_gate_configuration(gate_type, gatefunction, gatefunction_parameters)
     return True
 
 
@@ -1211,16 +1190,16 @@ def bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource):
     return False
 
 
-def bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget):
-    """Associates the datatarget type to the actor node with the given uid."""
-    node = get_nodenet(nodenet_uid).get_node(actor_uid)
-    if node.type == "Actor":
+def bind_datatarget_to_actuator(nodenet_uid, actuator_uid, datatarget):
+    """Associates the datatarget type to the actuator node with the given uid."""
+    node = get_nodenet(nodenet_uid).get_node(actuator_uid)
+    if node.type == "Actuator":
         node.set_parameter('datatarget', datatarget)
         return True
     return False
 
 
-def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
+def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1):
     """Creates a new link.
 
     Arguments.
@@ -1229,20 +1208,19 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
         target_node_uid: uid of the target node
         slot_type: type of the target slot
         weight: the weight of the link (a float)
-        certainty (optional): a probabilistic parameter for the link
     """
     nodenet = get_nodenet(nodenet_uid)
     with nodenet.netlock:
-        success = nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
+        success = nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight)
     uid = None
     if success:                                                       # todo: check whether clients need these uids
         uid = "%s:%s:%s:%s" % (source_node_uid, gate_type, slot_type, target_node_uid)
     return success, uid
 
 
-def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
+def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1):
     """Set weight of the given link."""
-    return get_nodenet(nodenet_uid).set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
+    return get_nodenet(nodenet_uid).set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight)
 
 
 def get_links_for_nodes(nodenet_uid, node_uids):
@@ -1440,14 +1418,14 @@ def get_netapi_autocomplete_data(nodenet_uid, name=None):
 # --- end of API
 
 
-def crawl_definition_files(path, type="definition"):
+def crawl_definition_files(path, datatype="definition"):
     """Traverse the directories below the given path for JSON definitions of nodenets and worlds,
     and return a dictionary with the signatures of these nodenets or worlds.
     """
-
+    from micropsi_core.world.world import WORLD_VERSION
+    from micropsi_core.nodenet.nodenet import NODENET_VERSION
     result = {}
     os.makedirs(path, exist_ok=True)
-
     for user_directory_name, user_directory_names, file_names in os.walk(path):
         for definition_file_name in file_names:
             if definition_file_name.endswith(".json"):
@@ -1455,11 +1433,16 @@ def crawl_definition_files(path, type="definition"):
                     filename = os.path.join(user_directory_name, definition_file_name)
                     with open(filename, encoding="utf-8") as file:
                         data = parse_definition(json.load(file), filename)
-                        result[data.uid] = data
+                        if datatype == 'world' and data.version != WORLD_VERSION:
+                            logging.getLogger("system").warning("Wrong Version of environment data in file %s" % definition_file_name)
+                        elif datatype == 'nodenet' and data.version != NODENET_VERSION:
+                            logging.getLogger("system").warning("Wrong Version of agent data in file %s" % definition_file_name)
+                        else:
+                            result[data.uid] = data
                 except ValueError:
-                    logging.getLogger('system').warning("Invalid %s data in file '%s'" % (type, definition_file_name))
+                    logging.getLogger('system').warning("Invalid %s data in file '%s'" % (datatype, definition_file_name))
                 except IOError:
-                    logging.getLogger('system').warning("Could not open %s data file '%s'" % (type, definition_file_name))
+                    logging.getLogger('system').warning("Could not open %s data file '%s'" % (datatype, definition_file_name))
     return result
 
 
@@ -1484,14 +1467,16 @@ def parse_definition(json, filename=None):
             result['config'] = json['config']
         if 'use_modulators' in json:
             result['use_modulators'] = json['use_modulators']
+        if 'version' in json:
+            result['version'] = json['version']
         return Bunch(**result)
 
 
 # Set up the MicroPsi runtime
 def load_definitions():
     global nodenet_data, world_data
-    nodenet_data = crawl_definition_files(path=os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY), type="nodenet")
-    world_data = crawl_definition_files(path=os.path.join(PERSISTENCY_PATH, WORLD_DIRECTORY), type="world")
+    nodenet_data = crawl_definition_files(path=os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY), datatype="nodenet")
+    world_data = crawl_definition_files(path=os.path.join(PERSISTENCY_PATH, WORLD_DIRECTORY), datatype="world")
     if not world_data:
         # create a default world for convenience.
         uid = tools.generate_uid()

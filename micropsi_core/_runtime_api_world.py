@@ -82,9 +82,9 @@ def delete_worldobject(world_uid, object_uid):
     return micropsi_core.runtime.worlds[world_uid].delete_object(object_uid)
 
 
-def add_worldobject(world_uid, type, position, orientation=0.0, name="", parameters=None, uid=None):
+def add_worldobject(world_uid, type, position, orientation=0.0, name="", parameters=None):
     return micropsi_core.runtime.worlds[world_uid].add_object(type, position, orientation=orientation, name=name,
-                                                              parameters=parameters, uid=uid)
+                                                              parameters=parameters)
 
 
 def set_worldobject_properties(world_uid, uid, position=None, orientation=None, name=None, parameters=None):
@@ -96,7 +96,7 @@ def set_worldagent_properties(world_uid, uid, position=None, orientation=None, n
     return micropsi_core.runtime.worlds[world_uid].set_agent_properties(uid, position, orientation, name, parameters)
 
 
-def new_world(world_name, world_type, owner="", uid=None, config={}):
+def new_world(world_name, world_type, owner="", config={}):
     """Creates a new world  and registers it.
 
     Arguments:
@@ -108,18 +108,16 @@ def new_world(world_name, world_type, owner="", uid=None, config={}):
         world_uid if successful,
         None if failure
     """
-    if uid is None:
-        uid = tools.generate_uid()
+    uid = tools.generate_uid()
 
     if world_type.startswith('Minecraft'):
         for uid in micropsi_core.runtime.worlds:
             if micropsi_core.runtime.worlds[uid].__class__.__name__.startswith('Minecraft'):
-                raise RuntimeError("Only one instance of a minecraft world is supported right now")
+                raise RuntimeError("Only one instance of a minecraft environment is supported right now")
 
     filename = os.path.join(micropsi_core.runtime.PERSISTENCY_PATH, micropsi_core.runtime.WORLD_DIRECTORY, uid + ".json")
     micropsi_core.runtime.world_data[uid] = Bunch(uid=uid, name=world_name, world_type=world_type, filename=filename,
-                                                  version=1,
-                                                  owner=owner, config=config)
+                    version=world.WORLD_VERSION, owner=owner, config=config)
     with open(filename, 'w+', encoding="utf-8") as fp:
         fp.write(json.dumps(micropsi_core.runtime.world_data[uid], sort_keys=True, indent=4))
     try:
@@ -135,7 +133,7 @@ def delete_world(world_uid):
     """Removes the world with the given uid from the server (and unloads it from memory if it is running.)"""
 
     if world_uid not in micropsi_core.runtime.world_data:
-        raise KeyError("World not found")
+        raise KeyError("Environment not found")
 
     # remove a running instance if there should be one
     if world_uid in micropsi_core.runtime.worlds:
@@ -156,11 +154,11 @@ def delete_world(world_uid):
 def get_world_view(world_uid, step):
     """Returns the current state of the world for UI purposes, if current step is newer than the supplied one."""
     if world_uid not in micropsi_core.runtime.worlds:
-        raise KeyError("World not found")
+        raise KeyError("Environment not found")
     if world_uid in micropsi_core.runtime.MicropsiRunner.last_world_exception:
         e = micropsi_core.runtime.MicropsiRunner.last_world_exception[world_uid]
         del micropsi_core.runtime.MicropsiRunner.last_world_exception[world_uid]
-        raise Exception("Error while stepping world").with_traceback(e[2]) from e[1]
+        raise Exception("Error while stepping environment").with_traceback(e[2]) from e[1]
     if step <= micropsi_core.runtime.worlds[world_uid].current_step:
         return micropsi_core.runtime.worlds[world_uid].get_world_view(step)
     return {}
@@ -169,7 +167,7 @@ def get_world_view(world_uid, step):
 def set_world_properties(world_uid, world_name=None, owner=None, config=None):
     """Sets the supplied parameters (and only those) for the world with the given uid."""
     if world_uid not in micropsi_core.runtime.world_data:
-        raise KeyError("World not found")
+        raise KeyError("Environment not found")
 
     if world_name is not None:
         micropsi_core.runtime.world_data[world_uid]['name'] = world_name
@@ -202,14 +200,14 @@ def set_world_properties(world_uid, world_name=None, owner=None, config=None):
                 micropsi_core.runtime.nodenets[uid].worldadapter_instance = worldadapter_instance
             else:
                 micropsi_core.runtime.nodenets[uid].worldadapter_instance = None
-                logging.getLogger("system").warning("Could not spawn agent %s in world %s" % (uid, world_uid))
+                logging.getLogger("system").warning("Could not spawn agent %s in environment %s" % (uid, world_uid))
     return True
 
 
 def set_world_data(world_uid, data):
     """ Sets some data for the world. Whatever the world supports"""
     if world_uid not in micropsi_core.runtime.worlds:
-        raise KeyError("World not found")
+        raise KeyError("Environment not found")
     micropsi_core.runtime.worlds[world_uid].set_user_data(data)
     return True
 
@@ -248,7 +246,7 @@ def import_world(worlddata, owner=None):
         data['uid'] = tools.generate_uid()
     else:
         if data['uid'] in micropsi_core.runtime.worlds:
-            raise RuntimeError("A world with this ID already exists.")
+            raise RuntimeError("An environment with this ID already exists.")
     if owner is not None:
         data['owner'] = owner
     filename = os.path.join(micropsi_core.runtime.PERSISTENCY_PATH, micropsi_core.runtime.WORLD_DIRECTORY, data['uid'] + '.json')

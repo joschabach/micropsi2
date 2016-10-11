@@ -17,38 +17,12 @@ class DictPropagate(Propagate):
         for uid, node in nodes.items():
             node.reset_slots()
 
-        # propagate sheaf existence
-        for uid, node in nodes.items():
-            for gate_type in node.get_gate_types():
-                gate = node.get_gate(gate_type)
-                if gate.get_parameter('spreadsheaves'):
-                    for sheaf in gate.sheaves:
-                        for link in gate.get_links():
-                            for slotname in link.target_node.get_slot_types():
-                                if sheaf not in link.target_node.get_slot(slotname).sheaves and link.target_node.type != "Actor":
-                                    link.target_node.get_slot(slotname).sheaves[sheaf] = dict(
-                                        uid=gate.sheaves[sheaf]['uid'],
-                                        name=gate.sheaves[sheaf]['name'],
-                                        activation=0)
-
         # propagate activation
         for uid, node in nodes.items():
             for gate_type in node.get_gate_types():
                 gate = node.get_gate(gate_type)
                 for link in gate.get_links():
-                    for sheaf in gate.sheaves:
-                        targetsheaf = sheaf
-                        if link.target_node.type != "Pipe":
-                            targetsheaf = "default"
-
-                        if targetsheaf in link.target_slot.sheaves:
-                            link.target_slot.sheaves[targetsheaf]['activation'] += \
-                                float(gate.sheaves[sheaf]['activation']) * float(link.weight)  # TODO: where's the string coming from?
-                        elif sheaf.endswith(link.target_node.uid):
-                            targetsheaf = sheaf[:-(len(link.target_node.uid) + 1)]
-                            link.target_slot.sheaves[targetsheaf]['activation'] += \
-                                float(gate.sheaves[sheaf]['activation']) * float(link.weight)  # TODO: where's the string coming from?
-
+                    link.target_slot.add_activation(float(gate.activation) * float(link.weight))  # TODO: where's the string coming from?
 
 class DictCalculate(Calculate):
     """

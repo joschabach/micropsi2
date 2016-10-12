@@ -290,7 +290,7 @@ def get_nodenet(nodenet_uid):
         if nodenet_uid in get_available_nodenets():
             load_nodenet(nodenet_uid)
         else:
-            raise KeyError("Unknown nodenet")
+            return None
     return nodenets[nodenet_uid]
 
 
@@ -397,6 +397,8 @@ def load_world(world_uid):
 def get_nodenet_metadata(nodenet_uid):
     """ returns the given nodenet's metadata"""
     nodenet = get_nodenet(nodenet_uid)
+    if nodenet is None:
+        return False, "Unknown nodenet"
     data = nodenet.metadata
     data.update({
         'nodetypes': nodenet.get_standard_nodetype_definitions(),
@@ -406,7 +408,7 @@ def get_nodenet_metadata(nodenet_uid):
         'rootnodespace': nodenet.get_nodespace(None).uid,
         'resource_path': RESOURCE_PATH
     })
-    return data
+    return True, data
 
 
 def get_nodenet_activation_data(nodenet_uid, nodespaces=[], last_call_step=-1):

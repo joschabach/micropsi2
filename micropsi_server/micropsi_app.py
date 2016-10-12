@@ -772,7 +772,7 @@ def show_dashboard():
 
 @rpc("get_nodenet_metadata")
 def get_nodenet_metadata(nodenet_uid, nodespace='Root', include_links=True):
-    return True, runtime.get_nodenet_metadata(nodenet_uid)
+    return runtime.get_nodenet_metadata(nodenet_uid)
 
 
 @rpc("get_nodes")

@@ -1471,6 +1471,8 @@ def parse_definition(json, filename=None):
             result['use_modulators'] = json['use_modulators']
         if 'version' in json:
             result['version'] = json['version']
+        else:
+            result['version'] = 1
         return Bunch(**result)
 
 

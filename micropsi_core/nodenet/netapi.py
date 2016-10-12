@@ -162,8 +162,8 @@ class NetAPI(object):
         Creates a new node or node space of the given type, with the given name and in the given nodespace.
         Returns the newly created entity.
         """
-        if name is None:
-            name = ""   # TODO: empty names crash the client right now, but really shouldn't
+        # if name is None:
+        #     name = ""   # TODO: empty names crash the client right now, but really shouldn't
         pos = [100, 100, 0]  # default so native modules will not be bothered with positions
 
         uid = self.__nodenet.create_node(nodetype, nodespace, pos, name)
@@ -177,8 +177,8 @@ class NetAPI(object):
             new_partition - Whether or not to create a seperate partition for this nodespace
                             Attention: Experimental Feature, Sensors & Actuators only work in the root-partition
         """
-        if name is None:
-            name = ""   # TODO: empty names crash the client right now, but really shouldn't
+        # if name is None:
+        #     name = ""   # TODO: empty names crash the client right now, but really shouldn't
 
         uid = self.__nodenet.create_nodespace(parent_nodespace, name=name, options=options)
         entity = self.__nodenet.get_nodespace(uid)

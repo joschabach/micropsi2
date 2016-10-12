@@ -4,3 +4,4 @@ omit =
     micropsi_server/bottle.py
     */conftest.py
     micropsi_core/world/island/png.py
+    micropsi_server/minidoc.py

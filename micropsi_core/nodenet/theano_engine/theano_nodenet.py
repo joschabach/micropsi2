@@ -23,6 +23,7 @@ from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
 from micropsi_core.nodenet.theano_engine.theano_nodespace import *
 from micropsi_core.nodenet.theano_engine.theano_netapi import TheanoNetAPI
 from micropsi_core.nodenet.theano_engine.theano_partition import TheanoPartition
+from micropsi_core.nodenet.theano_engine.theano_flowmodule import FlowModule
 
 from configuration import config as settings
 
@@ -106,7 +107,7 @@ class TheanoNodenet(Nodenet):
     def current_step(self):
         return self._step
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None):
+    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None, flow_modules={}):
 
         # map of string uids to positions. Not all nodes necessarily have an entry.
         self.positions = {}
@@ -202,6 +203,12 @@ class TheanoNodenet(Nodenet):
         for key in native_modules:
             if native_modules[key].get('engine', self.engine) == self.engine:
                 self.native_module_definitions[key] = native_modules[key]
+
+        self.flow_modules = {}
+        self.flow_order = []
+        self.flow_module_definitions = flow_modules
+        self.flow_in = T.vector('flow_in', dtype=T.config.floatX)
+        self.flow_out = T.vector('flow_out', dtype=T.config.floatX)
 
         self.create_nodespace(None, "Root", nodespace_to_id(1, rootpartition.pid))
 
@@ -768,6 +775,78 @@ class TheanoNodenet(Nodenet):
         partition = self.get_partition(nodespace_uid)
         partition.announce_nodes(number_of_nodes, average_elements_per_node)
 
+    def get_available_flow_module_inputs(self):
+        data = ["datasources"]
+        for uid in self.flow_modules:
+            data.extend(["%s:%s" % (self.flow_modules[uid].uid, output) for output in self.flow_modules[uid].outputs])
+        return data
+
+    def get_available_flow_module_outputs(self):
+        return ["datatargets"]
+
+    def create_flow_module(self, flowtype, parent_uid, position, name=None, uid=None, parameters=None):
+        if flowtype not in self.flow_module_definitions:
+            raise NameError("Unknown flow_module type")
+        parent_uid = self.get_nodespace(parent_uid).uid
+        uid = self.create_node("Flowmodule", parent_uid, position, name=name, uid=uid)
+        self.flow_modules[uid] = FlowModule(uid, self, parent_uid, flowtype, self.flow_module_definitions[flowtype])
+        return uid
+
+    def link_flow_modules(self, source_uid, source_output, target_uid, target_input):
+        source = self.flow_modules[source_uid]
+        target = self.flow_modules[target_uid]
+        if source_output not in source.outputs or target_input not in target.inputs:
+            raise NameError("Unknown input/output value")
+        target.set_inputs(target_input, source_uid, source_output)
+        source.set_outputs(source_output, target_uid, target_input)
+        self.set_flowmodule_order()
+
+    def link_flow_module_to_worldadapter(self, flowmodule_uid, gateslot):
+        module = self.flow_modules[flowmodule_uid]
+        if gateslot in module.inputs:
+            module.set_input(gateslot, "worldadapter", "datasources")
+        elif gateslot in module.outputs:
+            module.set_output(gateslot, "worldadapter", "datatargets")
+        else:
+            raise NameError("Unknown input/output name for flowmodule %s" % flowmodule_uid)
+        self.set_flowmodule_order()
+
+    def set_flowmodule_order(self):
+        for uid, item in self.flow_modules.items():
+            if item.dependencies == {'worldadapter'}:
+                self.flow_order = [uid]
+
+        for uid, item in self.flow_modules.items():
+            if uid in self.flow_order:
+                continue
+            idxs = []
+            for dep in item.dependencies:
+                try:
+                    idxs.append(self.flow_order.index(dep))
+                except:
+                    pass
+            idx = (max(idxs) + 1) if len(idxs) else len(flow_order)
+            self.flow_order.insert(idx, uid)
+
+    def compile_flow(self):
+        inputmap = dict((k, {}) for k in self.flow_order)
+        for uid in self.flow_order:
+            module = self.flow_modules[uid]
+            if 'worldadapter' in module.dependencies:
+                for name in module.inputmap:
+                    if module.inputmap[name] == ('worldadapter', 'datasources'):
+                        inputmap[module.uid][name] = sources
+            out = module.flowfunc(**inputmap[uid])
+            if len(module.outputs) == 1:
+                out = [out]
+            for idx, name in enumerate(module.outputs):
+                target_uid, target_name = module.outputmap[name]
+                if target_uid == 'worldadapter' and target_name == 'datatargets':
+                    targets = out[idx]
+                else:
+                    inputmap[target_uid][target_name] = out[idx]
+        return theano.function([sources], [targets])
+
     def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_configuration=None):
         nodespace_uid = self.get_nodespace(nodespace_uid).uid
         partition = self.get_partition(nodespace_uid)
@@ -1191,7 +1270,6 @@ class TheanoNodenet(Nodenet):
 
     def reload_native_modules(self, native_modules):
 
-
         # check which instances need to be recreated because of gate/slot changes and keep their .data
         instances_to_recreate = {}
         instances_to_delete = {}
@@ -1511,7 +1589,7 @@ class TheanoNodenet(Nodenet):
             a_array = partition.a.get_value(borrow=True)
             valid = np.where(partition.actuator_indices >= 0)
             actuator_values_to_write[valid] += a_array[partition.actuator_indices[valid]]
-        if self.use_modulators and bool(self.actuatormap):
+        if self.use_modulators:
             writeables = sorted(DoernerianEmotionalModulators.writeable_modulators)
             # remove modulators from actuator values
             modulator_values = actuator_values_to_write[-len(writeables):]

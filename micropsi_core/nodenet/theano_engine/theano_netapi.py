@@ -71,3 +71,8 @@ class TheanoNetAPI(NetAPI):
 
     def group_node_slots(self, node_uid, slot_prefix, group_name=None):
         self.__nodenet.group_highdimensional_elements(node_uid, slot=slot_prefix, group_name=group_name)
+
+    def create_flow_module(self, flowtype, nodespace_uid, name=None):
+        pos = [100, 100, 0]
+        uid = self.__nodenet.create_flow_module(flowtype, nodespace_uid, pos, name=name)
+        return self.__nodenet.get_node(uid)

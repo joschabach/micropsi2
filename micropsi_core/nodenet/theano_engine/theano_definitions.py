@@ -7,6 +7,7 @@ SCRIPT = 6
 PIPE = 7
 LSTM = 8
 COMMENT = 9
+FLOWMODULE = 10
 
 MAX_STD_NODETYPE = COMMENT
 
@@ -173,6 +174,8 @@ def get_numerical_node_type(type, nativemodules=None):
         return LSTM
     elif type == "Comment":
         return COMMENT
+    elif type == "Flowmodule":
+        return FLOWMODULE
     elif nativemodules is not None and type in nativemodules:
         return MAX_STD_NODETYPE + 1 + sorted(nativemodules).index(type)
     else:
@@ -198,6 +201,8 @@ def get_string_node_type(type, nativemodules=None):
         return "LSTM"
     elif type == COMMENT:
         return "Comment"
+    elif type == FLOWMODULE:
+        return "Flowmodule"
     elif nativemodules is not None and len(nativemodules) >= (type - MAX_STD_NODETYPE):
         return sorted(nativemodules)[(type-1) - MAX_STD_NODETYPE]
     else:
@@ -261,6 +266,8 @@ def get_elements_per_type(type, nativemodules=None):
         return 5
     elif type == COMMENT:
         return 0
+    elif type == FLOWMODULE:
+        return 1
     elif nativemodules is not None and get_string_node_type(type, nativemodules) in nativemodules:
         native_module_definition = nativemodules[get_string_node_type(type, nativemodules)]
         return max(len(native_module_definition.gatetypes), len(native_module_definition.slottypes))
@@ -287,6 +294,8 @@ def get_gates_per_type(type, nativemodules=None):
         return 5
     elif type == COMMENT:
         return 0
+    elif type == FLOWMODULE:
+        return 1
     elif nativemodules is not None and get_string_node_type(type, nativemodules) in nativemodules:
         native_module_definition = nativemodules[get_string_node_type(type, nativemodules)]
         return len(native_module_definition.gatetypes)
@@ -313,6 +322,8 @@ def get_slots_per_type(type, nativemodules=None):
         return 5
     elif type == COMMENT:
         return 0
+    elif type == FLOWMODULE:
+        return 1
     elif nativemodules is not None and get_string_node_type(type, nativemodules) in nativemodules:
         native_module_definition = nativemodules[get_string_node_type(type, nativemodules)]
         return len(native_module_definition.slottypes)

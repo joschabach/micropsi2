@@ -1523,7 +1523,7 @@ def parse_native_module_file(path):
         except ValueError:
             return "Nodetype data in %s/nodetypes.json not well-formed." % category
         for key in modules:
-            if modules[key]['flowmodule']:
+            if modules[key].get('flowmodule'):
                 modules[key]['path'] = os.path.join(os.path.dirname(path), 'nodefunctions.py')
                 flow_modules[key] = modules[key]
                 continue

@@ -26,7 +26,8 @@ if numpy_installed:
         "engine": "theano_engine",
         "slottypes": ["sub"],
         "gatetypes": ["sur"],
-        "nodefunction_name": "flowmodule"
+        "nodefunction_name": "flowmodule",
+        "path": os.path.abspath(__file__)
     }
     nodetypes["GradientDescentLSTM"] = {
         "name": "GradientDescentLSTM",

@@ -23,7 +23,7 @@ from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
 from micropsi_core.nodenet.theano_engine.theano_nodespace import *
 from micropsi_core.nodenet.theano_engine.theano_netapi import TheanoNetAPI
 from micropsi_core.nodenet.theano_engine.theano_partition import TheanoPartition
-from micropsi_core.nodenet.theano_engine.theano_flowmodule import FlowModule
+from micropsi_core.nodenet.theano_engine.theano_flowmodule import FlowModule, FlowGraph
 
 from configuration import config as settings
 
@@ -130,17 +130,20 @@ class TheanoNodenet(Nodenet):
         precision = settings['theano']['precision']
         if precision == "32":
             T.config.floatX = "float32"
+            self.theanofloatX = "float32"
             self.scipyfloatX = scipy.float32
             self.numpyfloatX = np.float32
             self.byte_per_float = 4
         elif precision == "64":
             T.config.floatX = "float64"
+            self.theanofloatX = "float64"
             self.scipyfloatX = scipy.float64
             self.numpyfloatX = np.float64
             self.byte_per_float = 8
         else:  # pragma: no cover
             self.logger.warning("Unsupported precision value from configuration: %s, falling back to float64", precision)
             T.config.floatX = "float64"
+            self.theanofloatX = "float64"
             self.scipyfloatX = scipy.float64
             self.numpyfloatX = np.float64
             self.byte_per_float = 8
@@ -205,10 +208,9 @@ class TheanoNodenet(Nodenet):
                 self.native_module_definitions[key] = native_modules[key]
 
         self.flow_modules = {}
-        self.flow_order = []
+        self.flow_graphs = []
+
         self.flow_module_definitions = flow_modules
-        self.flow_in = T.vector('flow_in', dtype=T.config.floatX)
-        self.flow_out = T.vector('flow_out', dtype=T.config.floatX)
 
         self.create_nodespace(None, "Root", nodespace_to_id(1, rootpartition.pid))
 
@@ -450,7 +452,8 @@ class TheanoNodenet(Nodenet):
     def initialize_stepoperators(self):
         self.stepoperators = [
             TheanoPropagate(),
-            TheanoCalculate(self)]
+            TheanoCalculate(self), 
+            TheanoCalculateFlowmodules(self)]
         if self.use_modulators:
             self.stepoperators.append(DoernerianEmotionalModulators())
         self.stepoperators.sort(key=lambda op: op.priority)
@@ -790,6 +793,8 @@ class TheanoNodenet(Nodenet):
         parent_uid = self.get_nodespace(parent_uid).uid
         uid = self.create_node("Flowmodule", parent_uid, position, name=name, uid=uid)
         self.flow_modules[uid] = FlowModule(uid, self, parent_uid, flowtype, self.flow_module_definitions[flowtype])
+        # flow modules w/o output create new flowgraphs:
+        self.flow_graphs.append(FlowGraph(self, nodes=[self.flow_modules[uid]]))
         return uid
 
     def link_flow_modules(self, source_uid, source_output, target_uid, target_input):
@@ -799,7 +804,7 @@ class TheanoNodenet(Nodenet):
             raise NameError("Unknown input/output value")
         target.set_inputs(target_input, source_uid, source_output)
         source.set_outputs(source_output, target_uid, target_input)
-        self.set_flowmodule_order()
+        self.update_flowgraphs(set([source_uid, target_uid]), set([source_uid]))
 
     def link_flow_module_to_worldadapter(self, flowmodule_uid, gateslot):
         module = self.flow_modules[flowmodule_uid]
@@ -808,44 +813,21 @@ class TheanoNodenet(Nodenet):
         elif gateslot in module.outputs:
             module.set_output(gateslot, "worldadapter", "datatargets")
         else:
-            raise NameError("Unknown input/output name for flowmodule %s" % flowmodule_uid)
-        self.set_flowmodule_order()
+            raise NameError("Unknown input/output name %s for flowmodule %s" % (gateslot, flowmodule_uid))
+        self.update_flowgraphs(node_uids=set([flowmodule_uid]))
 
-    def set_flowmodule_order(self):
-        for uid, item in self.flow_modules.items():
-            if item.dependencies == {'worldadapter'}:
-                self.flow_order = [uid]
+    def update_flowgraphs(self, node_uids=None, removed_endnodes=None):
+        remove_idxs = []
+        for idx, graph in enumerate(self.flow_graphs):
+            if removed_endnodes is not None:
+                if graph.endnode_uid in removed_endnodes:
+                    remove_idxs.append(idx)
 
-        for uid, item in self.flow_modules.items():
-            if uid in self.flow_order:
-                continue
-            idxs = []
-            for dep in item.dependencies:
-                try:
-                    idxs.append(self.flow_order.index(dep))
-                except:
-                    pass
-            idx = (max(idxs) + 1) if len(idxs) else len(flow_order)
-            self.flow_order.insert(idx, uid)
-
-    def compile_flow(self):
-        inputmap = dict((k, {}) for k in self.flow_order)
-        for uid in self.flow_order:
-            module = self.flow_modules[uid]
-            if 'worldadapter' in module.dependencies:
-                for name in module.inputmap:
-                    if module.inputmap[name] == ('worldadapter', 'datasources'):
-                        inputmap[module.uid][name] = sources
-            out = module.flowfunc(**inputmap[uid])
-            if len(module.outputs) == 1:
-                out = [out]
-            for idx, name in enumerate(module.outputs):
-                target_uid, target_name = module.outputmap[name]
-                if target_uid == 'worldadapter' and target_name == 'datatargets':
-                    targets = out[idx]
-                else:
-                    inputmap[target_uid][target_name] = out[idx]
-        return theano.function([sources], [targets])
+            elif node_uids is None or graph.members.union(node_uids):
+                graph.update()
+        remove_idxs.reverse()
+        for idx in remove_idxs:
+            self.flow_graphs.remove(idx)
 
     def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_configuration=None):
         nodespace_uid = self.get_nodespace(nodespace_uid).uid
@@ -1598,7 +1580,7 @@ class TheanoNodenet(Nodenet):
                 if key in self.actuatormap:
                     self.set_modulator(key, modulator_values[idx])
         if self._worldadapter_instance:
-            self._worldadapter_instance.set_datatarget_values(actuator_values_to_write)
+            self._worldadapter_instance.add_datatarget_values(actuator_values_to_write)
 
     def _rebuild_sensor_actuator_indices(self, partition=None):
         """

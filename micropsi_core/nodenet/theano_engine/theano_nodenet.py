@@ -802,8 +802,8 @@ class TheanoNodenet(Nodenet):
         target = self.flow_modules[target_uid]
         if source_output not in source.outputs or target_input not in target.inputs:
             raise NameError("Unknown input/output value")
-        target.set_inputs(target_input, source_uid, source_output)
-        source.set_outputs(source_output, target_uid, target_input)
+        target.set_input(target_input, source_uid, source_output)
+        source.set_output(source_output, target_uid, target_input)
         self.update_flowgraphs(set([source_uid, target_uid]), set([source_uid]))
 
     def link_flow_module_to_worldadapter(self, flowmodule_uid, gateslot):
@@ -822,12 +822,14 @@ class TheanoNodenet(Nodenet):
             if removed_endnodes is not None:
                 if graph.endnode_uid in removed_endnodes:
                     remove_idxs.append(idx)
-
-            elif node_uids is None or graph.members.union(node_uids):
-                graph.update()
         remove_idxs.reverse()
         for idx in remove_idxs:
-            self.flow_graphs.remove(idx)
+            del self.flow_graphs[idx]
+        for graph in self.flow_graphs:
+            if node_uids is None or graph.members & node_uids:
+                if node_uids is not None:
+                    graph.members = graph.members | node_uids
+                graph.update()
 
     def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_configuration=None):
         nodespace_uid = self.get_nodespace(nodespace_uid).uid

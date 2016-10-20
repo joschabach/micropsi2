@@ -27,8 +27,11 @@ class FlowGraph(object):
         if flownode.uid not in self.members:
             self.members.add(flownode.uid)
             self._instances[flownode.uid] = flownode
+            if flownode.outputmap == {}:
+                self.endnode_uid = flownode.uid
 
     def update(self):
+        self._instances = dict((uid, self.nodenet.flow_modules[uid]) for uid in self.members)
         self.set_path()
         self.compile()
 
@@ -42,7 +45,7 @@ class FlowGraph(object):
     def set_path(self):
         self.path = []
         for uid, item in self._instances.items():
-            if len(item.dependencies.union(self.members)) == 0:
+            if len(item.dependencies & self.members) == 0:
                 self.path = [uid]
 
         for uid, item in self._instances.items():
@@ -58,32 +61,37 @@ class FlowGraph(object):
             self.path.insert(idx, uid)
 
     def compile(self):
-        self.write_datatargets = False
-        inputmap = dict((k, {}) for k in self.path)
-        for uid in self.path:
-            module = self._instances[uid]
-            if 'worldadapter' in module.dependencies:
-                for name in module.inputmap:
-                    if module.inputmap[name] == ('worldadapter', 'datasources'):
-                        inputmap[module.uid][name] = self.flow_in
-            out = module.flowfunction(**inputmap[uid])
-            if len(module.outputs) == 1:
-                out = [out]
-            for idx, name in enumerate(module.outputs):
-                if name in module.outputmap:
-                    target_uid, target_name = module.outputmap[name]
-                    if target_uid not in self.members:
-                        # endnode
-                        self.endnode_uid = uid
-                        if target_uid == "worldadapter":
-                            self.write_datatargets = True
-                        self.flow_out = out[idx]
+        try:
+            self.write_datatargets = False
+            inputmap = dict((k, {}) for k in self.path)
+            for uid in self.path:
+                module = self._instances[uid]
+                if 'worldadapter' in module.dependencies:
+                    for name in module.inputmap:
+                        if module.inputmap[name] == ('worldadapter', 'datasources'):
+                            inputmap[module.uid][name] = self.flow_in
+                out = module.flowfunction(**inputmap[uid])
+                if len(module.outputs) == 1:
+                    out = [out]
+                for idx, name in enumerate(module.outputs):
+                    if name in module.outputmap:
+                        target_uid, target_name = module.outputmap[name]
+                        if target_uid not in self.members:
+                            # endnode
+                            self.endnode_uid = uid
+                            print("target_uid", target_uid)
+                            if target_uid == "worldadapter":
+                                self.write_datatargets = True
+                            self.flow_out = out[idx]
+                        else:
+                            inputmap[target_uid][target_name] = out[idx]
                     else:
-                        inputmap[target_uid][target_name] = out[idx]
-                else:
-                    # non-connected output
-                    self.flow_out = out[idx]
-        self.function = theano.function([self.flow_in], [self.flow_out], on_unused_input='warn')
+                        # non-connected output
+                        self.flow_out = out[idx]
+            self.function = theano.function([self.flow_in], [self.flow_out], on_unused_input='warn')
+        except Exception as e:
+            self.nodenet.logger.error("Error compiling graph function:  %s" % str(e))
+            self.function = lambda x: self.flow_out
 
 
 class FlowModule(object):
@@ -139,3 +147,7 @@ class FlowModule(object):
         module = SourceFileLoader("nodefunctions", sourcefile).load_module()
         self.flowfunction = getattr(module, funcname)
         self.line_number = inspect.getsourcelines(self.flowfunction)[1]
+
+    def __repr__(self):
+        return "<Flowmodule %s \"%s\" (%s)>" % (self.flowtype, self.name, self.uid)
+

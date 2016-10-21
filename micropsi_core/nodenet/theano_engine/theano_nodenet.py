@@ -814,8 +814,18 @@ class TheanoNodenet(Nodenet):
         target = self.flow_modules[target_uid]
         source.unset_output(source_output, target_uid, target_input)
         target.unset_input(target_input, source_uid, source_output)
-        self.flow_graphs.append(FlowGraph(self, nodes=[self.flow_modules[source_uid]]))
-        self.update_flowgraphs(set([source_uid, target_uid]))
+        target_uid = None
+        if not source.is_output_connected():
+            for g in self.flow_graphs:
+                remove = True
+                for uid in g.members:
+                    if source_uid in self.flow_modules[uid].dependencies:
+                        remove = False
+                if remove:
+                    g.members.remove(source_uid)
+            self.flow_graphs.append(FlowGraph(self, nodes=[self.flow_modules[source_uid]]))
+            target_uid = source_uid
+        self.update_flowgraphs(set([source_uid, target_uid]), target_uid=target_uid)
 
     def link_flow_module_to_worldadapter(self, flowmodule_uid, gateslot):
         module = self.flow_modules[flowmodule_uid]

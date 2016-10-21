@@ -179,6 +179,8 @@ def test_unlink_flowmodules(runtime, test_nodenet, default_world, resourcepath):
 
     # have two seperated graphs again
     assert len(nodenet.flow_graphs) == 2
+    # assert the members have been updated accordingly
+    assert nodenet.flow_graphs[0].members & nodenet.flow_graphs[1].members == set()
 
     # unlink add from datatargets
     nodenet.unlink_flow_module_from_worldadapter(add.uid, "outputs")

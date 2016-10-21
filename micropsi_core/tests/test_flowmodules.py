@@ -111,12 +111,17 @@ def test_multiple_flowgraphs(runtime, test_nodenet, default_world, resourcepath)
     add = netapi.create_flow_module("Add", None, "Add")
     bisect = netapi.create_flow_module("Bisect", None, "Bisect")
 
+    assert len(nodenet.flow_graphs) == 3
+
     # create a first graph
     # link datasources to double & add
     nodenet.link_flow_module_to_worldadapter(double.uid, "inputs")
     nodenet.link_flow_module_to_worldadapter(add.uid, "input2")
     # link double to add:
     nodenet.link_flow_modules(double.uid, "outputs", add.uid, "input1")
+
+    assert len(nodenet.flow_graphs) == 2
+
     # link add to datatargets
     nodenet.link_flow_module_to_worldadapter(add.uid, "outputs")
 
@@ -156,7 +161,6 @@ def test_unlink_flowmodules(runtime, test_nodenet, default_world, resourcepath):
 
     double = netapi.create_flow_module("Double", None, "Double")
     add = netapi.create_flow_module("Add", None, "Add")
-    # bisect = netapi.create_flow_module("Bisect", None, "Bisect")
 
     # link datasources to double & add
     nodenet.link_flow_module_to_worldadapter(double.uid, "inputs")
@@ -181,3 +185,48 @@ def test_unlink_flowmodules(runtime, test_nodenet, default_world, resourcepath):
     assert len(nodenet.flow_graphs) == 2
     assert set([g.endnode_uid for g in nodenet.flow_graphs]) == set([double.uid, add.uid])
     assert set([g.write_datatargets for g in nodenet.flow_graphs]) == {False}
+
+
+@pytest.mark.engine("theano_engine")
+def test_diverging_flowgraph(runtime, test_nodenet, default_world, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+
+    double = netapi.create_flow_module("Double", None, "Double")
+    add = netapi.create_flow_module("Add", None, "Add")
+    bisect = netapi.create_flow_module("Bisect", None, "Bisect")
+
+    # link sources to bisect
+    nodenet.link_flow_module_to_worldadapter(bisect.uid, "inputs")
+    # link bisect to double:
+    nodenet.link_flow_modules(bisect.uid, "outputs", double.uid, "inputs")
+    # link bisect to add:
+    nodenet.link_flow_modules(bisect.uid, "outputs", add.uid, "input1")
+    # link sources to add:
+    nodenet.link_flow_module_to_worldadapter(add.uid, "input2")
+
+    # link double and add to targets:
+    nodenet.link_flow_module_to_worldadapter(double.uid, "outputs")
+    nodenet.link_flow_module_to_worldadapter(add.uid, "outputs")
+
+    assert len(nodenet.flow_graphs) == 2
+
+    sources = np.zeros((5), dtype=nodenet.numpyfloatX)
+    sources[:] = np.random.randn(*sources.shape)
+    worldadapter.datasource_values = sources
+
+    # create activation source
+    source = netapi.create_node("Neuron", None)
+    netapi.link(source, 'gen', source, 'gen')
+    source.activation = 1
+
+    # link activation source to double
+    netapi.link(source, 'gen', double, 'sub')
+    nodenet.step()
+    assert np.all(worldadapter.datatarget_values == sources)
+
+    # unlink double, link add:
+    netapi.unlink(source, 'gen', double, 'sub')
+    netapi.link(source, 'gen', add, 'sub')
+    worldadapter.datatarget_values = np.zeros(len(worldadapter.datatarget_values), dtype=nodenet.numpyfloatX)
+    nodenet.step()
+    assert np.all(worldadapter.datatarget_values == sources * 1.5)

@@ -800,11 +800,14 @@ class TheanoNodenet(Nodenet):
     def link_flow_modules(self, source_uid, source_output, target_uid, target_input):
         source = self.flow_modules[source_uid]
         target = self.flow_modules[target_uid]
+        removed_endnodes = set()
+        if not source.is_output_connected():
+            removed_endnodes.add(source_uid)
         if source_output not in source.outputs or target_input not in target.inputs:
             raise NameError("Unknown input/output value")
         target.set_input(target_input, source_uid, source_output)
         source.set_output(source_output, target_uid, target_input)
-        self.update_flowgraphs(set([source_uid, target_uid]), set([source_uid]))
+        self.update_flowgraphs(set([source_uid, target_uid]), removed_endnodes, target_uid=target_uid)
 
     def unlink_flow_modules(self, source_uid, source_output, target_uid, target_input):
         source = self.flow_modules[source_uid]
@@ -812,7 +815,7 @@ class TheanoNodenet(Nodenet):
         source.unset_output(source_output, target_uid, target_input)
         target.unset_input(target_input, source_uid, source_output)
         self.flow_graphs.append(FlowGraph(self, nodes=[self.flow_modules[source_uid]]))
-        self.update_flowgraphs()
+        self.update_flowgraphs(set([source_uid, target_uid]))
 
     def link_flow_module_to_worldadapter(self, flowmodule_uid, gateslot):
         module = self.flow_modules[flowmodule_uid]
@@ -834,20 +837,26 @@ class TheanoNodenet(Nodenet):
             raise NameError("Unknown input/output name %s for flowmodule %s" % (gateslot, flowmodule_uid))
         self.update_flowgraphs(node_uids=set([flowmodule_uid]))
 
-    def update_flowgraphs(self, node_uids=None, removed_endnodes=None):
-        remove_idxs = []
-        for idx, graph in enumerate(self.flow_graphs):
-            if removed_endnodes is not None:
-                if graph.endnode_uid in removed_endnodes:
-                    remove_idxs.append(idx)
-        remove_idxs.reverse()
-        for idx in remove_idxs:
-            del self.flow_graphs[idx]
+    def update_flowgraphs(self, node_uids=None, removed_endnodes=set(), target_uid=None):
+        if len(removed_endnodes):
+            remove_idxs = []
+            for idx, graph in enumerate(self.flow_graphs):
+                    if graph.endnode_uid in removed_endnodes:
+                        remove_idxs.append(idx)
+            remove_idxs.reverse()
+            for idx in remove_idxs:
+                del self.flow_graphs[idx]
+
         for graph in self.flow_graphs:
-            if node_uids is None or graph.members & node_uids:
-                if node_uids is not None:
-                    graph.members = graph.members | node_uids
+            if node_uids is None:
                 graph.update()
+            else:
+                if target_uid is not None and target_uid in graph.members:
+                    graph.members = graph.members | node_uids
+                    graph.update()
+                elif target_uid is None and graph.members & node_uids:
+                    graph.members = graph.members | node_uids
+                    graph.update()
 
     def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_configuration=None):
         nodespace_uid = self.get_nodespace(nodespace_uid).uid

@@ -27,7 +27,7 @@ class FlowGraph(object):
         if flownode.uid not in self.members:
             self.members.add(flownode.uid)
             self._instances[flownode.uid] = flownode
-            if flownode.outputmap == {}:
+            if not flownode.is_output_connected():
                 self.endnode_uid = flownode.uid
 
     def update(self):
@@ -36,11 +36,14 @@ class FlowGraph(object):
         self.compile()
 
     def is_requested(self):
-        partition = self.nodenet.get_partition(self.endnode_uid)
-        _a = partition.a.get_value(borrow=True)
-        _id = node_from_id(self.endnode_uid)
-        idx = partition.allocated_node_offsets[_id]
-        return _a[idx] > 0
+        result = False
+        if self.endnode_uid is not None:
+            partition = self.nodenet.get_partition(self.endnode_uid)
+            _a = partition.a.get_value(borrow=True)
+            _id = node_from_id(self.endnode_uid)
+            idx = partition.allocated_node_offsets[_id]
+            result = _a[idx] > 0
+        return result
 
     def set_path(self):
         self.path = []
@@ -66,26 +69,26 @@ class FlowGraph(object):
             inputmap = dict((k, {}) for k in self.path)
             for uid in self.path:
                 module = self._instances[uid]
-                if 'worldadapter' in module.dependencies:
-                    for name in module.inputmap:
-                        if module.inputmap[name] == ('worldadapter', 'datasources'):
-                            inputmap[module.uid][name] = self.flow_in
+                for name in module.inputmap:
+                    if ('worldadapter', 'datasources') in module.inputmap[name]:
+                        inputmap[module.uid][name] = self.flow_in
                 out = module.flowfunction(**inputmap[uid])
                 if len(module.outputs) == 1:
                     out = [out]
                 for idx, name in enumerate(module.outputs):
                     if name in module.outputmap:
-                        target_uid, target_name = module.outputmap[name]
-                        if target_uid not in self.members:
-                            # endnode
-                            self.endnode_uid = uid
-                            if target_uid == "worldadapter":
-                                self.write_datatargets = True
-                            self.flow_out = out[idx]
-                        else:
-                            inputmap[target_uid][target_name] = out[idx]
+                        for target_uid, target_name in module.outputmap[name]:
+                            if target_uid not in self.members:
+                                # endnode
+                                self.endnode_uid = uid
+                                if target_uid == "worldadapter":
+                                    self.write_datatargets = True
+                                self.flow_out = out[idx]
+                            else:
+                                inputmap[target_uid][target_name] = out[idx]
                     else:
                         # non-connected output
+                        self.endnode_uid = uid
                         self.flow_out = out[idx]
             self.function = theano.function([self.flow_in], [self.flow_out], on_unused_input='warn')
         except Exception as e:
@@ -114,12 +117,13 @@ class FlowModule(object):
         self.flowtype = flowtype
         self.definition = definition
         self._load_flowfunction()
-        self.flowlinks = {}
-        for i in self.definition['outputs']:
-            self.flowlinks[i] = {}
-        self.dependencies = set()
         self.outputmap = {}
         self.inputmap = {}
+        for i in self.definition['outputs']:
+            self.outputmap[i] = set()
+        for i in self.definition['inputs']:
+            self.inputmap[i] = set()
+        self.dependencies = set()
 
     def get_data(self):
         return {
@@ -130,24 +134,28 @@ class FlowModule(object):
             'output_map': self.output_map
         }
 
+    def is_output_connected(self):
+        return len(set.intersection(*list(self.outputmap.values()))) > 0
+
     def set_input(self, input_name, source_uid, source_output):
         self.dependencies.add(source_uid)
-        self.inputmap[input_name] = (source_uid, source_output)
+        self.inputmap[input_name].add((source_uid, source_output))
 
     def unset_input(self, input_name, source_uid, source_output):
-        del self.inputmap[input_name]
         remove = True
-        for name in list(self.inputmap.keys()):
-            if self.inputmap[name][0] == source_uid:
-                remove = False
+        self.inputmap[input_name].discard((source_uid, source_output))
+        for name in self.inputmap:
+            for link in self.inputmap[name]:
+                if link[0] == source_uid:
+                    remove = False
         if remove:
             self.dependencies.discard(source_uid)
 
     def set_output(self, output_name, target_uid, target_input):
-        self.outputmap[output_name] = (target_uid, target_input)
+        self.outputmap[output_name].add((target_uid, target_input))
 
     def unset_output(self, output_name, target_uid, target_input):
-        del self.outputmap[output_name]
+        self.outputmap[output_name].discard((target_uid, target_input))
 
     def _load_flowfunction(self):
         from importlib.machinery import SourceFileLoader

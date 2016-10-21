@@ -79,7 +79,6 @@ class FlowGraph(object):
                         if target_uid not in self.members:
                             # endnode
                             self.endnode_uid = uid
-                            print("target_uid", target_uid)
                             if target_uid == "worldadapter":
                                 self.write_datatargets = True
                             self.flow_out = out[idx]

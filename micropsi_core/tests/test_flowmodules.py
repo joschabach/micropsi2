@@ -164,4 +164,6 @@ def bisect(inputs):
     worldadapter.datatarget_values = np.zeros(len(worldadapter.datatarget_values), dtype=nodenet.numpyfloatX)
     netapi.link(source, 'gen', bisect, 'sub')
     nodenet.step()
-    assert np.all(worldadapter.datatarget_values == sources * 3.5)
+    datatargets = np.around(worldadapter.datatarget_values, decimals=4)
+    sources = np.around(sources * 3.5, decimals=4)
+    assert np.all(datatargets == sources)

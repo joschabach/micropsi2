@@ -134,8 +134,20 @@ class FlowModule(object):
         self.dependencies.add(source_uid)
         self.inputmap[input_name] = (source_uid, source_output)
 
+    def unset_input(self, input_name, source_uid, source_output):
+        del self.inputmap[input_name]
+        remove = True
+        for name in list(self.inputmap.keys()):
+            if self.inputmap[name][0] == source_uid:
+                remove = False
+        if remove:
+            self.dependencies.discard(source_uid)
+
     def set_output(self, output_name, target_uid, target_input):
         self.outputmap[output_name] = (target_uid, target_input)
+
+    def unset_output(self, output_name, target_uid, target_input):
+        del self.outputmap[output_name]
 
     def _load_flowfunction(self):
         from importlib.machinery import SourceFileLoader

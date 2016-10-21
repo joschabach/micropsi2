@@ -806,12 +806,30 @@ class TheanoNodenet(Nodenet):
         source.set_output(source_output, target_uid, target_input)
         self.update_flowgraphs(set([source_uid, target_uid]), set([source_uid]))
 
+    def unlink_flow_modules(self, source_uid, source_output, target_uid, target_input):
+        source = self.flow_modules[source_uid]
+        target = self.flow_modules[target_uid]
+        source.unset_output(source_output, target_uid, target_input)
+        target.unset_input(target_input, source_uid, source_output)
+        self.flow_graphs.append(FlowGraph(self, nodes=[self.flow_modules[source_uid]]))
+        self.update_flowgraphs()
+
     def link_flow_module_to_worldadapter(self, flowmodule_uid, gateslot):
         module = self.flow_modules[flowmodule_uid]
         if gateslot in module.inputs:
             module.set_input(gateslot, "worldadapter", "datasources")
         elif gateslot in module.outputs:
             module.set_output(gateslot, "worldadapter", "datatargets")
+        else:
+            raise NameError("Unknown input/output name %s for flowmodule %s" % (gateslot, flowmodule_uid))
+        self.update_flowgraphs(node_uids=set([flowmodule_uid]))
+
+    def unlink_flow_module_from_worldadapter(self, flowmodule_uid, gateslot):
+        module = self.flow_modules[flowmodule_uid]
+        if gateslot in module.inputs:
+            module.unset_input(gateslot, "worldadapter", "datasources")
+        elif gateslot in module.outputs:
+            module.unset_output(gateslot, "worldadapter", "datatargets")
         else:
             raise NameError("Unknown input/output name %s for flowmodule %s" % (gateslot, flowmodule_uid))
         self.update_flowgraphs(node_uids=set([flowmodule_uid]))

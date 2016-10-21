@@ -232,3 +232,43 @@ def test_diverging_flowgraph(runtime, test_nodenet, default_world, resourcepath)
     worldadapter.datatarget_values = np.zeros(len(worldadapter.datatarget_values), dtype=nodenet.numpyfloatX)
     nodenet.step()
     assert np.all(worldadapter.datatarget_values == sources * 1.5)
+
+
+@pytest.mark.engine("theano_engine")
+def test_converging_flowgraphs(runtime, test_nodenet, default_world, resourcepath):
+    import theano
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+
+    double1 = netapi.create_flow_module("Double", None, "Double")
+    double2 = netapi.create_flow_module("Double", None, "Double")
+    bisect = netapi.create_flow_module("Bisect", None, "Bisect")
+
+    # link sources
+    nodenet.link_flow_module_to_worldadapter(double1.uid, "inputs")
+    nodenet.link_flow_module_to_worldadapter(double2.uid, "inputs")
+
+    # link both doubles to bisect
+    nodenet.link_flow_modules(double1.uid, "outputs", bisect.uid, "inputs")
+    nodenet.link_flow_modules(double2.uid, "outputs", bisect.uid, "inputs")
+
+    # clear the cache?
+    # theano.gof.cc.get_module_cache().clear()
+
+    # link bisect to targets.
+    nodenet.link_flow_module_to_worldadapter(bisect.uid, "outputs")
+
+    assert len(nodenet.flow_graphs) == 1
+
+    sources = np.zeros((5), dtype=nodenet.numpyfloatX)
+    sources[:] = np.random.randn(*sources.shape)
+    worldadapter.datasource_values = sources
+
+    # create activation source
+    source = netapi.create_node("Neuron", None)
+    netapi.link(source, 'gen', source, 'gen')
+    source.activation = 1
+
+    # link activation source to double
+    netapi.link(source, 'gen', bisect, 'sub')
+    nodenet.step()
+    assert np.all(worldadapter.datatarget_values == sources * 2)

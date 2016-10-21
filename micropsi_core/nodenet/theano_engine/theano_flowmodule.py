@@ -71,7 +71,10 @@ class FlowGraph(object):
                 module = self._instances[uid]
                 for name in module.inputmap:
                     if ('worldadapter', 'datasources') in module.inputmap[name]:
-                        inputmap[module.uid][name] = self.flow_in
+                        if name in inputmap[module.uid]:
+                            inputmap[module.uid][name] += self.flow_in
+                        else:
+                            inputmap[module.uid][name] = self.flow_in
                 out = module.flowfunction(**inputmap[uid])
                 if len(module.outputs) == 1:
                     out = [out]
@@ -85,7 +88,10 @@ class FlowGraph(object):
                                     self.write_datatargets = True
                                 self.flow_out = out[idx]
                             else:
-                                inputmap[target_uid][target_name] = out[idx]
+                                if target_name in inputmap[target_uid]:
+                                    inputmap[target_uid][target_name] += out[idx]
+                                else:
+                                    inputmap[target_uid][target_name] = out[idx]
                     else:
                         # non-connected output
                         self.endnode_uid = uid

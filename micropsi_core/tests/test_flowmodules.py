@@ -175,7 +175,7 @@ def test_unlink_flowmodules(runtime, test_nodenet, default_world, resourcepath):
 
     # unlink double from add
     nodenet.unlink_flow_modules(double.uid, "outputs", add.uid, "input1")
-    assert double.uid not in nodenet.flow_modules[add.uid].dependencies
+    assert double.uid not in nodenet.flow_module_instances[add.uid].dependencies
 
     # have two seperated graphs again
     assert len(nodenet.flow_graphs) == 2

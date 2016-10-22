@@ -50,7 +50,6 @@ logger = None
 worlds = {}
 nodenets = {}
 native_modules = {}
-flow_modules = {}
 custom_recipes = {}
 custom_operations = {}
 
@@ -356,7 +355,6 @@ def load_nodenet(nodenet_uid):
                     nodenets[nodenet_uid] = DictNodenet(**params)
                 elif engine == 'theano_engine':
                     from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
-                    params['flow_modules'] = flow_modules
                     nodenets[nodenet_uid] = TheanoNodenet(**params)
                 # Add additional engine types here
                 else:
@@ -1515,7 +1513,6 @@ def load_user_files(path, reload_nodefunctions=False, errors=[]):
 def parse_native_module_file(path):
 
     global native_modules
-    global flow_modules
     with open(path, encoding="utf-8") as fp:
         category = os.path.relpath(os.path.dirname(path), start=RESOURCE_PATH)
         try:
@@ -1523,10 +1520,6 @@ def parse_native_module_file(path):
         except ValueError:
             return "Nodetype data in %s/nodetypes.json not well-formed." % category
         for key in modules:
-            if modules[key].get('flowmodule'):
-                modules[key]['path'] = os.path.join(os.path.dirname(path), 'nodefunctions.py')
-                flow_modules[key] = modules[key]
-                continue
             modules[key]['path'] = os.path.join(os.path.dirname(path), 'nodefunctions.py')
             modules[key]['category'] = category
             if key in native_modules:

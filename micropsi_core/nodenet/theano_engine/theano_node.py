@@ -39,6 +39,7 @@ class TheanoNode(Node):
 
         if strtype in nodenet.native_modules or strtype == "Comment":
             self.slot_activation_snapshot = {}
+            self.take_slot_activation_snapshot()
             self._state = {}
 
             if parameters is not None:

@@ -21,14 +21,6 @@ except ImportError:
 if numpy_installed:
     # only register these native modules if we
     # have theano and numpy installed.
-    nodetypes["Flowmodule"] = {
-        "name": "Flowmodule",
-        "engine": "theano_engine",
-        "slottypes": ["sub"],
-        "gatetypes": ["sur"],
-        "nodefunction_name": "flowmodule",
-        "path": os.path.abspath(__file__)
-    }
     nodetypes["GradientDescentLSTM"] = {
         "name": "GradientDescentLSTM",
         "engine": "theano_engine",
@@ -127,11 +119,6 @@ if numpy_installed:
             "output_prefix": "output_1"
         }
     }
-
-
-def flowmodule(netapi, node, **params):
-    """ Emtpy implementation """
-    pass
 
 
 def gradient_descent_lstm(netapi, node=None, **params):

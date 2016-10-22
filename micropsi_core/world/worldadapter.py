@@ -342,6 +342,7 @@ try:
 
         def reset_datatargets(self):
             """ resets (zeros) the datatargets """
+            # self.datatarget_values = np.zeros_like(self.datatarget_values)
             pass  # pragma: no cover
 
         @abstractmethod

@@ -207,10 +207,9 @@ class TheanoNodenet(Nodenet):
             if native_modules[key].get('engine', self.engine) == self.engine:
                 self.native_module_definitions[key] = native_modules[key]
 
-        self.flow_modules = {}
-        self.flow_graphs = []
-
         self.flow_module_definitions = flow_modules
+        self.flow_module_instances = {}
+        self.flow_graphs = []
 
         self.create_nodespace(None, "Root", nodespace_to_id(1, rootpartition.pid))
 
@@ -739,7 +738,10 @@ class TheanoNodenet(Nodenet):
         if partition is None:
             raise KeyError("No node with id %s exists", uid)
         if uid in partition.native_module_instances:
-            return partition.native_module_instances[uid]
+            if uid in self.flow_module_instances:
+                return self.flow_module_instances[uid]
+            else:
+                return partition.native_module_instances[uid]
         elif uid in partition.comment_instances:
             return partition.comment_instances[uid]
         elif uid in self.proxycache:
@@ -747,7 +749,12 @@ class TheanoNodenet(Nodenet):
         elif self.is_node(uid):
             id = node_from_id(uid)
             parent_id = partition.allocated_node_parents[id]
-            node = TheanoNode(self, partition, nodespace_to_id(parent_id, partition.pid), uid, partition.allocated_nodes[id])
+            nodetype = get_string_node_type(partition.allocated_nodes[id], self.native_modules)
+            if self.get_nodetype(nodetype).is_flowmodule:
+                node = FlowModule(self, partition, nodespace_to_id(parent_id, partition.pid), uid, partition.allocated_nodes[id])
+                self.flow_module_instances[uid] = node
+            else:
+                node = TheanoNode(self, partition, nodespace_to_id(parent_id, partition.pid), uid, partition.allocated_nodes[id])
             self.proxycache[node.uid] = node
             return node
         else:
@@ -780,26 +787,24 @@ class TheanoNodenet(Nodenet):
 
     def get_available_flow_module_inputs(self):
         data = ["datasources"]
-        for uid in self.flow_modules:
-            data.extend(["%s:%s" % (self.flow_modules[uid].uid, output) for output in self.flow_modules[uid].outputs])
+        for uid in self.flow_module_instances:
+            data.extend(["%s:%s" % (self.flow_module_instances[uid].uid, output) for output in self.flow_module_instances[uid].outputs])
         return data
 
     def get_available_flow_module_outputs(self):
         return ["datatargets"]
 
     def create_flow_module(self, flowtype, parent_uid, position, name=None, uid=None, parameters=None):
-        if flowtype not in self.flow_module_definitions:
-            raise NameError("Unknown flow_module type")
         parent_uid = self.get_nodespace(parent_uid).uid
-        uid = self.create_node("Flowmodule", parent_uid, position, name=name, uid=uid)
-        self.flow_modules[uid] = FlowModule(uid, self, parent_uid, flowtype, self.flow_module_definitions[flowtype])
+        uid = self.create_node(flowtype, parent_uid, position, name=name, uid=uid, parameters={'flowtype': flowtype})
+        # self.flow_module_instances[uid] = FlowModule(uid, self, parent_uid, flowtype, self.flow_module_definitions[flowtype])
         # flow modules w/o output create new flowgraphs:
-        self.flow_graphs.append(FlowGraph(self, nodes=[self.flow_modules[uid]]))
+        self.flow_graphs.append(FlowGraph(self, nodes=[self.flow_module_instances[uid]]))
         return uid
 
     def link_flow_modules(self, source_uid, source_output, target_uid, target_input):
-        source = self.flow_modules[source_uid]
-        target = self.flow_modules[target_uid]
+        source = self.flow_module_instances[source_uid]
+        target = self.flow_module_instances[target_uid]
         removed_endnodes = set()
         if not source.is_output_connected():
             removed_endnodes.add(source_uid)
@@ -810,8 +815,8 @@ class TheanoNodenet(Nodenet):
         self.update_flowgraphs(set([source_uid, target_uid]), removed_endnodes, target_uid=target_uid)
 
     def unlink_flow_modules(self, source_uid, source_output, target_uid, target_input):
-        source = self.flow_modules[source_uid]
-        target = self.flow_modules[target_uid]
+        source = self.flow_module_instances[source_uid]
+        target = self.flow_module_instances[target_uid]
         source.unset_output(source_output, target_uid, target_input)
         target.unset_input(target_input, source_uid, source_output)
         target_uid = None
@@ -819,16 +824,16 @@ class TheanoNodenet(Nodenet):
             for g in self.flow_graphs:
                 remove = True
                 for uid in g.members:
-                    if source_uid in self.flow_modules[uid].dependencies:
+                    if source_uid in self.flow_module_instances[uid].dependencies:
                         remove = False
                 if remove:
                     g.members.remove(source_uid)
-            self.flow_graphs.append(FlowGraph(self, nodes=[self.flow_modules[source_uid]]))
+            self.flow_graphs.append(FlowGraph(self, nodes=[self.flow_module_instances[source_uid]]))
             target_uid = source_uid
         self.update_flowgraphs(set([source_uid, target_uid]), target_uid=target_uid)
 
     def link_flow_module_to_worldadapter(self, flowmodule_uid, gateslot):
-        module = self.flow_modules[flowmodule_uid]
+        module = self.flow_module_instances[flowmodule_uid]
         if gateslot in module.inputs:
             module.set_input(gateslot, "worldadapter", "datasources")
         elif gateslot in module.outputs:
@@ -838,7 +843,7 @@ class TheanoNodenet(Nodenet):
         self.update_flowgraphs(node_uids=set([flowmodule_uid]))
 
     def unlink_flow_module_from_worldadapter(self, flowmodule_uid, gateslot):
-        module = self.flow_modules[flowmodule_uid]
+        module = self.flow_module_instances[flowmodule_uid]
         if gateslot in module.inputs:
             module.unset_input(gateslot, "worldadapter", "datasources")
         elif gateslot in module.outputs:

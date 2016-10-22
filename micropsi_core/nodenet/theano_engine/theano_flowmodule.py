@@ -23,6 +23,11 @@ class FlowGraph(object):
         for n in nodes:
             self.add(n)
 
+    def get_data(self):
+        return {
+            'members': list(self.members)
+        }
+
     def add(self, flownode):
         if flownode.uid not in self.members:
             self.members.add(flownode.uid)
@@ -116,12 +121,12 @@ class FlowModule(object):
     def name(self):
         return self.nodenet.names.get(self.uid, self.uid)
 
-    def __init__(self, uid, nodenet, nodespace_uid, flowtype, definition):
+    def __init__(self, uid, nodenet, nodespace_uid, flowtype):
         self.uid = uid
         self.nodenet = nodenet
         self.nodespace_uid = nodespace_uid
         self.flowtype = flowtype
-        self.definition = definition
+        self.definition = nodenet.flow_module_definitions[flowtype]
         self._load_flowfunction()
         self.outputmap = {}
         self.inputmap = {}
@@ -131,13 +136,31 @@ class FlowModule(object):
             self.inputmap[i] = set()
         self.dependencies = set()
 
+    def parse_data(self, data):
+        for name in data['inputmap']:
+            for link in data['inputmap'][name]:
+                self.inputmap[name].add(tuple(link))
+        for name in data['outputmap']:
+            for link in data['outputmap'][name]:
+                self.outputmap[name].add(tuple(link))
+
     def get_data(self):
+        inmap = {}
+        outmap = {}
+        for name in self.inputmap:
+            inmap[name] = []
+            for link in self.inputmap[name]:
+                inmap[name].append(list(link))
+        for name in self.outputmap:
+            outmap[name] = []
+            for link in self.outputmap[name]:
+                outmap[name].append(list(link))
         return {
             'uid': self.uid,
             'nodespace_uid': self.nodespace_uid,
             'flowtype': self.flowtype,
-            'input_map': self.input_map,
-            'output_map': self.output_map
+            'inputmap': inmap,
+            'outputmap': outmap
         }
 
     def is_output_connected(self):

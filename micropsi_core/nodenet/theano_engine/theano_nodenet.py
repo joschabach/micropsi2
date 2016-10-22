@@ -473,6 +473,8 @@ class TheanoNodenet(Nodenet):
             metadata['modulators'] = self.construct_modulators_dict()
             metadata['partition_parents'] = self.inverted_partitionmap
             metadata['recorders'] = self.construct_recorders_dict()
+            metadata['flow_graphs'] = [g.get_data() for g in self.flow_graphs]
+            metadata['flow_modules'] = dict((node.uid, node.get_data()) for node in self.flow_modules.values())
             fp.write(json.dumps(metadata, sort_keys=True, indent=4))
 
         for recorder_uid in self._recorders:
@@ -536,6 +538,15 @@ class TheanoNodenet(Nodenet):
             for recorder_uid in initfrom.get('recorders', {}):
                 data = initfrom['recorders'][recorder_uid]
                 self._recorders[recorder_uid] = getattr(recorder, data['classname'])(self, **data)
+
+            for uid, data in initfrom.get('flow_modules', {}).items():
+                self.flow_modules[uid] = FlowModule(uid, self, data['nodespace_uid'], data['flowtype'])
+                self.flow_modules[uid].parse_data(data)
+            for data in initfrom.get('flow_graphs', []):
+                self.flow_graphs.append(FlowGraph(self, [self.flow_modules[uid] for uid in data['members']]))
+
+            import pdb; pdb.set_trace()
+            self.update_flowgraphs()
 
             # re-initialize step operators for theano recompile to new shared variables
             self.initialize_stepoperators()
@@ -792,7 +803,7 @@ class TheanoNodenet(Nodenet):
             raise NameError("Unknown flow_module type")
         parent_uid = self.get_nodespace(parent_uid).uid
         uid = self.create_node("Flowmodule", parent_uid, position, name=name, uid=uid)
-        self.flow_modules[uid] = FlowModule(uid, self, parent_uid, flowtype, self.flow_module_definitions[flowtype])
+        self.flow_modules[uid] = FlowModule(uid, self, parent_uid, flowtype)
         # flow modules w/o output create new flowgraphs:
         self.flow_graphs.append(FlowGraph(self, nodes=[self.flow_modules[uid]]))
         return uid

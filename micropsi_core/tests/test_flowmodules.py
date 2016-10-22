@@ -7,7 +7,6 @@ import pytest
 pytest.importorskip("numpy")
 
 import numpy as np
-from micropsi_core.nodenet.node import Nodetype
 from micropsi_core.world.worldadapter import ArrayWorldAdapter
 
 
@@ -71,7 +70,6 @@ def bisect(inputs):
 
 @pytest.mark.engine("theano_engine")
 def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepath):
-    import numpy as np
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
     assert nodenet.get_available_flow_module_inputs() == ["datasources"]
@@ -104,7 +102,6 @@ def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepat
 
 @pytest.mark.engine("theano_engine")
 def test_multiple_flowgraphs(runtime, test_nodenet, default_world, resourcepath):
-    import numpy as np
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
     double = netapi.create_flow_module("Double", None, "Double")
@@ -236,7 +233,6 @@ def test_diverging_flowgraph(runtime, test_nodenet, default_world, resourcepath)
 
 @pytest.mark.engine("theano_engine")
 def test_converging_flowgraphs(runtime, test_nodenet, default_world, resourcepath):
-    import theano
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
     double1 = netapi.create_flow_module("Double", None, "Double")
@@ -270,5 +266,35 @@ def test_converging_flowgraphs(runtime, test_nodenet, default_world, resourcepat
 
     # link activation source to double
     netapi.link(source, 'gen', bisect, 'sub')
+    nodenet.step()
+    assert np.all(worldadapter.datatarget_values == sources * 2)
+
+
+@pytest.mark.engine("theano_engine")
+def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+
+    flowmodule = netapi.create_flow_module("Double", None, "Double")
+    nodenet.link_flow_module_to_worldadapter(flowmodule.uid, "inputs")
+    nodenet.link_flow_module_to_worldadapter(flowmodule.uid, "outputs")
+    source = netapi.create_node("Neuron", None)
+    netapi.link(source, 'gen', source, 'gen')
+    netapi.link(source, 'gen', flowmodule, 'sub')
+    source.activation = 1
+
+    runtime.save_nodenet(test_nodenet)
+    runtime.revert_nodenet(test_nodenet)
+
+    nodenet = runtime.nodenets[test_nodenet]
+    flowmodule = nodenet.get_node(flowmodule.uid)
+    netapi = nodenet.netapi
+    nodenet.worldadapter_instance = worldadapter
+
+    sources = np.zeros((5), dtype=nodenet.numpyfloatX)
+    sources[:] = np.random.randn(*sources.shape)
+
+    worldadapter.datasource_values = sources
+
+    # step & assert that nothing happened without sub-activation
     nodenet.step()
     assert np.all(worldadapter.datatarget_values == sources * 2)

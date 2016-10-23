@@ -857,6 +857,25 @@ class TheanoNodenet(Nodenet):
             raise NameError("Unknown input/output name %s for flowmodule %s" % (gateslot, flowmodule_uid))
         self.update_flowgraphs(node_uids=set([flowmodule_uid]))
 
+    def delete_flow_module(self, delete_uid):
+        module = self.flow_modules[delete_uid]
+        for name in module.inputmap:
+            for source_uid, source_name in module.inputmap[name]:
+                if source_uid in self.flow_modules:
+                    self.flow_modules[source_uid].unset_output(source_name, delete_uid, name)
+        for name in module.outputmap:
+            for target_uid, target_name in module.outputmap[name]:
+                if target_uid in self.flow_modules:
+                    self.flow_modules[target_uid].unset_input(target_name, delete_uid, name)
+
+        del self.flow_modules[delete_uid]
+        for uid, item in self.flow_modules.items():
+            if not item.is_output_connected():
+                self.flow_graphs.append(FlowGraph(self, [item]))
+        for g in self.flow_graphs:
+            g.members.discard(delete_uid)
+        self.update_flowgraphs()
+
     def update_flowgraphs(self, node_uids=None, removed_endnodes=set(), target_uid=None):
         if len(removed_endnodes):
             remove_idxs = []

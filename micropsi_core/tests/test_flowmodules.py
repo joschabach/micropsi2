@@ -298,3 +298,34 @@ def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepa
     # step & assert that nothing happened without sub-activation
     nodenet.step()
     assert np.all(worldadapter.datatarget_values == sources * 2)
+
+
+@pytest.mark.engine("theano_engine")
+def test_delete_flowmodule(runtime, test_nodenet, default_world, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+
+    double1 = netapi.create_flow_module("Double", None, "Double")
+    double2 = netapi.create_flow_module("Double", None, "Double")
+    add = netapi.create_flow_module("Add", None, "Add")
+    bisect = netapi.create_flow_module("Bisect", None, "Bisect")
+
+    # build graph:
+    netapi.link_flow_modules(bisect, "outputs", add, "input1")
+    netapi.link_flow_modules(add, "outputs", double1, "inputs")
+    netapi.link_flow_modules(add, "outputs", double2, "inputs")
+    netapi.link_flow_module_to_worldadapter(bisect, "inputs")
+    netapi.link_flow_module_to_worldadapter(add, "input1")
+    netapi.link_flow_module_to_worldadapter(double1, "outputs")
+    netapi.link_flow_module_to_worldadapter(double2, "outputs")
+
+    assert len(nodenet.flow_graphs) == 2
+
+    netapi.delete_flow_module(add)
+
+    assert len(nodenet.flow_graphs) == 3
+
+    assert not nodenet.flow_modules[bisect.uid].is_output_connected()
+    for g in nodenet.flow_graphs:
+        assert add.uid not in g.members
+    for node in nodenet.flow_modules.values():
+        assert add.uid not in node.dependencies

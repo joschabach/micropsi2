@@ -545,7 +545,6 @@ class TheanoNodenet(Nodenet):
             for data in initfrom.get('flow_graphs', []):
                 self.flow_graphs.append(FlowGraph(self, [self.flow_modules[uid] for uid in data['members']]))
 
-            import pdb; pdb.set_trace()
             self.update_flowgraphs()
 
             # re-initialize step operators for theano recompile to new shared variables

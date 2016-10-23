@@ -70,6 +70,7 @@ class FlowGraph(object):
 
     def compile(self):
         try:
+            self.endnode_uid = None
             self.write_datatargets = False
             inputmap = dict((k, {}) for k in self.path)
             for uid in self.path:
@@ -105,6 +106,10 @@ class FlowGraph(object):
         except Exception as e:
             self.nodenet.logger.error("Error compiling graph function:  %s" % str(e))
             self.function = lambda x: self.flow_out
+            if self.endnode_uid is None:
+                for uid, item in self._instances.items():
+                    if not item.is_output_connected() or ('worldadapter', 'datatargets') in set.intersection(*list(item.outputmap.values())):
+                        self.endnode_uid = uid
 
 
 class FlowModule(object):

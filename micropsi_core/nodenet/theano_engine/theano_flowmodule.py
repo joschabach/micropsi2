@@ -118,7 +118,7 @@ class FlowModule(TheanoNode):
     def outputs(self):
         return self.definition['outputs']
 
-    def __init__(self, nodenet, partition, parent_uid, uid, type, parameters={}):
+    def __init__(self, nodenet, partition, parent_uid, uid, type, parameters={}, inputmap={}, outputmap={}):
         super().__init__(nodenet, partition, parent_uid, uid, type, parameters=parameters)
         self.definition = nodenet.native_module_definitions[self.type]
         self._load_flowfunction()
@@ -130,15 +130,14 @@ class FlowModule(TheanoNode):
             self.inputmap[i] = set()
         self.dependencies = set()
 
-    def parse_data(self, data):
-        for name in data['inputmap']:
-            for link in data['inputmap'][name]:
+        for name in inputmap:
+            for link in inputmap[name]:
                 self.inputmap[name].add(tuple(link))
-        for name in data['outputmap']:
-            for link in data['outputmap'][name]:
+        for name in outputmap:
+            for link in outputmap[name]:
                 self.outputmap[name].add(tuple(link))
 
-    def get_data(self):
+    def get_data(self, *args, **kwargs):
         inmap = {}
         outmap = {}
         for name in self.inputmap:
@@ -149,9 +148,10 @@ class FlowModule(TheanoNode):
             outmap[name] = []
             for link in self.outputmap[name]:
                 outmap[name].append(list(link))
-        data = super().get_data()
+        data = super().get_data(*args, **kwargs)
         data.update({
             'uid': self.uid,
+            'flow_module': True,
             'inputmap': inmap,
             'outputmap': outmap
         })
@@ -183,7 +183,7 @@ class FlowModule(TheanoNode):
     def unset_output(self, output_name, target_uid, target_input):
         self.outputmap[output_name].discard((target_uid, target_input))
 
-    def node_function(self, *args, **kwargs):
+    def node_function(self):
         pass
 
     def _load_flowfunction(self):

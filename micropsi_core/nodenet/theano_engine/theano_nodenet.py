@@ -538,9 +538,6 @@ class TheanoNodenet(Nodenet):
                 data = initfrom['recorders'][recorder_uid]
                 self._recorders[recorder_uid] = getattr(recorder, data['classname'])(self, **data)
 
-            for uid, data in initfrom.get('flow_modules', {}).items():
-                self.flow_module_instances[uid] = FlowModule(uid, self, data['nodespace_uid'], data['flowtype'])
-                self.flow_module_instances[uid].parse_data(data)
             for data in initfrom.get('flow_graphs', []):
                 self.flow_graphs.append(FlowGraph(self, [self.flow_module_instances[uid] for uid in data['members']]))
 
@@ -638,7 +635,19 @@ class TheanoNodenet(Nodenet):
                 data['type'] = 'Comment'
                 invalid_nodes.append(uid)
             if native_module_instances_only:
-                node = TheanoNode(self, self.get_partition(uid), parent_uid, uid, get_numerical_node_type(data['type'], nativemodules=self.native_modules), parameters=data.get('parameters'))
+                if data['flow_module']:
+                    node = FlowModule(
+                        self,
+                        self.get_partition(uid),
+                        data['parent_nodespace'],
+                        data['uid'],
+                        get_numerical_node_type(data['type'], nativemodules=self.native_modules),
+                        parameters=data.get('parameters', {}),
+                        inputmap=data['inputmap'],
+                        outputmap=data['outputmap'])
+                    self.flow_module_instances[node.uid] = node
+                else:
+                    node = TheanoNode(self, self.get_partition(uid), parent_uid, uid, get_numerical_node_type(data['type'], nativemodules=self.native_modules), parameters=data.get('parameters'))
                 self.proxycache[node.uid] = node
                 new_uid = node.uid
             else:
@@ -1361,22 +1370,36 @@ class TheanoNodenet(Nodenet):
             self.native_modules = newnative_modules
 
             # update the living instances that have the same slot/gate numbers
-            new_instances = {}
-            for id, instance in partition.native_module_instances.items():
+            new_native_module_instances = {}
+            for uid, instance in partition.native_module_instances.items():
                 parameters = instance.clone_parameters()
                 state = instance.clone_state()
                 position = instance.position
                 name = instance.name
-                partition = self.get_partition(id)
-                new_native_module_instance = TheanoNode(self, partition, instance.parent_nodespace, id, partition.allocated_nodes[node_from_id(id)])
-                new_native_module_instance.position = position
-                new_native_module_instance.name = name
+                partition = self.get_partition(uid)
+                if uid in self.flow_module_instances:
+                    data = instance.get_data(complete=True)
+                    new_instance = FlowModule(
+                        self,
+                        partition,
+                        instance.parent_nodespace,
+                        uid,
+                        partition.allocated_nodes[node_from_id(uid)],
+                        inputmap=data['inputmap'],
+                        outputmap=data['outputmap']
+                        )
+
+                else:
+                    new_instance = TheanoNode(self, partition, instance.parent_nodespace, uid, partition.allocated_nodes[node_from_id(uid)])
+                    new_native_module_instances[uid] = new_instance
+                new_instance.position = position
+                new_instance.name = name
                 for key, value in parameters.items():
-                    new_native_module_instance.set_parameter(key, value)
+                    new_instance.set_parameter(key, value)
                 for key, value in state.items():
-                    new_native_module_instance.set_state(key, value)
-                new_instances[id] = new_native_module_instance
-            partition.native_module_instances = new_instances
+                    new_instance.set_state(key, value)
+
+            partition.native_module_instances = new_native_module_instances
 
             # update native modules numeric types, as these may have been set with a different native module
             # node types list
@@ -1384,6 +1407,9 @@ class TheanoNodenet(Nodenet):
             for id in native_module_ids:
                 instance = self.get_node(node_to_id(id, partition.pid))
                 partition.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
+
+        # recompile flowgraphs:
+        self.update_flowgraphs()
 
         # recreate the deleted ones. Gate configurations and links will not be transferred.
         for uid, data in instances_to_recreate.items():

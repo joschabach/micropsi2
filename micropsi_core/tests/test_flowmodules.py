@@ -172,7 +172,7 @@ def test_unlink_flowmodules(runtime, test_nodenet, default_world, resourcepath):
 
     # unlink double from add
     nodenet.unlink_flow_modules(double.uid, "outputs", add.uid, "input1")
-    assert double.uid not in nodenet.flow_modules[add.uid].dependencies
+    assert double.uid not in nodenet.flow_module_instances[add.uid].dependencies
 
     # have two seperated graphs again
     assert len(nodenet.flow_graphs) == 2
@@ -324,8 +324,8 @@ def test_delete_flowmodule(runtime, test_nodenet, default_world, resourcepath):
 
     assert len(nodenet.flow_graphs) == 3
 
-    assert not nodenet.flow_modules[bisect.uid].is_output_connected()
+    assert not nodenet.flow_module_instances[bisect.uid].is_output_connected()
     for g in nodenet.flow_graphs:
         assert add.uid not in g.members
-    for node in nodenet.flow_modules.values():
+    for node in nodenet.flow_module_instances.values():
         assert add.uid not in node.dependencies

@@ -4,7 +4,7 @@
 """
 
 import theano
-from micropsi_core.nodenet.theano_engine.theano_definitions import node_from_id
+from micropsi_core.nodenet.theano_engine.theano_node import TheanoNode
 from theano import tensor as T
 
 
@@ -36,18 +36,14 @@ class FlowGraph(object):
                 self.endnode_uid = flownode.uid
 
     def update(self):
-        self._instances = dict((uid, self.nodenet.flow_modules[uid]) for uid in self.members)
+        self._instances = dict((uid, self.nodenet.get_node(uid)) for uid in self.members)
         self.set_path()
         self.compile()
 
     def is_requested(self):
         result = False
         if self.endnode_uid is not None:
-            partition = self.nodenet.get_partition(self.endnode_uid)
-            _a = partition.a.get_value(borrow=True)
-            _id = node_from_id(self.endnode_uid)
-            idx = partition.allocated_node_offsets[_id]
-            result = _a[idx] > 0
+            return self._instances[self.endnode_uid].is_requested()
         return result
 
     def set_path(self):
@@ -112,7 +108,7 @@ class FlowGraph(object):
                         self.endnode_uid = uid
 
 
-class FlowModule(object):
+class FlowModule(TheanoNode):
 
     @property
     def inputs(self):
@@ -122,16 +118,9 @@ class FlowModule(object):
     def outputs(self):
         return self.definition['outputs']
 
-    @property
-    def name(self):
-        return self.nodenet.names.get(self.uid, self.uid)
-
-    def __init__(self, uid, nodenet, nodespace_uid, flowtype):
-        self.uid = uid
-        self.nodenet = nodenet
-        self.nodespace_uid = nodespace_uid
-        self.flowtype = flowtype
-        self.definition = nodenet.flow_module_definitions[flowtype]
+    def __init__(self, nodenet, partition, parent_uid, uid, type, parameters={}):
+        super().__init__(nodenet, partition, parent_uid, uid, type, parameters=parameters)
+        self.definition = nodenet.native_module_definitions[self.type]
         self._load_flowfunction()
         self.outputmap = {}
         self.inputmap = {}
@@ -160,16 +149,19 @@ class FlowModule(object):
             outmap[name] = []
             for link in self.outputmap[name]:
                 outmap[name].append(list(link))
-        return {
+        data = super().get_data()
+        data.update({
             'uid': self.uid,
-            'nodespace_uid': self.nodespace_uid,
-            'flowtype': self.flowtype,
             'inputmap': inmap,
             'outputmap': outmap
-        }
+        })
+        return data
 
     def is_output_connected(self):
         return len(set.intersection(*list(self.outputmap.values()))) > 0
+
+    def is_requested(self):
+        return self.get_slot_activations(slot_type='sub') > 0
 
     def set_input(self, input_name, source_uid, source_output):
         self.dependencies.add(source_uid)
@@ -191,6 +183,9 @@ class FlowModule(object):
     def unset_output(self, output_name, target_uid, target_input):
         self.outputmap[output_name].discard((target_uid, target_input))
 
+    def node_function(self, *args, **kwargs):
+        pass
+
     def _load_flowfunction(self):
         from importlib.machinery import SourceFileLoader
         import inspect
@@ -200,7 +195,3 @@ class FlowModule(object):
         module = SourceFileLoader("nodefunctions", sourcefile).load_module()
         self.flowfunction = getattr(module, funcname)
         self.line_number = inspect.getsourcelines(self.flowfunction)[1]
-
-    def __repr__(self):
-        return "<Flowmodule %s \"%s\" (%s)>" % (self.flowtype, self.name, self.uid)
-

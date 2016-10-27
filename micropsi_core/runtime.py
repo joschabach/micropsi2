@@ -938,7 +938,7 @@ def __pythonify(name):
 
 
 def generate_netapi_fragment(nodenet_uid, node_uids):
-    lines = []
+    lines = ["nodespace_uid = None"]
     idmap = {}
     nodenet = get_nodenet(nodenet_uid)
     nodes = []
@@ -982,9 +982,9 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
             pythonname = __pythonify(name)
             if pythonname not in idmap.values():
                 varname = pythonname
-            lines.append("%s = netapi.create_node('%s', None, \"%s\")" % (varname, node.type, name))
+            lines.append("%s = netapi.create_node('%s', nodespace_uid, \"%s\")" % (varname, node.type, name))
         else:
-            lines.append("%s = netapi.create_node('%s', None)" % (varname, node.type))
+            lines.append("%s = netapi.create_node('%s', nodespace_uid)" % (varname, node.type))
 
         gate_config = node.get_gate_configuration()
         for gatetype, gconfig in gate_config.items():

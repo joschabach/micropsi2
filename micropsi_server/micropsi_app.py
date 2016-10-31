@@ -1385,6 +1385,32 @@ def get_netapi_autocomplete_data(nodenet_uid, name=None):
     return True, runtime.get_netapi_autocomplete_data(nodenet_uid, name=None)
 
 
+@rpc("connect_flow_modules")
+def connect_flow_modules(nodenet_uid, source_node_uid, source_output, target_node_uid, target_input):
+    """ Link two flow_modules """
+    return runtime.connect_flow_modules(nodenet_uid, source_node_uid, source_output, target_node_uid, target_input)
+
+
+@rpc("connect_flow_module_to_worldadapter")
+def connect_flow_module_to_worldadapter(nodenet_uid, flow_module_uid, gateslot):
+    """ Link a flow_module to a worldadapter.
+    Depending on whether you give an input or output name, it links to either
+    datasources or datatargets """
+    return runtime.connect_flow_module_to_worldadapter(nodenet_uid, flow_module_uid, gateslot)
+
+
+@rpc("disconnect_flow_modules")
+def disconnect_flow_modules(nodenet_uid, source_node_uid, source_output, target_node_uid, target_input):
+    """ Removes the link between the given flow_modules """
+    return runtime.disconnect_flow_modules(nodenet_uid, source_node_uid, source_output, target_node_uid, target_input)
+
+
+@rpc("disconnect_flow_module_from_worldadapter")
+def disconnect_flow_module_from_worldadapter(nodenet_uid, flow_module_uid, gateslot):
+    """ Unlinks the given connection betwenn the given flow_module and the worldadapter """
+    return runtime.disconnect_flow_module_from_worldadapter(nodenet_uid, flow_module_uid, gateslot)
+
+
 # -----------------------------------------------------------------------------------------------
 
 def main(host=None, port=None):

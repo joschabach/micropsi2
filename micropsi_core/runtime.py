@@ -1415,6 +1415,32 @@ def get_netapi_autocomplete_data(nodenet_uid, name=None):
     return data
 
 
+def connect_flow_modules(nodenet_uid, source_node_uid, source_output, target_node_uid, target_input):
+    """ Link two flow_modules """
+    nodenet = get_nodenet(nodenet_uid)
+    return True, nodenet.connect_flow_modules(source_node_uid, source_output, target_node_uid, target_input)
+
+
+def connect_flow_module_to_worldadapter(nodenet_uid, flow_module_uid, gateslot):
+    """ Link a flow_module to a worldadapter.
+    Depending on whether you give an input or output name, it links to either
+    datasources or datatargets """
+    nodenet = get_nodenet(nodenet_uid)
+    return True, nodenet.connect_flow_module_to_worldadapter(flow_module_uid, gateslot)
+
+
+def disconnect_flow_modules(nodenet_uid, source_node_uid, source_output, target_node_uid, target_input):
+    """ Removes the link between the given flow_modules """
+    nodenet = get_nodenet(nodenet_uid)
+    return True, nodenet.disconnect_flow_modules(source_node_uid, source_output, target_node_uid, target_input)
+
+
+def disconnect_flow_module_from_worldadapter(nodenet_uid, flow_module_uid, gateslot):
+    """ Unlinks the given connection betwenn the given flow_module and the worldadapter """
+    nodenet = get_nodenet(nodenet_uid)
+    return True, nodenet.disconnect_flow_module_from_worldadapter(flow_module_uid, gateslot)
+
+
 # --- end of API
 
 

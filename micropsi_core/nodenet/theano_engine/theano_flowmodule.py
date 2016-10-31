@@ -81,7 +81,7 @@ class FlowGraph(object):
                 if len(module.outputs) == 1:
                     out = [out]
                 for idx, name in enumerate(module.outputs):
-                    if name in module.outputmap:
+                    if name in module.outputmap and len(module.outputmap[name]):
                         for target_uid, target_name in module.outputmap[name]:
                             if target_uid not in self.members:
                                 # endnode

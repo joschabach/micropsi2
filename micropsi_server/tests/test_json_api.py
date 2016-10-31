@@ -1688,3 +1688,108 @@ def test_get_recorders(app, test_nodenet):
     assert data["current_index"] == 0
     assert data["first_step"] == 3
     assert data["classname"] == 'GateActivationRecorder'
+
+
+@pytest.mark.engine("theano_engine")
+def test_flow_modules(app, runtime, test_nodenet, resourcepath, default_world):
+    import numpy as np
+    from micropsi_core.world.worldadapter import ArrayWorldAdapter
+
+    class SimpleArrayWA(ArrayWorldAdapter):
+        def __init__(self, world):
+            super().__init__(world)
+            self.add_datasources(['a', 'b', 'c', 'd', 'e'])
+            self.add_datatargets(['a', 'b', 'c', 'd', 'e'])
+            self.update_data_sources_and_targets()
+
+        def update_data_sources_and_targets(self):
+            self.datatarget_feedback_values = np.copy(self.datatarget_values)
+            self.datasources = np.random.rand(len(self.datasources))
+
+    import os
+    with open(os.path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
+        fp.write("""
+    {"Double": {
+        "flow_module": true,
+        "name": "Double",
+        "flowfunction_name" : "double",
+        "inputs": ["inputs"],
+        "outputs": ["outputs"]
+    }}""")
+    with open(os.path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
+        fp.write("""
+def double(inputs):
+    return inputs * 2
+""")
+
+    app.set_auth()
+    nodenet = runtime.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    worldadapter = SimpleArrayWA(runtime.worlds[default_world])
+    nodenet.worldadapter_instance = worldadapter
+    runtime.reload_native_modules()
+
+    result = app.post_json('/rpc/add_node', {
+        'nodenet_uid': test_nodenet,
+        'type': 'Double',
+        'position': [200, 200, 0],
+        'nodespace': None,
+        'name': 'Double'})
+    assert_success(result)
+    flow_uid = result.json_body['data']
+
+    source = netapi.create_node("Neuron", None, "Source")
+    source.activation = 1
+    netapi.link(source, 'gen', source, 'gen')
+    netapi.link(source, 'gen', netapi.get_node(flow_uid), 'sub')
+
+    connect = {
+        'nodenet_uid': test_nodenet,
+        'flow_module_uid': flow_uid,
+        'gateslot': 'outputs'
+    }
+    result = app.post_json('/rpc/connect_flow_module_to_worldadapter', connect)
+    assert_success(result)
+    connect['gateslot'] = 'inputs'
+    result = app.post_json('/rpc/connect_flow_module_to_worldadapter', connect)
+    assert_success(result)
+
+    sources = np.zeros((5), dtype=nodenet.numpyfloatX)
+    sources[:] = np.random.randn(*sources.shape)
+    worldadapter.datasource_values = sources
+
+    runtime.step_nodenet(test_nodenet)
+    assert np.all(worldadapter.datatarget_values == sources * 2)
+
+    result = app.post_json('/rpc/disconnect_flow_module_from_worldadapter', {
+        'nodenet_uid': test_nodenet,
+        'flow_module_uid': flow_uid,
+        'gateslot': 'outputs'
+    })
+    assert_success(result)
+
+    double2 = netapi.create_node("Double", None, "double2")
+    netapi.link(source, 'gen', double2, 'sub')
+    netapi.connect_flow_module_to_worldadapter(double2, 'outputs')
+    result = app.post_json('/rpc/connect_flow_modules', {
+        'nodenet_uid': test_nodenet,
+        'source_node_uid': flow_uid,
+        'source_output': 'outputs',
+        'target_node_uid': double2.uid,
+        'target_input': 'inputs'
+    })
+    assert_success(result)
+
+    runtime.step_nodenet(test_nodenet)
+    assert np.all(worldadapter.datatarget_values == sources * 4)
+
+    result = app.post_json('/rpc/disconnect_flow_modules', {
+        'nodenet_uid': test_nodenet,
+        'source_node_uid': flow_uid,
+        'source_output': 'outputs',
+        'target_node_uid': double2.uid,
+        'target_input': 'inputs'
+    })
+
+    runtime.step_nodenet(test_nodenet)
+    assert np.all(worldadapter.datatarget_values == sources)

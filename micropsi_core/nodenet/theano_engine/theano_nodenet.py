@@ -541,7 +541,7 @@ class TheanoNodenet(Nodenet):
             for data in initfrom.get('flow_graphs', []):
                 self.flow_graphs.append(FlowGraph(self, [self.flow_module_instances[uid] for uid in data['members']]))
 
-            self.update_flowgraphs()
+            self.update_flow_graphs()
 
             # re-initialize step operators for theano recompile to new shared variables
             self.initialize_stepoperators()
@@ -769,7 +769,7 @@ class TheanoNodenet(Nodenet):
             id = node_from_id(uid)
             parent_id = partition.allocated_node_parents[id]
             nodetype = get_string_node_type(partition.allocated_nodes[id], self.native_modules)
-            if self.get_nodetype(nodetype).is_flowmodule:
+            if self.get_nodetype(nodetype).is_flow_module:
                 node = FlowModule(self, partition, nodespace_to_id(parent_id, partition.pid), uid, partition.allocated_nodes[id])
                 self.flow_module_instances[uid] = node
             else:
@@ -823,7 +823,7 @@ class TheanoNodenet(Nodenet):
             raise NameError("Unknown input/output value")
         target.set_input(target_input, source_uid, source_output)
         source.set_output(source_output, target_uid, target_input)
-        self.update_flowgraphs(set([source_uid, target_uid]), removed_endnodes, target_uid=target_uid)
+        self.update_flow_graphs(set([source_uid, target_uid]), removed_endnodes, target_uid=target_uid)
 
     def unlink_flow_modules(self, source_uid, source_output, target_uid, target_input):
         source = self.flow_module_instances[source_uid]
@@ -841,27 +841,27 @@ class TheanoNodenet(Nodenet):
                     g.members.remove(source_uid)
             self.flow_graphs.append(FlowGraph(self, nodes=[self.flow_module_instances[source_uid]]))
             target_uid = source_uid
-        self.update_flowgraphs(set([source_uid, target_uid]), target_uid=target_uid)
+        self.update_flow_graphs(set([source_uid, target_uid]), target_uid=target_uid)
 
-    def link_flow_module_to_worldadapter(self, flowmodule_uid, gateslot):
-        module = self.flow_module_instances[flowmodule_uid]
+    def link_flow_module_to_worldadapter(self, flow_module_uid, gateslot):
+        module = self.flow_module_instances[flow_module_uid]
         if gateslot in module.inputs:
             module.set_input(gateslot, "worldadapter", "datasources")
         elif gateslot in module.outputs:
             module.set_output(gateslot, "worldadapter", "datatargets")
         else:
-            raise NameError("Unknown input/output name %s for flowmodule %s" % (gateslot, flowmodule_uid))
-        self.update_flowgraphs(node_uids=set([flowmodule_uid]))
+            raise NameError("Unknown input/output name %s for flow_module %s" % (gateslot, flow_module_uid))
+        self.update_flow_graphs(node_uids=set([flow_module_uid]))
 
-    def unlink_flow_module_from_worldadapter(self, flowmodule_uid, gateslot):
-        module = self.flow_module_instances[flowmodule_uid]
+    def unlink_flow_module_from_worldadapter(self, flow_module_uid, gateslot):
+        module = self.flow_module_instances[flow_module_uid]
         if gateslot in module.inputs:
             module.unset_input(gateslot, "worldadapter", "datasources")
         elif gateslot in module.outputs:
             module.unset_output(gateslot, "worldadapter", "datatargets")
         else:
-            raise NameError("Unknown input/output name %s for flowmodule %s" % (gateslot, flowmodule_uid))
-        self.update_flowgraphs(node_uids=set([flowmodule_uid]))
+            raise NameError("Unknown input/output name %s for flow_module %s" % (gateslot, flow_module_uid))
+        self.update_flow_graphs(node_uids=set([flow_module_uid]))
 
     def _delete_flow_module(self, delete_uid):
         module = self.flow_module_instances[delete_uid]
@@ -880,9 +880,9 @@ class TheanoNodenet(Nodenet):
                 self.flow_graphs.append(FlowGraph(self, [item]))
         for g in self.flow_graphs:
             g.members.discard(delete_uid)
-        self.update_flowgraphs()
+        self.update_flow_graphs()
 
-    def update_flowgraphs(self, node_uids=None, removed_endnodes=set(), target_uid=None):
+    def update_flow_graphs(self, node_uids=None, removed_endnodes=set(), target_uid=None):
         if len(removed_endnodes):
             remove_idxs = []
             for idx, graph in enumerate(self.flow_graphs):
@@ -933,7 +933,7 @@ class TheanoNodenet(Nodenet):
                 if name is None or name == "" or name == uid:
                     name = parameters['datatarget']
 
-        if nodetype in self.native_modules and self.native_modules[nodetype].is_flowmodule:
+        if nodetype in self.native_modules and self.native_modules[nodetype].is_flow_module:
             self.flow_graphs.append(FlowGraph(self, nodes=[self.get_node(uid)]))
 
         if name is not None and name != "" and name != uid:
@@ -1407,8 +1407,8 @@ class TheanoNodenet(Nodenet):
                 instance = self.get_node(node_to_id(id, partition.pid))
                 partition.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
 
-        # recompile flowgraphs:
-        self.update_flowgraphs()
+        # recompile flow_graphs:
+        self.update_flow_graphs()
 
         # recreate the deleted ones. Gate configurations and links will not be transferred.
         for uid, data in instances_to_recreate.items():

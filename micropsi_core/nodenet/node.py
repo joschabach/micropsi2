@@ -513,7 +513,7 @@ class Nodetype(object):
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None,
-                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', dimensionality={}, flowmodule=False, **_):
+                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', dimensionality={}, flow_module=False, **_):
         """Initializes or creates a nodetype.
 
         Arguments:
@@ -531,14 +531,14 @@ class Nodetype(object):
 
         self.dimensionality = {}
         self.is_highdimensional = bool(dimensionality)
-        self.is_flowmodule = flowmodule
+        self.is_flow_module = flow_module
         if nodenet.engine == "dict_engine" and self.is_highdimensional:
             nodenet.logger.warning("Dict engine does not support high dimensional native_modules")
             self.is_highdimensional = False
             self.dimensionality = {}
 
         self.name = name
-        if self.is_flowmodule:
+        if self.is_flow_module:
             self.slottypes = ['sub']
             self.gatetypes = ['sur']
         else:

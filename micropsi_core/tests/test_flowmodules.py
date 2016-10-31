@@ -28,21 +28,21 @@ def prepare(runtime, test_nodenet, default_world, resourcepath):
     with open(os.path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
         fp.write("""
     {"Double": {
-        "flowmodule": true,
+        "flow_module": true,
         "name": "Double",
         "flowfunction_name" : "double",
         "inputs": ["inputs"],
         "outputs": ["outputs"]
     },
     "Add": {
-        "flowmodule": true,
+        "flow_module": true,
         "name": "Add",
         "flowfunction_name" : "add",
         "inputs": ["input1", "input2"],
         "outputs": ["outputs"]
     },
     "Bisect": {
-        "flowmodule": true,
+        "flow_module": true,
         "name": "Bisect",
         "flowfunction_name" : "bisect",
         "inputs": ["inputs"],

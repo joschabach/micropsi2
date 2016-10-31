@@ -813,13 +813,6 @@ class TheanoNodenet(Nodenet):
     def get_available_flow_module_outputs(self):
         return ["datatargets"]
 
-    def create_flow_module(self, flowtype, parent_uid, position, name=None, uid=None, parameters=None):
-        parent_uid = self.get_nodespace(parent_uid).uid
-        uid = self.create_node(flowtype, parent_uid, position, name=name, uid=uid, parameters={'flowtype': flowtype})
-        # flow modules w/o output create new flowgraphs:
-        self.flow_graphs.append(FlowGraph(self, nodes=[self.flow_module_instances[uid]]))
-        return uid
-
     def link_flow_modules(self, source_uid, source_output, target_uid, target_input):
         source = self.flow_module_instances[source_uid]
         target = self.flow_module_instances[target_uid]
@@ -870,7 +863,7 @@ class TheanoNodenet(Nodenet):
             raise NameError("Unknown input/output name %s for flowmodule %s" % (gateslot, flowmodule_uid))
         self.update_flowgraphs(node_uids=set([flowmodule_uid]))
 
-    def delete_flow_module(self, delete_uid):
+    def _delete_flow_module(self, delete_uid):
         module = self.flow_module_instances[delete_uid]
         for name in module.inputmap:
             for source_uid, source_name in module.inputmap[name]:
@@ -939,6 +932,9 @@ class TheanoNodenet(Nodenet):
                 self.get_node(uid).set_parameter("datatarget", parameters['datatarget'])
                 if name is None or name == "" or name == uid:
                     name = parameters['datatarget']
+
+        if nodetype in self.native_modules and self.native_modules[nodetype].is_flowmodule:
+            self.flow_graphs.append(FlowGraph(self, nodes=[self.get_node(uid)]))
 
         if name is not None and name != "" and name != uid:
             self.names[uid] = name
@@ -1039,6 +1035,9 @@ class TheanoNodenet(Nodenet):
                         to_partition.inlinks[partition.spid][1].set_value(np.delete(to_elements, zero_rows))
 
         partition.delete_node(node_id)
+
+        if uid in self.flow_module_instances:
+            self._delete_flow_module(uid)
 
         # remove sensor association if there should be one
         if uid in self.sensormap.values():

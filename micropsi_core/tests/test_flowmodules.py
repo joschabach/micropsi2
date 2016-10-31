@@ -74,7 +74,7 @@ def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepat
 
     assert nodenet.get_available_flow_module_inputs() == ["datasources"]
 
-    flowmodule = netapi.create_flow_module("Double", None, "Double")
+    flowmodule = netapi.create_node("Double", None, "Double")
     nodenet.link_flow_module_to_worldadapter(flowmodule.uid, "inputs")
     nodenet.link_flow_module_to_worldadapter(flowmodule.uid, "outputs")
 
@@ -104,9 +104,9 @@ def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepat
 def test_multiple_flowgraphs(runtime, test_nodenet, default_world, resourcepath):
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
-    double = netapi.create_flow_module("Double", None, "Double")
-    add = netapi.create_flow_module("Add", None, "Add")
-    bisect = netapi.create_flow_module("Bisect", None, "Bisect")
+    double = netapi.create_node("Double", None, "Double")
+    add = netapi.create_node("Add", None, "Add")
+    bisect = netapi.create_node("Bisect", None, "Bisect")
 
     assert len(nodenet.flow_graphs) == 3
 
@@ -156,8 +156,8 @@ def test_multiple_flowgraphs(runtime, test_nodenet, default_world, resourcepath)
 def test_unlink_flowmodules(runtime, test_nodenet, default_world, resourcepath):
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
-    double = netapi.create_flow_module("Double", None, "Double")
-    add = netapi.create_flow_module("Add", None, "Add")
+    double = netapi.create_node("Double", None, "Double")
+    add = netapi.create_node("Add", None, "Add")
 
     # link datasources to double & add
     nodenet.link_flow_module_to_worldadapter(double.uid, "inputs")
@@ -190,9 +190,9 @@ def test_unlink_flowmodules(runtime, test_nodenet, default_world, resourcepath):
 def test_diverging_flowgraph(runtime, test_nodenet, default_world, resourcepath):
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
-    double = netapi.create_flow_module("Double", None, "Double")
-    add = netapi.create_flow_module("Add", None, "Add")
-    bisect = netapi.create_flow_module("Bisect", None, "Bisect")
+    double = netapi.create_node("Double", None, "Double")
+    add = netapi.create_node("Add", None, "Add")
+    bisect = netapi.create_node("Bisect", None, "Bisect")
 
     # link sources to bisect
     nodenet.link_flow_module_to_worldadapter(bisect.uid, "inputs")
@@ -235,9 +235,9 @@ def test_diverging_flowgraph(runtime, test_nodenet, default_world, resourcepath)
 def test_converging_flowgraphs(runtime, test_nodenet, default_world, resourcepath):
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
-    double1 = netapi.create_flow_module("Double", None, "Double")
-    double2 = netapi.create_flow_module("Double", None, "Double")
-    bisect = netapi.create_flow_module("Bisect", None, "Bisect")
+    double1 = netapi.create_node("Double", None, "Double")
+    double2 = netapi.create_node("Double", None, "Double")
+    bisect = netapi.create_node("Bisect", None, "Bisect")
 
     # link sources
     nodenet.link_flow_module_to_worldadapter(double1.uid, "inputs")
@@ -274,7 +274,7 @@ def test_converging_flowgraphs(runtime, test_nodenet, default_world, resourcepat
 def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepath):
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
-    flowmodule = netapi.create_flow_module("Double", None, "Double")
+    flowmodule = netapi.create_node("Double", None, "Double")
     nodenet.link_flow_module_to_worldadapter(flowmodule.uid, "inputs")
     nodenet.link_flow_module_to_worldadapter(flowmodule.uid, "outputs")
     source = netapi.create_node("Neuron", None)
@@ -304,10 +304,10 @@ def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepa
 def test_delete_flowmodule(runtime, test_nodenet, default_world, resourcepath):
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
-    double1 = netapi.create_flow_module("Double", None, "Double")
-    double2 = netapi.create_flow_module("Double", None, "Double")
-    add = netapi.create_flow_module("Add", None, "Add")
-    bisect = netapi.create_flow_module("Bisect", None, "Bisect")
+    double1 = netapi.create_node("Double", None, "Double")
+    double2 = netapi.create_node("Double", None, "Double")
+    add = netapi.create_node("Add", None, "Add")
+    bisect = netapi.create_node("Bisect", None, "Bisect")
 
     # build graph:
     netapi.link_flow_modules(bisect, "outputs", add, "input1")
@@ -320,7 +320,7 @@ def test_delete_flowmodule(runtime, test_nodenet, default_world, resourcepath):
 
     assert len(nodenet.flow_graphs) == 2
 
-    netapi.delete_flow_module(add)
+    netapi.delete_node(add)
 
     assert len(nodenet.flow_graphs) == 3
 

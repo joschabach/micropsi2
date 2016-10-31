@@ -72,23 +72,23 @@ class TheanoNetAPI(NetAPI):
     def group_node_slots(self, node_uid, slot_prefix, group_name=None):
         self.__nodenet.group_highdimensional_elements(node_uid, slot=slot_prefix, group_name=group_name)
 
-    def link_flow_modules(self, source_node, source_output, target_node, target_input):
+    def connect_flow_modules(self, source_node, source_output, target_node, target_input):
         """ Link two flow_modules """
-        return self.__nodenet.link_flow_modules(source_node.uid, source_output, target_node.uid, target_input)
+        return self.__nodenet.connect_flow_modules(source_node.uid, source_output, target_node.uid, target_input)
 
-    def link_flow_module_to_worldadapter(self, flow_module, gateslot):
+    def connect_flow_module_to_worldadapter(self, flow_module, gateslot):
         """ Link a flow_module to a worldadapter.
         Depending on whether you give an input or output name, it links to either
         datasources or datatargets """
-        return self.__nodenet.link_flow_module_to_worldadapter(flow_module.uid, gateslot)
+        return self.__nodenet.connect_flow_module_to_worldadapter(flow_module.uid, gateslot)
 
-    def unlink_flow_modules(self, source_node, source_output, target_node, target_input):
+    def disconnect_flow_modules(self, source_node, source_output, target_node, target_input):
         """ Removes the link between the given flow_modules """
-        return self.__nodenet.unlink_flow_modules(source_node.uid, source_output, target_node.uid, target_input)
+        return self.__nodenet.disconnect_flow_modules(source_node.uid, source_output, target_node.uid, target_input)
 
-    def unlink_flow_module_from_worldadapter(self, flow_module, gateslot):
+    def disconnect_flow_module_from_worldadapter(self, flow_module, gateslot):
         """ Unlinks the given connection betwenn the given flow_module and the worldadapter """
-        return self.__nodenet.unlink_flow_module_from_worldadapter(flow_module.uid, gateslot)
+        return self.__nodenet.disconnect_flow_module_from_worldadapter(flow_module.uid, gateslot)
 
     def delete_flow_module(self, flow_module):
         return self.__nodenet.delete_flow_module(flow_module.uid)

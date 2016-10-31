@@ -813,7 +813,7 @@ class TheanoNodenet(Nodenet):
     def get_available_flow_module_outputs(self):
         return ["datatargets"]
 
-    def link_flow_modules(self, source_uid, source_output, target_uid, target_input):
+    def connect_flow_modules(self, source_uid, source_output, target_uid, target_input):
         source = self.flow_module_instances[source_uid]
         target = self.flow_module_instances[target_uid]
         removed_endnodes = set()
@@ -825,7 +825,7 @@ class TheanoNodenet(Nodenet):
         source.set_output(source_output, target_uid, target_input)
         self.update_flow_graphs(set([source_uid, target_uid]), removed_endnodes, target_uid=target_uid)
 
-    def unlink_flow_modules(self, source_uid, source_output, target_uid, target_input):
+    def disconnect_flow_modules(self, source_uid, source_output, target_uid, target_input):
         source = self.flow_module_instances[source_uid]
         target = self.flow_module_instances[target_uid]
         source.unset_output(source_output, target_uid, target_input)
@@ -843,7 +843,7 @@ class TheanoNodenet(Nodenet):
             target_uid = source_uid
         self.update_flow_graphs(set([source_uid, target_uid]), target_uid=target_uid)
 
-    def link_flow_module_to_worldadapter(self, flow_module_uid, gateslot):
+    def connect_flow_module_to_worldadapter(self, flow_module_uid, gateslot):
         module = self.flow_module_instances[flow_module_uid]
         if gateslot in module.inputs:
             module.set_input(gateslot, "worldadapter", "datasources")
@@ -853,7 +853,7 @@ class TheanoNodenet(Nodenet):
             raise NameError("Unknown input/output name %s for flow_module %s" % (gateslot, flow_module_uid))
         self.update_flow_graphs(node_uids=set([flow_module_uid]))
 
-    def unlink_flow_module_from_worldadapter(self, flow_module_uid, gateslot):
+    def disconnect_flow_module_from_worldadapter(self, flow_module_uid, gateslot):
         module = self.flow_module_instances[flow_module_uid]
         if gateslot in module.inputs:
             module.unset_input(gateslot, "worldadapter", "datasources")

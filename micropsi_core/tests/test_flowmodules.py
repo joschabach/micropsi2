@@ -75,8 +75,8 @@ def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepat
     assert nodenet.get_available_flow_module_inputs() == ["datasources"]
 
     flowmodule = netapi.create_node("Double", None, "Double")
-    nodenet.link_flow_module_to_worldadapter(flowmodule.uid, "inputs")
-    nodenet.link_flow_module_to_worldadapter(flowmodule.uid, "outputs")
+    nodenet.connect_flow_module_to_worldadapter(flowmodule.uid, "inputs")
+    nodenet.connect_flow_module_to_worldadapter(flowmodule.uid, "outputs")
 
     assert nodenet.get_available_flow_module_inputs() == ["datasources", "%s:outputs" % flowmodule.uid]
 
@@ -112,19 +112,19 @@ def test_multiple_flowgraphs(runtime, test_nodenet, default_world, resourcepath)
 
     # create a first graph
     # link datasources to double & add
-    nodenet.link_flow_module_to_worldadapter(double.uid, "inputs")
-    nodenet.link_flow_module_to_worldadapter(add.uid, "input2")
+    nodenet.connect_flow_module_to_worldadapter(double.uid, "inputs")
+    nodenet.connect_flow_module_to_worldadapter(add.uid, "input2")
     # link double to add:
-    nodenet.link_flow_modules(double.uid, "outputs", add.uid, "input1")
+    nodenet.connect_flow_modules(double.uid, "outputs", add.uid, "input1")
 
     assert len(nodenet.flow_graphs) == 2
 
     # link add to datatargets
-    nodenet.link_flow_module_to_worldadapter(add.uid, "outputs")
+    nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
 
     # create a second graph
-    nodenet.link_flow_module_to_worldadapter(bisect.uid, "inputs")
-    nodenet.link_flow_module_to_worldadapter(bisect.uid, "outputs")
+    nodenet.connect_flow_module_to_worldadapter(bisect.uid, "inputs")
+    nodenet.connect_flow_module_to_worldadapter(bisect.uid, "outputs")
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
@@ -153,25 +153,25 @@ def test_multiple_flowgraphs(runtime, test_nodenet, default_world, resourcepath)
 
 
 @pytest.mark.engine("theano_engine")
-def test_unlink_flowmodules(runtime, test_nodenet, default_world, resourcepath):
+def test_disconnect_flowmodules(runtime, test_nodenet, default_world, resourcepath):
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
     double = netapi.create_node("Double", None, "Double")
     add = netapi.create_node("Add", None, "Add")
 
     # link datasources to double & add
-    nodenet.link_flow_module_to_worldadapter(double.uid, "inputs")
-    nodenet.link_flow_module_to_worldadapter(add.uid, "input2")
+    nodenet.connect_flow_module_to_worldadapter(double.uid, "inputs")
+    nodenet.connect_flow_module_to_worldadapter(add.uid, "input2")
     # link double to add:
-    nodenet.link_flow_modules(double.uid, "outputs", add.uid, "input1")
+    nodenet.connect_flow_modules(double.uid, "outputs", add.uid, "input1")
     # link add to datatargets
-    nodenet.link_flow_module_to_worldadapter(add.uid, "outputs")
+    nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
 
     # have one connected graph
     assert len(nodenet.flow_graphs) == 1
 
     # unlink double from add
-    nodenet.unlink_flow_modules(double.uid, "outputs", add.uid, "input1")
+    nodenet.disconnect_flow_modules(double.uid, "outputs", add.uid, "input1")
     assert double.uid not in nodenet.flow_module_instances[add.uid].dependencies
 
     # have two seperated graphs again
@@ -180,7 +180,7 @@ def test_unlink_flowmodules(runtime, test_nodenet, default_world, resourcepath):
     assert nodenet.flow_graphs[0].members & nodenet.flow_graphs[1].members == set()
 
     # unlink add from datatargets
-    nodenet.unlink_flow_module_from_worldadapter(add.uid, "outputs")
+    nodenet.disconnect_flow_module_from_worldadapter(add.uid, "outputs")
     assert len(nodenet.flow_graphs) == 2
     assert set([g.endnode_uid for g in nodenet.flow_graphs]) == set([double.uid, add.uid])
     assert set([g.write_datatargets for g in nodenet.flow_graphs]) == {False}
@@ -195,17 +195,17 @@ def test_diverging_flowgraph(runtime, test_nodenet, default_world, resourcepath)
     bisect = netapi.create_node("Bisect", None, "Bisect")
 
     # link sources to bisect
-    nodenet.link_flow_module_to_worldadapter(bisect.uid, "inputs")
+    nodenet.connect_flow_module_to_worldadapter(bisect.uid, "inputs")
     # link bisect to double:
-    nodenet.link_flow_modules(bisect.uid, "outputs", double.uid, "inputs")
+    nodenet.connect_flow_modules(bisect.uid, "outputs", double.uid, "inputs")
     # link bisect to add:
-    nodenet.link_flow_modules(bisect.uid, "outputs", add.uid, "input1")
+    nodenet.connect_flow_modules(bisect.uid, "outputs", add.uid, "input1")
     # link sources to add:
-    nodenet.link_flow_module_to_worldadapter(add.uid, "input2")
+    nodenet.connect_flow_module_to_worldadapter(add.uid, "input2")
 
     # link double and add to targets:
-    nodenet.link_flow_module_to_worldadapter(double.uid, "outputs")
-    nodenet.link_flow_module_to_worldadapter(add.uid, "outputs")
+    nodenet.connect_flow_module_to_worldadapter(double.uid, "outputs")
+    nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
 
     assert len(nodenet.flow_graphs) == 2
 
@@ -240,18 +240,18 @@ def test_converging_flowgraphs(runtime, test_nodenet, default_world, resourcepat
     bisect = netapi.create_node("Bisect", None, "Bisect")
 
     # link sources
-    nodenet.link_flow_module_to_worldadapter(double1.uid, "inputs")
-    nodenet.link_flow_module_to_worldadapter(double2.uid, "inputs")
+    nodenet.connect_flow_module_to_worldadapter(double1.uid, "inputs")
+    nodenet.connect_flow_module_to_worldadapter(double2.uid, "inputs")
 
     # link both doubles to bisect
-    nodenet.link_flow_modules(double1.uid, "outputs", bisect.uid, "inputs")
-    nodenet.link_flow_modules(double2.uid, "outputs", bisect.uid, "inputs")
+    nodenet.connect_flow_modules(double1.uid, "outputs", bisect.uid, "inputs")
+    nodenet.connect_flow_modules(double2.uid, "outputs", bisect.uid, "inputs")
 
     # clear the cache?
     # theano.gof.cc.get_module_cache().clear()
 
     # link bisect to targets.
-    nodenet.link_flow_module_to_worldadapter(bisect.uid, "outputs")
+    nodenet.connect_flow_module_to_worldadapter(bisect.uid, "outputs")
 
     assert len(nodenet.flow_graphs) == 1
 
@@ -275,8 +275,8 @@ def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepa
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
     flowmodule = netapi.create_node("Double", None, "Double")
-    nodenet.link_flow_module_to_worldadapter(flowmodule.uid, "inputs")
-    nodenet.link_flow_module_to_worldadapter(flowmodule.uid, "outputs")
+    nodenet.connect_flow_module_to_worldadapter(flowmodule.uid, "inputs")
+    nodenet.connect_flow_module_to_worldadapter(flowmodule.uid, "outputs")
     source = netapi.create_node("Neuron", None)
     netapi.link(source, 'gen', source, 'gen')
     netapi.link(source, 'gen', flowmodule, 'sub')
@@ -310,13 +310,13 @@ def test_delete_flowmodule(runtime, test_nodenet, default_world, resourcepath):
     bisect = netapi.create_node("Bisect", None, "Bisect")
 
     # build graph:
-    netapi.link_flow_modules(bisect, "outputs", add, "input1")
-    netapi.link_flow_modules(add, "outputs", double1, "inputs")
-    netapi.link_flow_modules(add, "outputs", double2, "inputs")
-    netapi.link_flow_module_to_worldadapter(bisect, "inputs")
-    netapi.link_flow_module_to_worldadapter(add, "input1")
-    netapi.link_flow_module_to_worldadapter(double1, "outputs")
-    netapi.link_flow_module_to_worldadapter(double2, "outputs")
+    netapi.connect_flow_modules(bisect, "outputs", add, "input1")
+    netapi.connect_flow_modules(add, "outputs", double1, "inputs")
+    netapi.connect_flow_modules(add, "outputs", double2, "inputs")
+    netapi.connect_flow_module_to_worldadapter(bisect, "inputs")
+    netapi.connect_flow_module_to_worldadapter(add, "input1")
+    netapi.connect_flow_module_to_worldadapter(double1, "outputs")
+    netapi.connect_flow_module_to_worldadapter(double2, "outputs")
 
     assert len(nodenet.flow_graphs) == 2
 

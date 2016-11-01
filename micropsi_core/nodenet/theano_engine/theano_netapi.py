@@ -89,6 +89,3 @@ class TheanoNetAPI(NetAPI):
     def disconnect_flow_module_from_worldadapter(self, flow_module, gateslot):
         """ Unlinks the given connection betwenn the given flow_module and the worldadapter """
         return self.__nodenet.disconnect_flow_module_from_worldadapter(flow_module.uid, gateslot)
-
-    def delete_flow_module(self, flow_module):
-        return self.__nodenet.delete_flow_module(flow_module.uid)

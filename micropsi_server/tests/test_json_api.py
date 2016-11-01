@@ -1760,7 +1760,9 @@ def double(inputs):
 
     runtime.step_nodenet(test_nodenet)
     assert np.all(worldadapter.datatarget_values == sources * 2)
+    worldadapter.datatarget_values = np.zeros(len(worldadapter.datatarget_values), dtype=nodenet.numpyfloatX)
 
+    # disconnect first flow_module, create a second one, and chain them
     result = app.post_json('/rpc/disconnect_flow_module_from_worldadapter', {
         'nodenet_uid': test_nodenet,
         'flow_module_uid': flow_uid,
@@ -1782,7 +1784,9 @@ def double(inputs):
 
     runtime.step_nodenet(test_nodenet)
     assert np.all(worldadapter.datatarget_values == sources * 4)
+    worldadapter.datatarget_values = np.zeros(len(worldadapter.datatarget_values), dtype=nodenet.numpyfloatX)
 
+    # disconnect the two flow_modules
     result = app.post_json('/rpc/disconnect_flow_modules', {
         'nodenet_uid': test_nodenet,
         'source_node_uid': flow_uid,
@@ -1792,4 +1796,4 @@ def double(inputs):
     })
 
     runtime.step_nodenet(test_nodenet)
-    assert np.all(worldadapter.datatarget_values == sources)
+    assert np.all(worldadapter.datatarget_values == np.zeros(len(worldadapter.datatarget_values)))

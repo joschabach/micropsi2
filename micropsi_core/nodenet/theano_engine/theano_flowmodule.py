@@ -101,7 +101,7 @@ class FlowGraph(object):
             self.function = theano.function([self.flow_in], [self.flow_out], on_unused_input='warn')
         except Exception as e:
             self.nodenet.logger.error("Error compiling graph function:  %s" % str(e))
-            self.function = lambda x: self.flow_out
+            self.function = lambda x: None
             if self.endnode_uid is None:
                 for uid, item in self._instances.items():
                     if not item.is_output_connected() or ('worldadapter', 'datatargets') in set.intersection(*list(item.outputmap.values())):

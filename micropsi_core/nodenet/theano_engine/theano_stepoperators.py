@@ -82,7 +82,8 @@ class TheanoCalculateFlowmodules(Propagate):
         for graph in nodenet.flow_graphs:
             if graph.is_requested():
                 out = graph.function(nodenet.worldadapter_instance.get_datasource_values())
-                if graph.write_datatargets and nodenet.worldadapter_instance:
-                    nodenet.worldadapter_instance.add_datatarget_values(out[0])
-                for uid in graph.members:
-                    nodenet.get_node(uid).activation = 1
+                if out:
+                    if graph.write_datatargets and nodenet.worldadapter_instance:
+                        nodenet.worldadapter_instance.add_datatarget_values(out[0])
+                    for uid in graph.members:
+                        nodenet.get_node(uid).activation = 1

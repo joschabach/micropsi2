@@ -1729,6 +1729,7 @@ def double(inputs):
     nodenet.worldadapter_instance = worldadapter
     runtime.reload_native_modules()
 
+    # create one flow_module, wire to sources & targets
     result = app.post_json('/rpc/add_node', {
         'nodenet_uid': test_nodenet,
         'type': 'Double',

@@ -172,8 +172,9 @@ def test_disconnect_flowmodules(runtime, test_nodenet, default_world, resourcepa
 
     # unlink double from add
     nodenet.disconnect_flow_modules(double.uid, "outputs", add.uid, "input1")
-    assert double.uid not in nodenet.flow_module_instances[add.uid].dependencies
 
+    # assert dependencies cleaned
+    assert double.uid not in nodenet.flow_module_instances[add.uid].dependencies
     # have two seperated graphs again
     assert len(nodenet.flow_graphs) == 2
     # assert the members have been updated accordingly
@@ -329,3 +330,30 @@ def test_delete_flowmodule(runtime, test_nodenet, default_world, resourcepath):
         assert add.uid not in g.members
     for node in nodenet.flow_module_instances.values():
         assert add.uid not in node.dependencies
+
+
+@pytest.mark.engine("theano_engine")
+def test_link_large_graph(runtime, test_nodenet, default_world, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+
+    double = netapi.create_node("Double", None, "Double")
+    bisect = netapi.create_node("Bisect", None, "Bisect")
+    add = netapi.create_node("Add", None, "Add")
+
+    # create activation source:
+    source = netapi.create_node("Neuron", None)
+    source.activation = 1
+    netapi.link(source, 'gen', source, 'gen')
+    netapi.link(source, 'gen', double, 'sub')
+    netapi.link(source, 'gen', add, 'sub')
+
+    nodenet.connect_flow_module_to_worldadapter(bisect.uid, "inputs")
+    nodenet.connect_flow_modules(bisect.uid, "outputs", double.uid, "inputs")
+
+    nodenet.connect_flow_module_to_worldadapter(add.uid, "input1")
+    nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
+
+    nodenet.connect_flow_modules(double.uid, "outputs", add.uid, "input2")
+
+    assert len(nodenet.flow_graphs) == 1
+    assert nodenet.flow_graphs[0].members == {double.uid, bisect.uid, add.uid}

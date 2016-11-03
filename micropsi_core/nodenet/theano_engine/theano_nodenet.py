@@ -816,20 +816,36 @@ class TheanoNodenet(Nodenet):
     def connect_flow_modules(self, source_uid, source_output, target_uid, target_input):
         source = self.flow_module_instances[source_uid]
         target = self.flow_module_instances[target_uid]
-        removed_endnodes = set()
-        if not source.is_output_connected():
-            removed_endnodes.add(source_uid)
         if source_output not in source.outputs or target_input not in target.inputs:
             raise NameError("Unknown input/output value")
+
+        remove_graph_idxs = []
+        new_graph_members = {source_uid}
+        for idx, graph in enumerate(self.flow_graphs):
+            if source_uid in graph.members:
+                if graph.endnode_uid == source_uid and not source.is_output_connected():
+                    remove_graph_idxs.append(idx)
+                idx = graph.path.index(source_uid)
+                new_graph_members.update(set(graph.path[:idx]))
+
+        remove_graph_idxs.reverse()
+        for idx in remove_graph_idxs:
+            del self.flow_graphs[idx]
+
+        for graph in self.flow_graphs:
+            if target_uid in graph.members:
+                graph.members.update(new_graph_members)
+
         target.set_input(target_input, source_uid, source_output)
         source.set_output(source_output, target_uid, target_input)
-        self.update_flow_graphs(set([source_uid, target_uid]), removed_endnodes, target_uid=target_uid)
+        self.update_flow_graphs()
 
     def disconnect_flow_modules(self, source_uid, source_output, target_uid, target_input):
         source = self.flow_module_instances[source_uid]
         target = self.flow_module_instances[target_uid]
         source.unset_output(source_output, target_uid, target_input)
         target.unset_input(target_input, source_uid, source_output)
+        new_graph_members = set()
         if not source.is_output_connected():
             for g in self.flow_graphs:
                 remove = True
@@ -838,8 +854,13 @@ class TheanoNodenet(Nodenet):
                         remove = False
                 if remove:
                     g.members.remove(source_uid)
-            self.flow_graphs.append(FlowGraph(self, nodes=[self.flow_module_instances[source_uid]]))
-        self.update_flow_graphs(set([source.uid, target.uid]))
+                elif source_uid in g.members:
+                    idx = graph.path.index(source_uid)
+                    new_graph_members.update(set(graph.path[:idx]))
+            new_graph = FlowGraph(self, nodes=[self.flow_module_instances[source_uid]])
+            new_graph.members.update(new_graph_members)
+            self.flow_graphs.append(new_graph)
+        self.update_flow_graphs()
 
     def connect_flow_module_to_worldadapter(self, flow_module_uid, gateslot):
         module = self.flow_module_instances[flow_module_uid]
@@ -880,26 +901,10 @@ class TheanoNodenet(Nodenet):
             g.members.discard(delete_uid)
         self.update_flow_graphs()
 
-    def update_flow_graphs(self, node_uids=None, removed_endnodes=set(), target_uid=None):
-        if len(removed_endnodes):
-            remove_idxs = []
-            for idx, graph in enumerate(self.flow_graphs):
-                    if graph.endnode_uid in removed_endnodes:
-                        remove_idxs.append(idx)
-            remove_idxs.reverse()
-            for idx in remove_idxs:
-                del self.flow_graphs[idx]
-
+    def update_flow_graphs(self, node_uids=None):
         for graph in self.flow_graphs:
-            if node_uids is None:
+            if node_uids is None or graph.members & node_uids:
                 graph.update()
-            else:
-                if target_uid is not None and target_uid in graph.members:
-                    graph.members = graph.members | node_uids
-                    graph.update()
-                elif target_uid is None and graph.members & node_uids:
-                    graph.members = graph.members | node_uids
-                    graph.update()
 
     def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_configuration=None):
         nodespace_uid = self.get_nodespace(nodespace_uid).uid

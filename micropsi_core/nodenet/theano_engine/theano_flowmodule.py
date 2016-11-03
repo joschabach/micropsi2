@@ -31,6 +31,7 @@ class FlowGraph(object):
     def add(self, flownode):
         if flownode.uid not in self.members:
             self.members.add(flownode.uid)
+            self.path.append(flownode.uid)
             self._instances[flownode.uid] = flownode
             if not flownode.is_output_connected():
                 self.endnode_uid = flownode.uid

@@ -1389,11 +1389,11 @@ class TheanoNodenet(Nodenet):
                         partition.allocated_nodes[node_from_id(uid)],
                         inputmap=data['inputmap'],
                         outputmap=data['outputmap']
-                        )
+                    )
 
                 else:
                     new_instance = TheanoNode(self, partition, instance.parent_nodespace, uid, partition.allocated_nodes[node_from_id(uid)])
-                    new_native_module_instances[uid] = new_instance
+                new_native_module_instances[uid] = new_instance
                 new_instance.position = position
                 new_instance.name = name
                 for key, value in parameters.items():

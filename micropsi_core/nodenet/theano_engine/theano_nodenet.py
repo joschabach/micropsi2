@@ -635,7 +635,7 @@ class TheanoNodenet(Nodenet):
                 data['type'] = 'Comment'
                 invalid_nodes.append(uid)
             if native_module_instances_only:
-                if data['flow_module']:
+                if data.get('flow_module'):
                     node = FlowModule(
                         self,
                         self.get_partition(uid),

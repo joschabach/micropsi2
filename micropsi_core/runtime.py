@@ -402,6 +402,7 @@ def get_nodenet_metadata(nodenet_uid):
         'nodetypes': nodenet.get_standard_nodetype_definitions(),
         'nodespaces': nodenet.construct_nodespaces_dict(None, transitive=True),
         'native_modules': nodenet.get_native_module_definitions(),
+        'flow_modules': nodenet.get_flow_module_definitions(),
         'monitors': nodenet.construct_monitors_dict(),
         'rootnodespace': nodenet.get_nodespace(None).uid,
         'resource_path': RESOURCE_PATH

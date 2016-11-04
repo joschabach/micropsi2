@@ -23,6 +23,7 @@ var viewProperties = {
     symbolSize: 14,
     nodeWidth: 84,
     compactNodeWidth: 32,
+    flowModuleWidth: 160,
     cornerWidth: 6,
     padding: 5,
     slotWidth: 34,
@@ -114,11 +115,14 @@ selectionBox.name = "selectionBox";
 
 nodetypes = {};
 native_modules = {};
+flow_modules = {};
 native_module_categories = {};
+flow_module_categories = {};
 available_gatetypes = [];
 nodespaces = {};
 sorted_nodetypes = [];
 sorted_native_modules = [];
+sorted_flow_modules = [];
 nodenet_data = null;
 
 initializeMenus();
@@ -244,7 +248,7 @@ function setNodenetValues(data){
 
 function buildCategoryTree(item, path, idx){
     if (idx < path.length){
-        name = path[idx];
+        var name = path[idx];
         if (!item[name]){
             item[name] = {};
         }
@@ -303,21 +307,22 @@ function setCurrentNodenet(uid, nodespace, changed){
 
             $.cookie('selected_nodenet', currentNodenet+"/", { expires: 7, path: '/' });
             if(nodenetChanged || jQuery.isEmptyObject(nodetypes)){
-                nodetypes = data.nodetypes;
-                native_modules = data.native_modules;
-                sorted_nodetypes = Object.keys(nodetypes);
-                sorted_nodetypes.sort(function(a, b){
+                var sortfunc = function(a, b){
                     if(a < b) return -1;
                     if(a > b) return 1;
                     return 0;
-                });
+                };
+                nodetypes = data.nodetypes;
+                sorted_nodetypes = Object.keys(nodetypes);
+                sorted_nodetypes.sort(sortfunc);
+
                 native_modules = data.native_modules;
                 sorted_native_modules = Object.keys(native_modules);
-                sorted_native_modules.sort(function(a, b){
-                    if(a < b) return -1;
-                    if(a > b) return 1;
-                    return 0;
-                });
+                sorted_native_modules.sort(sortfunc);
+
+                flow_modules = data.flow_modules;
+                sorted_flow_modules = Object.keys(flow_modules);
+                sorted_flow_modules.sort(sortfunc);
 
                 categories = [];
                 for(var key in native_modules){
@@ -327,6 +332,15 @@ function setCurrentNodenet(uid, nodespace, changed){
                 native_module_categories = {}
                 for(var i =0; i < categories.length; i++){
                     buildCategoryTree(native_module_categories, categories[i], 0);
+                }
+                flow_categories = [];
+                for(var key in flow_modules){
+                    nodetypes[key] = flow_modules[key];
+                    flow_categories.push(flow_modules[key].category.split('/'));
+                }
+                flow_module_categories = {}
+                for(var i =0; i < flow_categories.length; i++){
+                    buildCategoryTree(flow_module_categories, flow_categories[i], 0);
                 }
 
                 available_gatetypes = [];
@@ -1323,6 +1337,13 @@ function renderFullNode(node) {
     var nodeItem;
     if(node.type == 'Comment'){
         nodeItem = renderComment(node);
+    } else if(node.type in flow_modules){
+        var skeleton = createFullNodeSkeleton(node);
+        var activations = createFullNodeActivations(node);
+        var inputs = createFlowInputs(node);
+        var outputs = createFlowOutputs(node);
+        var gateAnnotations = createGateAnnotation(node);
+        nodeItem = new Group([activations, skeleton, inputs, outputs, gateAnnotations]);
     } else {
         var skeleton = createFullNodeSkeleton(node);
         var activations = createFullNodeActivations(node);
@@ -1333,6 +1354,100 @@ function renderFullNode(node) {
     nodeItem.name = node.uid;
     nodeItem.isCompact = false;
     nodeLayer.addChild(nodeItem);
+}
+
+function createFlowInputs(node){
+    var inputs = flow_modules[node.type].inputs;
+    var num = inputs.length;
+    var inputshapes = [];
+    var itemlength = node.bounds.width / num;
+    for(var i = 0; i < num; i++){
+        var label = new PointText(node.bounds.x + ((i+.5) * itemlength), node.bounds.y + node.bounds.height - viewProperties.lineHeight * 0.3 * viewProperties.zoomFactor);
+        label.content = inputs[i];
+        label.name = inputs[i];
+        label.paragraphStyle.justification = 'center';
+        label.characterStyle = {
+            fillColor: viewProperties.nodeFontColor,
+            fontSize: viewProperties.fontSize*viewProperties.zoomFactor
+        }
+        if(num > 1 && i < num - 1){
+            var border = new Path.Rectangle(
+                    node.bounds.x + ((i+1) * itemlength), 
+                    node.bounds.y + node.bounds.height - viewProperties.lineHeight * viewProperties.zoomFactor,
+                    viewProperties.shadowDisplacement.x * viewProperties.zoomFactor,
+                    viewProperties.lineHeight * viewProperties.zoomFactor
+                );
+            border.fillColor = viewProperties.shadowColor;
+            border.fillColor.alpha = 0.3;
+            inputshapes.push(new Group([label, border]));
+        } else {
+            inputshapes.push(label);
+        }
+    }
+    var bounds = node.bounds;
+    var upper = new Path.Rectangle(bounds.x+viewProperties.shadowDisplacement.x*viewProperties.zoomFactor,
+        bounds.y + bounds.height - (viewProperties.lineHeight - viewProperties.strokeWidth)*viewProperties.zoomFactor,
+        bounds.width - viewProperties.shadowDisplacement.x*viewProperties.zoomFactor,
+        viewProperties.innerShadowDisplacement.y*viewProperties.zoomFactor);
+    upper.fillColor = viewProperties.shadowColor;
+    upper.fillColor.alpha = 0.3;
+    var lower = upper.clone();
+    lower.position += new Point(0, viewProperties.innerShadowDisplacement.y*viewProperties.zoomFactor);
+    lower.fillColor = viewProperties.highlightColor;
+    lower.fillColor.alpha = 0.3;
+    var delimiter = new Group([upper, lower]);
+    delimiter.name = "delimiter";
+    inputshapes.push(delimiter);
+    var group = new Group(inputshapes);
+    group.name = 'flowModuleInputs';
+    return group;
+}
+
+function createFlowOutputs(node, with_delimiter){
+    var outputs = flow_modules[node.type].outputs;
+    var num = outputs.length;
+    var outputshapes = [];
+    var itemlength = node.bounds.width / num;
+    for(var i = 0; i < num; i++){
+        var label = new PointText(node.bounds.x + ((i+.5) * itemlength), node.bounds.y + viewProperties.lineHeight * 0.7 * viewProperties.zoomFactor);
+        label.content = outputs[i];
+        label.name = outputs[i];
+        label.paragraphStyle.justification = 'center';
+        label.characterStyle = {
+            fillColor: viewProperties.nodeFontColor,
+            fontSize: viewProperties.fontSize*viewProperties.zoomFactor
+        }
+        if(num > 1 && i < num - 1){
+            var border = new Path.Rectangle(
+                    node.bounds.x + ((i+1) * itemlength), 
+                    node.bounds.y,
+                    viewProperties.shadowDisplacement.x * viewProperties.zoomFactor,
+                    viewProperties.lineHeight * viewProperties.zoomFactor
+                );
+            border.fillColor = viewProperties.shadowColor;
+            border.fillColor.alpha = 0.3;
+            outputshapes.push(new Group([label, border]));
+        } else {
+            outputshapes.push(label);
+        }
+    }
+    if(with_delimiter){
+        var bounds = node.bounds;
+        var upper = new Path.Rectangle(bounds.x+viewProperties.shadowDisplacement.x*viewProperties.zoomFactor,
+            bounds.y + (viewProperties.lineHeight - viewProperties.strokeWidth)*viewProperties.zoomFactor,
+            bounds.width - viewProperties.shadowDisplacement.x*viewProperties.zoomFactor,
+            viewProperties.innerShadowDisplacement.y*viewProperties.zoomFactor);
+        upper.fillColor = viewProperties.shadowColor;
+        upper.fillColor.alpha = 0.3;
+        var lower = upper.clone();
+        lower.position += new Point(0, viewProperties.innerShadowDisplacement.y*viewProperties.zoomFactor);
+        lower.fillColor = viewProperties.highlightColor;
+        lower.fillColor.alpha = 0.3;
+        delimiter = new Group([upper, lower]);
+        delimiter.name = "delimiter";
+        outputshapes.push(delimiter);
+    }
+    return new Group(outputshapes);
 }
 
 function renderComment(node){
@@ -1367,6 +1482,16 @@ function renderCompactNode(node) {
     var nodeItem;
     if(node.type == "Comment"){
         nodeItem = renderComment(node);
+    } else if(node.type in flow_modules){
+        var skeleton = createCompactNodeSkeleton(node);
+        var activations = createCompactNodeActivations(node);
+        var label = createCompactNodeLabel(node);
+        var inputs = createFlowInputs(node);
+        var outputs = createFlowOutputs(node, true);
+        nodeItem = new Group([activations, skeleton, inputs, outputs]);
+        if (label){
+            nodeItem.addChild(label);
+        }
     } else {
         var skeleton = createCompactNodeSkeleton(node);
         var activations = createCompactNodeActivations(node);
@@ -1396,6 +1521,11 @@ function calculateNodeBounds(node) {
         height = viewProperties.lineHeight*(Math.max(node.slotIndexes.length, node.gateIndexes.length)+2)*viewProperties.zoomFactor;
     } else {
         width = height = viewProperties.compactNodeWidth * viewProperties.zoomFactor;
+    }
+    if(node.type in flow_modules){
+        def = flow_modules[node.type];
+        width = Math.max(def.inputs.length, def.outputs.length) * viewProperties.flowModuleWidth;
+        height += viewProperties.lineHeight * viewProperties.zoomFactor;
     }
     return new Rectangle(node.x*viewProperties.zoomFactor - width/2,
         node.y*viewProperties.zoomFactor - height/2, // center node on origin
@@ -2620,6 +2750,21 @@ function openContextMenu(menu_id, event) {
                     key = sorted_native_modules[idx];
                     if(native_modules[key].category == current_category){
                         items += '<li><a data-create-node="' + key + '">'+ native_modules[key].name +'</a></li>';
+                    }
+                }
+                return items;
+            });
+            html += '</ul></li>';
+        }
+        if(Object.keys(flow_modules).length){
+            html += '<li class="divider"></li><li class="noop"><a>Create Flow Module<i class="icon-chevron-right"></i></a>';
+            html += '<ul class="sub-menu dropdown-menu">';
+            html += buildRecursiveDropdown(flow_module_categories, '', '', function(current_category){
+                items = '';
+                for(var idx in sorted_flow_modules){
+                    key = sorted_flow_modules[idx];
+                    if(flow_modules[key].category == current_category){
+                        items += '<li><a data-create-node="' + key + '">'+ flow_modules[key].name +'</a></li>';
                     }
                 }
                 return items;

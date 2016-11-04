@@ -555,7 +555,7 @@ class Nodetype(object):
         self.symbol = symbol
         self.logger = nodenet.logger
 
-        self.parameters = parameters or {}
+        self.parameters = parameters or []
         self.parameter_values = parameter_values or {}
         self.parameter_defaults = parameter_defaults or {}
 

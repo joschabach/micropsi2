@@ -77,13 +77,9 @@ def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepat
     assert metadata['flow_modules']['Double']['inputs'] == ["inputs"]
     assert metadata['flow_modules']['Double']['outputs'] == ["outputs"]
 
-    assert nodenet.get_available_flow_module_inputs() == ["datasources"]
-
     flowmodule = netapi.create_node("Double", None, "Double")
     nodenet.connect_flow_module_to_worldadapter(flowmodule.uid, "inputs")
     nodenet.connect_flow_module_to_worldadapter(flowmodule.uid, "outputs")
-
-    assert nodenet.get_available_flow_module_inputs() == ["datasources", "%s:outputs" % flowmodule.uid]
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
@@ -113,8 +109,6 @@ def test_multiple_flowgraphs(runtime, test_nodenet, default_world, resourcepath)
     add = netapi.create_node("Add", None, "Add")
     bisect = netapi.create_node("Bisect", None, "Bisect")
 
-    assert len(nodenet.flow_graphs) == 3
-
     # create a first graph
     # link datasources to double & add
     nodenet.connect_flow_module_to_worldadapter(double.uid, "inputs")
@@ -122,14 +116,16 @@ def test_multiple_flowgraphs(runtime, test_nodenet, default_world, resourcepath)
     # link double to add:
     nodenet.connect_flow_modules(double.uid, "outputs", add.uid, "input1")
 
-    assert len(nodenet.flow_graphs) == 2
-
     # link add to datatargets
     nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
+
+    assert len(nodenet.flowfuncs) == 1
 
     # create a second graph
     nodenet.connect_flow_module_to_worldadapter(bisect.uid, "inputs")
     nodenet.connect_flow_module_to_worldadapter(bisect.uid, "outputs")
+
+    assert len(nodenet.flowfuncs) == 2
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
@@ -173,23 +169,23 @@ def test_disconnect_flowmodules(runtime, test_nodenet, default_world, resourcepa
     nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
 
     # have one connected graph
-    assert len(nodenet.flow_graphs) == 1
+    assert len(nodenet.flowfuncs) == 1
 
     # unlink double from add
     nodenet.disconnect_flow_modules(double.uid, "outputs", add.uid, "input1")
 
     # assert dependencies cleaned
     assert double.uid not in nodenet.flow_module_instances[add.uid].dependencies
-    # have two seperated graphs again
-    assert len(nodenet.flow_graphs) == 2
-    # assert the members have been updated accordingly
-    assert nodenet.flow_graphs[0].members & nodenet.flow_graphs[1].members == set()
 
     # unlink add from datatargets
     nodenet.disconnect_flow_module_from_worldadapter(add.uid, "outputs")
-    assert len(nodenet.flow_graphs) == 2
-    assert set([g.endnode_uid for g in nodenet.flow_graphs]) == set([double.uid, add.uid])
-    assert set([g.write_datatargets for g in nodenet.flow_graphs]) == {False}
+
+    sources = np.zeros((5), dtype=nodenet.numpyfloatX)
+    sources[:] = np.random.randn(*sources.shape)
+    worldadapter.datasource_values = sources
+
+    nodenet.step()
+    assert np.all(worldadapter.datatarget_values == np.zeros(5))
 
 
 @pytest.mark.engine("theano_engine")
@@ -213,7 +209,7 @@ def test_diverging_flowgraph(runtime, test_nodenet, default_world, resourcepath)
     nodenet.connect_flow_module_to_worldadapter(double.uid, "outputs")
     nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
 
-    assert len(nodenet.flow_graphs) == 2
+    assert len(nodenet.flowfuncs) == 2
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
@@ -254,12 +250,13 @@ def test_converging_flowgraphs(runtime, test_nodenet, default_world, resourcepat
     nodenet.connect_flow_modules(double2.uid, "outputs", bisect.uid, "inputs")
 
     # clear the cache?
-    # theano.gof.cc.get_module_cache().clear()
+    import theano
+    theano.gof.cc.get_module_cache().clear()
 
     # link bisect to targets.
     nodenet.connect_flow_module_to_worldadapter(bisect.uid, "outputs")
 
-    assert len(nodenet.flow_graphs) == 1
+    assert len(nodenet.flowfuncs) == 1
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
@@ -301,7 +298,6 @@ def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepa
 
     worldadapter.datasource_values = sources
 
-    # step & assert that nothing happened without sub-activation
     nodenet.step()
     assert np.all(worldadapter.datatarget_values == sources * 2)
 
@@ -324,17 +320,18 @@ def test_delete_flowmodule(runtime, test_nodenet, default_world, resourcepath):
     netapi.connect_flow_module_to_worldadapter(double1, "outputs")
     netapi.connect_flow_module_to_worldadapter(double2, "outputs")
 
-    assert len(nodenet.flow_graphs) == 2
-
     netapi.delete_node(add)
 
-    assert len(nodenet.flow_graphs) == 3
-
     assert not nodenet.flow_module_instances[bisect.uid].is_output_connected()
-    for g in nodenet.flow_graphs:
-        assert add.uid not in g.members
     for node in nodenet.flow_module_instances.values():
         assert add.uid not in node.dependencies
+
+    sources = np.zeros((5), dtype=nodenet.numpyfloatX)
+    sources[:] = np.random.randn(*sources.shape)
+    worldadapter.datasource_values = sources
+
+    nodenet.step()
+    assert np.all(worldadapter.datatarget_values == np.zeros(5))
 
 
 @pytest.mark.engine("theano_engine")
@@ -359,6 +356,11 @@ def test_link_large_graph(runtime, test_nodenet, default_world, resourcepath):
     nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
 
     nodenet.connect_flow_modules(double.uid, "outputs", add.uid, "input2")
+    assert len(nodenet.flowfuncs) == 1
 
-    assert len(nodenet.flow_graphs) == 1
-    assert nodenet.flow_graphs[0].members == {double.uid, bisect.uid, add.uid}
+    sources = np.zeros((5), dtype=nodenet.numpyfloatX)
+    sources[:] = np.random.randn(*sources.shape)
+    worldadapter.datasource_values = sources
+
+    nodenet.step()
+    assert np.all(worldadapter.datatarget_values == sources * 2)

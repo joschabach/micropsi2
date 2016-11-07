@@ -79,11 +79,8 @@ class TheanoCalculateFlowmodules(Propagate):
     def execute(self, nodenet, nodes, netapi):
         for uid, item in nodenet.flow_module_instances.items():
             item.take_slot_activation_snapshot()
-        for graph in nodenet.flow_graphs:
-            if graph.is_requested():
-                out = graph.function(nodenet.worldadapter_instance.get_datasource_values())
+        for endnode, func in nodenet.flowfuncs:
+            if endnode.is_requested():
+                out = func(nodenet.worldadapter_instance.get_datasource_values())
                 if out:
-                    if graph.write_datatargets and nodenet.worldadapter_instance:
-                        nodenet.worldadapter_instance.add_datatarget_values(out[0])
-                    for uid in graph.members:
-                        nodenet.get_node(uid).activation = 1
+                    nodenet.worldadapter_instance.add_datatarget_values(out[0])

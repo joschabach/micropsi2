@@ -11,6 +11,7 @@ import math
 from theano import tensor as T
 import numpy as np
 import scipy
+import networkx as nx
 
 from micropsi_core.nodenet import monitor
 from micropsi_core.nodenet import recorder
@@ -23,7 +24,7 @@ from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
 from micropsi_core.nodenet.theano_engine.theano_nodespace import *
 from micropsi_core.nodenet.theano_engine.theano_netapi import TheanoNetAPI
 from micropsi_core.nodenet.theano_engine.theano_partition import TheanoPartition
-from micropsi_core.nodenet.theano_engine.theano_flowmodule import FlowModule, FlowGraph
+from micropsi_core.nodenet.theano_engine.theano_flowmodule import FlowModule, compilefunc
 
 from configuration import config as settings
 
@@ -210,6 +211,11 @@ class TheanoNodenet(Nodenet):
         self.flow_module_definitions = flow_modules
         self.flow_module_instances = {}
         self.flow_graphs = []
+
+        self.flowgraph = nx.MultiDiGraph()
+        self.flowfuncs = []
+        self.flowgraph.add_node("datasources")
+        self.flowgraph.add_node("datatargets")
 
         self.create_nodespace(None, "Root", nodespace_to_id(1, rootpartition.pid))
 
@@ -472,9 +478,11 @@ class TheanoNodenet(Nodenet):
             metadata['modulators'] = self.construct_modulators_dict()
             metadata['partition_parents'] = self.inverted_partitionmap
             metadata['recorders'] = self.construct_recorders_dict()
-            metadata['flow_graphs'] = [g.get_data() for g in self.flow_graphs]
             metadata['flow_modules'] = dict((node.uid, node.get_data()) for node in self.flow_module_instances.values())
             fp.write(json.dumps(metadata, sort_keys=True, indent=4))
+
+        # write graph data
+        nx.write_adjlist(self.flowgraph, os.path.join(base_path, "flowgraph.adjlist"))
 
         for recorder_uid in self._recorders:
             self._recorders[recorder_uid].save()
@@ -538,9 +546,12 @@ class TheanoNodenet(Nodenet):
                 data = initfrom['recorders'][recorder_uid]
                 self._recorders[recorder_uid] = getattr(recorder, data['classname'])(self, **data)
 
-            for data in initfrom.get('flow_graphs', []):
-                self.flow_graphs.append(FlowGraph(self, [self.flow_module_instances[uid] for uid in data['members']]))
+            flowfile = os.path.join(self.get_persistency_path(), 'flowgraph.adjlist')
+            if os.path.isfile(flowfile):
+                self.flowgraph = nx.read_adjlist(flowfile, create_using=nx.MultiDiGraph())
 
+            # for uid in self.flow_module_instances:
+            #     self.flowgraph.add_node(uid)
             self.update_flow_graphs()
 
             # re-initialize step operators for theano recompile to new shared variables
@@ -813,60 +824,28 @@ class TheanoNodenet(Nodenet):
     def get_available_flow_module_outputs(self):
         return ["datatargets"]
 
+    def _create_flow_module(self, node):
+        self.flowgraph.add_node(node.uid)
+
     def connect_flow_modules(self, source_uid, source_output, target_uid, target_input):
-        source = self.flow_module_instances[source_uid]
-        target = self.flow_module_instances[target_uid]
-        if source_output not in source.outputs or target_input not in target.inputs:
-            raise NameError("Unknown input/output value")
-
-        remove_graph_idxs = []
-        new_graph_members = {source_uid}
-        for idx, graph in enumerate(self.flow_graphs):
-            if source_uid in graph.members:
-                if graph.endnode_uid == source_uid and not source.is_output_connected():
-                    remove_graph_idxs.append(idx)
-                idx = graph.path.index(source_uid)
-                new_graph_members.update(set(graph.path[:idx]))
-
-        remove_graph_idxs.reverse()
-        for idx in remove_graph_idxs:
-            del self.flow_graphs[idx]
-
-        for graph in self.flow_graphs:
-            if target_uid in graph.members:
-                graph.members.update(new_graph_members)
-
-        target.set_input(target_input, source_uid, source_output)
-        source.set_output(source_output, target_uid, target_input)
+        self.flowgraph.add_edge(source_uid, target_uid, key="%s_%s" % (source_output, target_input))
+        self.flow_module_instances[target_uid].set_input(target_input, source_uid, source_output)
+        self.flow_module_instances[source_uid].set_output(source_output, target_uid, target_input)
         self.update_flow_graphs()
 
     def disconnect_flow_modules(self, source_uid, source_output, target_uid, target_input):
-        source = self.flow_module_instances[source_uid]
-        target = self.flow_module_instances[target_uid]
-        source.unset_output(source_output, target_uid, target_input)
-        target.unset_input(target_input, source_uid, source_output)
-        new_graph_members = set()
-        if not source.is_output_connected():
-            for g in self.flow_graphs:
-                remove = True
-                for uid in g.members:
-                    if source_uid in self.flow_module_instances[uid].dependencies:
-                        remove = False
-                if remove:
-                    g.members.remove(source_uid)
-                elif source_uid in g.members:
-                    idx = graph.path.index(source_uid)
-                    new_graph_members.update(set(graph.path[:idx]))
-            new_graph = FlowGraph(self, nodes=[self.flow_module_instances[source_uid]])
-            new_graph.members.update(new_graph_members)
-            self.flow_graphs.append(new_graph)
+        self.flowgraph.remove_edge(source_uid, target_uid, key="%s_%s" % (source_output, target_input))
+        self.flow_module_instances[source_uid].unset_output(source_output, target_uid, target_input)
+        self.flow_module_instances[target_uid].unset_input(target_input, source_uid, source_output)
         self.update_flow_graphs()
 
     def connect_flow_module_to_worldadapter(self, flow_module_uid, gateslot):
         module = self.flow_module_instances[flow_module_uid]
         if gateslot in module.inputs:
+            self.flowgraph.add_edge("datasources", flow_module_uid, key="datasources_%s" % gateslot)
             module.set_input(gateslot, "worldadapter", "datasources")
         elif gateslot in module.outputs:
+            self.flowgraph.add_edge(flow_module_uid, "datatargets", key="%s_datatargets" % gateslot)
             module.set_output(gateslot, "worldadapter", "datatargets")
         else:
             raise NameError("Unknown input/output name %s for flow_module %s" % (gateslot, flow_module_uid))
@@ -875,14 +854,17 @@ class TheanoNodenet(Nodenet):
     def disconnect_flow_module_from_worldadapter(self, flow_module_uid, gateslot):
         module = self.flow_module_instances[flow_module_uid]
         if gateslot in module.inputs:
+            self.flowgraph.remove_edge("datasources", flow_module_uid, key="datasources_%s" % gateslot)
             module.unset_input(gateslot, "worldadapter", "datasources")
         elif gateslot in module.outputs:
+            self.flowgraph.remove_edge(flow_module_uid, "datatargets", key="%s_datatargets" % gateslot)
             module.unset_output(gateslot, "worldadapter", "datatargets")
         else:
             raise NameError("Unknown input/output name %s for flow_module %s" % (gateslot, flow_module_uid))
         self.update_flow_graphs(node_uids=set([flow_module_uid]))
 
     def _delete_flow_module(self, delete_uid):
+        self.flowgraph.remove_node(delete_uid)
         module = self.flow_module_instances[delete_uid]
         for name in module.inputmap:
             for source_uid, source_name in module.inputmap[name]:
@@ -894,17 +876,20 @@ class TheanoNodenet(Nodenet):
                     self.flow_module_instances[target_uid].unset_input(target_name, delete_uid, name)
 
         del self.flow_module_instances[delete_uid]
-        for uid, item in self.flow_module_instances.items():
-            if not item.is_output_connected():
-                self.flow_graphs.append(FlowGraph(self, [item]))
-        for g in self.flow_graphs:
-            g.members.discard(delete_uid)
         self.update_flow_graphs()
 
     def update_flow_graphs(self, node_uids=None):
-        for graph in self.flow_graphs:
-            if node_uids is None or graph.members & node_uids:
-                graph.update()
+        self.flowfuncs = []
+        if "datatargets" in nx.descendants(self.flowgraph, "datasources"):
+            # we have a connection. now do what?
+            for x in self.flowgraph.predecessors('datatargets'):
+                # input to datatarges
+                members = (nx.ancestors(self.flowgraph, x) | {x}) - {'datasources'}
+                path = [x for x in nx.topological_sort(self.flowgraph) if x in members]
+                func = compilefunc(self, [self.get_node(uid) for uid in path])
+                self.flowfuncs.append((self.get_node(x), func))
+        else:
+            print("NO CONNECTION _ NOT COMPILING")
 
     def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_configuration=None):
         nodespace_uid = self.get_nodespace(nodespace_uid).uid
@@ -937,7 +922,7 @@ class TheanoNodenet(Nodenet):
                     name = parameters['datatarget']
 
         if nodetype in self.native_modules and self.native_modules[nodetype].is_flow_module:
-            self.flow_graphs.append(FlowGraph(self, nodes=[self.get_node(uid)]))
+            self._create_flow_module(self.get_node(uid))
 
         if name is not None and name != "" and name != uid:
             self.names[uid] = name
@@ -1850,7 +1835,6 @@ class TheanoNodenet(Nodenet):
             partition_from.set_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to, new_w)
 
         self.proxycache.clear()
-
 
     def get_available_gatefunctions(self):
         return {

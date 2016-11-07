@@ -8,105 +8,39 @@ from micropsi_core.nodenet.theano_engine.theano_node import TheanoNode
 from theano import tensor as T
 
 
-class FlowGraph(object):
-
-    def __init__(self, nodenet, nodes=[]):
-        self.nodenet = nodenet
-        self.members = set()
-        self.path = []
-        self._instances = {}
-        self.function = None
-        self.endnode_uid = None
-        self.write_datatargets = False
-        self.flow_in = T.vector('inputs', dtype=nodenet.theanofloatX)
-        self.flow_out = T.vector('outputs', dtype=nodenet.theanofloatX)
-        for n in nodes:
-            self.add(n)
-
-    def get_data(self):
-        return {
-            'members': list(self.members)
-        }
-
-    def add(self, flownode):
-        if flownode.uid not in self.members:
-            self.members.add(flownode.uid)
-            self.path.append(flownode.uid)
-            self._instances[flownode.uid] = flownode
-            if not flownode.is_output_connected():
-                self.endnode_uid = flownode.uid
-
-    def update(self):
-        self._instances = dict((uid, self.nodenet.get_node(uid)) for uid in self.members)
-        self.set_path()
-        self.compile()
-
-    def is_requested(self):
-        result = False
-        if self.endnode_uid is not None:
-            return self._instances[self.endnode_uid].is_requested()
-        return result
-
-    def set_path(self):
-        self.path = []
-        for uid, item in self._instances.items():
-            if len(item.dependencies & self.members) == 0:
-                self.path = [uid]
-
-        for uid, item in self._instances.items():
-            if uid in self.path:
-                continue
-            idxs = []
-            for dep in item.dependencies:
-                try:
-                    idxs.append(self.path.index(dep))
-                except:
-                    pass
-            idx = (max(idxs) + 1) if len(idxs) else len(self.path)
-            self.path.insert(idx, uid)
-
-    def compile(self):
-        try:
-            self.endnode_uid = None
-            self.write_datatargets = False
-            inputmap = dict((k, {}) for k in self.path)
-            for uid in self.path:
-                module = self._instances[uid]
-                for name in module.inputmap:
-                    if ('worldadapter', 'datasources') in module.inputmap[name]:
-                        if name in inputmap[module.uid]:
-                            inputmap[module.uid][name] += self.flow_in
-                        else:
-                            inputmap[module.uid][name] = self.flow_in
-                out = module.flowfunction(**inputmap[uid])
-                if len(module.outputs) == 1:
-                    out = [out]
-                for idx, name in enumerate(module.outputs):
-                    if name in module.outputmap and len(module.outputmap[name]):
-                        for target_uid, target_name in module.outputmap[name]:
-                            if target_uid not in self.members:
-                                # endnode
-                                self.endnode_uid = uid
-                                if target_uid == "worldadapter":
-                                    self.write_datatargets = True
-                                self.flow_out = out[idx]
-                            else:
-                                if target_name in inputmap[target_uid]:
-                                    inputmap[target_uid][target_name] += out[idx]
-                                else:
-                                    inputmap[target_uid][target_name] = out[idx]
+def compilefunc(nodenet, nodes):
+    flow_in = T.vector('inputs', dtype=nodenet.theanofloatX)
+    flow_out = T.vector('outputs', dtype=nodenet.theanofloatX)
+    uids = [n.uid for n in nodes]
+    try:
+        inputmap = dict((k.uid, {}) for k in nodes)
+        for module in nodes:
+            for name in module.inputmap:
+                if ('worldadapter', 'datasources') in module.inputmap[name]:
+                    if name in inputmap[module.uid]:
+                        inputmap[module.uid][name] += flow_in
                     else:
-                        # non-connected output
-                        self.endnode_uid = uid
-                        self.flow_out = out[idx]
-            self.function = theano.function([self.flow_in], [self.flow_out], on_unused_input='warn')
-        except Exception as e:
-            self.nodenet.logger.error("Error compiling graph function:  %s" % str(e))
-            self.function = lambda x: None
-            if self.endnode_uid is None:
-                for uid, item in self._instances.items():
-                    if not item.is_output_connected() or ('worldadapter', 'datatargets') in set.intersection(*list(item.outputmap.values())):
-                        self.endnode_uid = uid
+                        inputmap[module.uid][name] = flow_in
+            out = module.flowfunction(**inputmap[module.uid])
+            if len(module.outputs) == 1:
+                out = [out]
+            for idx, name in enumerate(module.outputs):
+                if name in module.outputmap and len(module.outputmap[name]):
+                    for target_uid, target_name in module.outputmap[name]:
+                        if target_uid not in uids:
+                            # endnode
+                            flow_out = out[idx]
+                        else:
+                            if target_name in inputmap[target_uid]:
+                                inputmap[target_uid][target_name] += out[idx]
+                            else:
+                                inputmap[target_uid][target_name] = out[idx]
+                else:
+                    flow_out = out[idx]
+        return theano.function([flow_in], [flow_out], on_unused_input='warn')
+    except Exception as e:
+        nodenet.logger.warning("Error compiling graph function:  %s" % str(e))
+        return lambda x: None
 
 
 class FlowModule(TheanoNode):

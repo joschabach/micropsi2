@@ -109,4 +109,4 @@ class TheanoCalculateFlowmodules(Propagate):
                                 flowio[endnode.uid][name] = out[idx]
                 except KeyError:
                     import traceback
-                    print("missing in or output: ", traceback.format_exc())
+                    print("missing in- or output: ", traceback.format_exc())

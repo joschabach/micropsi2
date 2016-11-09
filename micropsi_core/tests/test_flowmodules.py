@@ -137,13 +137,13 @@ def test_multiple_flowgraphs(runtime, test_nodenet, default_world, resourcepath)
     # link add to datatargets
     nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
 
-    # assert len(nodenet.flowfuncs) == 1
+    assert len(nodenet.flowfuncs) == 1
 
     # create a second graph
     nodenet.connect_flow_module_to_worldadapter(bisect.uid, "inputs")
     nodenet.connect_flow_module_to_worldadapter(bisect.uid, "outputs")
 
-    # assert len(nodenet.flowfuncs) == 2
+    assert len(nodenet.flowfuncs) == 2
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
@@ -187,7 +187,7 @@ def test_disconnect_flowmodules(runtime, test_nodenet, default_world, resourcepa
     nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
 
     # have one connected graph
-    # assert len(nodenet.flowfuncs) == 1
+    assert len(nodenet.flowfuncs) == 1
 
     # unlink double from add
     nodenet.disconnect_flow_modules(double.uid, "outputs", add.uid, "input1")
@@ -227,7 +227,7 @@ def test_diverging_flowgraph(runtime, test_nodenet, default_world, resourcepath)
     nodenet.connect_flow_module_to_worldadapter(double.uid, "outputs")
     nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
 
-    # assert len(nodenet.flowfuncs) == 2
+    assert len(nodenet.flowfuncs) == 2
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
@@ -273,8 +273,6 @@ def test_converging_flowgraphs(runtime, test_nodenet, default_world, resourcepat
 
     # link bisect to targets.
     nodenet.connect_flow_module_to_worldadapter(bisect.uid, "outputs")
-
-    # assert len(nodenet.flowfuncs) == 1
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
@@ -374,7 +372,7 @@ def test_link_large_graph(runtime, test_nodenet, default_world, resourcepath):
     nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
 
     nodenet.connect_flow_modules(double.uid, "outputs", add.uid, "input2")
-    # assert len(nodenet.flowfuncs) == 1
+    assert len(nodenet.flowfuncs) == 1
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)

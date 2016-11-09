@@ -902,12 +902,19 @@ class TheanoNodenet(Nodenet):
                 for path in nx.all_simple_paths(self.flowgraph, startuid, enduid):
                     if set(path[1:-1]) & pythonnodes:
                         continue
-                    is_subset = False
-                    for p in paths:
+                    skip = False
+                    for idx, p in enumerate(paths):
                         if set(path) <= set(p):
-                            is_subset = True
+                            skip = True
                             break
-                    if not is_subset:
+                        elif set(path) >= set(p):
+                            if len(p) == 1 and p[0] in pythonnodes:
+                                skip = False  # don't replace python islands.
+                            else:
+                                skip = True
+                                paths[idx] = path
+                                break
+                    if not skip:
                         paths.append(path)
             if enduid in pythonnodes:
                 paths.append([enduid])

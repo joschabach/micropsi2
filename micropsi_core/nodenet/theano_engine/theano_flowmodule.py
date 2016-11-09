@@ -16,11 +16,10 @@ def compilefunc(nodenet, nodes):
         inputmap = dict((k.uid, {}) for k in nodes)
         for module in nodes:
             for name in module.inputmap:
-                if ('worldadapter', 'datasources') in module.inputmap[name]:
-                    if name in inputmap[module.uid]:
-                        inputmap[module.uid][name] += flow_in
-                    else:
-                        inputmap[module.uid][name] = flow_in
+                if name not in inputmap[module.uid]:
+                    inputmap[module.uid][name] = flow_in
+                else:
+                    print("Input %s of node %s has multiple incoming values" % (name, module.name))
             out = module.flowfunction(**inputmap[module.uid])
             if len(module.outputs) == 1:
                 out = [out]
@@ -31,10 +30,10 @@ def compilefunc(nodenet, nodes):
                             # endnode
                             flow_out = out[idx]
                         else:
-                            if target_name in inputmap[target_uid]:
-                                inputmap[target_uid][target_name] += out[idx]
-                            else:
+                            if target_name not in inputmap[target_uid]:
                                 inputmap[target_uid][target_name] = out[idx]
+                            else:
+                                print("Input %s of node %s has multiple incoming values" % (name, module.name))
                 else:
                     flow_out = out[idx]
         return theano.function([flow_in], [flow_out], on_unused_input='warn')
@@ -57,6 +56,7 @@ class FlowModule(TheanoNode):
         super().__init__(nodenet, partition, parent_uid, uid, type, parameters=parameters)
         self.definition = nodenet.native_module_definitions[self.type]
         self._load_flowfunction()
+        self.implementation = self.definition['implementation']
         self.outputmap = {}
         self.inputmap = {}
         for i in self.definition['outputs']:

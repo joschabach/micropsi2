@@ -360,5 +360,24 @@ try:
             pass  # pragma: no cover
 
 
+    class DefaultArray(ArrayWorldAdapter):
+        """
+        A default ArrayWorldadapter, that provides example-datasources and -targets
+        """
+        def __init__(self, world, uid=None, config={}, **data):
+            super().__init__(world, uid=uid, config=config, **data)
+            for i in range(64):
+                self.datasource_names.append("s_%d" % i)
+                if i % 2 == 0:
+                    self.datatarget_names.append("t_%d" % i)
+            self.datasource_values = np.random.randn(64)
+            self.datatarget_values = np.zeros_like(self.datatarget_values)
+
+        def update_data_sources_and_targets(self):
+            import random
+            self.datatarget_feedback_values[:] = self.datatarget_values
+            self.datasource_values[:] = np.random.randn(64)
+
+
 except ImportError: # pragma: no cover
     pass

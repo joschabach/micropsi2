@@ -29,6 +29,7 @@ def prepare(runtime, test_nodenet, default_world, resourcepath):
         fp.write("""
     {"Double": {
         "flow_module": true,
+        "implementation": "symbolic",
         "name": "Double",
         "flowfunction_name" : "double",
         "inputs": ["inputs"],
@@ -36,6 +37,7 @@ def prepare(runtime, test_nodenet, default_world, resourcepath):
     },
     "Add": {
         "flow_module": true,
+        "implementation": "symbolic",
         "name": "Add",
         "flowfunction_name" : "add",
         "inputs": ["input1", "input2"],
@@ -43,8 +45,17 @@ def prepare(runtime, test_nodenet, default_world, resourcepath):
     },
     "Bisect": {
         "flow_module": true,
+        "implementation": "symbolic",
         "name": "Bisect",
         "flowfunction_name" : "bisect",
+        "inputs": ["inputs"],
+        "outputs": ["outputs"]
+    },
+    "Numpy": {
+        "flow_module": true,
+        "implementation": "python",
+        "name": "Numpy",
+        "flowfunction_name" : "numpyfunc",
         "inputs": ["inputs"],
         "outputs": ["outputs"]
     }}""")
@@ -58,6 +69,13 @@ def add(input1, input2):
 
 def bisect(inputs):
     return inputs / 2
+
+def numpyfunc(netapi, node, inputs):
+    import numpy as np
+    ones = np.zeros_like(inputs)
+    ones[:] = 1.0
+    netapi.notify_user(node, "numpyfunc ran")
+    return inputs + ones
 """)
 
     nodenet = runtime.nodenets[test_nodenet]
@@ -119,13 +137,13 @@ def test_multiple_flowgraphs(runtime, test_nodenet, default_world, resourcepath)
     # link add to datatargets
     nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
 
-    assert len(nodenet.flowfuncs) == 1
+    # assert len(nodenet.flowfuncs) == 1
 
     # create a second graph
     nodenet.connect_flow_module_to_worldadapter(bisect.uid, "inputs")
     nodenet.connect_flow_module_to_worldadapter(bisect.uid, "outputs")
 
-    assert len(nodenet.flowfuncs) == 2
+    # assert len(nodenet.flowfuncs) == 2
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
@@ -169,7 +187,7 @@ def test_disconnect_flowmodules(runtime, test_nodenet, default_world, resourcepa
     nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
 
     # have one connected graph
-    assert len(nodenet.flowfuncs) == 1
+    # assert len(nodenet.flowfuncs) == 1
 
     # unlink double from add
     nodenet.disconnect_flow_modules(double.uid, "outputs", add.uid, "input1")
@@ -209,7 +227,7 @@ def test_diverging_flowgraph(runtime, test_nodenet, default_world, resourcepath)
     nodenet.connect_flow_module_to_worldadapter(double.uid, "outputs")
     nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
 
-    assert len(nodenet.flowfuncs) == 2
+    # assert len(nodenet.flowfuncs) == 2
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
@@ -256,7 +274,7 @@ def test_converging_flowgraphs(runtime, test_nodenet, default_world, resourcepat
     # link bisect to targets.
     nodenet.connect_flow_module_to_worldadapter(bisect.uid, "outputs")
 
-    assert len(nodenet.flowfuncs) == 1
+    # assert len(nodenet.flowfuncs) == 1
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
@@ -356,7 +374,7 @@ def test_link_large_graph(runtime, test_nodenet, default_world, resourcepath):
     nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
 
     nodenet.connect_flow_modules(double.uid, "outputs", add.uid, "input2")
-    assert len(nodenet.flowfuncs) == 1
+    # assert len(nodenet.flowfuncs) == 1
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
@@ -364,3 +382,41 @@ def test_link_large_graph(runtime, test_nodenet, default_world, resourcepath):
 
     nodenet.step()
     assert np.all(worldadapter.datatarget_values == sources * 2)
+
+
+@pytest.mark.engine("theano_engine")
+def test_python_flowmodules(runtime, test_nodenet, default_world, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+
+    double = netapi.create_node("Double", None, "Double")
+    py = netapi.create_node("Numpy", None, "Numpy")
+    bisect = netapi.create_node("Bisect", None, "Bisect")
+
+    source = netapi.create_node("Neuron", None)
+    netapi.link(source, 'gen', source, 'gen')
+    source.activation = 1
+
+    netapi.connect_flow_module_to_worldadapter(double, "inputs")
+    netapi.connect_flow_modules(double, "outputs", py, "inputs")
+    netapi.connect_flow_modules(py, "outputs", bisect, "inputs")
+    netapi.connect_flow_module_to_worldadapter(bisect, "outputs")
+
+    sources = np.zeros((5), dtype=nodenet.numpyfloatX)
+    sources[:] = np.random.randn(*sources.shape)
+    worldadapter.datasource_values = sources
+
+    nodenet.step()
+    assert np.all(worldadapter.datatarget_values == 0)
+
+    # netapi.link(source, 'gen', bisect, 'sub')
+
+    nodenet.step()
+    assert np.all(worldadapter.datatarget_values == 0)
+
+    netapi.link(source, 'gen', bisect, 'sub')
+    netapi.link(source, 'gen', py, 'sub')
+    netapi.link(source, 'gen', double, 'sub')
+
+    nodenet.step()
+    # ((x * 2) + 1) / 2 == x + .5
+    assert np.all(worldadapter.datatarget_values == sources + 0.5)

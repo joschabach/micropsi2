@@ -1711,6 +1711,7 @@ def test_flow_modules(app, runtime, test_nodenet, resourcepath, default_world):
         fp.write("""
     {"Double": {
         "flow_module": true,
+        "implementation": "symbolic",
         "name": "Double",
         "flowfunction_name" : "double",
         "inputs": ["inputs"],

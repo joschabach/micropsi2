@@ -513,7 +513,7 @@ class Nodetype(object):
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None,
-                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', dimensionality={}, flow_module=False, inputs=None, outputs=None, **_):
+                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', dimensionality={}, flow_module=False, inputs=None, outputs=None, implementation=None, **_):
         """Initializes or creates a nodetype.
 
         Arguments:
@@ -546,6 +546,7 @@ class Nodetype(object):
             self.slottypes = slottypes or []
             self.gatetypes = gatetypes or []
 
+        self.implementation = implementation
         self.inputs = inputs
         self.outputs = outputs
 

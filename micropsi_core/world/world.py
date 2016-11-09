@@ -328,4 +328,4 @@ class World(object):
 
 
 class DefaultWorld(World):
-    supported_worldadapters = ['Default']
+    supported_worldadapters = ['Default', 'DefaultArray']

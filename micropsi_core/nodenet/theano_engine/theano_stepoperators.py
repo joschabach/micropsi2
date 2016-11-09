@@ -79,8 +79,34 @@ class TheanoCalculateFlowmodules(Propagate):
     def execute(self, nodenet, nodes, netapi):
         for uid, item in nodenet.flow_module_instances.items():
             item.take_slot_activation_snapshot()
-        for endnode, func in nodenet.flowfuncs:
+        flowio = {
+            'worldadapter': {
+                'datasources': nodenet.worldadapter_instance.get_datasource_values(),
+                'datatargets': None
+            }
+        }
+        for flowtype, startnode, func, endnode in nodenet.flowfuncs:
             if endnode.is_requested():
-                out = func(nodenet.worldadapter_instance.get_datasource_values())
-                if out:
-                    nodenet.worldadapter_instance.add_datatarget_values(out[0])
+                # import pdb; pdb.set_trace()
+                try:
+                    inputs = {}
+                    for key in startnode.inputmap:
+                        for source_uid, source_name in startnode.inputmap[key]:
+                            inputs[key] = flowio[source_uid][source_name]
+
+                    if flowtype == 'symbolic':
+                        out = func(**inputs)
+                    else:
+                        out = func(netapi, startnode, **inputs)
+                        if len(endnode.outputs) == 1:
+                            out = [out]
+                    if out is not None:
+                        flowio[endnode.uid] = {}
+                        for idx, name in enumerate(endnode.outputs):
+                            if endnode.outputmap[name] == {('worldadapter', 'datatargets')}:
+                                nodenet.worldadapter_instance.add_datatarget_values(out[idx])
+                            else:
+                                flowio[endnode.uid][name] = out[idx]
+                except KeyError:
+                    import traceback
+                    print("missing in or output: ", traceback.format_exc())

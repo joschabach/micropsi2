@@ -8,6 +8,7 @@ import os
 import copy
 import math
 
+import theano
 from theano import tensor as T
 import numpy as np
 import scipy
@@ -825,7 +826,7 @@ class TheanoNodenet(Nodenet):
         return ["datatargets"]
 
     def _create_flow_module(self, node):
-        self.flowgraph.add_node(node.uid)
+        self.flowgraph.add_node(node.uid, implementation=node.nodetype.implementation)
 
     def connect_flow_modules(self, source_uid, source_output, target_uid, target_input):
         self.flowgraph.add_edge(source_uid, target_uid, key="%s_%s" % (source_output, target_input))
@@ -879,17 +880,46 @@ class TheanoNodenet(Nodenet):
         self.update_flow_graphs()
 
     def update_flow_graphs(self, node_uids=None):
+
         self.flowfuncs = []
-        if "datatargets" in nx.descendants(self.flowgraph, "datasources"):
-            # we have a connection. now do what?
-            for x in self.flowgraph.predecessors('datatargets'):
-                # input to datatarges
-                members = (nx.ancestors(self.flowgraph, x) | {x}) - {'datasources'}
-                path = [x for x in nx.topological_sort(self.flowgraph) if x in members]
-                func = compilefunc(self, [self.get_node(uid) for uid in path])
-                self.flowfuncs.append((self.get_node(x), func))
-        else:
-            print("NO CONNECTION _ NOT COMPILING")
+
+        startpoints = ['datasources']
+        endpoints = []
+        pythonnodes = set()
+
+        toposort = nx.topological_sort(self.flowgraph)
+        for uid in toposort:
+            node = self.flow_module_instances.get(uid)
+            if node is not None and node.implementation == 'python':
+                pythonnodes.add(uid)
+                startpoints.append(uid)
+                endpoints.append(uid)
+        endpoints.append('datatargets')
+
+        paths = []
+        for enduid in endpoints:
+            for startuid in startpoints:
+                for path in nx.all_simple_paths(self.flowgraph, startuid, enduid):
+                    if set(path[1:-1]) & pythonnodes:
+                        continue
+                    is_subset = False
+                    for p in paths:
+                        if set(path) <= set(p):
+                            is_subset = True
+                            break
+                    if not is_subset:
+                        paths.append(path)
+            if enduid in pythonnodes:
+                paths.append([enduid])
+
+        for p in paths:
+            if len(p) == 1 and p[0] in pythonnodes:
+                uid = p[0]
+                self.flowfuncs.append(("numeric", self.get_node(uid), self.get_node(uid).flowfunction, self.get_node(uid)))
+            else:
+                func = compilefunc(self, [self.get_node(uid) for uid in p[1:-1]])
+                self.flowfuncs.append(("symbolic", self.get_node(p[1]), func, self.get_node(p[-2])))
+        print("Compiled %d flowfunctions" % len(self.flowfuncs))
 
     def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_configuration=None):
         nodespace_uid = self.get_nodespace(nodespace_uid).uid

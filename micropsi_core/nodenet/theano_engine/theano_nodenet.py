@@ -458,7 +458,7 @@ class TheanoNodenet(Nodenet):
     def initialize_stepoperators(self):
         self.stepoperators = [
             TheanoPropagate(),
-            TheanoCalculate(self), 
+            TheanoCalculate(self),
             TheanoCalculateFlowmodules(self)]
         if self.use_modulators:
             self.stepoperators.append(DoernerianEmotionalModulators())

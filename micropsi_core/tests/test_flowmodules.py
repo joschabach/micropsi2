@@ -198,6 +198,8 @@ def test_disconnect_flowmodules(runtime, test_nodenet, default_world, resourcepa
     # unlink add from datatargets
     nodenet.disconnect_flow_module_from_worldadapter(add.uid, "outputs")
 
+    assert len(nodenet.flowfuncs) == 0
+
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
     worldadapter.datasource_values = sources
@@ -332,11 +334,15 @@ def test_delete_flowmodule(runtime, test_nodenet, default_world, resourcepath):
     netapi.connect_flow_modules(add, "outputs", double1, "inputs")
     netapi.connect_flow_modules(add, "outputs", double2, "inputs")
     netapi.connect_flow_module_to_worldadapter(bisect, "inputs")
-    netapi.connect_flow_module_to_worldadapter(add, "input1")
+    netapi.connect_flow_module_to_worldadapter(add, "input2")
     netapi.connect_flow_module_to_worldadapter(double1, "outputs")
     netapi.connect_flow_module_to_worldadapter(double2, "outputs")
 
+    assert len(nodenet.flowfuncs) == 2
+
     netapi.delete_node(add)
+
+    assert len(nodenet.flowfuncs) == 0
 
     assert not nodenet.flow_module_instances[bisect.uid].is_output_connected()
     for node in nodenet.flow_module_instances.values():
@@ -361,9 +367,6 @@ def test_link_large_graph(runtime, test_nodenet, default_world, resourcepath):
     # create activation source:
     source = netapi.create_node("Neuron", None)
     source.activation = 1
-    netapi.link(source, 'gen', source, 'gen')
-    netapi.link(source, 'gen', double, 'sub')
-    netapi.link(source, 'gen', add, 'sub')
 
     nodenet.connect_flow_module_to_worldadapter(bisect.uid, "inputs")
     nodenet.connect_flow_modules(bisect.uid, "outputs", double.uid, "inputs")
@@ -372,6 +375,8 @@ def test_link_large_graph(runtime, test_nodenet, default_world, resourcepath):
     nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
 
     nodenet.connect_flow_modules(double.uid, "outputs", add.uid, "input2")
+
+    netapi.link(source, 'gen', add, 'sub')
     assert len(nodenet.flowfuncs) == 1
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)

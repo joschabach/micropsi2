@@ -29,48 +29,59 @@ def prepare(runtime, test_nodenet, default_world, resourcepath):
         fp.write("""
     {"Double": {
         "flow_module": true,
-        "implementation": "symbolic",
+        "implementation": "theano",
         "name": "Double",
-        "flowfunction_name" : "double",
+        "build_function_name": "double",
+        "init_function_name": "double_init",
         "inputs": ["inputs"],
-        "outputs": ["outputs"]
+        "outputs": ["outputs"],
+        "inputdims": [1]
     },
     "Add": {
         "flow_module": true,
-        "implementation": "symbolic",
+        "implementation": "theano",
         "name": "Add",
-        "flowfunction_name" : "add",
+        "build_function_name": "add",
         "inputs": ["input1", "input2"],
-        "outputs": ["outputs"]
+        "outputs": ["outputs"],
+        "inputdims": [1, 2]
     },
     "Bisect": {
         "flow_module": true,
-        "implementation": "symbolic",
+        "implementation": "theano",
         "name": "Bisect",
-        "flowfunction_name" : "bisect",
+        "build_function_name": "bisect",
         "inputs": ["inputs"],
-        "outputs": ["outputs"]
+        "outputs": ["outputs"],
+        "inputdims": [1]
     },
     "Numpy": {
         "flow_module": true,
         "implementation": "python",
         "name": "Numpy",
-        "flowfunction_name" : "numpyfunc",
+        "init_function_name": "numpyfunc_init",
+        "flow_function_name": "numpyfunc",
         "inputs": ["inputs"],
         "outputs": ["outputs"]
     }}""")
     with open(os.path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
         fp.write("""
-def double(inputs):
+def double_init(netapi, node, parameters):
+    node.initfunction_ran = True
+
+def double(inputs, netapi, node, parameters):
     return inputs * 2
 
-def add(input1, input2):
+def add(input1, input2, netapi, node, parameters):
     return input1 + input2
 
-def bisect(inputs):
+def bisect(inputs, netapi, node, parameters):
     return inputs / 2
 
-def numpyfunc(netapi, node, inputs):
+def numpyfunc_init(netapi, node, parameters):
+    node.initfunction_ran = True
+
+def numpyfunc(inputs, netapi, node, parameters):
     import numpy as np
     ones = np.zeros_like(inputs)
     ones[:] = 1.0
@@ -96,6 +107,8 @@ def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepat
     assert metadata['flow_modules']['Double']['outputs'] == ["outputs"]
 
     flowmodule = netapi.create_node("Double", None, "Double")
+    assert not hasattr(flowmodule, 'initfunction_ran')
+
     nodenet.connect_flow_module_to_worldadapter(flowmodule.uid, "inputs")
     nodenet.connect_flow_module_to_worldadapter(flowmodule.uid, "outputs")
 
@@ -114,9 +127,10 @@ def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepat
     netapi.link(source, 'gen', flowmodule, 'sub')
     source.activation = 1
 
-    # # step & assert that the flowfunction ran
+    # # step & assert that the initfunction and flowfunction ran
     nodenet.step()
     assert np.all(worldadapter.datatarget_values == sources * 2)
+    assert hasattr(flowmodule, 'initfunction_ran')
 
 
 @pytest.mark.engine("theano_engine")
@@ -410,6 +424,7 @@ def test_python_flowmodules(runtime, test_nodenet, default_world, resourcepath):
 
     nodenet.step()
     assert np.all(worldadapter.datatarget_values == 0)
+    assert not hasattr(py, 'initfunction_ran')
 
     # netapi.link(source, 'gen', bisect, 'sub')
 
@@ -423,3 +438,4 @@ def test_python_flowmodules(runtime, test_nodenet, default_world, resourcepath):
     nodenet.step()
     # ((x * 2) + 1) / 2 == x + .5
     assert np.all(worldadapter.datatarget_values == sources + 0.5)
+    assert py.initfunction_ran

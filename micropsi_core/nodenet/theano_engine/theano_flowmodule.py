@@ -55,14 +55,15 @@ class FlowModule(TheanoNode):
     def __init__(self, nodenet, partition, parent_uid, uid, type, parameters={}, inputmap={}, outputmap={}):
         super().__init__(nodenet, partition, parent_uid, uid, type, parameters=parameters)
         self.definition = nodenet.native_module_definitions[self.type]
-        self._load_flowfunction()
         self.implementation = self.definition['implementation']
+        self.outexpression = None
         self.outputmap = {}
         self.inputmap = {}
+        self._load_functions()
+        for i in self.definition['inputs']:
+            self.inputmap[i] = tuple()
         for i in self.definition['outputs']:
             self.outputmap[i] = set()
-        for i in self.definition['inputs']:
-            self.inputmap[i] = set()
         self.dependencies = set()
 
         for name in inputmap:
@@ -100,7 +101,9 @@ class FlowModule(TheanoNode):
 
     def set_input(self, input_name, source_uid, source_output):
         self.dependencies.add(source_uid)
-        self.inputmap[input_name].add((source_uid, source_output))
+        if self.inputmap.get(input_name):
+            raise RuntimeError("This input is already connected")
+        self.inputmap[input_name] = (source_uid, source_output)
 
     def unset_input(self, input_name, source_uid, source_output):
         remove = True
@@ -121,12 +124,39 @@ class FlowModule(TheanoNode):
     def node_function(self):
         pass
 
-    def _load_flowfunction(self):
+    def build(self, *inputs):
+        if not self.__initialized:
+            self._initfunction(self._nodenet.netapi, self, self.parameters)
+            self.__initialized = True
+
+        if self.implementation == 'theano':
+            outexpression = self._buildfunction(*inputs, netapi=self._nodenet.netapi, node=self, parameters=self.parameters)
+        elif self.implementation == 'python':
+            outexpression = self._flowfunction
+
+        store = True
+        if store:
+            self.outexpression = outexpression
+
+        return outexpression
+
+    def _load_functions(self):
         from importlib.machinery import SourceFileLoader
         import inspect
 
         sourcefile = self.definition['path']
-        funcname = self.definition['flowfunction_name']
         module = SourceFileLoader("nodefunctions", sourcefile).load_module()
-        self.flowfunction = getattr(module, funcname)
-        self.line_number = inspect.getsourcelines(self.flowfunction)[1]
+
+        if self.definition.get('init_function_name'):
+            self._initfunction = getattr(module, self.definition['init_function_name'])
+            self.__initialized = False
+        else:
+            self._initfunction = lambda x, y, z: None
+            self.__initialized = True
+
+        if self.implementation == 'theano':
+            self._buildfunction = getattr(module, self.definition['build_function_name'])
+            self.line_number = inspect.getsourcelines(self._buildfunction)[1]
+        elif self.implementation == 'python':
+            self._flowfunction = getattr(module, self.definition['flow_function_name'])
+            self.line_number = inspect.getsourcelines(self._flowfunction)[1]

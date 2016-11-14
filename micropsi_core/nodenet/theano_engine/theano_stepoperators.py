@@ -90,13 +90,13 @@ class TheanoCalculateFlowmodules(Propagate):
                 # import pdb; pdb.set_trace()
                 try:
                     inputs = {}
-                    for key in startnode.inputmap:
-                        for source_uid, source_name in startnode.inputmap[key]:
-                            inputs[key] = flowio[source_uid][source_name]
+                    for key in startnode.inputs:
+                        source_uid, source_name = startnode.inputmap[key]
+                        inputs[key] = flowio[source_uid][source_name]
 
-                    if flowtype == 'symbolic':
+                    if flowtype == 'theano':
                         out = func(**inputs)
-                    else:
+                    elif flowtype == 'python':
                         out = func(netapi, startnode, **inputs)
                         if len(endnode.outputs) == 1:
                             out = [out]

@@ -888,6 +888,7 @@ class TheanoNodenet(Nodenet):
         pythonnodes = set()
 
         toposort = nx.topological_sort(self.flowgraph)
+        self.flow_toposort = toposort
         for uid in toposort:
             node = self.flow_module_instances.get(uid)
             if node is not None and node.implementation == 'python':
@@ -905,9 +906,11 @@ class TheanoNodenet(Nodenet):
                     skip = False
                     for idx, p in enumerate(paths):
                         if set(path) <= set(p):
+                            # skip if this is a subset of an existing path
                             skip = True
                             break
                         elif set(path) >= set(p):
+                            # if this a superset of an existing path, replace that one
                             if len(p) == 1 and p[0] in pythonnodes:
                                 skip = False  # don't replace python islands.
                             else:
@@ -920,13 +923,73 @@ class TheanoNodenet(Nodenet):
                 paths.append([enduid])
 
         for p in paths:
+            node_uids = p[1:-1]
             if len(p) == 1 and p[0] in pythonnodes:
                 uid = p[0]
-                self.flowfuncs.append(("numeric", self.get_node(uid), self.get_node(uid).flowfunction, self.get_node(uid)))
+                self.flowfuncs.append(("python", self.get_node(uid), self.get_node(uid).flowfunction, self.get_node(uid)))
             else:
-                func = compilefunc(self, [self.get_node(uid) for uid in p[1:-1]])
-                self.flowfuncs.append(("symbolic", self.get_node(p[1]), func, self.get_node(p[-2])))
+                func = self.compile_flow_subgraph(node_uids, False)
+                self.flowfuncs.append(("theano", self.get_node(p[1]), func, self.get_node(p[-2])))
         print("Compiled %d flowfunctions" % len(self.flowfuncs))
+
+    def compile_flow_subgraph(self, node_uids, with_shared_variables=False):
+
+        subgraph = [self.get_node(uid) for uid in self.flow_toposort if uid in node_uids]
+
+        dangling_inputs = []
+        dangling_outputs = []
+        dangling_input_names = []
+        outexpressions = {}
+
+        for node in subgraph:
+            buildargs = []
+            for in_idx, in_name in enumerate(node.inputs):
+                source_uid, source_name = node.inputmap[in_name]
+                if source_uid in node_uids:
+                    buildargs.append(outexpressions[source_uid][self.get_node(source_uid).outputs.index(source_name)])
+                else:
+                    in_expr = create_tensor(ndim=node.definition['inputdims'][in_idx], name=in_name)
+                    dangling_inputs.append(in_expr)
+                    dangling_input_names.append(in_name)
+                    buildargs.append(in_expr)
+
+            outexpressions[node.uid] = node.build(*buildargs)
+
+            for out_idx, out_name in enumerate(node.outputs):
+                for pair in node.outputmap[out_name]:
+                    if pair[0] in node_uids:
+                        break
+                    else:
+                        if len(node.outputs) > 1:
+                            dangling_outputs.append(node.outexpression[out_idx])
+                        else:
+                            dangling_outputs.append(node.outexpression)
+
+        if not with_shared_variables:
+            f = theano.function(inputs=dangling_inputs, outputs=dangling_outputs)
+
+            def compiled(**kwargs):
+                args = []
+                for name in dangling_input_names:
+                    args.append(kwargs[name])
+                return f(*args)
+
+        else:
+            sharedvars = self.collect_shared_variables(node_uids)
+            dummies = [create_tensor(var.ndim, name=var.name) for var in sharedvars]
+
+            f = theano.function(inputs=dangling_inputs + dummies, outputs=dangling_outputs, givens=[zip(sharedvars, dummies)])
+
+            def compiled(shared_variables=None, **kwargs):
+                args = []
+                for name in dangling_input_names:
+                    args.append(kwargs[name])
+                args += sharedvars
+                return f(*args)
+
+        compiled.__doc__ = "Compiled subgraph of nodes %s" + str(node_uids)
+
+        return compiled
 
     def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_configuration=None):
         nodespace_uid = self.get_nodespace(nodespace_uid).uid

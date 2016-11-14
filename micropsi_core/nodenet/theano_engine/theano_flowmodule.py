@@ -15,7 +15,7 @@ def compilefunc(nodenet, nodes):
     try:
         inputmap = dict((k.uid, {}) for k in nodes)
         for module in nodes:
-            for name in module.inputmap:
+            for name in module.inputs:
                 if name not in inputmap[module.uid]:
                     inputmap[module.uid][name] = flow_in
                 else:
@@ -107,11 +107,10 @@ class FlowModule(TheanoNode):
 
     def unset_input(self, input_name, source_uid, source_output):
         remove = True
-        self.inputmap[input_name].discard((source_uid, source_output))
+        self.inputmap[input_name] = tuple()
         for name in self.inputmap:
-            for link in self.inputmap[name]:
-                if link[0] == source_uid:
-                    remove = False
+            if self.inputmap[name] and self.inputmap[name][0] == source_uid:
+                remove = False
         if remove:
             self.dependencies.discard(source_uid)
 

@@ -926,10 +926,12 @@ class TheanoNodenet(Nodenet):
             node_uids = p[1:-1]
             if len(p) == 1 and p[0] in pythonnodes:
                 uid = p[0]
-                self.flowfuncs.append(("python", self.get_node(uid), self.get_node(uid).flowfunction, self.get_node(uid)))
+                self.flowfuncs.append(("python", self.get_node(uid).flowfunction, [self.get_node(uid)]))
             else:
-                func = self.compile_flow_subgraph(node_uids, False)
-                self.flowfuncs.append(("theano", self.get_node(p[1]), func, self.get_node(p[-2])))
+                nodes = [self.get_node(uid) for uid in node_uids]
+                func, dangling_inputs, dangling_outputs = self.compile_flow_subgraph(node_uids, False)
+                if func:
+                    self.flowfuncs.append(("theano", func, nodes, dangling_inputs, dangling_outputs))
         print("Compiled %d flowfunctions" % len(self.flowfuncs))
 
     def compile_flow_subgraph(self, node_uids, with_shared_variables=False):
@@ -940,20 +942,31 @@ class TheanoNodenet(Nodenet):
         dangling_outputs = []
         dangling_input_names = []
         outexpressions = {}
+        dangling_inputmap = {}
+        dangling_outputmap = {}
 
         for node in subgraph:
             buildargs = []
             for in_idx, in_name in enumerate(node.inputs):
+                if not node.inputmap[in_name]:
+                    return False, None, None
                 source_uid, source_name = node.inputmap[in_name]
                 if source_uid in node_uids:
                     buildargs.append(outexpressions[source_uid][self.get_node(source_uid).outputs.index(source_name)])
                 else:
-                    in_expr = create_tensor(ndim=node.definition['inputdims'][in_idx], name=in_name)
+                    in_expr = create_tensor(node.definition['inputdims'][in_idx], name=in_name)
                     dangling_inputs.append(in_expr)
                     dangling_input_names.append(in_name)
                     buildargs.append(in_expr)
+                    if node.uid not in dangling_inputmap:
+                        dangling_inputmap[node.uid] = [in_name]
+                    else:
+                        dangling_inputmap[node.uid].append(in_name)
 
-            outexpressions[node.uid] = node.build(*buildargs)
+            if len(node.outputs) == 1:
+                outexpressions[node.uid] = [node.build(*buildargs)]
+            else:
+                outexpressions[node.uid] = node.build(*buildargs)
 
             for out_idx, out_name in enumerate(node.outputs):
                 for pair in node.outputmap[out_name]:
@@ -964,6 +977,10 @@ class TheanoNodenet(Nodenet):
                             dangling_outputs.append(node.outexpression[out_idx])
                         else:
                             dangling_outputs.append(node.outexpression)
+                        if node.uid not in dangling_outputmap:
+                            dangling_outputmap[node.uid] = [out_name]
+                        else:
+                            dangling_outputmap[node.uid].append(out_name)
 
         if not with_shared_variables:
             f = theano.function(inputs=dangling_inputs, outputs=dangling_outputs)
@@ -989,7 +1006,7 @@ class TheanoNodenet(Nodenet):
 
         compiled.__doc__ = "Compiled subgraph of nodes %s" + str(node_uids)
 
-        return compiled
+        return compiled, dangling_inputmap, dangling_outputmap
 
     def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_configuration=None):
         nodespace_uid = self.get_nodespace(nodespace_uid).uid

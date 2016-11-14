@@ -44,7 +44,7 @@ def prepare(runtime, test_nodenet, default_world, resourcepath):
         "build_function_name": "add",
         "inputs": ["input1", "input2"],
         "outputs": ["outputs"],
-        "inputdims": [1, 2]
+        "inputdims": [1, 1]
     },
     "Bisect": {
         "flow_module": true,
@@ -62,7 +62,8 @@ def prepare(runtime, test_nodenet, default_world, resourcepath):
         "init_function_name": "numpyfunc_init",
         "flow_function_name": "numpyfunc",
         "inputs": ["inputs"],
-        "outputs": ["outputs"]
+        "outputs": ["outputs"],
+        "inputdims": [1]
     }}""")
     with open(os.path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
         fp.write("""
@@ -273,22 +274,18 @@ def test_converging_flowgraphs(runtime, test_nodenet, default_world, resourcepat
 
     double1 = netapi.create_node("Double", None, "Double")
     double2 = netapi.create_node("Double", None, "Double")
-    bisect = netapi.create_node("Bisect", None, "Bisect")
+    add = netapi.create_node("Add", None, "Add")
 
     # link sources
     nodenet.connect_flow_module_to_worldadapter(double1.uid, "inputs")
     nodenet.connect_flow_module_to_worldadapter(double2.uid, "inputs")
 
-    # link both doubles to bisect
-    nodenet.connect_flow_modules(double1.uid, "outputs", bisect.uid, "inputs")
-    nodenet.connect_flow_modules(double2.uid, "outputs", bisect.uid, "inputs")
+    # link both doubles to add
+    nodenet.connect_flow_modules(double1.uid, "outputs", add.uid, "input1")
+    nodenet.connect_flow_modules(double2.uid, "outputs", add.uid, "input2")
 
-    # clear the cache?
-    import theano
-    theano.gof.cc.get_module_cache().clear()
-
-    # link bisect to targets.
-    nodenet.connect_flow_module_to_worldadapter(bisect.uid, "outputs")
+    # link add to targets.
+    nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
@@ -300,9 +297,9 @@ def test_converging_flowgraphs(runtime, test_nodenet, default_world, resourcepat
     source.activation = 1
 
     # link activation source to double
-    netapi.link(source, 'gen', bisect, 'sub')
+    netapi.link(source, 'gen', add, 'sub')
     nodenet.step()
-    assert np.all(worldadapter.datatarget_values == sources * 2)
+    assert np.all(worldadapter.datatarget_values == sources * 4)
 
 
 @pytest.mark.engine("theano_engine")

@@ -85,28 +85,34 @@ class TheanoCalculateFlowmodules(Propagate):
                 'datatargets': None
             }
         }
-        for flowtype, startnode, func, endnode in nodenet.flowfuncs:
+        for flowtype, func, nodes, dangling_inputs, dangling_outputs in nodenet.flowfuncs:
+            endnode = nodes[-1]
             if endnode.is_requested():
-                # import pdb; pdb.set_trace()
                 try:
                     inputs = {}
-                    for key in startnode.inputs:
-                        source_uid, source_name = startnode.inputmap[key]
-                        inputs[key] = flowio[source_uid][source_name]
-
+                    for uid in dangling_inputs:
+                        for name in dangling_inputs[uid]:
+                            source_uid, source_name = nodenet.get_node(uid).inputmap[name]
+                            inputs[name] = flowio[source_uid][source_name]
                     if flowtype == 'theano':
                         out = func(**inputs)
                     elif flowtype == 'python':
-                        out = func(netapi, startnode, **inputs)
-                        if len(endnode.outputs) == 1:
-                            out = [out]
+                        out = func(netapi, nodes[0], **inputs)
+                    if not isinstance(out, list):
+                        out = [out]
                     if out is not None:
-                        flowio[endnode.uid] = {}
-                        for idx, name in enumerate(endnode.outputs):
-                            if endnode.outputmap[name] == {('worldadapter', 'datatargets')}:
-                                nodenet.worldadapter_instance.add_datatarget_values(out[idx])
-                            else:
-                                flowio[endnode.uid][name] = out[idx]
+                        if dangling_outputs != {}:
+                            offset = 0
+                            for node in nodes:
+                                for name in dangling_outputs.get(node.uid, []):
+                                    idx = node.outputs.index(name)
+                                    if ('worldadapter', 'datatargets') in node.outputmap[name]:
+                                        nodenet.worldadapter_instance.add_datatarget_values(out[offset + idx])
+                                    else:
+                                        if node.uid not in flowio:
+                                            flowio[node.uid] = {}
+                                        flowio[node.uid][name] = out[idx]
+                                    offset += 1
                 except KeyError:
                     import traceback
                     print("missing in- or output: ", traceback.format_exc())

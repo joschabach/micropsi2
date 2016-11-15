@@ -336,16 +336,16 @@ def nodespace_from_id(stringid):
     return int(stringid[4:])
 
 
-def create_tensor(ndim, name="tensor"):
+def create_tensor(ndim, dtype, name="tensor"):
     # return a theano tensor with the given dimensionality
     from theano import tensor as T
     if ndim == 0:
-        return T.scalar(name=name, dtype=T.config.floatX)
+        return T.scalar(name=name, dtype=dtype)
     elif ndim == 1:
-        return T.vector(name=name, dtype=T.config.floatX)
+        return T.vector(name=name, dtype=dtype)
     elif ndim == 2:
-        return T.matrix(name=name, dtype=T.config.floatX)
+        return T.matrix(name=name, dtype=dtype)
     elif ndim == 3:
-        return T.tensor3(name=name, dtype=T.config.floatX)
+        return T.tensor3(name=name, dtype=dtype)
     elif ndim == 4:
-        return T.tensor4(name=name, dtype=T.config.floatX)
+        return T.tensor4(name=name, dtype=dtype)

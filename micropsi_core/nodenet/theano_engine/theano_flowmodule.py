@@ -1,45 +1,9 @@
 
 """
-
+Flowmodule implementation
 """
 
-import theano
 from micropsi_core.nodenet.theano_engine.theano_node import TheanoNode
-from theano import tensor as T
-
-
-def compilefunc(nodenet, nodes):
-    flow_in = T.vector('inputs', dtype=nodenet.theanofloatX)
-    flow_out = T.vector('outputs', dtype=nodenet.theanofloatX)
-    uids = [n.uid for n in nodes]
-    try:
-        inputmap = dict((k.uid, {}) for k in nodes)
-        for module in nodes:
-            for name in module.inputs:
-                if name not in inputmap[module.uid]:
-                    inputmap[module.uid][name] = flow_in
-                else:
-                    print("Input %s of node %s has multiple incoming values" % (name, module.name))
-            out = module.flowfunction(**inputmap[module.uid])
-            if len(module.outputs) == 1:
-                out = [out]
-            for idx, name in enumerate(module.outputs):
-                if name in module.outputmap and len(module.outputmap[name]):
-                    for target_uid, target_name in module.outputmap[name]:
-                        if target_uid not in uids:
-                            # endnode
-                            flow_out = out[idx]
-                        else:
-                            if target_name not in inputmap[target_uid]:
-                                inputmap[target_uid][target_name] = out[idx]
-                            else:
-                                print("Input %s of node %s has multiple incoming values" % (name, module.name))
-                else:
-                    flow_out = out[idx]
-        return theano.function([flow_in], [flow_out], on_unused_input='warn')
-    except Exception as e:
-        nodenet.logger.warning("Error compiling graph function:  %s" % str(e))
-        return lambda x: None
 
 
 class FlowModule(TheanoNode):

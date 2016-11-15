@@ -25,7 +25,7 @@ from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
 from micropsi_core.nodenet.theano_engine.theano_nodespace import *
 from micropsi_core.nodenet.theano_engine.theano_netapi import TheanoNetAPI
 from micropsi_core.nodenet.theano_engine.theano_partition import TheanoPartition
-from micropsi_core.nodenet.theano_engine.theano_flowmodule import FlowModule, compilefunc
+from micropsi_core.nodenet.theano_engine.theano_flowmodule import FlowModule
 
 from configuration import config as settings
 
@@ -961,7 +961,7 @@ class TheanoNodenet(Nodenet):
                 if source_uid in node_uids:
                     buildargs.append(outexpressions[source_uid][self.get_node(source_uid).outputs.index(source_name)])
                 else:
-                    in_expr = create_tensor(node.definition['inputdims'][in_idx], name=in_name)
+                    in_expr = create_tensor(node.definition['inputdims'][in_idx], self.theanofloatX, name=in_name)
                     dangling_inputs.append(in_expr)
                     dangling_input_names.append(in_name)
                     buildargs.append(in_expr)
@@ -1000,7 +1000,7 @@ class TheanoNodenet(Nodenet):
 
         else:
             sharedvars = self.collect_shared_variables(node_uids)
-            dummies = [create_tensor(var.ndim, name=var.name) for var in sharedvars]
+            dummies = [create_tensor(var.ndim, self.theanofloatX, name=var.name) for var in sharedvars]
 
             f = theano.function(inputs=dangling_inputs + dummies, outputs=dangling_outputs, givens=[zip(sharedvars, dummies)])
 

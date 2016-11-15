@@ -941,7 +941,7 @@ class TheanoNodenet(Nodenet):
                     self.flowfuncs.append(("theano", func, nodes, dangling_inputs, dangling_outputs))
         print("Compiled %d flowfunctions" % len(self.flowfuncs))
 
-    def compile_flow_subgraph(self, node_uids, with_shared_variables=False):
+    def compile_flow_subgraph(self, node_uids, with_shared_variables=False, partial=False):
 
         subgraph = [self.get_node(uid) for uid in self.flow_toposort if uid in node_uids]
 
@@ -955,12 +955,7 @@ class TheanoNodenet(Nodenet):
         for node in subgraph:
             buildargs = []
             for in_idx, in_name in enumerate(node.inputs):
-                if not node.inputmap[in_name]:
-                    return False, None, None
-                source_uid, source_name = node.inputmap[in_name]
-                if source_uid in node_uids:
-                    buildargs.append(outexpressions[source_uid][self.get_node(source_uid).outputs.index(source_name)])
-                else:
+                if not node.inputmap[in_name] or node.inputmap[in_name][0] not in node_uids:
                     in_expr = create_tensor(node.definition['inputdims'][in_idx], self.theanofloatX, name=in_name)
                     dangling_inputs.append(in_expr)
                     dangling_input_names.append(in_name)
@@ -969,6 +964,9 @@ class TheanoNodenet(Nodenet):
                         dangling_inputmap[node.uid] = [in_name]
                     else:
                         dangling_inputmap[node.uid].append(in_name)
+                else:
+                    source_uid, source_name = node.inputmap[in_name]
+                    buildargs.append(outexpressions[source_uid][self.get_node(source_uid).outputs.index(source_name)])
 
             if len(node.outputs) == 1:
                 outexpressions[node.uid] = [node.build(*buildargs)]
@@ -976,18 +974,18 @@ class TheanoNodenet(Nodenet):
                 outexpressions[node.uid] = node.build(*buildargs)
 
             for out_idx, out_name in enumerate(node.outputs):
-                for pair in node.outputmap[out_name]:
-                    if pair[0] in node_uids:
-                        break
+                dangling = True
+                if node.outputmap[out_name]:
+                    for pair in node.outputmap[out_name]:
+                        if pair[0] in node_uids:
+                            dangling = False
+                            break
+                if dangling:
+                    dangling_outputs.append(node.outexpression)
+                    if node.uid not in dangling_outputmap:
+                        dangling_outputmap[node.uid] = [out_name]
                     else:
-                        if len(node.outputs) > 1:
-                            dangling_outputs.append(node.outexpression[out_idx])
-                        else:
-                            dangling_outputs.append(node.outexpression)
-                        if node.uid not in dangling_outputmap:
-                            dangling_outputmap[node.uid] = [out_name]
-                        else:
-                            dangling_outputmap[node.uid].append(out_name)
+                        dangling_outputmap[node.uid].append(out_name)
 
         if not with_shared_variables:
             f = theano.function(inputs=dangling_inputs, outputs=dangling_outputs)

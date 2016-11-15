@@ -437,3 +437,17 @@ def test_python_flowmodules(runtime, test_nodenet, default_world, resourcepath):
     # ((x * 2) + 1) / 2 == x + .5
     assert np.all(worldadapter.datatarget_values == sources + 0.5)
     assert py.initfunction_ran
+
+
+@pytest.mark.engine("theano_engine")
+def test_compile_flow_subgraph(runtime, test_nodenet, default_world, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+
+    double = netapi.create_node("Double", None, "Double")
+    bisect = netapi.create_node("Bisect", None, "Bisect")
+
+    netapi.connect_flow_modules(double, "outputs", bisect, "inputs")
+
+    func, ins, outs = nodenet.compile_flow_subgraph([double.uid, bisect.uid], partial=True)
+
+    assert np.all(func(inputs=[1, 2, 3, 4]) == np.asarray([1, 2, 3, 4], dtype=nodenet.numpyfloatX))

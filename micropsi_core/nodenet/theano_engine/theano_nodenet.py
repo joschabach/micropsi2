@@ -905,6 +905,10 @@ class TheanoNodenet(Nodenet):
                         continue
                     skip = False
                     for idx, p in enumerate(paths):
+                        if path[-2] == p[-2]:
+                            paths[idx] = [uid for uid in toposort if uid in path or uid in p]
+                            skip = True
+                            break
                         if set(path) <= set(p):
                             # skip if this is a subset of an existing path
                             skip = True

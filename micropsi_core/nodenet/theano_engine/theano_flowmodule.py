@@ -67,8 +67,7 @@ class FlowModule(TheanoNode):
         self.dependencies = set()
 
         for name in inputmap:
-            for link in inputmap[name]:
-                self.inputmap[name].add(tuple(link))
+            self.inputmap[name] = tuple(inputmap[name])
         for name in outputmap:
             for link in outputmap[name]:
                 self.outputmap[name].add(tuple(link))
@@ -77,9 +76,7 @@ class FlowModule(TheanoNode):
         inmap = {}
         outmap = {}
         for name in self.inputmap:
-            inmap[name] = []
-            for link in self.inputmap[name]:
-                inmap[name].append(list(link))
+            inmap[name] = list(self.inputmap[name])
         for name in self.outputmap:
             outmap[name] = []
             for link in self.outputmap[name]:

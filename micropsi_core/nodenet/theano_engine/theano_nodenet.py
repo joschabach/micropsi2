@@ -868,7 +868,8 @@ class TheanoNodenet(Nodenet):
         self.flowgraph.remove_node(delete_uid)
         module = self.flow_module_instances[delete_uid]
         for name in module.inputmap:
-            for source_uid, source_name in module.inputmap[name]:
+            if module.inputmap[name]:
+                source_uid, source_name = module.inputmap[name]
                 if source_uid in self.flow_module_instances:
                     self.flow_module_instances[source_uid].unset_output(source_name, delete_uid, name)
         for name in module.outputmap:

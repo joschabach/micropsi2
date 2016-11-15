@@ -234,8 +234,8 @@ class DictNode(NetEntity, Node):
 
         self.last_changed = self.nodenet.current_step
         target.last_changed = self.nodenet.current_step
-        self.nodenet.get_nodespace(self.parent_nodespace).content_last_changed = self.nodenet.current_step
-        self.nodenet.get_nodespace(target.parent_nodespace).content_last_changed = self.nodenet.current_step
+        self.nodenet.get_nodespace(self.parent_nodespace).contents_last_changed = self.nodenet.current_step
+        self.nodenet.get_nodespace(target.parent_nodespace).contents_last_changed = self.nodenet.current_step
 
         if slot_name not in target.get_slot_types():
             raise ValueError("Node %s has no slot %s" % (target_node_uid, slot_name))
@@ -257,7 +257,7 @@ class DictNode(NetEntity, Node):
     def unlink_completely(self):
         """Deletes all links originating from this node or ending at this node"""
         self.last_changed = self.nodenet.current_step
-        self.nodenet.get_nodespace(self.parent_nodespace).content_last_changed = self.nodenet.current_step
+        self.nodenet.get_nodespace(self.parent_nodespace).contents_last_changed = self.nodenet.current_step
 
         links_to_delete = set()
         for gate_name_candidate in self.get_gate_types():
@@ -268,12 +268,12 @@ class DictNode(NetEntity, Node):
                 links_to_delete.add(link_candidate)
         for link in links_to_delete:
             link.target_node.last_changed = self.nodenet.current_step
-            self.nodenet.get_nodespace(link.target_node.parent_nodespace).content_last_changed = self.nodenet.current_step
+            self.nodenet.get_nodespace(link.target_node.parent_nodespace).contents_last_changed = self.nodenet.current_step
             link.remove()
 
     def unlink(self, gate_name=None, target_node_uid=None, slot_name=None):
         self.last_changed = self.nodenet.current_step
-        self.nodenet.get_nodespace(self.parent_nodespace).content_last_changed = self.nodenet.current_step
+        self.nodenet.get_nodespace(self.parent_nodespace).contents_last_changed = self.nodenet.current_step
 
         links_to_delete = set()
         for gate_name_candidate in self.get_gate_types():
@@ -284,7 +284,7 @@ class DictNode(NetEntity, Node):
                             links_to_delete.add(link_candidate)
         for link in links_to_delete:
             link.target_node.last_changed = self.nodenet.current_step
-            self.nodenet.get_nodespace(link.target_node.parent_nodespace).content_last_changed = self.nodenet.current_step
+            self.nodenet.get_nodespace(link.target_node.parent_nodespace).contents_last_changed = self.nodenet.current_step
             link.remove()
 
 

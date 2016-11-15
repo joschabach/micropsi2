@@ -906,6 +906,8 @@ class TheanoNodenet(Nodenet):
                         continue
                     skip = False
                     for idx, p in enumerate(paths):
+                        if len(p) == 1:
+                            continue
                         if path[-2] == p[-2]:
                             paths[idx] = [uid for uid in toposort if uid in path or uid in p]
                             skip = True
@@ -916,12 +918,9 @@ class TheanoNodenet(Nodenet):
                             break
                         elif set(path) >= set(p):
                             # if this a superset of an existing path, replace that one
-                            if len(p) == 1 and p[0] in pythonnodes:
-                                skip = False  # don't replace python islands.
-                            else:
-                                skip = True
-                                paths[idx] = path
-                                break
+                            skip = True
+                            paths[idx] = path
+                            break
                     if not skip:
                         paths.append(path)
             if enduid in pythonnodes:
@@ -930,8 +929,11 @@ class TheanoNodenet(Nodenet):
         for p in paths:
             node_uids = p[1:-1]
             if len(p) == 1 and p[0] in pythonnodes:
-                uid = p[0]
-                self.flowfuncs.append(("python", self.get_node(uid).flowfunction, [self.get_node(uid)]))
+                node = self.get_node(p[0])
+                ins = {node.uid: node.inputs}
+                outs = {node.uid: node.outputs}
+                # func, dangling_inputs, dangling_outputs = self.compile_flow_subgraph([uid])
+                self.flowfuncs.append(("python", node.build(), [node], ins, outs))
             else:
                 nodes = [self.get_node(uid) for uid in node_uids]
                 func, dangling_inputs, dangling_outputs = self.compile_flow_subgraph(node_uids, False)

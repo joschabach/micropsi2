@@ -1711,15 +1711,16 @@ def test_flow_modules(app, runtime, test_nodenet, resourcepath, default_world):
         fp.write("""
     {"Double": {
         "flow_module": true,
-        "implementation": "symbolic",
+        "implementation": "theano",
         "name": "Double",
-        "flowfunction_name" : "double",
+        "build_function_name" : "double",
         "inputs": ["inputs"],
-        "outputs": ["outputs"]
+        "outputs": ["outputs"],
+        "inputdims": [1]
     }}""")
     with open(os.path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
         fp.write("""
-def double(inputs):
+def double(inputs, netapi, node, parameters):
     return inputs * 2
 """)
 

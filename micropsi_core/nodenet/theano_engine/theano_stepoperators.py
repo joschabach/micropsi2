@@ -97,7 +97,7 @@ class TheanoCalculateFlowmodules(Propagate):
                     if flowtype == 'theano':
                         out = func(**inputs)
                     elif flowtype == 'python':
-                        out = func(netapi, nodes[0], **inputs)
+                        out = func(netapi=netapi, node=nodes[0], parameters=nodes[0].parameters, **inputs)
                     if not isinstance(out, list):
                         out = [out]
                     if out is not None:

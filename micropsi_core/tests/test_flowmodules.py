@@ -410,6 +410,8 @@ def test_python_flowmodules(runtime, test_nodenet, default_world, resourcepath):
     netapi.link(source, 'gen', source, 'gen')
     source.activation = 1
 
+    assert not hasattr(py, 'initfunction_ran')
+
     netapi.connect_flow_module_to_worldadapter(double, "inputs")
     netapi.connect_flow_modules(double, "outputs", py, "inputs")
     netapi.connect_flow_modules(py, "outputs", bisect, "inputs")
@@ -421,7 +423,6 @@ def test_python_flowmodules(runtime, test_nodenet, default_world, resourcepath):
 
     nodenet.step()
     assert np.all(worldadapter.datatarget_values == 0)
-    assert not hasattr(py, 'initfunction_ran')
 
     # netapi.link(source, 'gen', bisect, 'sub')
 

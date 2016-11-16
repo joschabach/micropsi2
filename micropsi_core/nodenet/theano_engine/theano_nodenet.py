@@ -212,6 +212,7 @@ class TheanoNodenet(Nodenet):
         self.flow_module_definitions = flow_modules
         self.flow_module_instances = {}
         self.flow_graphs = []
+        self.shared_variables = {}
 
         self.flowgraph = nx.MultiDiGraph()
         self.flowfuncs = []
@@ -1008,7 +1009,8 @@ class TheanoNodenet(Nodenet):
                 sharedvars = self.collect_shared_variables(node_uids)
                 dummies = [create_tensor(var.ndim, self.theanofloatX, name=var.name) for var in sharedvars]
                 if path['implementation'] == 'theano':
-                    functions.append(('theano', None, theano.function(inputs=dangling_inputs + dummies, outputs=dangling_outputs, givens=[zip(sharedvars, dummies)])))
+                    givens = list(zip(sharedvars, dummies))
+                    functions.append(('theano', None, theano.function(inputs=dangling_inputs + dummies, outputs=dangling_outputs, givens=givens)))
                 else:
                     functions.append(('python', path['members'][0], outexpressions[path['members'][0].uid][0]))
 
@@ -1033,7 +1035,7 @@ class TheanoNodenet(Nodenet):
                 for idx, (implementation, node, func) in enumerate(functions):
                     for name in dangling_input_names[idx]:
                         numargs.append(kwargs[name])
-                    numargs += sharedvars
+                    numargs += shared_variables
                     if implementation == 'python':
                         numargs = func(*numargs, netapi=self.netapi, node=node, parameters=node.parameters)
                         if len(node.outputs) == 1:
@@ -1045,6 +1047,30 @@ class TheanoNodenet(Nodenet):
         compiled.__doc__ = "Compiled subgraph of nodes %s" % str(subgraph)
 
         return compiled, dangling_inputmap, dangling_outputmap
+
+    def set_shared_variable(self, node_uid, name, val):
+        if node_uid not in self.shared_variables:
+            self.shared_variables[node_uid] = {
+                'names': [],
+                'variables': []
+            }
+        new_names = sorted(self.shared_variables[node_uid]['names'] + [name])
+        index = new_names.index(name)
+        self.shared_variables[node_uid]['names'] = new_names
+        self.shared_variables[node_uid]['variables'].insert(index, theano.shared(value=val.astype(T.config.floatX), name=name, borrow=True))
+
+    def get_shared_variable(self, node_uid, name):
+        data = self.shared_variables[node_uid]
+        index = data['names'].index(name)
+        return data['variables'][index]
+
+    def collect_shared_variables(self, node_uids):
+        shared_vars = []
+        for uid in node_uids:
+            data = self.shared_variables.get(uid)
+            if data:
+                shared_vars.extend(data['variables'])
+        return shared_vars
 
     def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_configuration=None):
         nodespace_uid = self.get_nodespace(nodespace_uid).uid

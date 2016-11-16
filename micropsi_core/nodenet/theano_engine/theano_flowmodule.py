@@ -23,6 +23,7 @@ class FlowModule(TheanoNode):
         self.outexpression = None
         self.outputmap = {}
         self.inputmap = {}
+        self.is_copy_of = None
         self._load_functions()
         for i in self.definition['inputs']:
             self.inputmap[i] = tuple()
@@ -59,6 +60,16 @@ class FlowModule(TheanoNode):
 
     def is_requested(self):
         return self.get_slot_activations(slot_type='sub') > 0
+
+    def set_shared_variable(self, name, val):
+        if self.is_copy_of:
+            return
+        self._nodenet.set_shared_variable(self.uid, name, val)
+
+    def get_shared_variable(self, name):
+        if self.is_copy_of:
+            return self._nodenet.get_shared_variable(self.is_copy_of, name)
+        return self._nodenet.get_shared_variable(self.uid, name)
 
     def set_input(self, input_name, source_uid, source_output):
         self.dependencies.add(source_uid)

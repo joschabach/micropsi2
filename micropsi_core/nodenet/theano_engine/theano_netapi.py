@@ -89,3 +89,10 @@ class TheanoNetAPI(NetAPI):
     def disconnect_flow_module_from_worldadapter(self, flow_module, gateslot):
         """ Unlinks the given connection betwenn the given flow_module and the worldadapter """
         return self.__nodenet.disconnect_flow_module_from_worldadapter(flow_module.uid, gateslot)
+
+    def compile_flow_subgraph(self, nodes, with_shared_variables=False):
+        func, dangling_inputs, dangling_outputs = self.__nodenet.compile_flow_subgraph([n.uid for n in nodes], with_shared_variables=with_shared_variables, partial=True)
+        needed_inputs = []
+        for uid in dangling_inputs:
+            needed_inputs.extend(dangling_inputs[uid])
+        return func, needed_inputs

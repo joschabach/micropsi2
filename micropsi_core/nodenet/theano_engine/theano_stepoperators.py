@@ -85,7 +85,7 @@ class TheanoCalculateFlowmodules(Propagate):
                 'datatargets': None
             }
         }
-        for flowtype, func, nodes, dangling_inputs, dangling_outputs in nodenet.flowfuncs:
+        for func, nodes, dangling_inputs, dangling_outputs in nodenet.flowfuncs:
             endnode = nodes[-1]
             if endnode.is_requested():
                 try:
@@ -94,12 +94,7 @@ class TheanoCalculateFlowmodules(Propagate):
                         for name in dangling_inputs[uid]:
                             source_uid, source_name = nodenet.get_node(uid).inputmap[name]
                             inputs[name] = flowio[source_uid][source_name]
-                    if flowtype == 'theano':
-                        out = func(**inputs)
-                    elif flowtype == 'python':
-                        out = func(netapi=netapi, node=nodes[0], parameters=nodes[0].parameters, **inputs)
-                    if not isinstance(out, list):
-                        out = [out]
+                    out = func(**inputs)
                     if out is not None:
                         if dangling_outputs != {}:
                             offset = 0
@@ -108,11 +103,6 @@ class TheanoCalculateFlowmodules(Propagate):
                                     idx = node.outputs.index(name)
                                     if ('worldadapter', 'datatargets') in node.outputmap[name]:
                                         nodenet.worldadapter_instance.add_datatarget_values(out[offset + idx])
-                                    else:
-                                        if node.uid not in flowio:
-                                            flowio[node.uid] = {}
-                                        flowio[node.uid][name] = out[idx]
-                                    offset += 1
                 except KeyError:
                     import traceback
-                    print("missing in- or output: ", traceback.format_exc())
+                    nodenet.logger.error("missing in- or output: ", traceback.format_exc())

@@ -901,115 +901,148 @@ class TheanoNodenet(Nodenet):
         paths = []
         for enduid in endpoints:
             for startuid in startpoints:
-                for path in nx.all_simple_paths(self.flowgraph, startuid, enduid):
-                    if set(path[1:-1]) & pythonnodes:
-                        continue
-                    skip = False
-                    for idx, p in enumerate(paths):
-                        if len(p) == 1:
-                            continue
-                        if path[-2] == p[-2]:
-                            paths[idx] = [uid for uid in toposort if uid in path or uid in p]
-                            skip = True
-                            break
-                        if set(path) <= set(p):
-                            # skip if this is a subset of an existing path
-                            skip = True
-                            break
-                        elif set(path) >= set(p):
-                            # if this a superset of an existing path, replace that one
-                            skip = True
-                            paths[idx] = path
-                            break
-                    if not skip:
-                        paths.append(path)
-            if enduid in pythonnodes:
-                paths.append([enduid])
+                if startuid != enduid:
+                    for path in nx.all_simple_paths(self.flowgraph, startuid, enduid):
+                        skip = False
+                        for idx, p in enumerate(paths):
+                            if len(p) == 1:
+                                skip = True
+                                continue
+                            if path[-2] == p[-2]:
+                                paths[idx] = [uid for uid in toposort if uid in path or uid in p]
+                                skip = True
+                                break
+                            if set(path) <= set(p):
+                                # skip if this is a subset of an existing path
+                                skip = True
+                                break
+                            elif set(path) >= set(p):
+                                # if this a superset of an existing path, replace that one
+                                skip = True
+                                paths[idx] = path
+                                break
+                        if not skip:
+                            paths.append(path)
 
         for p in paths:
-            node_uids = p[1:-1]
-            if len(p) == 1 and p[0] in pythonnodes:
-                node = self.get_node(p[0])
-                ins = {node.uid: node.inputs}
-                outs = {node.uid: node.outputs}
-                # func, dangling_inputs, dangling_outputs = self.compile_flow_subgraph([uid])
-                self.flowfuncs.append(("python", node.build(), [node], ins, outs))
-            else:
-                nodes = [self.get_node(uid) for uid in node_uids]
-                func, dangling_inputs, dangling_outputs = self.compile_flow_subgraph(node_uids, False)
-                if func:
-                    self.flowfuncs.append(("theano", func, nodes, dangling_inputs, dangling_outputs))
-        print("Compiled %d flowfunctions" % len(self.flowfuncs))
+            node_uids = [uid for uid in p if uid != 'datasources' and uid != 'datatargets']
+            nodes = [self.get_node(uid) for uid in node_uids]
+            func, dangling_inputs, dangling_outputs = self.compile_flow_subgraph(node_uids)
+            if func:
+                self.flowfuncs.append((func, nodes, dangling_inputs, dangling_outputs))
+        self.logger.debug("Compiled %d flowfunctions" % len(self.flowfuncs))
 
     def compile_flow_subgraph(self, node_uids, with_shared_variables=False, partial=False):
-
         subgraph = [self.get_node(uid) for uid in self.flow_toposort if uid in node_uids]
 
-        dangling_inputs = []
-        dangling_outputs = []
-        dangling_input_names = []
+        partial_paths = []
+        for node in subgraph:
+            if node.implementation == 'python':
+                partial_paths.append({'implementation': 'python', 'members': [node]})
+            else:
+                if len(partial_paths) == 0 or partial_paths[-1]['implementation'] == 'python':
+                    partial_paths.append({'implementation': 'theano', 'members': [node]})
+                else:
+                    partial_paths[-1]['members'].append(node)
+
         outexpressions = {}
         dangling_inputmap = {}
         dangling_outputmap = {}
+        dangling_input_names = []
 
-        for node in subgraph:
-            buildargs = []
-            for in_idx, in_name in enumerate(node.inputs):
-                if not node.inputmap[in_name] or node.inputmap[in_name][0] not in node_uids:
-                    in_expr = create_tensor(node.definition['inputdims'][in_idx], self.theanofloatX, name=in_name)
-                    dangling_inputs.append(in_expr)
-                    dangling_input_names.append(in_name)
-                    buildargs.append(in_expr)
-                    if node.uid not in dangling_inputmap:
-                        dangling_inputmap[node.uid] = [in_name]
+        functions = []
+
+        for path in partial_paths:
+            dangling_inputs = []
+            dangling_outputs = []
+            dangling_input_names.append([])
+
+            member_uids = [n.uid for n in path['members']]
+
+            for node in path['members']:
+                buildargs = []
+                for in_idx, in_name in enumerate(node.inputs):
+                    if not node.inputmap[in_name] or node.inputmap[in_name][0] not in member_uids:
+                        in_expr = create_tensor(node.definition['inputdims'][in_idx], self.theanofloatX, name=in_name)
+                        dangling_inputs.append(in_expr)
+                        if not node.inputmap[in_name] or node.inputmap[in_name][0] not in node_uids:
+                            dangling_input_names[-1].append(in_name)
+                            if node.uid not in dangling_inputmap:
+                                dangling_inputmap[node.uid] = [in_name]
+                            else:
+                                dangling_inputmap[node.uid].append(in_name)
+                        buildargs.append(in_expr)
                     else:
-                        dangling_inputmap[node.uid].append(in_name)
+                        source_uid, source_name = node.inputmap[in_name]
+                        buildargs.append(outexpressions[source_uid][self.get_node(source_uid).outputs.index(source_name)])
+
+                if len(node.outputs) == 1:
+                    outexpressions[node.uid] = [node.build(*buildargs)]
                 else:
-                    source_uid, source_name = node.inputmap[in_name]
-                    buildargs.append(outexpressions[source_uid][self.get_node(source_uid).outputs.index(source_name)])
+                    outexpressions[node.uid] = node.build(*buildargs)
 
-            if len(node.outputs) == 1:
-                outexpressions[node.uid] = [node.build(*buildargs)]
+                for out_idx, out_name in enumerate(node.outputs):
+                    dangling = True
+                    if node.outputmap[out_name]:
+                        for pair in node.outputmap[out_name]:
+                            if pair[0] in member_uids:
+                                dangling = False
+                            elif pair[0] in node_uids:
+                                dangling = "internal"
+                                break
+                    if dangling:
+                        dangling_outputs.append(node.outexpression)
+                        if dangling != 'internal':
+                            if node.uid not in dangling_outputmap:
+                                dangling_outputmap[node.uid] = [out_name]
+                            else:
+                                dangling_outputmap[node.uid].append(out_name)
+
+            if not with_shared_variables:
+                if path['implementation'] == 'theano':
+                    functions.append(('theano', None, theano.function(inputs=dangling_inputs, outputs=dangling_outputs)))
+                else:
+                    functions.append(('python', path['members'][0], outexpressions[path['members'][0].uid][0]))
+
             else:
-                outexpressions[node.uid] = node.build(*buildargs)
-
-            for out_idx, out_name in enumerate(node.outputs):
-                dangling = True
-                if node.outputmap[out_name]:
-                    for pair in node.outputmap[out_name]:
-                        if pair[0] in node_uids:
-                            dangling = False
-                            break
-                if dangling:
-                    dangling_outputs.append(node.outexpression)
-                    if node.uid not in dangling_outputmap:
-                        dangling_outputmap[node.uid] = [out_name]
-                    else:
-                        dangling_outputmap[node.uid].append(out_name)
+                sharedvars = self.collect_shared_variables(node_uids)
+                dummies = [create_tensor(var.ndim, self.theanofloatX, name=var.name) for var in sharedvars]
+                if path['implementation'] == 'theano':
+                    functions.append(('theano', None, theano.function(inputs=dangling_inputs + dummies, outputs=dangling_outputs, givens=[zip(sharedvars, dummies)])))
+                else:
+                    functions.append(('python', path['members'][0], outexpressions[path['members'][0].uid][0]))
 
         if not with_shared_variables:
-            f = theano.function(inputs=dangling_inputs, outputs=dangling_outputs)
 
             def compiled(**kwargs):
-                args = []
-                for name in dangling_input_names:
-                    args.append(kwargs[name])
-                return f(*args)
-
+                numargs = []
+                for idx, (implementation, node, func) in enumerate(functions):
+                    for name in dangling_input_names[idx]:
+                        numargs.append(kwargs[name])
+                    if implementation == 'python':
+                        numargs = func(*numargs, netapi=self.netapi, node=node, parameters=node.parameters)
+                        if len(node.outputs) == 1:
+                            numargs = [numargs]
+                    else:
+                        numargs = func(*numargs)
+                return numargs
         else:
-            sharedvars = self.collect_shared_variables(node_uids)
-            dummies = [create_tensor(var.ndim, self.theanofloatX, name=var.name) for var in sharedvars]
-
-            f = theano.function(inputs=dangling_inputs + dummies, outputs=dangling_outputs, givens=[zip(sharedvars, dummies)])
 
             def compiled(shared_variables=None, **kwargs):
-                args = []
-                for name in dangling_input_names:
-                    args.append(kwargs[name])
-                args += sharedvars
-                return f(*args)
+                numargs = []
+                for idx, (implementation, node, func) in enumerate(functions):
+                    for name in dangling_input_names[idx]:
+                        numargs.append(kwargs[name])
+                    numargs += sharedvars
+                    if implementation == 'python':
+                        numargs = func(*numargs, netapi=self.netapi, node=node, parameters=node.parameters)
+                        if len(node.outputs) == 1:
+                            numargs = [numargs]
+                    else:
+                        numargs = func(*numargs)
+                return numargs
 
-        compiled.__doc__ = "Compiled subgraph of nodes %s" + str(node_uids)
+        compiled.__doc__ = "Compiled subgraph of nodes %s" % str(subgraph)
 
         return compiled, dangling_inputmap, dangling_outputmap
 

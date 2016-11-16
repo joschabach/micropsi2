@@ -430,8 +430,6 @@ def test_python_flowmodules(runtime, test_nodenet, default_world, resourcepath):
     assert np.all(worldadapter.datatarget_values == 0)
 
     netapi.link(source, 'gen', bisect, 'sub')
-    netapi.link(source, 'gen', py, 'sub')
-    netapi.link(source, 'gen', double, 'sub')
 
     nodenet.step()
     # ((x * 2) + 1) / 2 == x + .5
@@ -451,3 +449,20 @@ def test_compile_flow_subgraph(runtime, test_nodenet, default_world, resourcepat
     func, ins, outs = nodenet.compile_flow_subgraph([double.uid, bisect.uid], partial=True)
 
     assert np.all(func(inputs=[1, 2, 3, 4]) == np.asarray([1, 2, 3, 4], dtype=nodenet.numpyfloatX))
+
+
+@pytest.mark.engine("theano_engine")
+def test_compile_flow_subgraph_bridges_numpy_gaps(runtime, test_nodenet, default_world, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+
+    double = netapi.create_node("Double", None, "Double")
+    py = netapi.create_node("Numpy", None, "Numpy")
+    bisect = netapi.create_node("Bisect", None, "Bisect")
+
+    netapi.connect_flow_modules(double, "outputs", py, "inputs")
+    netapi.connect_flow_modules(py, "outputs", bisect, "inputs")
+
+    func, ins = netapi.compile_flow_subgraph([bisect, double, py])
+
+    assert ins == ['inputs']
+    assert np.all(func(inputs=[1, 2, 3, 4]) == np.asarray([1.5, 2.5, 3.5, 4.5], dtype=nodenet.numpyfloatX))

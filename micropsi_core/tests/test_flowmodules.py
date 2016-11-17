@@ -75,6 +75,15 @@ def prepare(runtime, test_nodenet, default_world, resourcepath):
         "inputs": ["X"],
         "outputs": ["Y"],
         "inputdims": [1]
+    },
+    "TwoOutputs":{
+        "flow_module": true,
+        "implementation": "theano",
+        "name": "TwoOutputs",
+        "build_function_name": "two_outputs",
+        "inputs": ["X"],
+        "outputs": ["A", "B"],
+        "inputdims": [1]
     }}""")
     with open(os.path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
         fp.write("""
@@ -112,6 +121,9 @@ def sharedvars(X, netapi, node, parameters):
         return X * node.get_shared_variable('weights') + node.get_shared_variable('bias')
     else:
         return X
+
+def two_outputs(X, netapi, node, parameters):
+    return X, X+1
 """)
 
     nodenet = runtime.nodenets[test_nodenet]
@@ -493,7 +505,7 @@ def test_compile_flow_subgraph_bridges_numpy_gaps(runtime, test_nodenet, default
 
 
 @pytest.mark.engine("theano_engine")
-def test_shaed_variables(runtime, test_nodenet, default_world, resourcepath):
+def test_shared_variables(runtime, test_nodenet, default_world, resourcepath):
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
     module = netapi.create_node("SharedVars", None, "module")
@@ -526,3 +538,24 @@ def test_shaed_variables(runtime, test_nodenet, default_world, resourcepath):
     result = func(shared_variables=[bias, weights], X=x)
 
     assert np.all(result == x * weights + bias)
+
+
+@pytest.mark.engine("theano_engine")
+def test_flow_edgecase(runtime, test_nodenet, default_world, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+
+    twoout = netapi.create_node("TwoOutputs", None, "twoout")
+    double = netapi.create_node("Double", None, "double")
+    numpy = netapi.create_node("Numpy", None, "numpy")
+    add = netapi.create_node("Add", None, "add")
+
+    netapi.connect_flow_modules(twoout, "A", double, "inputs")
+    netapi.connect_flow_modules(twoout, "B", numpy, "inputs")
+    netapi.connect_flow_modules(double, "outputs", add, "input1")
+    netapi.connect_flow_modules(numpy, "outputs", add, "input2")
+
+    function, needed_inputs = netapi.compile_flow_subgraph([twoout, double, numpy, add])
+
+    x = np.array([1, 2, 3], dtype=netapi.floatX)
+    result = np.array([5, 8, 11], dtype=netapi.floatX)
+    assert np.all(function(X=x) == result)

@@ -946,8 +946,8 @@ class TheanoNodenet(Nodenet):
                 else:
                     paths[-1]['members'].append(node)
 
-        dangling_inputmap = {}
-        dangling_outputmap = {}
+        dangling_inputs = []
+        dangling_outputs = []
 
         thunks = []
 
@@ -974,10 +974,7 @@ class TheanoNodenet(Nodenet):
                         if not node.inputmap[in_name] or node.inputmap[in_name][0] not in node_uids:
                             # external dangling input:
                             thunk['input_sources'].append(('kwargs', -1, in_name))
-                            if node.uid not in dangling_inputmap:
-                                dangling_inputmap[node.uid] = [in_name]
-                            else:
-                                dangling_inputmap[node.uid].append(in_name)
+                            dangling_inputs.append((node.uid, in_name))
                         else:
                             # internal dangling input:
                             source_uid, source_name = node.inputmap[in_name]
@@ -1012,10 +1009,7 @@ class TheanoNodenet(Nodenet):
                         if dangling != 'internal':
                             # external dangling output
                             thunk['dangling_outputs'].append(out_idx)
-                            if node.uid not in dangling_outputmap:
-                                dangling_outputmap[node.uid] = [out_name]
-                            else:
-                                dangling_outputmap[node.uid].append(out_name)
+                            dangling_outputs.append((node.uid, out_name))
 
             if not with_shared_variables:
                 if thunk['implementation'] == 'theano':
@@ -1059,9 +1053,12 @@ class TheanoNodenet(Nodenet):
                     final_outputs.append(out[idx])
             return final_outputs if len(final_outputs) > 0 else final_outputs[0]
 
-        compiled.__doc__ = "Compiled subgraph of nodes %s" % str(subgraph)
+        compiled.__doc__ = """Compiled subgraph of nodes %s
+            Inputs: %s
+            Outputs: %s
+        """ % (str(subgraph), str([("%s of %s" % x[::-1]) for x in dangling_inputs]), str([("%s of %s" % x[::-1]) for x in dangling_outputs]))
 
-        return compiled, dangling_inputmap, dangling_outputmap
+        return compiled, dangling_inputs, dangling_outputs
 
     def set_shared_variable(self, node_uid, name, val):
         if node_uid not in self.shared_variables:

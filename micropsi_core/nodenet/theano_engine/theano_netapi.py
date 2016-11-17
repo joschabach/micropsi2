@@ -91,8 +91,6 @@ class TheanoNetAPI(NetAPI):
         return self.__nodenet.disconnect_flow_module_from_worldadapter(flow_module.uid, gateslot)
 
     def compile_flow_subgraph(self, nodes, with_shared_variables=False):
+        """ Returns one callable for the given flow_modules """
         func, dangling_inputs, dangling_outputs = self.__nodenet.compile_flow_subgraph([n.uid for n in nodes], with_shared_variables=with_shared_variables, partial=True)
-        needed_inputs = []
-        for uid in dangling_inputs:
-            needed_inputs.extend(dangling_inputs[uid])
-        return func, needed_inputs
+        return func

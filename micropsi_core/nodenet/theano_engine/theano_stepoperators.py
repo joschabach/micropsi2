@@ -92,19 +92,18 @@ class TheanoCalculateFlowmodules(Propagate):
             if endnode.is_requested():
                 try:
                     inputs = {}
-                    for uid in dangling_inputs:
-                        for name in dangling_inputs[uid]:
-                            source_uid, source_name = nodenet.get_node(uid).inputmap[name]
-                            inputs[name] = flowio[source_uid][source_name]
+                    for node_uid, in_name in dangling_inputs:
+                        source_uid, source_name = nodenet.get_node(node_uid).inputmap[in_name]
+                        inputs[in_name] = flowio[source_uid][source_name]
                     out = func(**inputs)
                     if out is not None:
-                        if dangling_outputs != {}:
-                            offset = 0
-                            for node in nodes:
-                                for name in dangling_outputs.get(node.uid, []):
-                                    idx = node.outputs.index(name)
-                                    if ('worldadapter', 'datatargets') in node.outputmap[name]:
-                                        nodenet.worldadapter_instance.add_datatarget_values(out[offset + idx])
+                        for index, (node_uid, out_name) in enumerate(dangling_outputs):
+                            if ('worldadapter', 'datatargets') in nodenet.get_node(node_uid).outputmap[out_name]:
+                                nodenet.worldadapter_instance.add_datatarget_values(out[index])
+                            else:
+                                if node_uid not in flowio:
+                                    flowio[node_uid] = {}
+                                flowio[node_uid][out_name] = out[index]
                 except KeyError:
                     import traceback
                     nodenet.logger.error("missing in- or output: ", traceback.format_exc())

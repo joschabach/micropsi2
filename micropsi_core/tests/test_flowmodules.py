@@ -498,9 +498,8 @@ def test_compile_flow_subgraph_bridges_numpy_gaps(runtime, test_nodenet, default
     netapi.connect_flow_modules(double, "outputs", py, "inputs")
     netapi.connect_flow_modules(py, "outputs", bisect, "inputs")
 
-    func, ins = netapi.compile_flow_subgraph([bisect, double, py])
+    func = netapi.compile_flow_subgraph([bisect, double, py])
 
-    assert ins == ['inputs']
     assert np.all(func(inputs=[1, 2, 3, 4]) == np.asarray([1.5, 2.5, 3.5, 4.5], dtype=nodenet.numpyfloatX))
 
 
@@ -529,7 +528,7 @@ def test_shared_variables(runtime, test_nodenet, default_world, resourcepath):
     result = sources * module.get_shared_variable('weights').get_value() + module.get_shared_variable('bias').get_value()
     assert np.all(worldadapter.datatarget_values == result)
 
-    func, needed_inputs = netapi.compile_flow_subgraph([module], with_shared_variables=True)
+    func = netapi.compile_flow_subgraph([module], with_shared_variables=True)
 
     x = np.ones(5).astype(netapi.floatX)
     weights = np.random.rand(5).astype(netapi.floatX)
@@ -554,7 +553,7 @@ def test_flow_edgecase(runtime, test_nodenet, default_world, resourcepath):
     netapi.connect_flow_modules(double, "outputs", add, "input1")
     netapi.connect_flow_modules(numpy, "outputs", add, "input2")
 
-    function, needed_inputs = netapi.compile_flow_subgraph([twoout, double, numpy, add])
+    function = netapi.compile_flow_subgraph([twoout, double, numpy, add])
 
     x = np.array([1, 2, 3], dtype=netapi.floatX)
     result = np.array([5, 8, 11], dtype=netapi.floatX)

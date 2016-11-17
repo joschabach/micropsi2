@@ -1036,51 +1036,28 @@ class TheanoNodenet(Nodenet):
 
             thunks.append(thunk)
 
-        if not with_shared_variables:
-
-            def compiled(**kwargs):
-                all_outputs = []
-                final_outputs = []
-                for idx, thunk in enumerate(thunks):
-                    funcargs = []
-                    for source, pidx, item in thunk['input_sources']:
-                        if source == 'kwargs':
-                            funcargs.append(kwargs[item])
-                        elif source == 'path':
-                            funcargs.append(all_outputs[pidx][item])
-                    if thunk['implementation'] == 'python':
-                        out = thunk['function'](*funcargs, netapi=self.netapi, node=thunk['node'], parameters=thunk['node'].parameters)
-                        if len(node.outputs) == 1:
-                            out = [out]
-                    else:
-                        out = thunk['function'](*funcargs)
-                    all_outputs.append(out)
-                    for idx in thunk['dangling_outputs']:
-                        final_outputs.append(out[idx])
-                return final_outputs if len(final_outputs) > 0 else final_outputs[0]
-        else:
-
-            def compiled(shared_variables=None, **kwargs):
-                all_outputs = []
-                final_outputs = []
-                for idx, thunk in enumerate(thunks):
-                    funcargs = []
-                    for source, pidx, item in thunk['input_sources']:
-                        if source == 'kwargs':
-                            funcargs.append(kwargs[item])
-                        elif source == 'path':
-                            funcargs.append(all_outputs[pidx][item])
-                    if thunk['implementation'] == 'python':
-                        out = thunk['function'](*funcargs, netapi=self.netapi, node=thunk['node'], parameters=thunk['node'].parameters)
-                        if len(node.outputs) == 1:
-                            out = [out]
-                    else:
+        def compiled(shared_variables=None, **kwargs):
+            all_outputs = []
+            final_outputs = []
+            for idx, thunk in enumerate(thunks):
+                funcargs = []
+                for source, pidx, item in thunk['input_sources']:
+                    if source == 'kwargs':
+                        funcargs.append(kwargs[item])
+                    elif source == 'path':
+                        funcargs.append(all_outputs[pidx][item])
+                if thunk['implementation'] == 'python':
+                    out = thunk['function'](*funcargs, netapi=self.netapi, node=thunk['node'], parameters=thunk['node'].parameters)
+                    if len(node.outputs) == 1:
+                        out = [out]
+                else:
+                    if shared_variables:
                         funcargs += shared_variables
-                        out = thunk['function'](*funcargs)
-                    all_outputs.append(out)
-                    for idx in thunk['dangling_outputs']:
-                        final_outputs.append(out[idx])
-                return final_outputs if len(final_outputs) > 0 else final_outputs[0]
+                    out = thunk['function'](*funcargs)
+                all_outputs.append(out)
+                for idx in thunk['dangling_outputs']:
+                    final_outputs.append(out[idx])
+            return final_outputs if len(final_outputs) > 0 else final_outputs[0]
 
         compiled.__doc__ = "Compiled subgraph of nodes %s" % str(subgraph)
 

@@ -957,7 +957,8 @@ class TheanoNodenet(Nodenet):
                 'function': None,
                 'node': None,
                 'input_sources': [],
-                'dangling_outputs': []
+                'dangling_outputs': [],
+                'list_outputs': []
             }
             member_uids = [n.uid for n in path['members']]
             outexpressions = {}
@@ -988,12 +989,27 @@ class TheanoNodenet(Nodenet):
                         buildargs.append(outexpressions[source_uid][self.get_node(source_uid).outputs.index(source_name)])
 
                 if len(node.outputs) == 1:
-                    outexpressions[node.uid] = [node.build(*buildargs)]
+                    original_outex = [node.build(*buildargs)]
                 else:
-                    outexpressions[node.uid] = node.build(*buildargs)
+                    original_outex = node.build(*buildargs)
 
+                outexpressions[node.uid] = original_outex
+                flattened_outex = []
+                outputlengths = []
+                flattened_markers = []
+                for idx, ex in enumerate(original_outex):
+                    if type(ex) == list:
+                        flattened_markers.append((len(outputs) + idx, len(ex)))
+                        outputlengths.append(len(ex))
+                        for item in ex:
+                            flattened_outex.append(item)
+                    else:
+                        flattened_outex.append(ex)
+                        outputlengths.append(1)
+
+                outoffset = 0
                 for out_idx, out_name in enumerate(node.outputs):
-                    dangling = True
+                    dangling = "external"
                     if node.outputmap[out_name]:
                         for pair in node.outputmap[out_name]:
                             if pair[0] in member_uids:
@@ -1005,7 +1021,15 @@ class TheanoNodenet(Nodenet):
                                 dangling = "internal"
                                 break
                     if dangling:
-                        outputs.append(outexpressions[node.uid][out_idx])
+                        added = False
+                        if outputlengths[out_idx] > 1:
+                            thunk['list_outputs'].append((out_idx, outputlengths[out_idx]))
+                            added = True
+                            for i in range(outputlengths[out_idx]):
+                                outputs.append(flattened_outex[out_idx + outoffset + i])
+                            outoffset += outputlengths[out_idx] - 1
+                        if not added:
+                            outputs.append(flattened_outex[out_idx + outoffset])
                         if dangling != 'internal':
                             # external dangling output
                             thunk['dangling_outputs'].append(out_idx)
@@ -1048,6 +1072,22 @@ class TheanoNodenet(Nodenet):
                     if shared_variables:
                         funcargs += shared_variables
                     out = thunk['function'](*funcargs)
+                if thunk['list_outputs']:
+                    new_out = []
+                    out_iter = iter(out)
+                    try:
+                        for out_index in range(len(out)):
+                            for offset, length in thunk['list_outputs']:
+                                if offset == out_index:
+                                    sublist = []
+                                    for i in range(length):
+                                        sublist.append(next(out_iter))
+                                    new_out.append(sublist)
+                                else:
+                                    new_out.append(next(out_iter))
+                    except:
+                        pass
+                    out = new_out
                 all_outputs.append(out)
                 for idx in thunk['dangling_outputs']:
                     final_outputs.append(out[idx])

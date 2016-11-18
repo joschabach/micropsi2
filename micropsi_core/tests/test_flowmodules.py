@@ -84,6 +84,33 @@ def prepare(runtime, test_nodenet, default_world, resourcepath):
         "inputs": ["X"],
         "outputs": ["A", "B"],
         "inputdims": [1]
+    },
+    "TRPOOut":{
+        "flow_module": true,
+        "implementation": "theano",
+        "name": "TRPOOut",
+        "build_function_name": "trpoout",
+        "inputs": ["X"],
+        "outputs": ["Y", "Z"],
+        "inputdims": [1]
+    },
+    "TRPOIn":{
+        "flow_module": true,
+        "implementation": "theano",
+        "name": "TRPOIn",
+        "build_function_name": "trpoin",
+        "inputs": ["Y", "Z"],
+        "outputs": ["A"],
+        "inputdims": [-1, 1]
+    },
+    "TRPOInPython":{
+        "flow_module": true,
+        "implementation": "python",
+        "name": "TRPOIn",
+        "run_function_name": "trpoinpython",
+        "inputs": ["Y", "Z"],
+        "outputs": ["A"],
+        "inputdims": [-1, 1]
     }}""")
     with open(os.path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
         fp.write("""
@@ -124,6 +151,20 @@ def sharedvars(X, netapi, node, parameters):
 
 def two_outputs(X, netapi, node, parameters):
     return X, X+1
+
+def trpoout(X, netapi, node, parameters):
+    from theano import tensor as T
+    return [X, X+1, X*2], T.exp(X)
+
+def trpoin(X, Y, netapi, node, parameters):
+    for thing in X:
+        Y += thing
+    return Y
+
+def trpoinpython(X, Y, netapi, node, parameters):
+    for thing in X:
+        Y += thing
+    return Y
 """)
 
     nodenet = runtime.nodenets[test_nodenet]
@@ -557,4 +598,30 @@ def test_flow_edgecase(runtime, test_nodenet, default_world, resourcepath):
 
     x = np.array([1, 2, 3], dtype=netapi.floatX)
     result = np.array([5, 8, 11], dtype=netapi.floatX)
+    assert np.all(function(X=x) == result)
+
+
+@pytest.mark.engine("theano_engine")
+def test_flow_trpo_modules(runtime, test_nodenet, default_world, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+
+    trpoout = netapi.create_node("TRPOOut", None, "TRPOOut")
+    trpoin = netapi.create_node("TRPOIn", None, "TRPOIn")
+
+    netapi.connect_flow_modules(trpoout, "Y", trpoin, "Y")
+    netapi.connect_flow_modules(trpoout, "Z", trpoin, "Z")
+
+    function = netapi.compile_flow_subgraph([trpoin, trpoout])
+
+    x = np.array([1, 2, 3], dtype=netapi.floatX)
+    result = sum([np.exp(x), x, x*2, x+1])
+    assert np.all(function(X=x) == result)
+
+    netapi.delete_node(trpoin)
+    trpoinpy = netapi.create_node("TRPOInPython", None, "TRPOInPython")
+
+    netapi.connect_flow_modules(trpoout, "Y", trpoinpy, "Y")
+    netapi.connect_flow_modules(trpoout, "Z", trpoinpy, "Z")
+
+    function = netapi.compile_flow_subgraph([trpoinpy, trpoout])
     assert np.all(function(X=x) == result)

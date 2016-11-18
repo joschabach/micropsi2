@@ -988,8 +988,11 @@ class TheanoNodenet(Nodenet):
                         source_uid, source_name = node.inputmap[in_name]
                         buildargs.append(outexpressions[source_uid][self.get_node(source_uid).outputs.index(source_name)])
 
-                if len(node.outputs) == 1:
+                if len(node.outputs) <= 1:
                     original_outex = [node.build(*buildargs)]
+                elif node.implementation == 'python':
+                    func = node.build(*buildargs)
+                    original_outex = [func] * len(node.outputs)
                 else:
                     original_outex = node.build(*buildargs)
 
@@ -1066,7 +1069,7 @@ class TheanoNodenet(Nodenet):
                         funcargs.append(all_outputs[pidx][item])
                 if thunk['implementation'] == 'python':
                     out = thunk['function'](*funcargs, netapi=self.netapi, node=thunk['node'], parameters=thunk['node'].parameters)
-                    if len(node.outputs) == 1:
+                    if len(thunk['node'].outputs) <= 1:
                         out = [out]
                 else:
                     if shared_variables:
@@ -1088,10 +1091,11 @@ class TheanoNodenet(Nodenet):
                     except:
                         pass
                     out = new_out
-                all_outputs.append(out)
-                for idx in thunk['dangling_outputs']:
-                    final_outputs.append(out[idx])
-            return final_outputs if len(final_outputs) > 0 else final_outputs[0]
+                if out:
+                    all_outputs.append(out)
+                    for idx in thunk['dangling_outputs']:
+                        final_outputs.append(out[idx])
+            return final_outputs[0] if len(final_outputs) == 1 else final_outputs
 
         compiled.__doc__ = """Compiled subgraph of nodes %s
             Inputs: %s

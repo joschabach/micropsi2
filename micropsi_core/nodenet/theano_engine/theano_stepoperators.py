@@ -77,16 +77,18 @@ class TheanoCalculateFlowmodules(Propagate):
         self.nodenet = nodenet
 
     def execute(self, nodenet, nodes, netapi):
-        if not nodenet.flow_module_instances or not nodenet.worldadapter_instance:
+        if not nodenet.flow_module_instances:
             return
         for uid, item in nodenet.flow_module_instances.items():
             item.take_slot_activation_snapshot()
-        flowio = {
-            'worldadapter': {
+        flowio = {}
+
+        if nodenet.worldadapter_instance:
+            flowio['worldadapter'] = {
                 'datasources': nodenet.worldadapter_instance.get_datasource_values(),
                 'datatargets': None
-            }
-        }
+                }
+
         for func, nodes, dangling_inputs, dangling_outputs in nodenet.flowfuncs:
             endnode = nodes[-1]
             if endnode.is_requested():

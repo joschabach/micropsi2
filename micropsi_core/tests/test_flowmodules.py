@@ -60,7 +60,7 @@ def prepare(runtime, test_nodenet, default_world, resourcepath):
         "implementation": "python",
         "name": "Numpy",
         "init_function_name": "numpyfunc_init",
-        "flow_function_name": "numpyfunc",
+        "run_function_name": "numpyfunc",
         "inputs": ["inputs"],
         "outputs": ["outputs"],
         "inputdims": [1]

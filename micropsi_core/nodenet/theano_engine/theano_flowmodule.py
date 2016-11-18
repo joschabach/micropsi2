@@ -129,5 +129,5 @@ class FlowModule(TheanoNode):
             self._buildfunction = getattr(module, self.definition['build_function_name'])
             self.line_number = inspect.getsourcelines(self._buildfunction)[1]
         elif self.implementation == 'python':
-            self._flowfunction = getattr(module, self.definition['flow_function_name'])
+            self._flowfunction = getattr(module, self.definition['run_function_name'])
             self.line_number = inspect.getsourcelines(self._flowfunction)[1]

@@ -101,7 +101,7 @@ def prepare(runtime, test_nodenet, default_world, resourcepath):
         "build_function_name": "trpoin",
         "inputs": ["Y", "Z"],
         "outputs": ["A"],
-        "inputdims": [-1, 1]
+        "inputdims": ["list", 1]
     },
     "TRPOInPython":{
         "flow_module": true,
@@ -110,7 +110,7 @@ def prepare(runtime, test_nodenet, default_world, resourcepath):
         "run_function_name": "trpoinpython",
         "inputs": ["Y", "Z"],
         "outputs": ["A"],
-        "inputdims": [-1, 1]
+        "inputdims": ["list", 1]
     }}""")
     with open(os.path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
         fp.write("""

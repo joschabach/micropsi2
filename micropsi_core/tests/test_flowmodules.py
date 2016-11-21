@@ -523,7 +523,7 @@ def test_compile_flow_subgraph(runtime, test_nodenet, default_world, resourcepat
 
     netapi.connect_flow_modules(double, "outputs", bisect, "inputs")
 
-    func, ins, outs = nodenet.compile_flow_subgraph([double.uid, bisect.uid], partial=True)
+    func, ins, outs = nodenet.compile_flow_subgraph([double.uid, bisect.uid])
 
     assert np.all(func(inputs=[1, 2, 3, 4]) == np.asarray([1, 2, 3, 4], dtype=nodenet.numpyfloatX))
 
@@ -569,7 +569,7 @@ def test_shared_variables(runtime, test_nodenet, default_world, resourcepath):
     result = sources * module.get_shared_variable('weights').get_value() + module.get_shared_variable('bias').get_value()
     assert np.all(worldadapter.datatarget_values == result)
 
-    func = netapi.compile_flow_subgraph([module], with_shared_variables=True)
+    func = netapi.compile_flow_subgraph([module], make_shared_variables_inputs=True)
 
     x = np.ones(5).astype(netapi.floatX)
     weights = np.random.rand(5).astype(netapi.floatX)

@@ -933,7 +933,7 @@ class TheanoNodenet(Nodenet):
                 self.flowfuncs.append((func, nodes, dangling_inputs, dangling_outputs))
         self.logger.debug("Compiled %d flowfunctions" % len(self.flowfuncs))
 
-    def compile_flow_subgraph(self, node_uids, with_shared_variables=False, partial=False):
+    def compile_flow_subgraph(self, node_uids, make_shared_variables_inputs=False):
         subgraph = [self.get_node(uid) for uid in self.flow_toposort if uid in node_uids]
 
         paths = []
@@ -1038,7 +1038,7 @@ class TheanoNodenet(Nodenet):
                             thunk['dangling_outputs'].append(out_idx)
                             dangling_outputs.append((node.uid, out_name))
 
-            if not with_shared_variables:
+            if not make_shared_variables_inputs:
                 if thunk['implementation'] == 'theano':
                     thunk['function'] = theano.function(inputs=inputs, outputs=outputs)
                 else:

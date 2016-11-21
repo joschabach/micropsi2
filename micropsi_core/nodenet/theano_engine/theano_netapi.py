@@ -94,3 +94,7 @@ class TheanoNetAPI(NetAPI):
         """ Returns one callable for the given flow_modules """
         func, dangling_inputs, dangling_outputs = self.__nodenet.compile_flow_subgraph([n.uid for n in nodes], with_shared_variables=with_shared_variables, partial=True)
         return func
+
+    def collect_shared_variables(self, nodes):
+        """ Returns a list of shared variabels, sorted by node first, alphabetically second """
+        return self.__nodenet.collect_shared_variables([n.uid for n in nodes])

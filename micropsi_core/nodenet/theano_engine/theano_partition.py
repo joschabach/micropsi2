@@ -2016,6 +2016,8 @@ class TheanoPartition():
                     "gate_activations": gate_activations,
                     "gate_configuration": gate_configurations,
                     "is_highdimensional": nodetype.is_highdimensional}
+            if nodetype.is_flow_module:
+                data.update(self.nodenet.flow_module_instances[uid].get_flow_data())
             if complete:
                 data['index'] = int(id)
             if include_links:

@@ -475,12 +475,11 @@ class TheanoNodenet(Nodenet):
             metadata['names'] = self.names
             metadata['actuatormap'] = self.actuatormap
             metadata['sensormap'] = self.sensormap
-            metadata['nodes'] = self.constructnative_modules_and_comments_dict()
+            metadata['nodes'] = self.construct_native_modules_and_comments_dict()
             metadata['monitors'] = self.construct_monitors_dict()
             metadata['modulators'] = self.construct_modulators_dict()
             metadata['partition_parents'] = self.inverted_partitionmap
             metadata['recorders'] = self.construct_recorders_dict()
-            metadata['flow_modules'] = dict((node.uid, node.get_data()) for node in self.flow_module_instances.values())
             fp.write(json.dumps(metadata, sort_keys=True, indent=4))
 
         # write graph data
@@ -1816,7 +1815,7 @@ class TheanoNodenet(Nodenet):
 
         return data
 
-    def constructnative_modules_and_comments_dict(self):
+    def construct_native_modules_and_comments_dict(self):
         data = {}
         i = 0
         for partition in self.partitions.values():
@@ -1825,6 +1824,8 @@ class TheanoNodenet(Nodenet):
                 i += 1
                 node_uid = node_to_id(node_id, partition.pid)
                 data[node_uid] = self.get_node(node_uid).get_data(complete=True)
+                if node_uid in self.flow_module_instances:
+                    data[node_uid].update(self.flow_module_instances).get_flow_data()
         return data
 
     def construct_nodes_dict(self, nodespace_uid=None, complete=False, include_links=True):

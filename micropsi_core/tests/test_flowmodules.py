@@ -614,7 +614,7 @@ def test_flow_trpo_modules(runtime, test_nodenet, default_world, resourcepath):
     function = netapi.compile_flow_subgraph([trpoin, trpoout])
 
     x = np.array([1, 2, 3], dtype=netapi.floatX)
-    result = sum([np.exp(x), x, x*2, x+1])
+    result = sum([np.exp(x), x, x * 2, x + 1])
     assert np.all(function(X=x) == result)
 
     netapi.delete_node(trpoin)

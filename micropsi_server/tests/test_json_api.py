@@ -1757,6 +1757,11 @@ def double(inputs, netapi, node, parameters):
     result = app.post_json('/rpc/connect_flow_module_to_worldadapter', connect)
     assert_success(result)
 
+    response = app.post_json('/rpc/get_calculation_state', params={'nodenet_uid': test_nodenet, 'nodenet': {'nodespaces': [None]}, 'monitors': True})
+    data = response.json_body['data']
+
+    assert data['nodenet']['nodes'][flow_uid]
+
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
     worldadapter.datasource_values = sources

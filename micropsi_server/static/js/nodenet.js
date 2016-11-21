@@ -16,6 +16,7 @@ var viewProperties = {
     selectionColor: new Color("#0099ff"),
     hoverColor: new Color("#089AC7"),
     linkColor: new Color("#000000"),
+    flowConnectionColor: new Color("#1F3755"),
     nodeColor: new Color("#c2c2d6"),
     nodeForegroundColor: new Color ("#000000"),
     nodeFontColor: new Color ("#000000"),
@@ -59,6 +60,7 @@ var nodenet_loaded = false;
 // hashes from uids to object definitions; we import these via json
 nodes = {};
 links = {};
+flow_connections = {};
 selection = {};
 monitors = {};
 
@@ -410,8 +412,10 @@ function setNodespaceData(data, changed){
             removeLink(links[uid]);
         }
         var links_data = {}
+        var flow_connections = {};
         for(uid in data.nodes){
-            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_configuration, data.nodes[uid].is_highdimensional, data.nodes[uid].inlinks, data.nodes[uid].outlinks);
+            var node = data.nodes[uid]
+            item = new Node(uid, node['position'][0], node['position'][1], node.parent_nodespace, node.name, node.type, node.activation, node.state, node.parameters, node.gate_activations, node.gate_configuration, node.is_highdimensional, node.inlinks, node.outlinks, node.inputmap);
             if(uid in nodes){
                 if(nodeRedrawNeeded(item)) {
                     nodes[uid].update(item);
@@ -422,12 +426,26 @@ function setNodespaceData(data, changed){
             } else{
                 addNode(item);
             }
-            for(gate in data.nodes[uid].links){
-                for(var i = 0; i < data.nodes[uid].links[gate].length; i++){
-                    luid = uid + ":" + gate + ":" + data.nodes[uid].links[gate][i]['target_slot_name'] + ":" + data.nodes[uid].links[gate][i]['target_node_uid']
-                    links_data[luid] = data.nodes[uid].links[gate][i]
+            for(gate in node.links){
+                for(var i = 0; i < node.links[gate].length; i++){
+                    luid = uid + ":" + gate + ":" + node.links[gate][i]['target_slot_name'] + ":" + node.links[gate][i]['target_node_uid']
+                    links_data[luid] = node.links[gate][i]
                     links_data[luid].source_node_uid = uid
                     links_data[luid].source_gate_name = gate
+                }
+            }
+            if(node.inputmap){
+                for(var name in node.inputmap){
+                    var source_uid = node.inputmap[name][0];
+                    var source_name = node.inputmap[name][1];
+                    cid = source_uid + ":" + source_name + ":" + name + ":" + uid;
+                    links_data[cid] = {
+                        'source_node_uid': source_uid,
+                        'target_node_uid': uid,
+                        'source_name': source_name,
+                        'target_name': name,
+                        'is_flow_connection': true
+                    };
                 }
             }
         }
@@ -445,6 +463,11 @@ function setNodespaceData(data, changed){
             for(var uid in links) {
                 if(!(uid in links_data)) {
                     removeLink(links[uid]);
+                }
+            }
+            for(var uid in flow_connections) {
+                if(!(uid in links_data)) {
+                    removeLink(flow_connections[uid]);
                 }
             }
             addLinks(links_data);
@@ -509,6 +532,20 @@ function setNodespaceDiffData(data, changed){
                         links_data[luid].source_gate_name = gate
                     }
                 }
+                if(nodedata.inputmap){
+                    for(var name in nodedata.inputmap){
+                        var source_uid = nodedata.inputmap[name][0];
+                        var source_name = nodedata.inputmap[name][1];
+                        cid = source_uid + ":" + source_name + ":" + name + ":" + uid;
+                        links_data[cid] = {
+                            'source_node_uid': source_uid,
+                            'target_node_uid': uid,
+                            'source_name': source_name,
+                            'target_name': name,
+                            'is_flow_connection': true
+                        };
+                    }
+                }
             }
             addLinks(links_data);
         }
@@ -553,9 +590,15 @@ function addLinks(link_data){
         sourceId = link_data[uid]['source_node_uid'];
         targetId = link_data[uid]['target_node_uid'];
         if (sourceId in nodes && targetId in nodes && nodes[sourceId].parent == nodes[targetId].parent){
-            link = new Link(uid, sourceId, link_data[uid].source_gate_name, targetId, link_data[uid].target_slot_name, link_data[uid].weight);
+            if(link_data[uid].is_flow_connection){
+                link = new Link(uid, sourceId, link_data[uid].source_name, targetId, link_data[uid].target_name, 1, true);
+            } else {
+                link = new Link(uid, sourceId, link_data[uid].source_gate_name, targetId, link_data[uid].target_slot_name, link_data[uid].weight);
+            }
             if(uid in links){
                 redrawLink(link);
+            } else if(uid in flow_connections){
+                redrawFlowConnection(link);
             } else {
                 addLink(link);
             }
@@ -685,7 +728,7 @@ function updateModulators(data){
 
 
 // data structure for net entities
-function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters, gate_activations, gate_configuration, is_highdim, inlinks, outlinks) {
+function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters, gate_activations, gate_configuration, is_highdim, inlinks, outlinks, inputmap) {
 	this.uid = uid;
 	this.x = x;
 	this.y = y;
@@ -711,6 +754,8 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
     this.inlinks = inlinks || 0;
     this.outlinks = outlinks || 0;
     this.symbol = nodetypes[type].symbol || type.substr(0,1);
+    this.is_flow_module = (this.type in flow_modules)
+    this.inputmap = inputmap;
     var i;
     for(i in nodetypes[type].slottypes){
         this.slots[nodetypes[type].slottypes[i]] = new Slot(nodetypes[type].slottypes[i]);
@@ -739,6 +784,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
         this.gate_activations = item.gate_activations;
         this.outlinks = item.outlinks;
         this.inlinks = item.inlinks;
+        this.inputmap = item.inputmap;
         for(var i in nodetypes[type].gatetypes){
             var gatetype = nodetypes[type].gatetypes[i];
             this.gates[gatetype].gate_configuration = this.gate_configuration[gatetype];
@@ -785,14 +831,14 @@ function Gate(name, index, activation, gate_configuration, is_highdim) {
 }
 
 // link, connects two nodes, from a gate to a slot
-function Link(uid, sourceNodeUid, gateName, targetNodeUid, slotName, weight){
+function Link(uid, sourceNodeUid, gateName, targetNodeUid, slotName, weight, is_flow_connection){
     this.uid = uid;
     this.sourceNodeUid = sourceNodeUid;
     this.gateName = gateName;
     this.targetNodeUid = targetNodeUid;
     this.slotName = slotName;
     this.weight = weight;
-
+    this.is_flow_connection = is_flow_connection;
     this.strokeColor = null;
     this.strokeWidth = null;
 }
@@ -814,16 +860,21 @@ function addLink(link) {
             nodes[link.targetNodeUid].slots[link.slotName].incoming[link.uid]=link;
             slot = true;
         }
-        if((sourceNode.uid && !gate) || (targetNode.uid && !slot)){
+        if(((sourceNode.uid && !gate) || (targetNode.uid && !slot)) && !link.is_flow_connection){
             console.error('Incompatible slots and gates: gate:'+ link.gateName + ' / slot:'+link.slotName);
             return;
         }
-        // check if link is visible
-        if (!(isOutsideNodespace(nodes[link.sourceNodeUid]) &&
-            isOutsideNodespace(nodes[link.targetNodeUid]))) {
-            renderLink(link);
+        if(link.is_flow_connection){
+            renderFlowConnection(link);
+            flow_connections[link.uid] = link;
+        } else {
+            links[link.uid] = link;
+            // check if link is visible
+            if (!(isOutsideNodespace(nodes[link.sourceNodeUid]) &&
+                isOutsideNodespace(nodes[link.targetNodeUid]))) {
+                renderLink(link);
+            }
         }
-        links[link.uid] = link;
     } else {
         console.error("Error: Attempting to create link without establishing nodes first");
     }
@@ -840,6 +891,17 @@ function redrawLink(link, forceRedraw){
         }
         renderLink(link);
         links[link.uid] = link;
+    }
+}
+function redrawFlowConnection(link, forceRedraw){
+    var oldLink = flow_connections[link.uid];
+    if (forceRedraw || !oldLink || !(link.uid in linkLayer.children) || oldLink.weight != link.weight ||
+            !nodes[oldLink.sourceNodeUid] || !nodes[link.sourceNodeUid]) {
+        if(link.uid in linkLayer.children){
+            linkLayer.children[link.uid].remove();
+        }
+        renderFlowConnection(link);
+        flow_connections[link.uid] = link;
     }
 }
 
@@ -948,6 +1010,14 @@ function redrawNodeNet() {
             renderLink(links[i]);
         }
     }
+    for(uid in flow_connections){
+        var sourceNode = nodes[flow_connections[uid].sourceNodeUid];
+        var targetNode = nodes[flow_connections[uid].targetNodeUid];
+        // check if the link is visible
+        if (!(isOutsideNodespace(sourceNode) && isOutsideNodespace(targetNode))) {
+            renderFlowConnection(flow_connections[uid]);
+        }
+    }
     updateViewSize();
     drawGridLines(view.element);
 }
@@ -1003,6 +1073,19 @@ function redrawNodeLinks(node) {
                 linkLayer.children[linkUid].remove();
             }
             renderLink(links[linkUid]);
+        }
+    }
+    redrawNodeFlowConnections(node);
+}
+function redrawNodeFlowConnections(node) {
+    if(node.is_flow_module){
+        for(var uid in flow_connections){
+            if(flow_connections[uid].sourceNodeUid == node.uid || flow_connections[uid].targetNodeUid == node.uid){
+                if(uid in linkLayer.children) {
+                    linkLayer.children[uid].remove();
+                }
+                renderFlowConnection(flow_connections[uid]);
+            }
         }
     }
 }
@@ -1249,6 +1332,44 @@ function renderLink(link, force) {
             linkContainer.opacity = 0.1
         }
     }
+    linkLayer.addChild(linkContainer);
+}
+
+function renderFlowConnection(link, force) {
+    if(nodespaceProperties[currentNodeSpace].renderlinks == 'no'){
+        return;
+    }
+    if(nodespaceProperties[currentNodeSpace].renderlinks == 'selection'){
+        var is_selected = selection && (link.sourceNodeUid in selection || link.targetNodeUid in selection);
+        if(!is_selected){
+            return;
+        }
+    }
+    var sourceNode = nodes[link.sourceNodeUid];
+    var targetNode = nodes[link.targetNodeUid];
+    var sourceType = flow_modules[sourceNode.type];
+    var targetType = flow_modules[targetNode.type];
+
+    var itemlength = sourceNode.bounds.width / sourceType.outputs.length;
+    var idx = sourceType.outputs.indexOf(link.gateName);
+    var linkStart = new Point(sourceNode.bounds.x + ((idx+.5) * itemlength), sourceNode.bounds.y + viewProperties.lineHeight * 0.7 * viewProperties.zoomFactor);
+    itemlength = targetNode.bounds.width / targetType.inputs.length;
+    idx = targetType.inputs.indexOf(link.slotName);
+    var linkEnd = new Point(targetNode.bounds.x + ((idx+.5) * itemlength), targetNode.bounds.y + targetNode.bounds.height - viewProperties.lineHeight * 0.3 * viewProperties.zoomFactor);
+
+    var linkPath = new Path([linkStart, linkEnd]);
+    linkPath.strokeColor = viewProperties.flowConnectionColor;
+    linkPath.strokeWidth = 10 * viewProperties.zoomFactor;
+    linkPath.opacity = 0.8;
+    linkPath.name = "path";
+    linkPath.dashArray = [viewProperties.zoomFactor,viewProperties.zoomFactor];
+
+    var arrowPath = createArrow(linkEnd, 0, link.strokeColor);
+
+    var linkItem = new Group([linkPath, arrowPath]);
+    linkItem.name = "connection";
+    var linkContainer = new Group(linkItem);
+    linkContainer.name = link.uid;
     linkLayer.addChild(linkContainer);
 }
 

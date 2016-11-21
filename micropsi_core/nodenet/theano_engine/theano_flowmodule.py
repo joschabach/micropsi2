@@ -37,23 +37,22 @@ class FlowModule(TheanoNode):
             for link in outputmap[name]:
                 self.outputmap[name].add(tuple(link))
 
-    def get_data(self, *args, **kwargs):
+    def get_flow_data(self, *args, **kwargs):
         inmap = {}
         outmap = {}
+        data = {}
         for name in self.inputmap:
             inmap[name] = list(self.inputmap[name])
         for name in self.outputmap:
             outmap[name] = []
             for link in self.outputmap[name]:
                 outmap[name].append(list(link))
-        data = super().get_data(*args, **kwargs)
-        data.update({
-            'uid': self.uid,
+        data = {
             'flow_module': True,
             'inputmap': inmap,
             'outputmap': outmap,
             'is_copy_of': self.is_copy_of
-        })
+        }
         return data
 
     def is_output_connected(self):

@@ -831,12 +831,20 @@ class TheanoNodenet(Nodenet):
 
     def connect_flow_modules(self, source_uid, source_output, target_uid, target_input):
         self.flowgraph.add_edge(source_uid, target_uid, key="%s_%s" % (source_output, target_input))
+        if source_output not in self.flow_module_instances[source_uid].outputs:
+            raise NameError("Unknown output name: %s" % source_output)
+        if target_input not in self.flow_module_instances[target_uid].inputs:
+            raise NameError("Unknown output name: %s" % target_input)
         self.flow_module_instances[target_uid].set_input(target_input, source_uid, source_output)
         self.flow_module_instances[source_uid].set_output(source_output, target_uid, target_input)
         self.update_flow_graphs()
 
     def disconnect_flow_modules(self, source_uid, source_output, target_uid, target_input):
         self.flowgraph.remove_edge(source_uid, target_uid, key="%s_%s" % (source_output, target_input))
+        if source_output not in self.flow_module_instances[source_uid].outputs:
+            raise NameError("Unknown output name: %s" % source_output)
+        if target_input not in self.flow_module_instances[target_uid].inputs:
+            raise NameError("Unknown output name: %s" % target_input)
         self.flow_module_instances[source_uid].unset_output(source_output, target_uid, target_input)
         self.flow_module_instances[target_uid].unset_input(target_input, source_uid, source_output)
         self.update_flow_graphs()

@@ -16,14 +16,14 @@ class FlowModule(TheanoNode):
     def outputs(self):
         return self.definition['outputs']
 
-    def __init__(self, nodenet, partition, parent_uid, uid, type, parameters={}, inputmap={}, outputmap={}):
+    def __init__(self, nodenet, partition, parent_uid, uid, type, parameters={}, inputmap={}, outputmap={}, is_copy_of=False):
         super().__init__(nodenet, partition, parent_uid, uid, type, parameters=parameters)
         self.definition = nodenet.native_module_definitions[self.type]
         self.implementation = self.definition['implementation']
         self.outexpression = None
         self.outputmap = {}
         self.inputmap = {}
-        self.is_copy_of = None
+        self.is_copy_of = is_copy_of
         self._load_functions()
         for i in self.definition['inputs']:
             self.inputmap[i] = tuple()
@@ -51,7 +51,8 @@ class FlowModule(TheanoNode):
             'uid': self.uid,
             'flow_module': True,
             'inputmap': inmap,
-            'outputmap': outmap
+            'outputmap': outmap,
+            'is_copy_of': self.is_copy_of
         })
         return data
 
@@ -63,13 +64,28 @@ class FlowModule(TheanoNode):
 
     def set_shared_variable(self, name, val):
         if self.is_copy_of:
-            return
+            raise RuntimeError("Shallow copies can not set shared variables")
         self._nodenet.set_shared_variable(self.uid, name, val)
 
     def get_shared_variable(self, name):
         if self.is_copy_of:
             return self._nodenet.get_shared_variable(self.is_copy_of, name)
         return self._nodenet.get_shared_variable(self.uid, name)
+
+    def set_parameter(self, name, val):
+        if self.is_copy_of:
+            raise RuntimeError("Shallow copies can not set parameters")
+        super().set_parameter(name, val)
+
+    def get_parameter(self, name):
+        if self.is_copy_of:
+            return self._nodenet.get_node(self.is_copy_of).get_parameter(name)
+        return super().get_parameter(name)
+
+    def clone_parameters(self):
+        if self.is_copy_of:
+            return self._nodenet.get_node(self.is_copy_of).clone_parameters()
+        return super().clone_parameters()
 
     def set_input(self, input_name, source_uid, source_output):
         self.dependencies.add(source_uid)
@@ -96,12 +112,12 @@ class FlowModule(TheanoNode):
         pass
 
     def build(self, *inputs):
-        if not self.__initialized:
+        if not self.__initialized and not self.is_copy_of:
             self._initfunction(self._nodenet.netapi, self, self.parameters)
             self.__initialized = True
 
         if self.implementation == 'theano':
-            outexpression = self._buildfunction(*inputs, netapi=self._nodenet.netapi, node=self, parameters=self.parameters)
+            outexpression = self._buildfunction(*inputs, netapi=self._nodenet.netapi, node=self, parameters=self.clone_parameters())
         elif self.implementation == 'python':
             outexpression = self._flowfunction
 

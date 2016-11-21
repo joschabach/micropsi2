@@ -98,3 +98,9 @@ class TheanoNetAPI(NetAPI):
     def collect_shared_variables(self, nodes):
         """ Returns a list of shared variabels, sorted by node first, alphabetically second """
         return self.__nodenet.collect_shared_variables([n.uid for n in nodes])
+
+    def create_flow_subgraph_copy(self, flow_modules):
+        """ Creates shallow copies of the given flow_modules, copying instances and internal connections.
+        Shallow copies will always have the parameters and shared variables of their originals
+        """
+        return self.__nodenet.create_flow_subgraph_copy(flow_modules)

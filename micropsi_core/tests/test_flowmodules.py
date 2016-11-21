@@ -625,3 +625,50 @@ def test_flow_trpo_modules(runtime, test_nodenet, default_world, resourcepath):
 
     function = netapi.compile_flow_subgraph([trpoinpy, trpoout])
     assert np.all(function(X=x) == result)
+
+
+@pytest.mark.engine("theano_engine")
+def test_flowmodules_shallowcopy(runtime, test_nodenet, default_world, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+
+    node1 = netapi.create_node("SharedVars", None, "node1")
+    node1.set_parameter('use_weights', True)
+    node1.set_parameter('weights_shape', 5)
+    node2 = netapi.create_node("SharedVars", None, "node2")
+    node2.set_parameter('use_weights', False)
+    node2.set_parameter('weights_shape', 5)
+
+    netapi.connect_flow_modules(node1, "Y", node2, "X")
+
+    function = netapi.compile_flow_subgraph([node1, node2])
+
+    x = np.array([1, 2, 3, 4, 5], dtype=netapi.floatX)
+    result = function(X=x)[0]
+
+    copies = netapi.create_flow_subgraph_copy([node1, node2])
+
+    copyfunction = netapi.compile_flow_subgraph([copies[0], copies[1]])
+    assert np.all(copyfunction(X=x) == result)
+
+    # change original
+    node2.set_parameter('use_weights', True)
+
+    # recompile, assert change took effect
+    assert copies[1].get_parameter('use_weights')
+    function = netapi.compile_flow_subgraph([node1, node2])
+    result2 = function(X=x)[0]
+    assert np.all(result2 != result)
+
+    # recompile copy, assert change took effect here as well.
+    copyfunc = netapi.compile_flow_subgraph([copies[0], copies[1]])
+    assert np.all(copyfunc(X=x) == result2)
+
+    # change back, save and reload and assert the copy
+    # still returs the original's value
+    node2.set_parameter('use_weights', False)
+    runtime.save_nodenet(test_nodenet)
+    runtime.revert_nodenet(test_nodenet)
+    nodenet = runtime.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    copies = [netapi.get_node(copies[0].uid), netapi.get_node(copies[1].uid)]
+    assert not copies[1].get_parameter('use_weights')

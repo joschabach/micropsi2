@@ -1104,6 +1104,31 @@ class TheanoNodenet(Nodenet):
 
         return compiled, dangling_inputs, dangling_outputs
 
+    def create_flow_subgraph_copy(self, flow_modules):
+        """ Creates shallow copies of the given flow_modules, copying instances and internal connections.
+        Shallow copies will always have the parameters and shared variables of their originals
+        """
+        copies = []
+        copymap = {}
+        for node in flow_modules:
+            copy_uid = self.create_node(
+                node.type,
+                node.parent_nodespace,
+                node.position,
+                name=node.name,
+                parameters=node.clone_parameters())
+            copy = self.get_node(copy_uid)
+            copy.is_copy_of = node.uid
+            copymap[node.uid] = copy
+            copies.append(copy)
+        for node in flow_modules:
+            for in_name in node.inputmap:
+                if node.inputmap[in_name]:
+                    source_uid, source_name = node.inputmap[in_name]
+                    if source_uid in copymap:
+                        self.connect_flow_modules(copymap[source_uid].uid, source_name, copymap[node.uid].uid, in_name)
+        return copies
+
     def set_shared_variable(self, node_uid, name, val):
         if node_uid not in self.shared_variables:
             self.shared_variables[node_uid] = {

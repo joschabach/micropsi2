@@ -1825,7 +1825,7 @@ class TheanoNodenet(Nodenet):
                 node_uid = node_to_id(node_id, partition.pid)
                 data[node_uid] = self.get_node(node_uid).get_data(complete=True)
                 if node_uid in self.flow_module_instances:
-                    data[node_uid].update(self.flow_module_instances).get_flow_data()
+                    data[node_uid].update(self.flow_module_instances[node_uid].get_flow_data())
         return data
 
     def construct_nodes_dict(self, nodespace_uid=None, complete=False, include_links=True):

@@ -56,7 +56,10 @@ class FlowModule(TheanoNode):
         return data
 
     def is_output_connected(self):
-        return len(set.intersection(*list(self.outputmap.values()))) > 0
+        if len(self.outputs) == 0:
+            return False
+        else:
+            return len(set.intersection(*list(self.outputmap.values()))) > 0
 
     def is_requested(self):
         return self.get_slot_activations(slot_type='sub') > 0

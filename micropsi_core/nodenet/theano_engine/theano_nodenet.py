@@ -903,7 +903,8 @@ class TheanoNodenet(Nodenet):
             if node is not None and node.implementation == 'python':
                 pythonnodes.add(uid)
                 startpoints.append(uid)
-                endpoints.append(uid)
+                if not node.is_output_connected():
+                    endpoints.append(uid)
         endpoints.append('datatargets')
 
         paths = []
@@ -933,6 +934,7 @@ class TheanoNodenet(Nodenet):
             new_paths = []
             for i1, p1 in enumerate(paths):
                 if i1 not in skipidxs:
+                    skip = False
                     for i2, p2 in enumerate(paths):
                         if i1 != i2:
                             idx1 = idx2 = -1
@@ -941,12 +943,12 @@ class TheanoNodenet(Nodenet):
                             if p2[idx2] == 'datatargets':
                                 idx2 = -2
                             if p1[idx1] == p2[idx2]:
-                                print("Joining paths")
                                 # join:
-                                new_paths.append(set(p1) | set(p2))
+                                new_paths.append([uid for uid in self.flow_toposort if uid in p1 or uid in p2])
                                 skipidxs.append(i2)
-                            else:
-                                new_paths.append(p1)
+                                skip = True
+                    if not skip:
+                        new_paths.append(p1)
             paths = new_paths
 
         for p in paths:

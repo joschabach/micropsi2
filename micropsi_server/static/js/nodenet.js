@@ -1363,12 +1363,7 @@ function renderFlowConnection(link, force) {
     linkPath.opacity = 0.8;
     linkPath.name = "path";
     linkPath.dashArray = [viewProperties.zoomFactor,viewProperties.zoomFactor];
-
-    var arrowPath = createArrow(linkEnd, 0, link.strokeColor);
-
-    var linkItem = new Group([linkPath, arrowPath]);
-    linkItem.name = "connection";
-    var linkContainer = new Group(linkItem);
+    var linkContainer = new Group(linkPath);
     linkContainer.name = link.uid;
     linkLayer.addChild(linkContainer);
 }
@@ -1493,7 +1488,7 @@ function createFlowInputs(node){
         }
         if(num > 1 && i < num - 1){
             var border = new Path.Rectangle(
-                    node.bounds.x + ((i+1) * itemlength), 
+                    node.bounds.x + ((i+1) * itemlength),
                     node.bounds.y + node.bounds.height - viewProperties.lineHeight * viewProperties.zoomFactor,
                     viewProperties.shadowDisplacement.x * viewProperties.zoomFactor,
                     viewProperties.lineHeight * viewProperties.zoomFactor
@@ -1540,7 +1535,7 @@ function createFlowOutputs(node, with_delimiter){
         }
         if(num > 1 && i < num - 1){
             var border = new Path.Rectangle(
-                    node.bounds.x + ((i+1) * itemlength), 
+                    node.bounds.x + ((i+1) * itemlength),
                     node.bounds.y,
                     viewProperties.shadowDisplacement.x * viewProperties.zoomFactor,
                     viewProperties.lineHeight * viewProperties.zoomFactor
@@ -1645,7 +1640,7 @@ function calculateNodeBounds(node) {
     }
     if(node.type in flow_modules){
         def = flow_modules[node.type];
-        width = Math.max(def.inputs.length, def.outputs.length) * viewProperties.flowModuleWidth;
+        width = Math.max(def.inputs.length, def.outputs.length) * viewProperties.flowModuleWidth * viewProperties.zoomFactor;
         height += viewProperties.lineHeight * viewProperties.zoomFactor;
     }
     return new Rectangle(node.x*viewProperties.zoomFactor - width/2,

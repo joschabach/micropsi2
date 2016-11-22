@@ -916,10 +916,6 @@ class TheanoNodenet(Nodenet):
                             if len(p) == 1:
                                 skip = True
                                 continue
-                            if path[-2] == p[-2]:
-                                paths[idx] = [uid for uid in toposort if uid in path or uid in p]
-                                skip = True
-                                break
                             if set(path) <= set(p):
                                 # skip if this is a subset of an existing path
                                 skip = True
@@ -931,6 +927,27 @@ class TheanoNodenet(Nodenet):
                                 break
                         if not skip:
                             paths.append(path)
+
+        skipidxs = []
+        if len(paths) > 1:
+            new_paths = []
+            for i1, p1 in enumerate(paths):
+                if i1 not in skipidxs:
+                    for i2, p2 in enumerate(paths):
+                        if i1 != i2:
+                            idx1 = idx2 = -1
+                            if p1[idx1] == 'datatargets':
+                                idx1 = -2
+                            if p2[idx2] == 'datatargets':
+                                idx2 = -2
+                            if p1[idx1] == p2[idx2]:
+                                print("Joining paths")
+                                # join:
+                                new_paths.append(set(p1) | set(p2))
+                                skipidxs.append(i2)
+                            else:
+                                new_paths.append(p1)
+            paths = new_paths
 
         for p in paths:
             node_uids = [uid for uid in p if uid != 'datasources' and uid != 'datatargets']

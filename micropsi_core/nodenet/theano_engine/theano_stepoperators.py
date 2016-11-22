@@ -87,7 +87,7 @@ class TheanoCalculateFlowmodules(Propagate):
             flowio['worldadapter'] = {
                 'datasources': nodenet.worldadapter_instance.get_datasource_values(),
                 'datatargets': None
-                }
+            }
 
         for func, nodes, dangling_inputs, dangling_outputs in nodenet.flowfuncs:
             endnode = nodes[-1]

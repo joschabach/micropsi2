@@ -891,8 +891,7 @@ class TheanoNodenet(Nodenet):
     def update_flow_graphs(self, node_uids=None):
 
         self.flowfuncs = []
-
-        startpoints = ['datasources']
+        startpoints = []
         endpoints = []
         pythonnodes = set()
 
@@ -900,56 +899,21 @@ class TheanoNodenet(Nodenet):
         self.flow_toposort = toposort
         for uid in toposort:
             node = self.flow_module_instances.get(uid)
-            if node is not None and node.implementation == 'python':
-                pythonnodes.add(uid)
-                startpoints.append(uid)
-                if not node.is_output_connected():
+            if node is not None:
+                if node.implementation == 'python':
+                    pythonnodes.add(uid)
+                if node.is_input_node():
+                    startpoints.append(uid)
+                if node.is_output_node():
                     endpoints.append(uid)
-        endpoints.append('datatargets')
 
         paths = []
         for enduid in endpoints:
-            for startuid in startpoints:
-                if startuid != enduid:
-                    for path in nx.all_simple_paths(self.flowgraph, startuid, enduid):
-                        skip = False
-                        for idx, p in enumerate(paths):
-                            if len(p) == 1:
-                                skip = True
-                                continue
-                            if set(path) <= set(p):
-                                # skip if this is a subset of an existing path
-                                skip = True
-                                break
-                            elif set(path) >= set(p):
-                                # if this a superset of an existing path, replace that one
-                                skip = True
-                                paths[idx] = path
-                                break
-                        if not skip:
-                            paths.append(path)
-
-        skipidxs = []
-        if len(paths) > 1:
-            new_paths = []
-            for i1, p1 in enumerate(paths):
-                if i1 not in skipidxs:
-                    skip = False
-                    for i2, p2 in enumerate(paths):
-                        if i1 != i2:
-                            idx1 = idx2 = -1
-                            if p1[idx1] == 'datatargets':
-                                idx1 = -2
-                            if p2[idx2] == 'datatargets':
-                                idx2 = -2
-                            if p1[idx1] == p2[idx2]:
-                                # join:
-                                new_paths.append([uid for uid in self.flow_toposort if uid in p1 or uid in p2])
-                                skipidxs.append(i2)
-                                skip = True
-                    if not skip:
-                        new_paths.append(p1)
-            paths = new_paths
+            ancestors = nx.ancestors(self.flowgraph, enduid)
+            if ancestors:
+                path = [uid for uid in toposort if uid in ancestors] + [enduid]
+                if path[0] in startpoints or path[0] == 'datasources':
+                    paths.append(path)
 
         for p in paths:
             node_uids = [uid for uid in p if uid != 'datasources' and uid != 'datatargets']

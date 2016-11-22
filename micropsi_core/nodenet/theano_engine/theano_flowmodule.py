@@ -59,7 +59,19 @@ class FlowModule(TheanoNode):
         if len(self.outputs) == 0:
             return False
         else:
-            return len(set.intersection(*list(self.outputmap.values()))) > 0
+            return len(set.union(*list(self.outputmap.values()))) > 0
+
+    def is_output_node(self):
+        if len(self.outputs) == 0:
+            return True
+        else:
+            return ('worldadapter', 'datatargets') in set.union(*list(self.outputmap.values()))
+
+    def is_input_node(self):
+        if len(self.inputs) == 0:
+            return True
+        else:
+            return ('worldadapter', 'datasources') in self.inputmap.values()
 
     def is_requested(self):
         return self.get_slot_activations(slot_type='sub') > 0

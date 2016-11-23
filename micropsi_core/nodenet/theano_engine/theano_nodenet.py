@@ -212,7 +212,7 @@ class TheanoNodenet(Nodenet):
         self.flow_module_definitions = flow_modules
         self.flow_module_instances = {}
         self.flow_graphs = []
-        self.shared_variables = {}
+        self.thetas = {}
 
         self.flowgraph = nx.MultiDiGraph()
         self.flowfuncs = []
@@ -828,49 +828,37 @@ class TheanoNodenet(Nodenet):
     def _create_flow_module(self, node):
         self.flowgraph.add_node(node.uid, implementation=node.nodetype.implementation)
 
-    def connect_flow_modules(self, source_uid, source_output, target_uid, target_input):
-        self.flowgraph.add_edge(source_uid, target_uid, key="%s_%s" % (source_output, target_input))
-        if source_output not in self.flow_module_instances[source_uid].outputs:
-            raise NameError("Unknown output name: %s" % source_output)
-        if target_input not in self.flow_module_instances[target_uid].inputs:
-            raise NameError("Unknown output name: %s" % target_input)
-        self.flow_module_instances[target_uid].set_input(target_input, source_uid, source_output)
-        self.flow_module_instances[source_uid].set_output(source_output, target_uid, target_input)
+    def flow(self, source_uid, source_output, target_uid, target_input):
+        if source_uid == "worldadapter" and source_output == "datasources":
+            self.flowgraph.add_edge('datasources', target_uid, key="%s_%s" % (source_output, target_input))
+            self.flow_module_instances[target_uid].set_input(target_input, source_uid, source_output)
+
+        elif target_uid == "worldadapter" and target_input == "datatargets":
+            self.flowgraph.add_edge(source_uid, 'datatargets', key="%s_%s" % (source_output, target_input))
+            self.flow_module_instances[source_uid].set_output(source_output, target_uid, target_input)
+
+        else:
+            self.flowgraph.add_edge(source_uid, target_uid, key="%s_%s" % (source_output, target_input))
+            self.flow_module_instances[target_uid].set_input(target_input, source_uid, source_output)
+            self.flow_module_instances[source_uid].set_output(source_output, target_uid, target_input)
+
         self.update_flow_graphs()
 
-    def disconnect_flow_modules(self, source_uid, source_output, target_uid, target_input):
-        self.flowgraph.remove_edge(source_uid, target_uid, key="%s_%s" % (source_output, target_input))
-        if source_output not in self.flow_module_instances[source_uid].outputs:
-            raise NameError("Unknown output name: %s" % source_output)
-        if target_input not in self.flow_module_instances[target_uid].inputs:
-            raise NameError("Unknown output name: %s" % target_input)
-        self.flow_module_instances[source_uid].unset_output(source_output, target_uid, target_input)
-        self.flow_module_instances[target_uid].unset_input(target_input, source_uid, source_output)
+    def unflow(self, source_uid, source_output, target_uid, target_input):
+        if source_uid == "worldadapter" and source_output == "datasources":
+            self.flowgraph.remove_edge('datasources', target_uid, key="%s_%s" % (source_output, target_input))
+            self.flow_module_instances[target_uid].unset_input(target_input, source_uid, source_output)
+
+        elif target_uid == "worldadapter" and target_input == "datatargets":
+            self.flowgraph.remove_edge(source_uid, 'datatargets', key="%s_%s" % (source_output, target_input))
+            self.flow_module_instances[source_uid].unset_output(source_output, target_uid, target_input)
+
+        else:
+            self.flowgraph.remove_edge(source_uid, target_uid, key="%s_%s" % (source_output, target_input))
+            self.flow_module_instances[target_uid].unset_input(target_input, source_uid, source_output)
+            self.flow_module_instances[source_uid].unset_output(source_output, target_uid, target_input)
+
         self.update_flow_graphs()
-
-    def connect_flow_module_to_worldadapter(self, flow_module_uid, gateslot):
-        module = self.flow_module_instances[flow_module_uid]
-        if gateslot in module.inputs:
-            self.flowgraph.add_edge("datasources", flow_module_uid, key="datasources_%s" % gateslot)
-            module.set_input(gateslot, "worldadapter", "datasources")
-        elif gateslot in module.outputs:
-            self.flowgraph.add_edge(flow_module_uid, "datatargets", key="%s_datatargets" % gateslot)
-            module.set_output(gateslot, "worldadapter", "datatargets")
-        else:
-            raise NameError("Unknown input/output name %s for flow_module %s" % (gateslot, flow_module_uid))
-        self.update_flow_graphs(node_uids=set([flow_module_uid]))
-
-    def disconnect_flow_module_from_worldadapter(self, flow_module_uid, gateslot):
-        module = self.flow_module_instances[flow_module_uid]
-        if gateslot in module.inputs:
-            self.flowgraph.remove_edge("datasources", flow_module_uid, key="datasources_%s" % gateslot)
-            module.unset_input(gateslot, "worldadapter", "datasources")
-        elif gateslot in module.outputs:
-            self.flowgraph.remove_edge(flow_module_uid, "datatargets", key="%s_datatargets" % gateslot)
-            module.unset_output(gateslot, "worldadapter", "datatargets")
-        else:
-            raise NameError("Unknown input/output name %s for flow_module %s" % (gateslot, flow_module_uid))
-        self.update_flow_graphs(node_uids=set([flow_module_uid]))
 
     def _delete_flow_module(self, delete_uid):
         self.flowgraph.remove_node(delete_uid)
@@ -923,7 +911,7 @@ class TheanoNodenet(Nodenet):
                 self.flowfuncs.append((func, nodes, dangling_inputs, dangling_outputs))
         self.logger.debug("Compiled %d flowfunctions" % len(self.flowfuncs))
 
-    def compile_flow_subgraph(self, node_uids, make_shared_variables_inputs=False):
+    def compile_flow_subgraph(self, node_uids, use_different_thetas=False):
         subgraph = [self.get_node(uid) for uid in self.flow_toposort if uid in node_uids]
 
         paths = []
@@ -1028,7 +1016,7 @@ class TheanoNodenet(Nodenet):
                             thunk['dangling_outputs'].append(out_idx)
                             dangling_outputs.append((node.uid, out_name))
 
-            if not make_shared_variables_inputs:
+            if not use_different_thetas:
                 if thunk['implementation'] == 'theano':
                     thunk['function'] = theano.function(inputs=inputs, outputs=outputs)
                 else:
@@ -1036,7 +1024,7 @@ class TheanoNodenet(Nodenet):
                     thunk['function'] = outexpressions[thunk['node'].uid][0]
 
             else:
-                sharedvars = self.collect_shared_variables(node_uids)
+                sharedvars = self.collect_thetas(node_uids)
                 dummies = [create_tensor(var.ndim, self.theanofloatX, name=var.name) for var in sharedvars]
                 if thunk['implementation'] == 'theano':
                     givens = list(zip(sharedvars, dummies))
@@ -1047,7 +1035,7 @@ class TheanoNodenet(Nodenet):
 
             thunks.append(thunk)
 
-        def compiled(shared_variables=None, **kwargs):
+        def compiled(thetas=None, **kwargs):
             all_outputs = []
             final_outputs = []
             for idx, thunk in enumerate(thunks):
@@ -1062,8 +1050,8 @@ class TheanoNodenet(Nodenet):
                     if len(thunk['node'].outputs) <= 1:
                         out = [out]
                 else:
-                    if shared_variables:
-                        funcargs += shared_variables
+                    if thetas:
+                        funcargs += thetas
                     out = thunk['function'](*funcargs)
                 if thunk['list_outputs']:
                     new_out = []
@@ -1094,7 +1082,7 @@ class TheanoNodenet(Nodenet):
 
         return compiled, dangling_inputs, dangling_outputs
 
-    def create_flow_subgraph_copy(self, flow_modules):
+    def create_shadow_flowgraph(self, flow_modules):
         """ Creates shallow copies of the given flow_modules, copying instances and internal connections.
         Shallow copies will always have the parameters and shared variables of their originals
         """
@@ -1116,29 +1104,29 @@ class TheanoNodenet(Nodenet):
                 if node.inputmap[in_name]:
                     source_uid, source_name = node.inputmap[in_name]
                     if source_uid in copymap:
-                        self.connect_flow_modules(copymap[source_uid].uid, source_name, copymap[node.uid].uid, in_name)
+                        self.flow(copymap[source_uid].uid, source_name, copymap[node.uid].uid, in_name)
         return copies
 
-    def set_shared_variable(self, node_uid, name, val):
-        if node_uid not in self.shared_variables:
-            self.shared_variables[node_uid] = {
+    def set_theta(self, node_uid, name, val):
+        if node_uid not in self.thetas:
+            self.thetas[node_uid] = {
                 'names': [],
                 'variables': []
             }
-        new_names = sorted(self.shared_variables[node_uid]['names'] + [name])
+        new_names = sorted(self.thetas[node_uid]['names'] + [name])
         index = new_names.index(name)
-        self.shared_variables[node_uid]['names'] = new_names
-        self.shared_variables[node_uid]['variables'].insert(index, theano.shared(value=val.astype(T.config.floatX), name=name, borrow=True))
+        self.thetas[node_uid]['names'] = new_names
+        self.thetas[node_uid]['variables'].insert(index, theano.shared(value=val.astype(T.config.floatX), name=name, borrow=True))
 
-    def get_shared_variable(self, node_uid, name):
-        data = self.shared_variables[node_uid]
+    def get_theta(self, node_uid, name):
+        data = self.thetas[node_uid]
         index = data['names'].index(name)
         return data['variables'][index]
 
-    def collect_shared_variables(self, node_uids):
+    def collect_thetas(self, node_uids):
         shared_vars = []
         for uid in node_uids:
-            data = self.shared_variables.get(uid)
+            data = self.thetas.get(uid)
             if data:
                 shared_vars.extend(data['variables'])
         return shared_vars

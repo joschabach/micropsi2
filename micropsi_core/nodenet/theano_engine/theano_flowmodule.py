@@ -76,15 +76,15 @@ class FlowModule(TheanoNode):
     def is_requested(self):
         return self.get_slot_activations(slot_type='sub') > 0
 
-    def set_shared_variable(self, name, val):
+    def set_theta(self, name, val):
         if self.is_copy_of:
             raise RuntimeError("Shallow copies can not set shared variables")
-        self._nodenet.set_shared_variable(self.uid, name, val)
+        self._nodenet.set_theta(self.uid, name, val)
 
-    def get_shared_variable(self, name):
+    def get_theta(self, name):
         if self.is_copy_of:
-            return self._nodenet.get_shared_variable(self.is_copy_of, name)
-        return self._nodenet.get_shared_variable(self.uid, name)
+            return self._nodenet.get_theta(self.is_copy_of, name)
+        return self._nodenet.get_theta(self.uid, name)
 
     def set_parameter(self, name, val):
         if self.is_copy_of:
@@ -102,6 +102,8 @@ class FlowModule(TheanoNode):
         return super().clone_parameters()
 
     def set_input(self, input_name, source_uid, source_output):
+        if input_name not in self.inputs:
+            raise NameError("Unknown input %s" % input_name)
         self.dependencies.add(source_uid)
         if self.inputmap.get(input_name):
             raise RuntimeError("This input is already connected")
@@ -109,6 +111,8 @@ class FlowModule(TheanoNode):
 
     def unset_input(self, input_name, source_uid, source_output):
         remove = True
+        if input_name not in self.inputs:
+            raise NameError("Unknown input %s" % input_name)
         self.inputmap[input_name] = tuple()
         for name in self.inputmap:
             if self.inputmap[name] and self.inputmap[name][0] == source_uid:

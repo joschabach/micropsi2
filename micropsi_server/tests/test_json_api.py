@@ -1746,15 +1746,23 @@ def double(inputs, netapi, node, parameters):
     netapi.link(source, 'gen', source, 'gen')
     netapi.link(source, 'gen', netapi.get_node(flow_uid), 'sub')
 
-    connect = {
+    outward = {
         'nodenet_uid': test_nodenet,
-        'flow_module_uid': flow_uid,
-        'gateslot': 'outputs'
+        'source_uid': flow_uid,
+        'source_output': 'outputs',
+        'target_uid': 'worldadapter',
+        'target_input': 'datatargets'
     }
-    result = app.post_json('/rpc/connect_flow_module_to_worldadapter', connect)
+    result = app.post_json('/rpc/flow', outward)
     assert_success(result)
-    connect['gateslot'] = 'inputs'
-    result = app.post_json('/rpc/connect_flow_module_to_worldadapter', connect)
+    inward = {
+        'nodenet_uid': test_nodenet,
+        'source_uid': 'worldadapter',
+        'source_output': 'datasources',
+        'target_uid': flow_uid,
+        'target_input': 'inputs',
+    }
+    result = app.post_json('/rpc/flow', inward)
     assert_success(result)
 
     response = app.post_json('/rpc/get_calculation_state', params={'nodenet_uid': test_nodenet, 'nodenet': {'nodespaces': [None]}, 'monitors': True})
@@ -1770,22 +1778,18 @@ def double(inputs, netapi, node, parameters):
     assert np.all(worldadapter.datatarget_values == sources * 2)
     worldadapter.datatarget_values = np.zeros(len(worldadapter.datatarget_values), dtype=nodenet.numpyfloatX)
 
-    # disconnect first flow_module, create a second one, and chain them
-    result = app.post_json('/rpc/disconnect_flow_module_from_worldadapter', {
-        'nodenet_uid': test_nodenet,
-        'flow_module_uid': flow_uid,
-        'gateslot': 'outputs'
-    })
+    # disconnect first flow_module from datatargets, create a second one, and chain them
+    result = app.post_json('/rpc/unflow', outward)
     assert_success(result)
 
     double2 = netapi.create_node("Double", None, "double2")
     netapi.link(source, 'gen', double2, 'sub')
-    netapi.connect_flow_module_to_worldadapter(double2, 'outputs')
-    result = app.post_json('/rpc/connect_flow_modules', {
+    netapi.flow(double2, 'outputs', 'worldadapter', 'datatargets')
+    result = app.post_json('/rpc/flow', {
         'nodenet_uid': test_nodenet,
-        'source_node_uid': flow_uid,
+        'source_uid': flow_uid,
         'source_output': 'outputs',
-        'target_node_uid': double2.uid,
+        'target_uid': double2.uid,
         'target_input': 'inputs'
     })
     assert_success(result)
@@ -1795,11 +1799,11 @@ def double(inputs, netapi, node, parameters):
     worldadapter.datatarget_values = np.zeros(len(worldadapter.datatarget_values), dtype=nodenet.numpyfloatX)
 
     # disconnect the two flow_modules
-    result = app.post_json('/rpc/disconnect_flow_modules', {
+    result = app.post_json('/rpc/unflow', {
         'nodenet_uid': test_nodenet,
-        'source_node_uid': flow_uid,
+        'source_uid': flow_uid,
         'source_output': 'outputs',
-        'target_node_uid': double2.uid,
+        'target_uid': double2.uid,
         'target_input': 'inputs'
     })
 

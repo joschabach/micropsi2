@@ -140,12 +140,12 @@ def sharedvars_init(netapi, node, parameters):
     import numpy as np
     w_array = np.random.rand(parameters['weights_shape']).astype(netapi.floatX)
     b_array = np.ones(parameters['weights_shape']).astype(netapi.floatX)
-    node.set_shared_variable('weights', w_array)
-    node.set_shared_variable('bias', b_array)
+    node.set_theta('weights', w_array)
+    node.set_theta('bias', b_array)
 
 def sharedvars(X, netapi, node, parameters):
     if parameters.get('use_weights'):
-        return X * node.get_shared_variable('weights') + node.get_shared_variable('bias')
+        return X * node.get_theta('weights') + node.get_theta('bias')
     else:
         return X
 
@@ -187,8 +187,8 @@ def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepat
     flowmodule = netapi.create_node("Double", None, "Double")
     assert not hasattr(flowmodule, 'initfunction_ran')
 
-    nodenet.connect_flow_module_to_worldadapter(flowmodule.uid, "inputs")
-    nodenet.connect_flow_module_to_worldadapter(flowmodule.uid, "outputs")
+    nodenet.flow('worldadapter', 'datasources', flowmodule.uid, "inputs")
+    nodenet.flow(flowmodule.uid, "outputs", 'worldadapter', 'datatargets')
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
@@ -221,19 +221,18 @@ def test_multiple_flowgraphs(runtime, test_nodenet, default_world, resourcepath)
 
     # create a first graph
     # link datasources to double & add
-    nodenet.connect_flow_module_to_worldadapter(double.uid, "inputs")
-    nodenet.connect_flow_module_to_worldadapter(add.uid, "input2")
+    nodenet.flow('worldadapter', 'datasources', double.uid, "inputs")
+    nodenet.flow('worldadapter', 'datasources', add.uid, "input2")
     # link double to add:
-    nodenet.connect_flow_modules(double.uid, "outputs", add.uid, "input1")
+    nodenet.flow(double.uid, "outputs", add.uid, "input1")
 
     # link add to datatargets
-    nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
-
+    nodenet.flow(add.uid, "outputs", 'worldadapter', 'datatargets')
     assert len(nodenet.flowfuncs) == 1
 
     # create a second graph
-    nodenet.connect_flow_module_to_worldadapter(bisect.uid, "inputs")
-    nodenet.connect_flow_module_to_worldadapter(bisect.uid, "outputs")
+    nodenet.flow('worldadapter', 'datasources', bisect.uid, "inputs")
+    nodenet.flow(bisect.uid, "outputs", 'worldadapter', 'datatargets')
 
     assert len(nodenet.flowfuncs) == 2
 
@@ -271,24 +270,24 @@ def test_disconnect_flowmodules(runtime, test_nodenet, default_world, resourcepa
     add = netapi.create_node("Add", None, "Add")
 
     # link datasources to double & add
-    nodenet.connect_flow_module_to_worldadapter(double.uid, "inputs")
-    nodenet.connect_flow_module_to_worldadapter(add.uid, "input2")
+    nodenet.flow('worldadapter', 'datasources', double.uid, "inputs")
+    nodenet.flow('worldadapter', 'datasources', add.uid, "input2")
     # link double to add:
-    nodenet.connect_flow_modules(double.uid, "outputs", add.uid, "input1")
+    nodenet.flow(double.uid, "outputs", add.uid, "input1")
     # link add to datatargets
-    nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
+    nodenet.flow(add.uid, "outputs", 'worldadapter', 'datatargets')
 
     # have one connected graph
     assert len(nodenet.flowfuncs) == 1
 
     # unlink double from add
-    nodenet.disconnect_flow_modules(double.uid, "outputs", add.uid, "input1")
+    nodenet.unflow(double.uid, "outputs", add.uid, "input1")
 
     # assert dependencies cleaned
     assert double.uid not in nodenet.flow_module_instances[add.uid].dependencies
 
     # unlink add from datatargets
-    nodenet.disconnect_flow_module_from_worldadapter(add.uid, "outputs")
+    nodenet.unflow(add.uid, "outputs", "worldadapter", "datatargets")
 
     assert len(nodenet.flowfuncs) == 0
 
@@ -309,17 +308,17 @@ def test_diverging_flowgraph(runtime, test_nodenet, default_world, resourcepath)
     bisect = netapi.create_node("Bisect", None, "Bisect")
 
     # link sources to bisect
-    nodenet.connect_flow_module_to_worldadapter(bisect.uid, "inputs")
+    nodenet.flow('worldadapter', 'datasources', bisect.uid, "inputs")
     # link bisect to double:
-    nodenet.connect_flow_modules(bisect.uid, "outputs", double.uid, "inputs")
+    nodenet.flow(bisect.uid, "outputs", double.uid, "inputs")
     # link bisect to add:
-    nodenet.connect_flow_modules(bisect.uid, "outputs", add.uid, "input1")
+    nodenet.flow(bisect.uid, "outputs", add.uid, "input1")
     # link sources to add:
-    nodenet.connect_flow_module_to_worldadapter(add.uid, "input2")
+    nodenet.flow('worldadapter', 'datasources', add.uid, "input2")
 
     # link double and add to targets:
-    nodenet.connect_flow_module_to_worldadapter(double.uid, "outputs")
-    nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
+    nodenet.flow(double.uid, "outputs", 'worldadapter', 'datatargets')
+    nodenet.flow(add.uid, "outputs", 'worldadapter', 'datatargets')
 
     assert len(nodenet.flowfuncs) == 2
 
@@ -354,15 +353,15 @@ def test_converging_flowgraphs(runtime, test_nodenet, default_world, resourcepat
     add = netapi.create_node("Add", None, "Add")
 
     # link sources
-    nodenet.connect_flow_module_to_worldadapter(double1.uid, "inputs")
-    nodenet.connect_flow_module_to_worldadapter(double2.uid, "inputs")
+    nodenet.flow('worldadapter', 'datasources', double1.uid, "inputs")
+    nodenet.flow('worldadapter', 'datasources', double2.uid, "inputs")
 
     # link both doubles to add
-    nodenet.connect_flow_modules(double1.uid, "outputs", add.uid, "input1")
-    nodenet.connect_flow_modules(double2.uid, "outputs", add.uid, "input2")
+    nodenet.flow(double1.uid, "outputs", add.uid, "input1")
+    nodenet.flow(double2.uid, "outputs", add.uid, "input2")
 
     # link add to targets.
-    nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
+    nodenet.flow(add.uid, "outputs", 'worldadapter', 'datatargets')
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
@@ -384,8 +383,8 @@ def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepa
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
     flowmodule = netapi.create_node("Double", None, "Double")
-    nodenet.connect_flow_module_to_worldadapter(flowmodule.uid, "inputs")
-    nodenet.connect_flow_module_to_worldadapter(flowmodule.uid, "outputs")
+    nodenet.flow('worldadapter', 'datasources', flowmodule.uid, "inputs")
+    nodenet.flow(flowmodule.uid, "outputs", 'worldadapter', 'datatargets')
     source = netapi.create_node("Neuron", None)
     netapi.link(source, 'gen', source, 'gen')
     netapi.link(source, 'gen', flowmodule, 'sub')
@@ -418,13 +417,13 @@ def test_delete_flowmodule(runtime, test_nodenet, default_world, resourcepath):
     bisect = netapi.create_node("Bisect", None, "Bisect")
 
     # build graph:
-    netapi.connect_flow_modules(bisect, "outputs", add, "input1")
-    netapi.connect_flow_modules(add, "outputs", double1, "inputs")
-    netapi.connect_flow_modules(add, "outputs", double2, "inputs")
-    netapi.connect_flow_module_to_worldadapter(bisect, "inputs")
-    netapi.connect_flow_module_to_worldadapter(add, "input2")
-    netapi.connect_flow_module_to_worldadapter(double1, "outputs")
-    netapi.connect_flow_module_to_worldadapter(double2, "outputs")
+    netapi.flow(bisect, "outputs", add, "input1")
+    netapi.flow(add, "outputs", double1, "inputs")
+    netapi.flow(add, "outputs", double2, "inputs")
+    netapi.flow('worldadapter', 'datasources', bisect, "inputs")
+    netapi.flow('worldadapter', 'datasources', add, "input2")
+    netapi.flow(double1, "outputs", 'worldadapter', 'datatargets')
+    netapi.flow(double2, "outputs", 'worldadapter', 'datatargets')
 
     assert len(nodenet.flowfuncs) == 2
 
@@ -456,13 +455,13 @@ def test_link_large_graph(runtime, test_nodenet, default_world, resourcepath):
     source = netapi.create_node("Neuron", None)
     source.activation = 1
 
-    nodenet.connect_flow_module_to_worldadapter(bisect.uid, "inputs")
-    nodenet.connect_flow_modules(bisect.uid, "outputs", double.uid, "inputs")
+    nodenet.flow('worldadapter', 'datasources', bisect.uid, "inputs")
+    nodenet.flow(bisect.uid, "outputs", double.uid, "inputs")
 
-    nodenet.connect_flow_module_to_worldadapter(add.uid, "input1")
-    nodenet.connect_flow_module_to_worldadapter(add.uid, "outputs")
+    nodenet.flow('worldadapter', 'datasources', add.uid, "input1")
+    nodenet.flow(add.uid, "outputs", 'worldadapter', 'datatargets')
 
-    nodenet.connect_flow_modules(double.uid, "outputs", add.uid, "input2")
+    nodenet.flow(double.uid, "outputs", add.uid, "input2")
 
     netapi.link(source, 'gen', add, 'sub')
     assert len(nodenet.flowfuncs) == 1
@@ -489,10 +488,10 @@ def test_python_flowmodules(runtime, test_nodenet, default_world, resourcepath):
 
     assert not hasattr(py, 'initfunction_ran')
 
-    netapi.connect_flow_module_to_worldadapter(double, "inputs")
-    netapi.connect_flow_modules(double, "outputs", py, "inputs")
-    netapi.connect_flow_modules(py, "outputs", bisect, "inputs")
-    netapi.connect_flow_module_to_worldadapter(bisect, "outputs")
+    netapi.flow('worldadapter', 'datasources', double, "inputs")
+    netapi.flow(double, "outputs", py, "inputs")
+    netapi.flow(py, "outputs", bisect, "inputs")
+    netapi.flow(bisect, "outputs", 'worldadapter', 'datatargets')
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
@@ -521,7 +520,7 @@ def test_compile_flow_subgraph(runtime, test_nodenet, default_world, resourcepat
     double = netapi.create_node("Double", None, "Double")
     bisect = netapi.create_node("Bisect", None, "Bisect")
 
-    netapi.connect_flow_modules(double, "outputs", bisect, "inputs")
+    netapi.flow(double, "outputs", bisect, "inputs")
 
     func, ins, outs = nodenet.compile_flow_subgraph([double.uid, bisect.uid])
 
@@ -529,31 +528,31 @@ def test_compile_flow_subgraph(runtime, test_nodenet, default_world, resourcepat
 
 
 @pytest.mark.engine("theano_engine")
-def test_compile_flow_subgraph_bridges_numpy_gaps(runtime, test_nodenet, default_world, resourcepath):
+def test_get_callable_flowgraph_bridges_numpy_gaps(runtime, test_nodenet, default_world, resourcepath):
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
     double = netapi.create_node("Double", None, "Double")
     py = netapi.create_node("Numpy", None, "Numpy")
     bisect = netapi.create_node("Bisect", None, "Bisect")
 
-    netapi.connect_flow_modules(double, "outputs", py, "inputs")
-    netapi.connect_flow_modules(py, "outputs", bisect, "inputs")
+    netapi.flow(double, "outputs", py, "inputs")
+    netapi.flow(py, "outputs", bisect, "inputs")
 
-    func = netapi.compile_flow_subgraph([bisect, double, py])
+    func = netapi.get_callable_flowgraph([bisect, double, py])
 
     assert np.all(func(inputs=[1, 2, 3, 4]) == np.asarray([1.5, 2.5, 3.5, 4.5], dtype=nodenet.numpyfloatX))
 
 
 @pytest.mark.engine("theano_engine")
-def test_shared_variables(runtime, test_nodenet, default_world, resourcepath):
+def test_collect_thetas(runtime, test_nodenet, default_world, resourcepath):
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
     module = netapi.create_node("SharedVars", None, "module")
     module.set_parameter('use_weights', True)
     module.set_parameter('weights_shape', 5)
 
-    netapi.connect_flow_module_to_worldadapter(module, "X")
-    netapi.connect_flow_module_to_worldadapter(module, "Y")
+    netapi.flow('worldadapter', 'datasources', module, "X")
+    netapi.flow(module, "Y", 'worldadapter', 'datatargets')
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
@@ -566,16 +565,16 @@ def test_shared_variables(runtime, test_nodenet, default_world, resourcepath):
 
     nodenet.step()
 
-    result = sources * module.get_shared_variable('weights').get_value() + module.get_shared_variable('bias').get_value()
+    result = sources * module.get_theta('weights').get_value() + module.get_theta('bias').get_value()
     assert np.all(worldadapter.datatarget_values == result)
 
-    func = netapi.compile_flow_subgraph([module], make_shared_variables_inputs=True)
+    func = netapi.get_callable_flowgraph([module], use_different_thetas=True)
 
     x = np.ones(5).astype(netapi.floatX)
     weights = np.random.rand(5).astype(netapi.floatX)
     bias = np.ones(5).astype(netapi.floatX)
 
-    result = func(shared_variables=[bias, weights], X=x)
+    result = func(thetas=[bias, weights], X=x)
 
     assert np.all(result == x * weights + bias)
 
@@ -589,12 +588,12 @@ def test_flow_edgecase(runtime, test_nodenet, default_world, resourcepath):
     numpy = netapi.create_node("Numpy", None, "numpy")
     add = netapi.create_node("Add", None, "add")
 
-    netapi.connect_flow_modules(twoout, "A", double, "inputs")
-    netapi.connect_flow_modules(twoout, "B", numpy, "inputs")
-    netapi.connect_flow_modules(double, "outputs", add, "input1")
-    netapi.connect_flow_modules(numpy, "outputs", add, "input2")
+    netapi.flow(twoout, "A", double, "inputs")
+    netapi.flow(twoout, "B", numpy, "inputs")
+    netapi.flow(double, "outputs", add, "input1")
+    netapi.flow(numpy, "outputs", add, "input2")
 
-    function = netapi.compile_flow_subgraph([twoout, double, numpy, add])
+    function = netapi.get_callable_flowgraph([twoout, double, numpy, add])
 
     x = np.array([1, 2, 3], dtype=netapi.floatX)
     result = np.array([5, 8, 11], dtype=netapi.floatX)
@@ -608,10 +607,10 @@ def test_flow_trpo_modules(runtime, test_nodenet, default_world, resourcepath):
     trpoout = netapi.create_node("TRPOOut", None, "TRPOOut")
     trpoin = netapi.create_node("TRPOIn", None, "TRPOIn")
 
-    netapi.connect_flow_modules(trpoout, "Y", trpoin, "Y")
-    netapi.connect_flow_modules(trpoout, "Z", trpoin, "Z")
+    netapi.flow(trpoout, "Y", trpoin, "Y")
+    netapi.flow(trpoout, "Z", trpoin, "Z")
 
-    function = netapi.compile_flow_subgraph([trpoin, trpoout])
+    function = netapi.get_callable_flowgraph([trpoin, trpoout])
 
     x = np.array([1, 2, 3], dtype=netapi.floatX)
     result = sum([np.exp(x), x, x * 2, x + 1])
@@ -620,15 +619,15 @@ def test_flow_trpo_modules(runtime, test_nodenet, default_world, resourcepath):
     netapi.delete_node(trpoin)
     trpoinpy = netapi.create_node("TRPOInPython", None, "TRPOInPython")
 
-    netapi.connect_flow_modules(trpoout, "Y", trpoinpy, "Y")
-    netapi.connect_flow_modules(trpoout, "Z", trpoinpy, "Z")
+    netapi.flow(trpoout, "Y", trpoinpy, "Y")
+    netapi.flow(trpoout, "Z", trpoinpy, "Z")
 
-    function = netapi.compile_flow_subgraph([trpoinpy, trpoout])
+    function = netapi.get_callable_flowgraph([trpoinpy, trpoout])
     assert np.all(function(X=x) == result)
 
 
 @pytest.mark.engine("theano_engine")
-def test_flowmodules_shallowcopy(runtime, test_nodenet, default_world, resourcepath):
+def test_shadow_flowgraph(runtime, test_nodenet, default_world, resourcepath):
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
     node1 = netapi.create_node("SharedVars", None, "node1")
@@ -638,16 +637,16 @@ def test_flowmodules_shallowcopy(runtime, test_nodenet, default_world, resourcep
     node2.set_parameter('use_weights', False)
     node2.set_parameter('weights_shape', 5)
 
-    netapi.connect_flow_modules(node1, "Y", node2, "X")
+    netapi.flow(node1, "Y", node2, "X")
 
-    function = netapi.compile_flow_subgraph([node1, node2])
+    function = netapi.get_callable_flowgraph([node1, node2])
 
     x = np.array([1, 2, 3, 4, 5], dtype=netapi.floatX)
     result = function(X=x)[0]
 
-    copies = netapi.create_flow_subgraph_copy([node1, node2])
+    copies = netapi.create_shadow_flowgraph([node1, node2])
 
-    copyfunction = netapi.compile_flow_subgraph([copies[0], copies[1]])
+    copyfunction = netapi.get_callable_flowgraph([copies[0], copies[1]])
     assert np.all(copyfunction(X=x) == result)
 
     # change original
@@ -655,12 +654,12 @@ def test_flowmodules_shallowcopy(runtime, test_nodenet, default_world, resourcep
 
     # recompile, assert change took effect
     assert copies[1].get_parameter('use_weights')
-    function = netapi.compile_flow_subgraph([node1, node2])
+    function = netapi.get_callable_flowgraph([node1, node2])
     result2 = function(X=x)[0]
     assert np.all(result2 != result)
 
     # recompile copy, assert change took effect here as well.
-    copyfunc = netapi.compile_flow_subgraph([copies[0], copies[1]])
+    copyfunc = netapi.get_callable_flowgraph([copies[0], copies[1]])
     assert np.all(copyfunc(X=x) == result2)
 
     # change back, save and reload and assert the copy

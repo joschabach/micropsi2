@@ -72,35 +72,30 @@ class TheanoNetAPI(NetAPI):
     def group_node_slots(self, node_uid, slot_prefix, group_name=None):
         self.__nodenet.group_highdimensional_elements(node_uid, slot=slot_prefix, group_name=group_name)
 
-    def connect_flow_modules(self, source_node, source_output, target_node, target_input):
-        """ Link two flow_modules """
-        return self.__nodenet.connect_flow_modules(source_node.uid, source_output, target_node.uid, target_input)
+    def flow(self, source_node, source_output, target_node, target_input):
+        """ Create flow between flowmodules. Use "worldadapter" and "datasources"/"datatargets" to create flow
+        to the worldadapter """
+        source = source_node if source_node == 'worldadapter' else source_node.uid
+        target = target_node if target_node == 'worldadapter' else target_node.uid
+        return self.__nodenet.flow(source, source_output, target, target_input)
 
-    def connect_flow_module_to_worldadapter(self, flow_module, gateslot):
-        """ Link a flow_module to a worldadapter.
-        Depending on whether you give an input or output name, it links to either
-        datasources or datatargets """
-        return self.__nodenet.connect_flow_module_to_worldadapter(flow_module.uid, gateslot)
+    def unflow(self, source_node, source_output, target_node, target_input):
+        """ Remove flow between the given flow_modules """
+        source = source_node if source_node == 'worldadapter' else source_node.uid
+        target = target_node if target_node == 'worldadapter' else target_node.uid
+        return self.__nodenet.disconnect_flow_modules(source, source_output, target, target_input)
 
-    def disconnect_flow_modules(self, source_node, source_output, target_node, target_input):
-        """ Removes the link between the given flow_modules """
-        return self.__nodenet.disconnect_flow_modules(source_node.uid, source_output, target_node.uid, target_input)
-
-    def disconnect_flow_module_from_worldadapter(self, flow_module, gateslot):
-        """ Unlinks the given connection betwenn the given flow_module and the worldadapter """
-        return self.__nodenet.disconnect_flow_module_from_worldadapter(flow_module.uid, gateslot)
-
-    def compile_flow_subgraph(self, nodes, make_shared_variables_inputs=False):
+    def get_callable_flowgraph(self, nodes, use_different_thetas=False):
         """ Returns one callable for the given flow_modules """
-        func, dangling_inputs, dangling_outputs = self.__nodenet.compile_flow_subgraph([n.uid for n in nodes], make_shared_variables_inputs=make_shared_variables_inputs)
+        func, dangling_inputs, dangling_outputs = self.__nodenet.compile_flow_subgraph([n.uid for n in nodes], use_different_thetas=use_different_thetas)
         return func
 
-    def collect_shared_variables(self, nodes):
-        """ Returns a list of shared variabels, sorted by node first, alphabetically second """
+    def collect_thetas(self, nodes):
+        """ Returns a list of thetas, sorted by node first, alphabetically second """
         return self.__nodenet.collect_shared_variables([n.uid for n in nodes])
 
-    def create_flow_subgraph_copy(self, flow_modules):
-        """ Creates shallow copies of the given flow_modules, copying instances and internal connections.
+    def create_shadow_flowgraph(self, flow_modules):
+        """ Creates a shallow copy of the given flow_modules, copying instances and internal connections.
         Shallow copies will always have the parameters and shared variables of their originals
         """
-        return self.__nodenet.create_flow_subgraph_copy(flow_modules)
+        return self.__nodenet.create_shadow_flowgraph(flow_modules)

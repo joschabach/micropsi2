@@ -899,10 +899,14 @@ class TheanoNodenet(Nodenet):
         for enduid in endpoints:
             ancestors = nx.ancestors(self.flowgraph, enduid)
             if ancestors:
-                path = [uid for uid in toposort if uid in ancestors] + [enduid]
-                if path[0] in startpoints or path[0] == 'datasources':
+                fullpath = [uid for uid in toposort if uid in ancestors] + [enduid]
+                path = []
+                for uid in reversed(fullpath):
+                    if uid in endpoints and uid != enduid:
+                        break
+                    path.insert(0, uid)
+                if path:
                     paths.append(path)
-
         for p in paths:
             node_uids = [uid for uid in p if uid != 'datasources' and uid != 'datatargets']
             nodes = [self.get_node(uid) for uid in node_uids]

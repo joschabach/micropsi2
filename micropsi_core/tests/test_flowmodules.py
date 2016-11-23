@@ -68,7 +68,7 @@ def prepare(runtime, test_nodenet, default_world, resourcepath):
     "Thetas": {
         "flow_module": true,
         "implementation": "theano",
-        "name": "Thetas_from_array",
+        "name": "Thetas",
         "init_function_name": "thetas_init",
         "build_function_name": "thetas",
         "parameters": ["weights_shape", "use_thetas"],

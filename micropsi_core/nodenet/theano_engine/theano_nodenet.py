@@ -1116,7 +1116,9 @@ class TheanoNodenet(Nodenet):
         new_names = sorted(self.thetas[node_uid]['names'] + [name])
         index = new_names.index(name)
         self.thetas[node_uid]['names'] = new_names
-        self.thetas[node_uid]['variables'].insert(index, theano.shared(value=val.astype(T.config.floatX), name=name, borrow=True))
+        if not isinstance(val, T.sharedvar.TensorSharedVariable):
+            val = theano.shared(value=val.astype(T.config.floatX), name=name, borrow=True)
+        self.thetas[node_uid]['variables'].insert(index, val)
 
     def get_theta(self, node_uid, name):
         data = self.thetas[node_uid]

@@ -1509,7 +1509,10 @@ class TheanoNodenet(Nodenet):
         return actuators
 
     def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1):
-        return self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight)
+        result = self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight)
+        if target_node_uid in self.flow_module_instances:
+            self.update_flow_graphs()
+        return result
 
     def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1):
 
@@ -1559,7 +1562,10 @@ class TheanoNodenet(Nodenet):
         return True
 
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):
-        return self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, 0)
+        result = self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, 0)
+        if target_node_uid in self.flow_module_instances:
+            self.update_flow_graphs()
+        return result
 
     def reload_native_modules(self, native_modules):
 

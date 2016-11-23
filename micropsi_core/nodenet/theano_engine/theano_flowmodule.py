@@ -62,10 +62,7 @@ class FlowModule(TheanoNode):
             return len(set.union(*list(self.outputmap.values()))) > 0
 
     def is_output_node(self):
-        if len(self.outputs) == 0:
-            return True
-        else:
-            return ('worldadapter', 'datatargets') in set.union(*list(self.outputmap.values()))
+        return len(self.get_slot('sub').get_links()) > 0
 
     def is_input_node(self):
         if len(self.inputs) == 0:

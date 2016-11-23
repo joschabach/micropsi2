@@ -198,12 +198,15 @@ def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepat
     # step & assert that nothing happened without sub-activation
     nodenet.step()
     assert np.all(worldadapter.datatarget_values == np.zeros(5, dtype=nodenet.numpyfloatX))
+    assert len(nodenet.flowfuncs) == 0
 
     # create activation source:
     source = netapi.create_node("Neuron", None)
     netapi.link(source, 'gen', source, 'gen')
     netapi.link(source, 'gen', flowmodule, 'sub')
     source.activation = 1
+
+    assert len(nodenet.flowfuncs) == 1
 
     # # step & assert that the initfunction and flowfunction ran
     nodenet.step()
@@ -228,13 +231,14 @@ def test_multiple_flowgraphs(runtime, test_nodenet, default_world, resourcepath)
 
     # link add to datatargets
     nodenet.flow(add.uid, "outputs", 'worldadapter', 'datatargets')
-    assert len(nodenet.flowfuncs) == 1
+
+    assert len(nodenet.flowfuncs) == 0
 
     # create a second graph
     nodenet.flow('worldadapter', 'datasources', bisect.uid, "inputs")
     nodenet.flow(bisect.uid, "outputs", 'worldadapter', 'datatargets')
 
-    assert len(nodenet.flowfuncs) == 2
+    assert len(nodenet.flowfuncs) == 0
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
@@ -248,17 +252,20 @@ def test_multiple_flowgraphs(runtime, test_nodenet, default_world, resourcepath)
 
     # link to first graph:
     netapi.link(source, 'gen', add, 'sub')
+    assert len(nodenet.flowfuncs) == 1
 
     # step & assert that only the first graph ran
     nodenet.step()
     assert np.all(worldadapter.datatarget_values == sources * 3)
 
     # link source to second graph:
-    worldadapter.datatarget_values = np.zeros(len(worldadapter.datatarget_values), dtype=nodenet.numpyfloatX)
     netapi.link(source, 'gen', bisect, 'sub')
+    assert len(nodenet.flowfuncs) == 2
+    worldadapter.datatarget_values = np.zeros(len(worldadapter.datatarget_values), dtype=nodenet.numpyfloatX)
+
     nodenet.step()
-    datatargets = np.around(worldadapter.datatarget_values, decimals=4)
-    sources = np.around(sources * 3.5, decimals=4)
+    datatargets = np.around(worldadapter.datatarget_values, decimals=3)
+    sources = np.around(sources * 3.5, decimals=3)
     assert np.all(datatargets == sources)
 
 
@@ -268,6 +275,7 @@ def test_disconnect_flowmodules(runtime, test_nodenet, default_world, resourcepa
 
     double = netapi.create_node("Double", None, "Double")
     add = netapi.create_node("Add", None, "Add")
+    source = netapi.create_node("Neuron", None, "Source")
 
     # link datasources to double & add
     nodenet.flow('worldadapter', 'datasources', double.uid, "inputs")
@@ -276,8 +284,9 @@ def test_disconnect_flowmodules(runtime, test_nodenet, default_world, resourcepa
     nodenet.flow(double.uid, "outputs", add.uid, "input1")
     # link add to datatargets
     nodenet.flow(add.uid, "outputs", 'worldadapter', 'datatargets')
-
+    netapi.link(source, 'gen', add, 'sub')
     # have one connected graph
+
     assert len(nodenet.flowfuncs) == 1
 
     # unlink double from add
@@ -289,7 +298,8 @@ def test_disconnect_flowmodules(runtime, test_nodenet, default_world, resourcepa
     # unlink add from datatargets
     netapi.unflow(add, "outputs", "worldadapter", "datatargets")
 
-    assert len(nodenet.flowfuncs) == 0
+    # we still have one graph, but it doesn't do anything
+    assert len(nodenet.flowfuncs) == 1
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
@@ -320,8 +330,6 @@ def test_diverging_flowgraph(runtime, test_nodenet, default_world, resourcepath)
     nodenet.flow(double.uid, "outputs", 'worldadapter', 'datatargets')
     nodenet.flow(add.uid, "outputs", 'worldadapter', 'datatargets')
 
-    assert len(nodenet.flowfuncs) == 2
-
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
     worldadapter.datasource_values = sources
@@ -335,11 +343,11 @@ def test_diverging_flowgraph(runtime, test_nodenet, default_world, resourcepath)
     netapi.link(source, 'gen', double, 'sub')
     nodenet.step()
     assert np.all(worldadapter.datatarget_values == sources)
+    worldadapter.datatarget_values = np.zeros(len(worldadapter.datatarget_values), dtype=nodenet.numpyfloatX)
 
     # unlink double, link add:
     netapi.unlink(source, 'gen', double, 'sub')
     netapi.link(source, 'gen', add, 'sub')
-    worldadapter.datatarget_values = np.zeros(len(worldadapter.datatarget_values), dtype=nodenet.numpyfloatX)
     nodenet.step()
     assert np.all(worldadapter.datatarget_values == sources * 1.5)
 
@@ -425,10 +433,16 @@ def test_delete_flowmodule(runtime, test_nodenet, default_world, resourcepath):
     netapi.flow(double1, "outputs", 'worldadapter', 'datatargets')
     netapi.flow(double2, "outputs", 'worldadapter', 'datatargets')
 
+    source = netapi.create_node("Neuron", None, "Source")
+    netapi.link(source, 'gen', source, 'gen')
+    source.activation = 1
+    netapi.link(source, 'gen', double1, 'sub')
+    netapi.link(source, 'gen', double2, 'sub')
     assert len(nodenet.flowfuncs) == 2
 
     netapi.delete_node(add)
 
+    # no possible connections anymore
     assert len(nodenet.flowfuncs) == 0
 
     assert not nodenet.flow_module_instances[bisect.uid].is_output_connected()

@@ -93,19 +93,26 @@ class TheanoCalculateFlowmodules(Propagate):
             endnode = nodes[-1]
             if endnode.is_requested():
                 try:
+                    skip = False
                     inputs = {}
                     for node_uid, in_name in dangling_inputs:
                         source_uid, source_name = nodenet.get_node(node_uid).inputmap[in_name]
-                        inputs[in_name] = flowio[source_uid][source_name]
+                        if flowio[source_uid][source_name] is None:
+                            netapi.logger.debug("Skipping graph bc. empty inputs")
+                            skip = True
+                            break
+                        else:
+                            inputs[in_name] = flowio[source_uid][source_name]
+                    if skip:
+                        continue
                     out = func(**inputs)
-                    if out is not None:
-                        for index, (node_uid, out_name) in enumerate(dangling_outputs):
-                            if ('worldadapter', 'datatargets') in nodenet.get_node(node_uid).outputmap[out_name]:
-                                nodenet.worldadapter_instance.add_datatarget_values(out[index])
-                            else:
-                                if node_uid not in flowio:
-                                    flowio[node_uid] = {}
-                                flowio[node_uid][out_name] = out[index]
+                    for index, (node_uid, out_name) in enumerate(dangling_outputs):
+                        if ('worldadapter', 'datatargets') in nodenet.get_node(node_uid).outputmap[out_name]:
+                            nodenet.worldadapter_instance.add_datatarget_values(out[index])
+                        else:
+                            if node_uid not in flowio:
+                                flowio[node_uid] = {}
+                            flowio[node_uid][out_name] = out[index] if out is not None else None
                 except KeyError:
                     import traceback
                     nodenet.logger.error("missing in- or output: ", traceback.format_exc())

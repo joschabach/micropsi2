@@ -63,7 +63,8 @@ def prepare(runtime, test_nodenet, default_world, resourcepath):
         "run_function_name": "numpyfunc",
         "inputs": ["inputs"],
         "outputs": ["outputs"],
-        "inputdims": [1]
+        "inputdims": [1],
+        "parameters": ["no_return_flag"]
     },
     "SharedVars": {
         "flow_module": true,
@@ -131,10 +132,11 @@ def numpyfunc_init(netapi, node, parameters):
 
 def numpyfunc(inputs, netapi, node, parameters):
     import numpy as np
-    ones = np.zeros_like(inputs)
-    ones[:] = 1.0
     netapi.notify_user(node, "numpyfunc ran")
-    return inputs + ones
+    if parameters.get('no_return_flag') != 1:
+        ones = np.zeros_like(inputs)
+        ones[:] = 1.0
+        return inputs + ones
 
 def sharedvars_init(netapi, node, parameters):
     import numpy as np
@@ -644,6 +646,42 @@ def test_flow_trpo_modules(runtime, test_nodenet, default_world, resourcepath):
 
     function = netapi.get_callable_flowgraph([trpoinpy, trpoout])
     assert np.all(function(X=x) == result)
+
+
+@pytest.mark.engine("theano_engine")
+def test_none_output_skips_following_graphs(runtime, test_nodenet, default_world, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+
+    double = netapi.create_node("Double", None, "Double")
+    py = netapi.create_node("Numpy", None, "Numpy")
+    bisect = netapi.create_node("Bisect", None, "Bisect")
+
+    netapi.flow("worldadapter", "datasources", double, "inputs")
+    netapi.flow(double, "outputs", py, "inputs")
+    netapi.flow(py, "outputs", bisect, "inputs")
+    netapi.flow(bisect, "outputs", "worldadapter", "datatargets")
+
+    source = netapi.create_node("Neuron", None, "Source")
+    netapi.link(source, 'gen', source, 'gen')
+    source.activation = 1
+    netapi.link(source, 'gen', py, 'sub')
+    netapi.link(source, 'gen', bisect, 'sub')
+
+    sources = np.zeros((5), dtype=nodenet.numpyfloatX)
+    sources[:] = np.random.randn(*sources.shape)
+    worldadapter.datasource_values = sources
+
+    py.set_parameter('no_return_flag', 1)
+
+    nodenet.step()
+    # assert that the bisect function did not run
+    assert np.all(worldadapter.datatarget_values == np.zeros(5))
+    # but python did
+    assert nodenet.user_prompt['msg'] == 'numpyfunc ran'
+
+    py.set_parameter('no_return_flag', 0)
+    nodenet.step()
+    assert np.all(worldadapter.datatarget_values == (2 * sources + 1) / 2)
 
 
 @pytest.mark.engine("theano_engine")

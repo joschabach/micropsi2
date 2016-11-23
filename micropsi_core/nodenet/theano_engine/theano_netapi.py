@@ -83,7 +83,7 @@ class TheanoNetAPI(NetAPI):
         """ Remove flow between the given flow_modules """
         source = source_node if source_node == 'worldadapter' else source_node.uid
         target = target_node if target_node == 'worldadapter' else target_node.uid
-        return self.__nodenet.disconnect_flow_modules(source, source_output, target, target_input)
+        return self.__nodenet.unflow(source, source_output, target, target_input)
 
     def get_callable_flowgraph(self, nodes, use_different_thetas=False):
         """ Returns one callable for the given flow_modules """
@@ -92,7 +92,7 @@ class TheanoNetAPI(NetAPI):
 
     def collect_thetas(self, nodes):
         """ Returns a list of thetas, sorted by node first, alphabetically second """
-        return self.__nodenet.collect_shared_variables([n.uid for n in nodes])
+        return self.__nodenet.collect_thetas([n.uid for n in nodes])
 
     def create_shadow_flowgraph(self, flow_modules):
         """ Creates a shallow copy of the given flow_modules, copying instances and internal connections.

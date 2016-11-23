@@ -281,13 +281,13 @@ def test_disconnect_flowmodules(runtime, test_nodenet, default_world, resourcepa
     assert len(nodenet.flowfuncs) == 1
 
     # unlink double from add
-    nodenet.unflow(double.uid, "outputs", add.uid, "input1")
+    netapi.unflow(double, "outputs", add, "input1")
 
     # assert dependencies cleaned
     assert double.uid not in nodenet.flow_module_instances[add.uid].dependencies
 
     # unlink add from datatargets
-    nodenet.unflow(add.uid, "outputs", "worldadapter", "datatargets")
+    netapi.unflow(add, "outputs", "worldadapter", "datatargets")
 
     assert len(nodenet.flowfuncs) == 0
 
@@ -564,6 +564,12 @@ def test_collect_thetas(runtime, test_nodenet, default_world, resourcepath):
     netapi.link(source, 'gen', module, 'sub')
 
     nodenet.step()
+
+    collected = netapi.collect_thetas([module])
+    assert len(collected) == 2
+    # assert collect sorts alphabetically
+    assert collected[0] == module.get_theta('bias')
+    assert collected[1] == module.get_theta('weights')
 
     result = sources * module.get_theta('weights').get_value() + module.get_theta('bias').get_value()
     assert np.all(worldadapter.datatarget_values == result)

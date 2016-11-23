@@ -65,17 +65,18 @@ def prepare(runtime, test_nodenet, default_world, resourcepath):
         "outputs": ["outputs"],
         "inputdims": [1]
     },
-    "SharedVars": {
+    "Thetas": {
         "flow_module": true,
         "implementation": "theano",
-        "name": "SharedVars",
-        "init_function_name": "sharedvars_init",
-        "build_function_name": "sharedvars",
-        "parameters": ["weights_shape", "use_weights"],
+        "name": "Thetas_from_array",
+        "init_function_name": "thetas_init",
+        "build_function_name": "thetas",
+        "parameters": ["weights_shape", "use_thetas"],
         "inputs": ["X"],
         "outputs": ["Y"],
         "inputdims": [1]
     },
+
     "TwoOutputs":{
         "flow_module": true,
         "implementation": "theano",
@@ -136,15 +137,16 @@ def numpyfunc(inputs, netapi, node, parameters):
     netapi.notify_user(node, "numpyfunc ran")
     return inputs + ones
 
-def sharedvars_init(netapi, node, parameters):
+def thetas_init(netapi, node, parameters):
     import numpy as np
     w_array = np.random.rand(parameters['weights_shape']).astype(netapi.floatX)
-    b_array = np.ones(parameters['weights_shape']).astype(netapi.floatX)
-    node.set_theta('weights', w_array)
-    node.set_theta('bias', b_array)
+    b_array = np.random.rand(parameters['weights_shape']).astype(netapi.floatX)
 
-def sharedvars(X, netapi, node, parameters):
-    if parameters.get('use_weights'):
+    node.set_theta('weights', w_array)
+    node.set_theta('bias', theano.shared(b_array))
+
+def thetas(X, netapi, node, parameters):
+    if parameters.get('use_thetas'):
         return X * node.get_theta('weights') + node.get_theta('bias')
     else:
         return X
@@ -547,8 +549,8 @@ def test_get_callable_flowgraph_bridges_numpy_gaps(runtime, test_nodenet, defaul
 def test_collect_thetas(runtime, test_nodenet, default_world, resourcepath):
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
-    module = netapi.create_node("SharedVars", None, "module")
-    module.set_parameter('use_weights', True)
+    module = netapi.create_node("Thetas", None, "module")
+    module.set_parameter('use_thetas', True)
     module.set_parameter('weights_shape', 5)
 
     netapi.flow('worldadapter', 'datasources', module, "X")
@@ -572,7 +574,7 @@ def test_collect_thetas(runtime, test_nodenet, default_world, resourcepath):
     assert collected[1] == module.get_theta('weights')
 
     result = sources * module.get_theta('weights').get_value() + module.get_theta('bias').get_value()
-    assert np.all(worldadapter.datatarget_values == result)
+    assert np.allclose(worldadapter.datatarget_values, result)
 
     func = netapi.get_callable_flowgraph([module], use_different_thetas=True)
 
@@ -636,11 +638,11 @@ def test_flow_trpo_modules(runtime, test_nodenet, default_world, resourcepath):
 def test_shadow_flowgraph(runtime, test_nodenet, default_world, resourcepath):
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
-    node1 = netapi.create_node("SharedVars", None, "node1")
-    node1.set_parameter('use_weights', True)
+    node1 = netapi.create_node("Thetas", None, "node1")
+    node1.set_parameter('use_thetas', True)
     node1.set_parameter('weights_shape', 5)
-    node2 = netapi.create_node("SharedVars", None, "node2")
-    node2.set_parameter('use_weights', False)
+    node2 = netapi.create_node("Thetas", None, "node2")
+    node2.set_parameter('use_thetas', False)
     node2.set_parameter('weights_shape', 5)
 
     netapi.flow(node1, "Y", node2, "X")
@@ -656,10 +658,10 @@ def test_shadow_flowgraph(runtime, test_nodenet, default_world, resourcepath):
     assert np.all(copyfunction(X=x) == result)
 
     # change original
-    node2.set_parameter('use_weights', True)
+    node2.set_parameter('use_thetas', True)
 
     # recompile, assert change took effect
-    assert copies[1].get_parameter('use_weights')
+    assert copies[1].get_parameter('use_thetas')
     function = netapi.get_callable_flowgraph([node1, node2])
     result2 = function(X=x)[0]
     assert np.all(result2 != result)
@@ -670,10 +672,10 @@ def test_shadow_flowgraph(runtime, test_nodenet, default_world, resourcepath):
 
     # change back, save and reload and assert the copy
     # still returs the original's value
-    node2.set_parameter('use_weights', False)
+    node2.set_parameter('use_thetas', False)
     runtime.save_nodenet(test_nodenet)
     runtime.revert_nodenet(test_nodenet)
     nodenet = runtime.nodenets[test_nodenet]
     netapi = nodenet.netapi
     copies = [netapi.get_node(copies[0].uid), netapi.get_node(copies[1].uid)]
-    assert not copies[1].get_parameter('use_weights')
+    assert not copies[1].get_parameter('use_thetas')

@@ -1126,6 +1126,9 @@ class TheanoNodenet(Nodenet):
     def collect_thetas(self, node_uids):
         shared_vars = []
         for uid in node_uids:
+            node = self.get_node(uid)
+            if node.is_copy_of:
+                uid = node.is_copy_of
             data = self.thetas.get(uid)
             if data:
                 shared_vars.extend(data['variables'])

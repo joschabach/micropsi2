@@ -655,6 +655,8 @@ def test_shadow_flowgraph(runtime, test_nodenet, default_world, resourcepath):
     copyfunction = netapi.get_callable_flowgraph([copies[0], copies[1]])
     assert np.all(copyfunction(X=x) == result)
 
+    assert netapi.collect_thetas(copies) == netapi.collect_thetas([node1, node2])
+
     # change original
     node2.set_parameter('use_weights', True)
 

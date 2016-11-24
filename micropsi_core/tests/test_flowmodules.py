@@ -183,7 +183,7 @@ def trpoinpython(X, Y, netapi, node, parameters):
 def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepath):
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
-    metadata = runtime.get_nodenet_metadata(test_nodenet)
+    result, metadata = runtime.get_nodenet_metadata(test_nodenet)
     assert 'Double' not in metadata['native_modules']
     assert metadata['flow_modules']['Double']['inputs'] == ["inputs"]
     assert metadata['flow_modules']['Double']['outputs'] == ["outputs"]

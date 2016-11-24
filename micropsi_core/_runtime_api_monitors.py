@@ -72,6 +72,8 @@ def get_monitor_data(nodenet_uid, step=0, from_step=0, count=-1, with_recorders=
     """Returns monitor and nodenet data for drawing monitor plots for the current step,
     if the current step is newer than the supplied calculation step."""
     nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
+    if nodenet is None:
+        return {}
     data = {
         'nodenet_running': nodenet.is_active,
         'current_step': nodenet.current_step

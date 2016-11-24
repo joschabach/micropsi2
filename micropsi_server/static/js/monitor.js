@@ -332,9 +332,11 @@ $(function(){
     }
 
     function setMonitorData(data){
-        updateMonitorList(data.monitors);
-        nodenetMonitors = data.monitors;
-        drawGraph(nodenetMonitors);
+        if(data.monitors){
+            updateMonitorList(data.monitors);
+            nodenetMonitors = data.monitors;
+            drawGraph(nodenetMonitors);
+        }
     }
 
     function setLoggingData(data){

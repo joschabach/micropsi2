@@ -290,7 +290,7 @@ def get_nodenet(nodenet_uid):
         if nodenet_uid in get_available_nodenets():
             load_nodenet(nodenet_uid)
         else:
-            raise KeyError("Unknown nodenet")
+            return None
     return nodenets[nodenet_uid]
 
 
@@ -397,6 +397,8 @@ def load_world(world_uid):
 def get_nodenet_metadata(nodenet_uid):
     """ returns the given nodenet's metadata"""
     nodenet = get_nodenet(nodenet_uid)
+    if nodenet is None:
+        return False, "Unknown nodenet"
     data = nodenet.metadata
     data.update({
         'nodetypes': nodenet.get_standard_nodetype_definitions(),
@@ -407,7 +409,7 @@ def get_nodenet_metadata(nodenet_uid):
         'rootnodespace': nodenet.get_nodespace(None).uid,
         'resource_path': RESOURCE_PATH
     })
-    return data
+    return True, data
 
 
 def get_nodenet_activation_data(nodenet_uid, nodespaces=[], last_call_step=-1):
@@ -937,7 +939,7 @@ def __pythonify(name):
 
 
 def generate_netapi_fragment(nodenet_uid, node_uids):
-    lines = []
+    lines = ["nodespace_uid = None"]
     idmap = {}
     nodenet = get_nodenet(nodenet_uid)
     nodes = []
@@ -981,9 +983,9 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
             pythonname = __pythonify(name)
             if pythonname not in idmap.values():
                 varname = pythonname
-            lines.append("%s = netapi.create_node('%s', None, \"%s\")" % (varname, node.type, name))
+            lines.append("%s = netapi.create_node('%s', nodespace_uid, \"%s\")" % (varname, node.type, name))
         else:
-            lines.append("%s = netapi.create_node('%s', None)" % (varname, node.type))
+            lines.append("%s = netapi.create_node('%s', nodespace_uid)" % (varname, node.type))
 
         gate_config = node.get_gate_configuration()
         for gatetype, gconfig in gate_config.items():
@@ -1482,6 +1484,8 @@ def parse_definition(json, filename=None):
             result['use_modulators'] = json['use_modulators']
         if 'version' in json:
             result['version'] = json['version']
+        else:
+            result['version'] = 1
         return Bunch(**result)
 
 

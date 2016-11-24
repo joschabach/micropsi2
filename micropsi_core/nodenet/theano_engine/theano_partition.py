@@ -2001,7 +2001,7 @@ class TheanoPartition():
                 g_wait_array = self.g_wait.get_value(borrow=True)
                 parameters['wait'] = g_wait_array[self.allocated_node_offsets[id] + get_numerical_gate_type("sur")].item()
             elif strtype == "Comment":
-                parameters = self.comment_instances.get[uid].clone_parameters()
+                parameters = self.comment_instances[uid].clone_parameters()
             elif strtype in self.nodenet.native_modules:
                 parameters = self.native_module_instances[uid].clone_parameters()
 

@@ -20,7 +20,7 @@
 <ul class="dropdown-menu">
 % for item in sorted(mine.items(), key=lambda foo: foo[1].name.lower()):
     % if item[0] != current:
-      % if type=="world":
+      % if type=="environment":
         <li><a href="?select_world={{item[0]}}" class="world_select">{{item[1].name}}</a></li>
       % else:
         <li><a href="/rpc/select_nodenet" data="{{item[0]}}" class="nodenet_select">{{item[1].name}}</a></li>
@@ -30,7 +30,7 @@
 
 % for item in sorted(others.items(), key=lambda foo: foo[1].name.lower()):
     % if item[0] != current:
-      % if type=="world":
+      % if type=="environment":
         <li><a href="?select_world={{item[0]}}" class="world_select">{{item[1].name}} ({{item[1].owner}})</a></li>
       % else:
         <li><a href="/rpc/select_nodenet" data="{{item[0]}}" class="nodenet_select">{{item[1].name}} ({{item[1].owner}})</a></li>

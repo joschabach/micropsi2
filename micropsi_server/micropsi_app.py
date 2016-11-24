@@ -44,6 +44,8 @@ bottle.debug(cfg['micropsi2'].get('debug', False))  # devV
 bottle.TEMPLATE_PATH.insert(0, os.path.join(APP_PATH, 'view', ''))
 bottle.TEMPLATE_PATH.insert(1, os.path.join(APP_PATH, 'static', ''))
 
+bottle.BaseRequest.MEMFILE_MAX = 5 * 1024 * 1024
+
 theano_available = True
 try:
     import theano
@@ -772,7 +774,7 @@ def show_dashboard():
 
 @rpc("get_nodenet_metadata")
 def get_nodenet_metadata(nodenet_uid, nodespace='Root', include_links=True):
-    return True, runtime.get_nodenet_metadata(nodenet_uid)
+    return runtime.get_nodenet_metadata(nodenet_uid)
 
 
 @rpc("get_nodes")

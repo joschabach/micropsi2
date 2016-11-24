@@ -946,7 +946,7 @@ class TheanoNodenet(Nodenet):
             outexpressions = {}
             inputs = []
             outputs = []
-
+            num_outputs = 0
             for node in path['members']:
                 buildargs = []
                 for in_idx, in_name in enumerate(node.inputs):
@@ -994,18 +994,19 @@ class TheanoNodenet(Nodenet):
 
                 outoffset = 0
                 for out_idx, out_name in enumerate(node.outputs):
-                    dangling = "external"
+                    dangling = ['external']
                     if node.outputmap[out_name]:
+                        dangling = []
                         for pair in node.outputmap[out_name]:
                             if pair[0] in member_uids:
                                 # satisfied output
-                                dangling = False
-                                break
+                                dangling.append(False)
                             elif pair[0] in node_uids:
                                 # internal dangling output
-                                dangling = "internal"
-                                break
-                    if dangling:
+                                dangling.append("internal")
+                            else:
+                                dangling.append("external")
+                    if set(dangling) != {False}:
                         added = False
                         if outputlengths[out_idx] > 1:
                             thunk['list_outputs'].append((out_idx, outputlengths[out_idx]))
@@ -1015,10 +1016,11 @@ class TheanoNodenet(Nodenet):
                             outoffset += outputlengths[out_idx] - 1
                         if not added:
                             outputs.append(flattened_outex[out_idx + outoffset])
-                        if dangling != 'internal':
+                        if "external" in dangling:
                             # external dangling output
-                            thunk['dangling_outputs'].append(out_idx)
                             dangling_outputs.append((node.uid, out_name))
+                            thunk['dangling_outputs'].append(num_outputs + out_idx)
+                        num_outputs += 1
 
             if not use_different_thetas:
                 if thunk['implementation'] == 'theano':

@@ -256,7 +256,7 @@ def test_engine_specific_nodetype_dict(runtime, test_nodenet, resourcepath):
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
     runtime.reload_native_modules()
-    data = runtime.get_nodenet_metadata(test_nodenet)
+    res, data = runtime.get_nodenet_metadata(test_nodenet)
     assert "Testnode" not in data['native_modules']
 
 
@@ -278,7 +278,7 @@ def test_engine_specific_nodetype_theano(runtime, test_nodenet, resourcepath):
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
     runtime.reload_native_modules()
-    data = runtime.get_nodenet_metadata(test_nodenet)
+    res, data = runtime.get_nodenet_metadata(test_nodenet)
     assert "Testnode" not in data['native_modules']
 
 

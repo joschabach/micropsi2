@@ -197,7 +197,7 @@ var api = {
                     }
                     msg += '</ul>';
                 } else {
-                    msg = data
+                    msg = data.data
                 }
             }
             if(!msg){

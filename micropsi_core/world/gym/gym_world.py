@@ -9,6 +9,9 @@ import gym
 
 "OpenAI Gym interface"
 
+floatX = 'float32' # where do we configure this?
+
+
 def inspect_space(gym_space):
     """
     find the dimensionaltity and (if discrete) number of values of an OAI state/action space
@@ -22,8 +25,7 @@ def inspect_space(gym_space):
     n_dim: int
         nr of dimensions of the space
     n_discrete: int or None
-        if the space is discrete: the nr of allowed values.
-        in that case, allowed values are the integers {0,...,n}
+        if the space is discrete: the nr n of allowed values, which are the integers {0,...,n}
 
     """
     if isinstance(gym_space, gym.spaces.Box):
@@ -52,14 +54,15 @@ class OAIGym(World):
         self.env = gym.make(config['env_id'])
 
         self.n_dim_state, self.n_discrete_states = inspect_space(self.env.observation_space)
-        self.n_dim_action, self.n_discrete_actions = inspect_space(self.env.observation_space)
+        self.n_dim_action, self.n_discrete_actions = inspect_space(self.env.action_space)
 
     @classmethod
     def get_config_options(cls):
+        print('### oai world get config')
         return [
             {'name': 'env_id',
-             'description': 'OpenAI environment ID'
-             'default': 'Cartpole-v0'},
+             'description': 'OpenAI environment ID',
+             'default': 'CartPole-v0'},
         ]
 
 
@@ -70,8 +73,8 @@ class OAIGymAdapter(ArrayWorldAdapter):
         super().__init__(world, uid, **data)
 
         # 1D discrete state space: one data source for each possible state
-        if self.n_discrete_states:
-            for k in range(self.n_discrete_states):
+        if self.world.n_discrete_states:
+            for k in range(self.world.n_discrete_states):
                 self.add_datasource("s%d" % k)
         # continuous state space: one data source for each state dimension
         else:
@@ -79,13 +82,13 @@ class OAIGymAdapter(ArrayWorldAdapter):
                 self.add_datasource("s%d" % state_dim)
 
         # 1D discrete action space: one data target for each possible action
-        if self.n_discrete_actions:
-            for k in range(self.n_discrete_actions):
+        if self.world.n_discrete_actions:
+            for k in range(self.world.n_discrete_actions):
                 self.add_datatarget("a%d" % k)
         # continuous action space: one data target for each action dimension
         else:
             for action_dim in range(self.world.n_dim_action):
-                self.add_datasource("a%d" % action_dim)
+                self.add_datatarget("a%d" % action_dim)
 
         self.add_datatarget("restart")
 
@@ -102,25 +105,28 @@ class OAIGymAdapter(ArrayWorldAdapter):
 
         if restart > 0:
             obs = self.world.env.reset()
+            r = 0
+            terminal = False
         else:
             if self.world.n_discrete_actions:
-                # for discrete action spaces, each action is represented by one datatarget, which is
+                # for discrete action spaces, each action is represented by one datatarget, and
                 # considered active if it's nonzero. the agent needs to make sure only one is active.
                 # OAI expects an integer < n, encoding which of the n available actions to take. so:
                 action = np.where(action_values)
                 if len(action)>1:
                     raise Exception('Cannot do multiple actions at the same time in a discrete, 1D action space.')
+                action = action[0].item()
             else:
                 action = action_values
 
             obs, r, terminal, info = self.world.env.step(action)
 
-        self.world.env.render()
+        # self.world.env.render()
 
         if self.world.n_discrete_states:
             # for discrete state spaces, OAI returns its observation as a single integer < n,
             # indicating which of the n states it is in. we have one data source for each state,
-            # taking values 0 or 1.
+            # taking values 0 or 1. so:
             obs_vector = np.zeros(self.world.n_discrete_states)
             obs_vector[obs] = 1
         else:
@@ -129,12 +135,9 @@ class OAIGymAdapter(ArrayWorldAdapter):
         state = np.concatenate([obs_vector, [r], [int(terminal)]])
         # if terminal:
         #     print('terminal')
-        self.datasource_values =  state
+        self.datasource_values = np.array(state, dtype=floatX)
 
         # print('\nworldadapter.update, datasource values:\n', self.datasource_values)
-
-    def reset_simulation_state(self):
-        raise Exception('uaegh I thought this would never be called if I dont call it')
 
     def reset_datatargets(self):
         """ resets (zeros) the datatargets """

@@ -156,6 +156,7 @@ class Nodenet(metaclass=ABCMeta):
         if self._worldadapter_instance:
             self._worldadapter_instance.nodenet = self
         self.is_active = False
+        self.frequency = 0.0
         self.use_modulators = use_modulators
 
         self._version = version or NODENET_VERSION  # used to check compatibility of the node net data

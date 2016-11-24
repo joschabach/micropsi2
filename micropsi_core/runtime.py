@@ -119,7 +119,8 @@ def signal_handler(signal, frame):
 
 class MicropsiRunner(threading.Thread):
 
-    sum_of_durations = 0
+    sum_of_calc_durations = 0
+    sum_of_step_durations = 0
     number_of_samples = 0
     total_steps = 0
     granularity = 10
@@ -177,14 +178,25 @@ class MicropsiRunner(threading.Thread):
                         if self.profiler:
                             self.profiler.disable()
 
-            elapsed = datetime.now() - start
+            calc_time = datetime.now() - start
+            left = step - calc_time
+            if left.total_seconds() > 0:
+                time.sleep(left.total_seconds())
+            step_time = datetime.now() - start
             if log:
-                ms = elapsed.seconds + ((elapsed.microseconds // 1000) / 1000)
-                self.sum_of_durations += ms
+                calc_ms = calc_time.seconds + ((calc_time.microseconds // 1000) / 1000)
+                step_ms = step_time.seconds + ((step_time.microseconds // 1000) / 1000)
+                self.sum_of_calc_durations += calc_ms
+                self.sum_of_step_durations += step_ms
                 self.number_of_samples += 1
                 self.total_steps += 1
-                average_duration = self.sum_of_durations / self.number_of_samples
                 if self.total_steps % self.granularity == 0:
+                    average_calc_duration = self.sum_of_calc_durations / self.number_of_samples
+                    average_step_duration = self.sum_of_step_durations / self.number_of_samples
+                    if average_step_duration > 0:
+                        nodenet.frequency = round((1 / average_step_duration) * 1000)
+                    else:
+                        nodenet.frequency = 0
                     if self.profiler:
                         import pstats
                         import io
@@ -194,18 +206,16 @@ class MicropsiRunner(threading.Thread):
                         ps.print_stats('micropsi_')
                         logging.getLogger("system").debug(s.getvalue())
 
-                    logging.getLogger("system").debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_duration))
-                    self.sum_of_durations = 0
+                    logging.getLogger("system").debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_calc_duration))
+                    self.sum_of_calc_durations = 0
+                    self.sum_of_step_durations = 0
                     self.number_of_samples = 0
-                    if average_duration < 0.0001:
+                    if average_calc_duration < 0.0001:
                         self.granularity = 10000
-                    elif average_duration < 0.001:
+                    elif average_calc_duration < 0.001:
                         self.granularity = 1000
                     else:
                         self.granularity = 100
-            left = step - elapsed
-            if left.total_seconds() > 0:
-                time.sleep(left.total_seconds())
             if len(uids) == 0:
                 self.pause()
 
@@ -445,6 +455,7 @@ def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=No
         data['calculation_running'] = nodenet_obj.is_active
         data['current_nodenet_step'] = nodenet_obj.current_step
         data['current_world_step'] = worlds[nodenet_obj.world].current_step if nodenet_obj.world else 0
+        data['control_frequency'] = nodenet_obj.frequency
         if nodenet is not None:
             if not type(nodenet) == dict:
                 nodenet = {}

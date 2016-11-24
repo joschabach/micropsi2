@@ -993,6 +993,7 @@ class TheanoNodenet(Nodenet):
                         outputlengths.append(1)
 
                 outoffset = 0
+                node_outputs = []
                 for out_idx, out_name in enumerate(node.outputs):
                     dangling = ['external']
                     if node.outputmap[out_name]:
@@ -1012,15 +1013,16 @@ class TheanoNodenet(Nodenet):
                             thunk['list_outputs'].append((out_idx, outputlengths[out_idx]))
                             added = True
                             for i in range(outputlengths[out_idx]):
-                                outputs.append(flattened_outex[out_idx + outoffset + i])
+                                node_outputs.append(flattened_outex[out_idx + outoffset + i])
                             outoffset += outputlengths[out_idx] - 1
                         if not added:
-                            outputs.append(flattened_outex[out_idx + outoffset])
+                            node_outputs.append(flattened_outex[out_idx + outoffset])
                         if "external" in dangling:
                             # external dangling output
                             dangling_outputs.append((node.uid, out_name))
                             thunk['dangling_outputs'].append(num_outputs + out_idx)
-                        num_outputs += 1
+                outputs.extend(node_outputs)
+                num_outputs += len(node_outputs)
 
             if not use_different_thetas:
                 if thunk['implementation'] == 'theano':

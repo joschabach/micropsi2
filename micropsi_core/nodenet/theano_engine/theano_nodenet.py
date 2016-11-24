@@ -816,15 +816,6 @@ class TheanoNodenet(Nodenet):
         partition = self.get_partition(nodespace_uid)
         partition.announce_nodes(number_of_nodes, average_elements_per_node)
 
-    def get_available_flow_module_inputs(self):
-        data = ["datasources"]
-        for uid in self.flow_module_instances:
-            data.extend(["%s:%s" % (self.flow_module_instances[uid].uid, output) for output in self.flow_module_instances[uid].outputs])
-        return data
-
-    def get_available_flow_module_outputs(self):
-        return ["datatargets"]
-
     def _create_flow_module(self, node):
         self.flowgraph.add_node(node.uid, implementation=node.nodetype.implementation)
 
@@ -916,8 +907,13 @@ class TheanoNodenet(Nodenet):
         self.logger.debug("Compiled %d flowfunctions" % len(self.flowfuncs))
 
     def compile_flow_subgraph(self, node_uids, use_different_thetas=False):
+        """ Compile and return one callable for the given flow_module_uids.
+        If use_different_thetas is True, the callable expects an argument names "thetas".
+        Thetas are expected to be sorted in the same way collect_thetas() would return them.
+        """
         subgraph = [self.get_node(uid) for uid in self.flow_toposort if uid in node_uids]
 
+        # split the nodes into symbolic/non-symbolic paths
         paths = []
         for node in subgraph:
             if node.implementation == 'python':
@@ -947,29 +943,34 @@ class TheanoNodenet(Nodenet):
             inputs = []
             outputs = []
             num_outputs = 0
+
             for node in path['members']:
                 buildargs = []
+                # collect the inputs for this Flowmodule:
                 for in_idx, in_name in enumerate(node.inputs):
                     if not node.inputmap[in_name] or node.inputmap[in_name][0] not in member_uids:
-                        # dangling input:
+                        # this input is not satisfied from within this path
                         in_expr = create_tensor(node.definition['inputdims'][in_idx], self.theanofloatX, name=in_name)
                         inputs.append(in_expr)
                         if not node.inputmap[in_name] or node.inputmap[in_name][0] not in node_uids:
-                            # external dangling input:
+                            # it's not even satisfied by another path within the subgraph,
+                            # and needs to be provided as input to the emerging callable
                             thunk['input_sources'].append(('kwargs', -1, in_name))
                             dangling_inputs.append((node.uid, in_name))
                         else:
-                            # internal dangling input:
+                            # this input will be satisfied by another path within the subgraph
                             source_uid, source_name = node.inputmap[in_name]
                             for idx, p in enumerate(paths):
                                 if self.get_node(source_uid) in p['members']:
+                                    # record which path, and which index of its output-array satisfies this input
                                     thunk['input_sources'].append(('path', idx, self.get_node(source_uid).outputs.index(source_name)))
                         buildargs.append(in_expr)
                     else:
-                        # satisfied input
+                        # this input is satisfied within this path
                         source_uid, source_name = node.inputmap[in_name]
                         buildargs.append(outexpressions[source_uid][self.get_node(source_uid).outputs.index(source_name)])
 
+                # build the outexpression
                 if len(node.outputs) <= 1:
                     original_outex = [node.build(*buildargs)]
                 elif node.implementation == 'python':
@@ -982,8 +983,11 @@ class TheanoNodenet(Nodenet):
                 flattened_outex = []
                 outputlengths = []
                 flattened_markers = []
+                # check if this node has a list as one of its return values:
                 for idx, ex in enumerate(original_outex):
                     if type(ex) == list:
+                        # if so, flatten the outputs, and mark the offset and length of the flattened output
+                        # so that we can later reconstruct the nested output-structure
                         flattened_markers.append((len(outputs) + idx, len(ex)))
                         outputlengths.append(len(ex))
                         for item in ex:
@@ -994,22 +998,31 @@ class TheanoNodenet(Nodenet):
 
                 outoffset = 0
                 node_outputs = []
+
+                # go thorugh the nodes outputs, and see how they will be used:
                 for out_idx, out_name in enumerate(node.outputs):
                     dangling = ['external']
                     if node.outputmap[out_name]:
+                        # if this output is used, we have to see where every connection goes
+                        # iterate through every connection, and note if it's used path-internally,
+                        # subgraph-internally, or will produce an output of the emerging callable
                         dangling = []
                         for pair in node.outputmap[out_name]:
                             if pair[0] in member_uids:
-                                # satisfied output
+                                # path-internally satisfied
                                 dangling.append(False)
                             elif pair[0] in node_uids:
-                                # internal dangling output
+                                # internal dangling aka subgraph-internally satisfied
                                 dangling.append("internal")
                             else:
+                                # externally dangling aka this will be a final output
                                 dangling.append("external")
+                    # now, handle internally or externally dangling outputs if there are any:
                     if set(dangling) != {False}:
                         added = False
                         if outputlengths[out_idx] > 1:
+                            # if this is output should produce a list, note this, for later de-flattenation
+                            # and append the flattened output to the output-collection
                             thunk['list_outputs'].append((out_idx, outputlengths[out_idx]))
                             added = True
                             for i in range(outputlengths[out_idx]):
@@ -1018,12 +1031,14 @@ class TheanoNodenet(Nodenet):
                         if not added:
                             node_outputs.append(flattened_outex[out_idx + outoffset])
                         if "external" in dangling:
-                            # external dangling output
+                            # this output will be a final one:
                             dangling_outputs.append((node.uid, out_name))
                             thunk['dangling_outputs'].append(num_outputs + out_idx)
                 outputs.extend(node_outputs)
                 num_outputs += len(node_outputs)
 
+            # now, set the function of this thunk. Either compile a theano function
+            # or assign the python function.
             if not use_different_thetas:
                 if thunk['implementation'] == 'theano':
                     thunk['function'] = theano.function(inputs=inputs, outputs=outputs)
@@ -1044,10 +1059,12 @@ class TheanoNodenet(Nodenet):
             thunks.append(thunk)
 
         def compiled(thetas=None, **kwargs):
-            all_outputs = []
-            final_outputs = []
+            """ Compiled callable for this subgraph """
+            all_outputs = []  # outputs for use within this thunk
+            final_outputs = []  # final, external dangling outputs
             for idx, thunk in enumerate(thunks):
                 funcargs = []
+                # get the inputs: Either from the kwargs, or from the already existing outputs
                 for source, pidx, item in thunk['input_sources']:
                     if source == 'kwargs':
                         funcargs.append(kwargs[item])
@@ -1062,6 +1079,8 @@ class TheanoNodenet(Nodenet):
                         funcargs += thetas
                     out = thunk['function'](*funcargs)
                 if thunk['list_outputs']:
+                    # if we have list_outputs, we need to nest the output of this thunk again
+                    # to recreate the nested structure from a flat list of outputs
                     new_out = []
                     out_iter = iter(out)
                     try:
@@ -1074,7 +1093,8 @@ class TheanoNodenet(Nodenet):
                                     new_out.append(sublist)
                                 else:
                                     new_out.append(next(out_iter))
-                    except:
+                    except StopIteration:
+                        # iterator finished, we handled all items.
                         pass
                     out = new_out
                 if out:

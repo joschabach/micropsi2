@@ -296,9 +296,6 @@ def test_disconnect_flowmodules(runtime, test_nodenet, default_world, resourcepa
     # unlink double from add
     netapi.unflow(double, "outputs", add, "input1")
 
-    # assert dependencies cleaned
-    assert double.uid not in nodenet.flow_module_instances[add.uid].dependencies
-
     # unlink add from datatargets
     netapi.unflow(add, "outputs", "worldadapter", "datatargets")
 
@@ -450,8 +447,6 @@ def test_delete_flowmodule(runtime, test_nodenet, default_world, resourcepath):
     assert len(nodenet.flowfuncs) == 0
 
     assert not nodenet.flow_module_instances[bisect.uid].is_output_connected()
-    for node in nodenet.flow_module_instances.values():
-        assert add.uid not in node.dependencies
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)

@@ -1,6 +1,24 @@
 
 """
-Flowmodule implementation
+Flowmodules are a special kind of native modules, with the following properties:
+
+* They have inputs and outputs, in addition to a sub-slot and a sur-gate
+* They can be connected to create a flow between Flowmodules
+* Flow-terminals are datasources, datatargets and Flow Endndoes
+* Flow Endnodes are Flowmodules that have at least one link ending at their sub-slot
+* If the sub-slot of an Endnode X receives activation, everything between X and other Flow-terminals (a Flowgraph) is calculated within one nodenet step.
+* All Flowmodules that are part of an active Flowgraph show this via activation on their sur-gate
+
+* Flow modules can currently have to kinds of implementation: Theano or python
+** Theano-implemented Flowmodules have a buildfunction, that returns a symbolic theano-expression
+** Python-implemented Flowmodules hav a runfunction, that can do anything it wants.
+
+* Flowmodules delivering output might decide, that a certain output needs more data, and can choose to return None for that output
+  (the total number of return values still must match the number of outputs they define)
+  If a Flowgraph receives None as one of its inputs, it is prevented from running, even if it is requested.
+
+
+
 """
 
 from micropsi_core.nodenet.theano_engine.theano_node import TheanoNode
@@ -30,7 +48,6 @@ class FlowModule(TheanoNode):
             self.inputmap[i] = tuple()
         for i in self.definition['outputs']:
             self.outputmap[i] = set()
-        self.dependencies = set()
 
         for name in inputmap:
             self.inputmap[name] = tuple(inputmap[name])
@@ -63,23 +80,28 @@ class FlowModule(TheanoNode):
             return len(set.union(*list(self.outputmap.values()))) > 0
 
     def is_output_node(self):
+        """ Returns true if this is an output-node (that is, if it has at least one link at its sub-slot)"""
         return len(self.get_slot('sub').get_links()) > 0
 
     def is_input_node(self):
+        """ Returns true if this is an input-node (that is, it either has no inputs, or datasources as inputs)"""
         if len(self.inputs) == 0:
             return True
         else:
             return ('worldadapter', 'datasources') in self.inputmap.values()
 
     def is_requested(self):
+        """ Returns true if this node receives sub-activation"""
         return self.get_slot_activations(slot_type='sub') > 0
 
     def set_theta(self, name, val):
+        """ Set the theta value of the given name """
         if self.is_copy_of:
             raise RuntimeError("Shallow copies can not set shared variables")
         self._nodenet.set_theta(self.uid, name, val)
 
     def get_theta(self, name):
+        """ Get the theta value for the given name """
         if self.is_copy_of:
             return self._nodenet.get_theta(self.is_copy_of, name)
         return self._nodenet.get_theta(self.uid, name)
@@ -100,34 +122,34 @@ class FlowModule(TheanoNode):
         return super().clone_parameters()
 
     def set_input(self, input_name, source_uid, source_output):
+        """ Connect a Flowmodule or the worldadapter to the given input of this Flowmodule """
         if input_name not in self.inputs:
             raise NameError("Unknown input %s" % input_name)
-        self.dependencies.add(source_uid)
         if self.inputmap.get(input_name):
             raise RuntimeError("This input is already connected")
         self.inputmap[input_name] = (source_uid, source_output)
 
     def unset_input(self, input_name, source_uid, source_output):
-        remove = True
+        """ Disconnect a Flowmodule or the worldadapter from the given input of this Flowmodule """
         if input_name not in self.inputs:
             raise NameError("Unknown input %s" % input_name)
         self.inputmap[input_name] = tuple()
-        for name in self.inputmap:
-            if self.inputmap[name] and self.inputmap[name][0] == source_uid:
-                remove = False
-        if remove:
-            self.dependencies.discard(source_uid)
 
     def set_output(self, output_name, target_uid, target_input):
+        """ Connect a Flowmodule or the worldadapter to the given output of this Flowmodule """
         self.outputmap[output_name].add((target_uid, target_input))
 
     def unset_output(self, output_name, target_uid, target_input):
+        """ Connect a Flowmodule or the worldadapter from the given output of this Flowmodule """
         self.outputmap[output_name].discard((target_uid, target_input))
 
     def node_function(self):
+        """ activates the sur gate if this Flowmodule is part of an active graph """
         self.get_gate('sur').gate_function(1 if self.is_part_of_active_graph else 0)
 
     def build(self, *inputs):
+        """ Builds the node, calls the initfunction if needed, and returns an outexpression.
+        This can be either a symbolic theano expression or a python function """
         if not self.__initialized and not self.is_copy_of:
             self._initfunction(self._nodenet.netapi, self, self.parameters)
             self.__initialized = True
@@ -137,13 +159,12 @@ class FlowModule(TheanoNode):
         elif self.implementation == 'python':
             outexpression = self._flowfunction
 
-        store = True
-        if store:
-            self.outexpression = outexpression
+        self.outexpression = outexpression
 
         return outexpression
 
     def _load_functions(self):
+        """ Loads the run-/build-/init-functions """
         from importlib.machinery import SourceFileLoader
         import inspect
 

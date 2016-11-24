@@ -25,6 +25,7 @@ class FlowModule(TheanoNode):
         self.inputmap = {}
         self.is_copy_of = is_copy_of
         self._load_functions()
+        self.is_part_of_active_graph = False
         for i in self.definition['inputs']:
             self.inputmap[i] = tuple()
         for i in self.definition['outputs']:
@@ -124,7 +125,7 @@ class FlowModule(TheanoNode):
         self.outputmap[output_name].discard((target_uid, target_input))
 
     def node_function(self):
-        pass
+        self.get_gate('sur').gate_function(1 if self.is_part_of_active_graph else 0)
 
     def build(self, *inputs):
         if not self.__initialized and not self.is_copy_of:

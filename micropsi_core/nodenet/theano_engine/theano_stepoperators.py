@@ -80,6 +80,7 @@ class TheanoCalculateFlowmodules(Propagate):
         if not nodenet.flow_module_instances:
             return
         for uid, item in nodenet.flow_module_instances.items():
+            item.is_part_of_active_graph = False
             item.take_slot_activation_snapshot()
         flowio = {}
 
@@ -106,6 +107,8 @@ class TheanoCalculateFlowmodules(Propagate):
                     if skip:
                         continue
                     out = func(**inputs)
+                    for n in nodes:
+                        n.is_part_of_active_graph = True
                     for index, (node_uid, out_name) in enumerate(dangling_outputs):
                         if ('worldadapter', 'datatargets') in nodenet.get_node(node_uid).outputmap[out_name]:
                             nodenet.worldadapter_instance.add_datatarget_values(out[index])

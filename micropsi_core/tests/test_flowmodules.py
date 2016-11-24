@@ -680,6 +680,9 @@ def test_none_output_skips_following_graphs(runtime, test_nodenet, default_world
     assert np.all(worldadapter.datatarget_values == np.zeros(5))
     # but python did
     assert nodenet.user_prompt['msg'] == 'numpyfunc ran'
+    # and assert that you can get that info from the sur-gates:
+    assert bisect.get_gate('sur').activation == 0
+    assert py.get_gate('sur').activation == 1
 
     py.set_parameter('no_return_flag', 0)
     nodenet.step()

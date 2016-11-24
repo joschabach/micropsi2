@@ -1387,6 +1387,10 @@ def get_netapi_autocomplete_data(nodenet_uid, name=None):
     return True, runtime.get_netapi_autocomplete_data(nodenet_uid, name=None)
 
 
+@rpc("runtime_info")
+def runtime_info():
+    return True, runtime.runtime_info()
+
 # -----------------------------------------------------------------------------------------------
 
 def main(host=None, port=None):

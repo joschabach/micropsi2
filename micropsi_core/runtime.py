@@ -1658,6 +1658,13 @@ def reload_native_modules():
         return False, errors
 
 
+def runtime_info():
+    return {
+        "version": cfg['micropsi2']['version'],
+        "data_directory": cfg['micropsi2']['data_directory']
+    }
+
+
 def initialize(persistency_path=None, resource_path=None):
     global PERSISTENCY_PATH, RESOURCE_PATH, configs, logger, runner, initialized
 

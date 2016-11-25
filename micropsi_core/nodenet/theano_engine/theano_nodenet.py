@@ -1201,12 +1201,15 @@ class TheanoNodenet(Nodenet):
         newnative_modules = {}
         for type, data in native_modules.items():
             if data.get('engine', self.engine) == self.engine:
-                newnative_modules[type] = Nodetype(nodenet=self, **data)
-                self.native_module_definitions[type] = data
+                try:
+                    newnative_modules[type] = Nodetype(nodenet=self, **data)
+                    self.native_module_definitions[type] = data
+                except Exception as err:
+                    self.logger.error("Can not instantiate node type %s: %s: %s" % (type, err.__class__.__name__, str(err)))
 
         for partition in self.partitions.values():
             for uid, instance in partition.native_module_instances.items():
-                if instance.type not in native_modules:
+                if instance.type not in newnative_modules:
                     self.logger.warning("No more definition available for node type %s, deleting instance %s" %
                                     (instance.type, uid))
                     instances_to_delete[uid] = instance

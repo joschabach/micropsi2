@@ -71,6 +71,16 @@ def test_node_netapi_create_pipe_node(runtime, test_nodenet):
     # assert data['name'] == node.name
 
 
+def test_node_netapi_create_optional_arguments(runtime, test_nodenet):
+    # test the different optional arguments and defaults
+    netapi = runtime.nodenets[test_nodenet].netapi
+    pipe = netapi.create_node("Pipe")
+    assert pipe.parent_nodespace == netapi.get_nodespace(None).uid
+    # assert pipe.name == pipe.uid
+    pipe = netapi.create_node("Pipe", wait=3)
+    assert pipe.get_parameter('wait') == 3
+
+
 @pytest.mark.engine("dict_engine")
 def test_node_netapi_create_concept_node(runtime, test_nodenet):
     # test concept node generation

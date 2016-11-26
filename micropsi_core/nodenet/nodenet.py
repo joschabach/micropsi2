@@ -186,8 +186,8 @@ class Nodenet(metaclass=ABCMeta):
             if data.get('engine', self.engine) == self.engine:
                 try:
                     self.native_modules[type] = Nodetype(nodenet=self, **data)
-                except ImportError:
-                    pass
+                except Exception as err:
+                    self.logger.error("Can not instantiate node type %s: %s: %s" % (type, err.__class__.__name__, str(err)))
 
         self._modulators = {}
         if use_modulators:

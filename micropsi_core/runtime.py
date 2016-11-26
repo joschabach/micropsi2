@@ -1563,8 +1563,8 @@ def parse_recipe_or_operations_file(path, reload=False, category_overwrite=False
         # importlib.reload(sys.modules[pyname])
     except SyntaxError as e:
         return "%s in %s file %s, line %d" % (e.__class__.__name__, mode, relpath, e.lineno)
-    except ImportError as e:
-        return "%s in %s file %s: %s" % (e.__class__.__name__, mode, relpath, e.msg)
+    except (ImportError, SystemError) as e:
+        return "%s in %s file %s: %s" % (e.__class__.__name__, mode, relpath, str(e))
 
     for name, module in inspect.getmembers(recipes, inspect.ismodule):
         if hasattr(module, '__file__') and module.__file__.startswith(RESOURCE_PATH):
@@ -1628,9 +1628,9 @@ def reload_nodefunctions_file(path):
     except SyntaxError as e:
         relpath = os.path.relpath(path, start=RESOURCE_PATH)
         return "%s in nodefunction file %s, line %d" % (e.__class__.__name__, relpath, e.lineno)
-    except ImportError as e:
+    except (ImportError, SystemError) as e:
         relpath = os.path.relpath(path, start=RESOURCE_PATH)
-        return "%s in nodfunction file %s: %s" % (e.__class__.__name__, relpath, e.msg)
+        return "%s in nodfunction file %s: %s" % (e.__class__.__name__, relpath, str(e))
 
 
 def reload_native_modules():
@@ -1688,7 +1688,7 @@ def initialize(persistency_path=None, resource_path=None):
     PERSISTENCY_PATH = persistency_path
     RESOURCE_PATH = resource_path
 
-    sys.path.append(resource_path)
+    sys.path.insert(0, resource_path)
 
     configs = config.ConfigurationManager(cfg['paths']['server_settings_path'])
 

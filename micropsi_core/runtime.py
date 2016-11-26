@@ -1672,7 +1672,7 @@ def reload_native_modules():
 def runtime_info():
     return {
         "version": cfg['micropsi2']['version'],
-        "data_directory": cfg['micropsi2']['data_directory']
+        "data_directory": cfg['paths']['data_directory']
     }
 
 

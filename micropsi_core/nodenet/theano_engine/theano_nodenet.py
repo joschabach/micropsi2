@@ -934,6 +934,7 @@ class TheanoNodenet(Nodenet):
                 'implementation': path['implementation'],
                 'function': None,
                 'node': None,
+                'outputs': [],
                 'input_sources': [],
                 'dangling_outputs': [],
                 'list_outputs': []
@@ -962,8 +963,8 @@ class TheanoNodenet(Nodenet):
                             source_uid, source_name = node.inputmap[in_name]
                             for idx, p in enumerate(paths):
                                 if self.get_node(source_uid) in p['members']:
-                                    # record which path, and which index of its output-array satisfies this input
-                                    thunk['input_sources'].append(('path', idx, self.get_node(source_uid).outputs.index(source_name)))
+                                    # record which thunk, and which index of its output-array satisfies this input
+                                    thunk['input_sources'].append(('path', idx, thunks[idx]['outputs'].index((source_uid, source_name))))
                         buildargs.append(in_expr)
                     else:
                         # this input is satisfied within this path
@@ -1001,6 +1002,7 @@ class TheanoNodenet(Nodenet):
                 # go thorugh the nodes outputs, and see how they will be used:
                 for out_idx, out_name in enumerate(node.outputs):
                     dangling = ['external']
+                    thunk['outputs'].append((node.uid, out_name))
                     if node.outputmap[out_name]:
                         # if this output is used, we have to see where every connection goes
                         # iterate through every connection, and note if it's used path-internally,

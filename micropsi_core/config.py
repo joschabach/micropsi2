@@ -58,7 +58,9 @@ class ConfigurationManager(object):
         self.key = absolute_path
 
         # set up persistence
-        os.makedirs(os.path.dirname(config_path), exist_ok=True)
+        dirpath = os.path.dirname(config_path)
+        if not os.path.isdir(dirpath):
+            os.makedirs(dirpath, exist_ok=True)
 
         self.config_file_name = config_path
         self.auto_save = auto_save

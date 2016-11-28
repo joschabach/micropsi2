@@ -37,7 +37,7 @@ config['micropsi2']['apptitle'] = "MicroPsi"
 
 
 data_path = os.path.expanduser(config['micropsi2']['data_directory'])
-data_path = os.path.abspath(config['micropsi2']['data_directory'])
+data_path = os.path.abspath(data_path)
 
 if not os.access(data_path, os.W_OK):
     try:

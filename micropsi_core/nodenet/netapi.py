@@ -157,7 +157,7 @@ class NetAPI(object):
         """
         self.__nodenet.delete_nodespace(nodespace.uid)
 
-    def create_node(self, nodetype, nodespace, name=None):
+    def create_node(self, nodetype, nodespace=None, name=None, **parameters):
         """
         Creates a new node or node space of the given type, with the given name and in the given nodespace.
         Returns the newly created entity.
@@ -166,7 +166,7 @@ class NetAPI(object):
             name = ""   # TODO: empty names crash the client right now, but really shouldn't
         pos = [100, 100, 0]  # default so native modules will not be bothered with positions
 
-        uid = self.__nodenet.create_node(nodetype, nodespace, pos, name)
+        uid = self.__nodenet.create_node(nodetype, nodespace, pos, name, parameters=parameters)
         entity = self.__nodenet.get_node(uid)
         return entity
 

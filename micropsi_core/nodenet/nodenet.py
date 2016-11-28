@@ -156,6 +156,7 @@ class Nodenet(metaclass=ABCMeta):
         if self._worldadapter_instance:
             self._worldadapter_instance.nodenet = self
         self.is_active = False
+        self.frequency = 0.0
         self.use_modulators = use_modulators
 
         self._version = version or NODENET_VERSION  # used to check compatibility of the node net data
@@ -185,8 +186,8 @@ class Nodenet(metaclass=ABCMeta):
             if data.get('engine', self.engine) == self.engine:
                 try:
                     self.native_modules[type] = Nodetype(nodenet=self, **data)
-                except ImportError:
-                    pass
+                except Exception as err:
+                    self.logger.error("Can not instantiate node type %s: %s: %s" % (type, err.__class__.__name__, str(err)))
 
         self._modulators = {}
         if use_modulators:

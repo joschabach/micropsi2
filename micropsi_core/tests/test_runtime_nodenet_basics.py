@@ -444,3 +444,37 @@ def test_nodespace_properties(runtime, test_nodenet):
     assert runtime.get_nodespace_properties(test_nodenet, rootns.uid) == data
     properties = runtime.get_nodespace_properties(test_nodenet)
     assert properties[rootns.uid] == data
+
+
+def test_native_module_reload_changes_gates(runtime, test_nodenet, resourcepath):
+    import os
+    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
+    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    with open(nodetype_file, 'w') as fp:
+        fp.write("""{"Testnode": {
+            "name": "Testnode",
+            "slottypes": ["gen", "foo", "bar"],
+            "gatetypes": ["gen", "foo", "bar"],
+            "nodefunction_name": "testnodefunc"
+            }}""")
+    with open(nodefunc_file, 'w') as fp:
+        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+
+    assert runtime.reload_native_modules()
+    res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test", parameters={"threshold": "", "protocol_mode": "most_active_one"})
+    res, neuron_uid = runtime.add_node(test_nodenet, 'Neuron', [10, 10])
+    runtime.add_link(test_nodenet, neuron_uid, 'gen', uid, 'gen')
+    runtime.add_link(test_nodenet, uid, 'gen', neuron_uid, 'gen')
+    with open(nodetype_file, 'w') as fp:
+        fp.write("""{"Testnode": {
+            "name": "Testnode",
+            "slottypes": ["foo", "bar"],
+            "gatetypes": ["foo", "bar"],
+            "nodefunction_name": "testnodefunc"
+            }}""")
+    assert runtime.reload_native_modules()
+    nativemodule = runtime.nodenets[test_nodenet].get_node(uid)
+    assert nativemodule.get_gate_types() == ["foo", "bar"]
+    neuron = runtime.nodenets[test_nodenet].get_node(neuron_uid)
+    assert neuron.get_gate('gen').get_links() == []
+    assert neuron.get_slot('gen').get_links() == []

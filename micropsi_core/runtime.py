@@ -304,6 +304,15 @@ def get_nodenet(nodenet_uid):
     return nodenets[nodenet_uid]
 
 
+def get_nodenet_uid_by_name(name):
+    """ Returns the uid of the nodenet with the given name or None if no nodenet was found"""
+    for uid in nodenet_data:
+        if nodenet_data[uid]['name'] == name:
+            return uid
+    else:
+        return None
+
+
 def load_nodenet(nodenet_uid):
     """ Load the nodenet with the given uid into memeory
         Arguments:

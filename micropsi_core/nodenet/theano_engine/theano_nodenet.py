@@ -1002,7 +1002,6 @@ class TheanoNodenet(Nodenet):
                 # go thorugh the nodes outputs, and see how they will be used:
                 for out_idx, out_name in enumerate(node.outputs):
                     dangling = ['external']
-                    thunk['outputs'].append((node.uid, out_name))
                     if node.outputmap[out_name]:
                         # if this output is used, we have to see where every connection goes
                         # iterate through every connection, and note if it's used path-internally,
@@ -1020,6 +1019,7 @@ class TheanoNodenet(Nodenet):
                                 dangling.append("external")
                     # now, handle internally or externally dangling outputs if there are any:
                     if set(dangling) != {False}:
+                        thunk['outputs'].append((node.uid, out_name))
                         added = False
                         if "external" in dangling:
                             # this output will be a final one:

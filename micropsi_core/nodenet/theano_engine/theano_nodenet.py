@@ -1041,19 +1041,19 @@ class TheanoNodenet(Nodenet):
                     if set(dangling) != {False}:
                         thunk['outputs'].append((node.uid, out_name))
                         added = False
+                        if outputlengths[out_idx] > 1:
+                            # if this is output should produce a list, note this, for later de-flattenation
+                            # and append the flattened output to the output-collection
+                            thunk['list_outputs'].append((real_output_index, outputlengths[out_idx]))
+                            added = True
+                            for i in range(outputlengths[out_idx]):
+                                outputs.append(flattened_outex[out_idx + outoffset + i])
+                            outoffset += outputlengths[out_idx] - 1
                         if "external" in dangling:
                             # this output will be a final one:
                             dangling_outputs.append((node.uid, out_name))
                             thunk['dangling_outputs'].append(real_output_index)
                         real_output_index += outputlengths[out_idx]
-                        if outputlengths[out_idx] > 1:
-                            # if this is output should produce a list, note this, for later de-flattenation
-                            # and append the flattened output to the output-collection
-                            thunk['list_outputs'].append((out_idx, outputlengths[out_idx]))
-                            added = True
-                            for i in range(outputlengths[out_idx]):
-                                outputs.append(flattened_outex[out_idx + outoffset + i])
-                            outoffset += outputlengths[out_idx] - 1
                         if not added:
                             outputs.append(flattened_outex[out_idx + outoffset])
 

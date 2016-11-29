@@ -274,3 +274,8 @@ def test_get_netapi_autocomplete(runtime, test_nodenet):
     data = runtime.get_netapi_autocomplete_data(test_nodenet, name='foonode')
     assert list(data['types'].keys()) == ['foonode']
     assert list(data['autocomplete_options'].keys()) == ['Node']
+
+
+def test_get_nodenet_by_name(runtime, test_nodenet):
+    assert runtime.get_nodenet_uid_by_name("Foobar") is None
+    assert runtime.get_nodenet_uid_by_name("Testnet") == test_nodenet

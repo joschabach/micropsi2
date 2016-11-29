@@ -1398,6 +1398,9 @@ def unflow(nodenet_uid, source_uid, source_output, target_uid, target_input):
     """ Removes the link between the given flow_modules """
     return runtime.unflow(nodenet_uid, source_uid, source_output, target_uid, target_input)
 
+@rpc("runtime_info")
+def runtime_info():
+    return True, runtime.runtime_info()
 
 # -----------------------------------------------------------------------------------------------
 

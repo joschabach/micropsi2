@@ -934,6 +934,7 @@ class TheanoNodenet(Nodenet):
                 'implementation': path['implementation'],
                 'function': None,
                 'node': None,
+                'outputs': [],
                 'input_sources': [],
                 'dangling_outputs': [],
                 'list_outputs': []
@@ -942,7 +943,7 @@ class TheanoNodenet(Nodenet):
             outexpressions = {}
             inputs = []
             outputs = []
-            num_outputs = 0
+            real_output_index = 0  # counting outputs with unpacked list-outputs
 
             for node in path['members']:
                 buildargs = []
@@ -962,8 +963,8 @@ class TheanoNodenet(Nodenet):
                             source_uid, source_name = node.inputmap[in_name]
                             for idx, p in enumerate(paths):
                                 if self.get_node(source_uid) in p['members']:
-                                    # record which path, and which index of its output-array satisfies this input
-                                    thunk['input_sources'].append(('path', idx, self.get_node(source_uid).outputs.index(source_name)))
+                                    # record which thunk, and which index of its output-array satisfies this input
+                                    thunk['input_sources'].append(('path', idx, thunks[idx]['outputs'].index((source_uid, source_name))))
                         buildargs.append(in_expr)
                     else:
                         # this input is satisfied within this path
@@ -997,7 +998,6 @@ class TheanoNodenet(Nodenet):
                         outputlengths.append(1)
 
                 outoffset = 0
-                node_outputs = []
 
                 # go thorugh the nodes outputs, and see how they will be used:
                 for out_idx, out_name in enumerate(node.outputs):
@@ -1019,23 +1019,23 @@ class TheanoNodenet(Nodenet):
                                 dangling.append("external")
                     # now, handle internally or externally dangling outputs if there are any:
                     if set(dangling) != {False}:
+                        thunk['outputs'].append((node.uid, out_name))
                         added = False
+                        if "external" in dangling:
+                            # this output will be a final one:
+                            dangling_outputs.append((node.uid, out_name))
+                            thunk['dangling_outputs'].append(real_output_index)
+                        real_output_index += outputlengths[out_idx]
                         if outputlengths[out_idx] > 1:
                             # if this is output should produce a list, note this, for later de-flattenation
                             # and append the flattened output to the output-collection
                             thunk['list_outputs'].append((out_idx, outputlengths[out_idx]))
                             added = True
                             for i in range(outputlengths[out_idx]):
-                                node_outputs.append(flattened_outex[out_idx + outoffset + i])
+                                outputs.append(flattened_outex[out_idx + outoffset + i])
                             outoffset += outputlengths[out_idx] - 1
                         if not added:
-                            node_outputs.append(flattened_outex[out_idx + outoffset])
-                        if "external" in dangling:
-                            # this output will be a final one:
-                            dangling_outputs.append((node.uid, out_name))
-                            thunk['dangling_outputs'].append(num_outputs + out_idx)
-                outputs.extend(node_outputs)
-                num_outputs += len(node_outputs)
+                            outputs.append(flattened_outex[out_idx + outoffset])
 
             # now, set the function of this thunk. Either compile a theano function
             # or assign the python function.
@@ -1608,12 +1608,15 @@ class TheanoNodenet(Nodenet):
         newnative_modules = {}
         for type, data in native_modules.items():
             if data.get('engine', self.engine) == self.engine:
-                newnative_modules[type] = Nodetype(nodenet=self, **data)
-                self.native_module_definitions[type] = data
+                try:
+                    newnative_modules[type] = Nodetype(nodenet=self, **data)
+                    self.native_module_definitions[type] = data
+                except Exception as err:
+                    self.logger.error("Can not instantiate node type %s: %s: %s" % (type, err.__class__.__name__, str(err)))
 
         for partition in self.partitions.values():
             for uid, instance in partition.native_module_instances.items():
-                if instance.type not in native_modules:
+                if instance.type not in newnative_modules:
                     self.logger.warning("No more definition available for node type %s, deleting instance %s" %
                                     (instance.type, uid))
                     instances_to_delete[uid] = instance

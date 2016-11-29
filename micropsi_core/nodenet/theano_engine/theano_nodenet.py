@@ -14,6 +14,7 @@ import numpy as np
 import scipy
 import networkx as nx
 
+from micropsi_core.tools import OrderedSet
 from micropsi_core.nodenet import monitor
 from micropsi_core.nodenet import recorder
 from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION
@@ -886,7 +887,7 @@ class TheanoNodenet(Nodenet):
                 if node.is_output_node():
                     endpoints.append(uid)
 
-        paths = []
+        graphs = []
         for enduid in endpoints:
             ancestors = nx.ancestors(self.flowgraph, enduid)
             if ancestors:
@@ -897,14 +898,41 @@ class TheanoNodenet(Nodenet):
                         break
                     path.insert(0, uid)
                 if path:
-                    paths.append(path)
-        for p in paths:
-            node_uids = [uid for uid in p if uid != 'datasources' and uid != 'datatargets']
+                    graphs.append(path)
+
+        flowfuncs = {}
+        floworder = OrderedSet()
+        for idx, graph in enumerate(graphs):
+            # split graph in parts:
+            node_uids = [uid for uid in graph if uid != 'datasources' and uid != 'datatargets']
             nodes = [self.get_node(uid) for uid in node_uids]
-            func, dangling_inputs, dangling_outputs = self.compile_flow_subgraph(node_uids)
-            if func:
-                self.flowfuncs.append((func, nodes, dangling_inputs, dangling_outputs))
+            paths = self.split_flow_graph_into_implementation_paths(nodes)
+            for p in paths:
+                floworder.add(p['hash'])
+                if p['hash'] not in flowfuncs:
+                    func, dang_in, dang_out = self.compile_flow_subgraph([n.uid for n in p['members']])
+                    if func:
+                        flowfuncs[p['hash']] = (func, p['members'], set([nodes[-1]]), dang_in, dang_out)
+                else:
+                    flowfuncs[p['hash']][2].add(nodes[-1])
+        for funcid in floworder:
+            self.flowfuncs.append(flowfuncs[funcid])
+
         self.logger.debug("Compiled %d flowfunctions" % len(self.flowfuncs))
+
+    def split_flow_graph_into_implementation_paths(self, nodes):
+        paths = []
+        for node in nodes:
+            if node.implementation == 'python':
+                paths.append({'implementation': 'python', 'members': [node], 'hash': node.uid})
+            else:
+                if len(paths) == 0 or paths[-1]['implementation'] == 'python':
+                    paths.append({'implementation': 'theano', 'members': [node], 'hash': node.uid})
+                else:
+                    paths[-1]['members'].append(node)
+                    paths[-1]['hash'] += node.uid
+
+        return paths
 
     def compile_flow_subgraph(self, node_uids, use_different_thetas=False):
         """ Compile and return one callable for the given flow_module_uids.
@@ -914,15 +942,7 @@ class TheanoNodenet(Nodenet):
         subgraph = [self.get_node(uid) for uid in self.flow_toposort if uid in node_uids]
 
         # split the nodes into symbolic/non-symbolic paths
-        paths = []
-        for node in subgraph:
-            if node.implementation == 'python':
-                paths.append({'implementation': 'python', 'members': [node]})
-            else:
-                if len(paths) == 0 or paths[-1]['implementation'] == 'python':
-                    paths.append({'implementation': 'theano', 'members': [node]})
-                else:
-                    paths[-1]['members'].append(node)
+        paths = self.split_flow_graph_into_implementation_paths(subgraph)
 
         dangling_inputs = []
         dangling_outputs = []

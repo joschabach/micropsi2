@@ -232,7 +232,7 @@ def error_page(error):
             "status": "error",
             "data": "Function not found"
         })
-    return template("error.tpl", error=error, msg="Page not found.", img="/static/img/brazil.gif")
+    return template("error.tpl", error=error, msg="Page not found.")
 
 
 @micropsi_app.error(405)
@@ -243,12 +243,12 @@ def error_page_405(error):
             "status": "error",
             "data": "Method not allowed"
         })
-    return template("error.tpl", error=error, msg="Method not allowed.", img="/static/img/strangelove.gif")
+    return template("error.tpl", error=error, msg="Method not allowed.")
 
 
 @micropsi_app.error(500)
 def error_page_500(error):
-    return template("error.tpl", error=error, msg="Internal server error.", img="/static/img/brainstorm.gif")
+    return template("error.tpl", error=error, msg="Internal server error.")
 
 
 @micropsi_app.route("/about")

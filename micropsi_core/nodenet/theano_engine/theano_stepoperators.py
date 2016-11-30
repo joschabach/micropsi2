@@ -103,6 +103,8 @@ class TheanoCalculateFlowmodules(Propagate):
                     else:
                         inputs[in_name] = flowio[source_uid][source_name]
                 if skip:
+                    for node_uid, out_name in enumerate(dangling_outputs):
+                        flowio[node_uid, out_name] = None
                     continue
                 out = func(**inputs)
                 for n in nodes:

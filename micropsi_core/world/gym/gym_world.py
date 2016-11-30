@@ -112,16 +112,19 @@ class OAIGymAdapter(ArrayWorldAdapter):
                 # for discrete action spaces, each action is represented by one datatarget, and
                 # considered active if it's nonzero. the agent needs to make sure only one is active.
                 # OAI expects an integer < n, encoding which of the n available actions to take. so:
-                action = np.where(action_values)
+                action = np.where(action_values)[0]
                 if len(action)>1:
                     raise Exception('Cannot do multiple actions at the same time in a discrete, 1D action space.')
-                action = action[0].item()
+                elif len(action) == 0:
+                    action = 0
+                else:
+                    action = action[0].item()
             else:
                 action = action_values
 
             obs, r, terminal, info = self.world.env.step(action)
 
-        # self.world.env.render()
+        self.world.env.render()
 
         if self.world.n_discrete_states:
             # for discrete state spaces, OAI returns its observation as a single integer < n,

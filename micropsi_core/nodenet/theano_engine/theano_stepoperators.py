@@ -110,7 +110,6 @@ class TheanoCalculateFlowmodules(Propagate):
                 for index, (node_uid, out_name) in enumerate(dangling_outputs):
                     if ('worldadapter', 'datatargets') in nodenet.get_node(node_uid).outputmap[out_name]:
                         nodenet.worldadapter_instance.add_datatarget_values(out[index])
-                    else:
-                        if node_uid not in flowio:
-                            flowio[node_uid] = {}
-                        flowio[node_uid][out_name] = out[index] if out is not None else None
+                    if node_uid not in flowio:
+                        flowio[node_uid] = {}
+                    flowio[node_uid][out_name] = out[index] if out is not None else None

@@ -966,7 +966,9 @@ class TheanoNodenet(Nodenet):
             outexpressions = {}
             inputs = []
             outputs = []
-            real_output_index = 0  # counting outputs with unpacked list-outputs
+
+            # index for outputs of this thunk, considering unpacked list outputs
+            thunk_flattened_output_index = 0
 
             for node in path['members']:
                 buildargs = []
@@ -1020,7 +1022,8 @@ class TheanoNodenet(Nodenet):
                         flattened_outex.append(ex)
                         outputlengths.append(1)
 
-                outoffset = 0
+                # offset for indexing the flattened_outexpression by output_index
+                node_flattened_output_offset = 0
 
                 # go thorugh the nodes outputs, and see how they will be used:
                 for out_idx, out_name in enumerate(node.outputs):
@@ -1043,22 +1046,20 @@ class TheanoNodenet(Nodenet):
                     # now, handle internally or externally dangling outputs if there are any:
                     if set(dangling) != {False}:
                         thunk['outputs'].append((node.uid, out_name))
-                        added = False
                         if outputlengths[out_idx] > 1:
                             # if this is output should produce a list, note this, for later de-flattenation
                             # and append the flattened output to the output-collection
-                            thunk['list_outputs'].append((real_output_index, outputlengths[out_idx]))
-                            added = True
+                            thunk['list_outputs'].append((thunk_flattened_output_index, outputlengths[out_idx]))
                             for i in range(outputlengths[out_idx]):
-                                outputs.append(flattened_outex[out_idx + outoffset + i])
-                            outoffset += outputlengths[out_idx] - 1
+                                outputs.append(flattened_outex[out_idx + node_flattened_output_offset + i])
+                            node_flattened_output_offset += outputlengths[out_idx] - 1
+                        else:
+                            outputs.append(flattened_outex[out_idx + node_flattened_output_offset])
                         if "external" in dangling:
                             # this output will be a final one:
                             dangling_outputs.append((node.uid, out_name))
-                            thunk['dangling_outputs'].append(real_output_index)
-                        real_output_index += outputlengths[out_idx]
-                        if not added:
-                            outputs.append(flattened_outex[out_idx + outoffset])
+                            thunk['dangling_outputs'].append(thunk_flattened_output_index)
+                        thunk_flattened_output_index += outputlengths[out_idx]
 
             # now, set the function of this thunk. Either compile a theano function
             # or assign the python function.

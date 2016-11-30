@@ -30,6 +30,15 @@ def get_available_worlds(owner=None):
         return micropsi_core.runtime.world_data
 
 
+def get_world_uid_by_name(name):
+    """ Returns the uid of the world with the given name, or None if no matching world was found """
+    for uid in micropsi_core.runtime.world_data:
+        if micropsi_core.runtime.world_data[uid]['name'] == name:
+            return uid
+    else:
+        return None
+
+
 def get_world_properties(world_uid):
     """ Returns some information about the current world for the client:
     * Available worldadapters
@@ -100,9 +109,10 @@ def new_world(world_name, world_type, owner="", config={}):
     """Creates a new world  and registers it.
 
     Arguments:
-        world_name: the name of the world
-        world_type: the type of the world
-        owner (optional): the creator of this world
+        world_name (string): the name of the world
+        world_type (string): the type of the world
+        owner (string, optional): the creator of this world
+        config (dict, optional): configuration for the new world instance
 
     Returns
         world_uid if successful,

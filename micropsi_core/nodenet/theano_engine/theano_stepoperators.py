@@ -90,9 +90,9 @@ class TheanoCalculateFlowmodules(Propagate):
                 'datatargets': None
             }
 
-        for func, nodes, dangling_inputs, dangling_outputs in nodenet.flowfuncs:
-            endnode = nodes[-1]
-            if endnode.is_requested():
+        for func, nodes, endnodes, dangling_inputs, dangling_outputs in nodenet.flowfuncs:
+            if any([node.is_requested() for node in endnodes]):
+
                 skip = False
                 inputs = {}
                 for node_uid, in_name in dangling_inputs:

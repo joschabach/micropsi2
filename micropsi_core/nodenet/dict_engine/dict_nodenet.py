@@ -441,13 +441,16 @@ class DictNodenet(Nodenet):
         for link in links:
             if link['source_node_uid'] in invalid_nodes or link['target_node_uid'] in invalid_nodes:
                 continue
-            self.create_link(
-                uidmap[link['source_node_uid']],
-                link['source_gate_name'],
-                uidmap[link['target_node_uid']],
-                link['target_slot_name'],
-                link['weight']
-            )
+            try:
+                self.create_link(
+                    uidmap[link['source_node_uid']],
+                    link['source_gate_name'],
+                    uidmap[link['target_node_uid']],
+                    link['target_slot_name'],
+                    link['weight']
+                )
+            except ValueError:
+                self.logger.warning("Invalid link data")
 
         for monitorid in nodenet_data.get('monitors', {}):
             data = nodenet_data['monitors'][monitorid]

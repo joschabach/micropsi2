@@ -599,7 +599,10 @@ class TheanoNodenet(Nodenet):
             non = noe = 0
             for uid in nodenet_data.get('nodes', {}):
                 non += 1
-                noe += get_elements_per_type(get_numerical_node_type(nodenet_data['nodes'][uid]['type'], self.native_modules), self.native_modules)
+                try:
+                    noe += get_elements_per_type(get_numerical_node_type(nodenet_data['nodes'][uid]['type'], self.native_modules), self.native_modules)
+                except ValueError:
+                    pass  # Unknown nodetype
             if non > self.rootpartition.NoN or noe > self.rootpartition.NoE:
                 self.rootpartition.announce_nodes(non, math.ceil(noe / non))
 
@@ -1190,7 +1193,6 @@ class TheanoNodenet(Nodenet):
         return self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, 0)
 
     def reload_native_modules(self, native_modules):
-
 
         # check which instances need to be recreated because of gate/slot changes and keep their .data
         instances_to_recreate = {}

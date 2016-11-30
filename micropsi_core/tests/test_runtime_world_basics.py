@@ -215,3 +215,8 @@ def test_set_world_properties(runtime, default_nodenet):
     assert runtime.worlds[world_uid].data['config']['42'] == '5'
     assert default_nodenet in runtime.worlds[world_uid].agents
     assert nodenet.worldadapter_instance is not None and nodenet.worldadapter_instance is not old_wa
+
+
+def test_get_world_uid_by_name(runtime, test_world):
+    assert runtime.get_world_uid_by_name("World of Pain") == test_world
+    assert runtime.get_world_uid_by_name("Netherworld") is None

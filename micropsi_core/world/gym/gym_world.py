@@ -117,6 +117,7 @@ class OAIGymAdapter(ArrayWorldAdapter):
                     raise Exception('Cannot do multiple actions at the same time in a discrete, 1D action space.')
                 elif len(action) == 0:
                     action = 0
+                    print('No action given - choosing first action')
                 else:
                     action = action[0].item()
             else:

@@ -13,17 +13,20 @@ import warnings
 import configparser
 from appdirs import AppDirs
 
-dirinfo = AppDirs("micropsi-runtime", "micropsi-industries")
+dirinfo = AppDirs("MicroPsi Runtime")
 
 configini = os.path.join(dirinfo.user_data_dir, "config.ini")
+using_default = False
+
+if not os.path.isdir(dirinfo.user_data_dir):
+    os.makedirs(dirinfo.user_data_dir)
 
 if not os.path.isfile(configini):
-    from shutil import copyfile
-    print("Creating configuration file in ", configini)
-    if not os.path.isdir(dirinfo.user_data_dir):
-        os.makedirs(dirinfo.user_data_dir)
-    defaultconfigini = os.path.join(os.path.dirname(os.path.realpath(__file__)), "config.default.ini")
-    copyfile(defaultconfigini, configini)
+    configini = os.path.join(os.path.dirname(os.path.realpath(__file__)), "config.default.ini")
+    using_default = True
+    print("Using default configuration")
+else:
+    print("Using custom configuration")
 try:
     config = configparser.ConfigParser()
     with open(configini) as fp:
@@ -35,9 +38,11 @@ except OSError:
 config['micropsi2']['version'] = "0.9-alpha7-dev"
 config['micropsi2']['apptitle'] = "MicroPsi"
 
-
-data_path = os.path.expanduser(config['micropsi2']['data_directory'])
-data_path = os.path.abspath(data_path)
+if using_default:
+    data_path = os.path.join(os.path.expanduser('~'), config['micropsi2']['data_directory'])
+else:
+    data_path = os.path.expanduser(config['micropsi2']['data_directory'])
+    data_path = os.path.abspath(data_path)
 
 if not os.access(data_path, os.W_OK):
     try:

@@ -98,7 +98,7 @@ class TheanoCalculateFlowmodules(Propagate):
                 for node_uid, in_name in dangling_inputs:
                     source_uid, source_name = nodenet.get_node(node_uid).inputmap[in_name]
                     if flowio[source_uid][source_name] is None:
-                        netapi.logger.debug("Skipping graph bc. empty inputs")
+                        # netapi.logger.debug("Skipping graph bc. empty inputs")
                         skip = True
                         break
                     else:

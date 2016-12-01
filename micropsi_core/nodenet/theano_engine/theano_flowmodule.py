@@ -22,6 +22,7 @@ Flowmodules are a special kind of native modules, with the following properties:
 """
 
 from micropsi_core.nodenet.theano_engine.theano_node import TheanoNode
+from theano.tensor.var import TensorVariable
 
 
 class FlowModule(TheanoNode):
@@ -156,6 +157,18 @@ class FlowModule(TheanoNode):
 
         if self.implementation == 'theano':
             outexpression = self._buildfunction(*inputs, netapi=self._nodenet.netapi, node=self, parameters=self.clone_parameters())
+
+            # add names to the theano expressions returned by the build function.
+            # names are added if we received a single expression OR exactly one per documented output,
+            # but not for lists of expressions (which may have arbitrary many items).
+            name_outexs = outexpression
+            if len(self.outputs) == 1:
+                name_outexs = [outexpression]
+            for out_idx, subexpression in enumerate(name_outexs):
+                if isinstance(subexpression, TensorVariable):
+                    existing_name = "({})".format(subexpression.name) if subexpression.name is not None else ""
+                    subexpression.name = "{}_{}{}".format(self.uid, self.outputs[out_idx], existing_name)
+
         elif self.implementation == 'python':
             outexpression = self._flowfunction
 

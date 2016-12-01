@@ -960,7 +960,8 @@ class TheanoNodenet(Nodenet):
                 'outputs': [],
                 'input_sources': [],
                 'dangling_outputs': [],
-                'list_outputs': []
+                'list_outputs': [],
+                'members': path['members']
             }
             member_uids = [n.uid for n in path['members']]
             outexpressions = {}
@@ -976,7 +977,7 @@ class TheanoNodenet(Nodenet):
                 for in_idx, in_name in enumerate(node.inputs):
                     if not node.inputmap[in_name] or node.inputmap[in_name][0] not in member_uids:
                         # this input is not satisfied from within this path
-                        in_expr = create_tensor(node.definition['inputdims'][in_idx], self.theanofloatX, name=in_name)
+                        in_expr = create_tensor(node.definition['inputdims'][in_idx], self.theanofloatX, name="%s_%s" % (node.uid, in_name))
                         inputs.append(in_expr)
                         if not node.inputmap[in_name] or node.inputmap[in_name][0] not in node_uids:
                             # it's not even satisfied by another path within the subgraph,
@@ -1075,7 +1076,7 @@ class TheanoNodenet(Nodenet):
 
             else:
                 sharedvars = self.collect_thetas(node_uids)
-                dummies = [create_tensor(var.ndim, self.theanofloatX, name=var.name) for var in sharedvars]
+                dummies = [create_tensor(var.ndim, self.theanofloatX, name="Theta_%s" % var.name) for var in sharedvars]
                 if thunk['implementation'] == 'theano':
                     givens = list(zip(sharedvars, dummies))
                     thunk['function'] = theano.function(inputs=inputs + dummies, outputs=outputs, givens=givens)

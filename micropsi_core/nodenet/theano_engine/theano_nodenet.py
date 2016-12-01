@@ -913,7 +913,7 @@ class TheanoNodenet(Nodenet):
             for p in paths:
                 floworder.add(p['hash'])
                 if p['hash'] not in flowfuncs:
-                    func, dang_in, dang_out = self.compile_flow_subgraph([n.uid for n in p['members']])
+                    func, dang_in, dang_out = self.compile_flow_subgraph([n.uid for n in p['members']], verbose_args=True)
                     if func:
                         flowfuncs[p['hash']] = (func, p['members'], set([nodes[-1]]), dang_in, dang_out)
                 else:
@@ -937,7 +937,7 @@ class TheanoNodenet(Nodenet):
 
         return paths
 
-    def compile_flow_subgraph(self, node_uids, use_different_thetas=False):
+    def compile_flow_subgraph(self, node_uids, use_different_thetas=False, verbose_args=False):
         """ Compile and return one callable for the given flow_module_uids.
         If use_different_thetas is True, the callable expects an argument names "thetas".
         Thetas are expected to be sorted in the same way collect_thetas() would return them.
@@ -981,7 +981,10 @@ class TheanoNodenet(Nodenet):
                         if not node.inputmap[in_name] or node.inputmap[in_name][0] not in node_uids:
                             # it's not even satisfied by another path within the subgraph,
                             # and needs to be provided as input to the emerging callable
-                            thunk['input_sources'].append(('kwargs', -1, in_name))
+                            if verbose_args:
+                                thunk['input_sources'].append(('kwargs', -1, "%s:%s" % (node.uid, in_name)))
+                            else:
+                                thunk['input_sources'].append(('kwargs', -1, in_name))
                             dangling_inputs.append((node.uid, in_name))
                         else:
                             # this input will be satisfied by another path within the subgraph

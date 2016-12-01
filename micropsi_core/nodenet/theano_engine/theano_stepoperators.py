@@ -102,7 +102,7 @@ class TheanoCalculateFlowmodules(Propagate):
                         skip = True
                         break
                     else:
-                        inputs[in_name] = flowio[source_uid][source_name]
+                        inputs["%s:%s" % (node_uid, in_name)] = flowio[source_uid][source_name]
                 if skip:
                     for node_uid, out_name in dangling_outputs:
                         if node_uid not in flowio:

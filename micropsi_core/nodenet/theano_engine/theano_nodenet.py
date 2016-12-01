@@ -216,7 +216,7 @@ class TheanoNodenet(Nodenet):
         self.thetas = {}
 
         self.flowgraph = nx.MultiDiGraph()
-        self.flowfuncs = []
+        self.flowfunctions = []
         self.flowgraph.add_node("datasources")
         self.flowgraph.add_node("datatargets")
 
@@ -873,7 +873,7 @@ class TheanoNodenet(Nodenet):
 
     def update_flow_graphs(self, node_uids=None):
 
-        self.flowfuncs = []
+        self.flowfunctions = []
         startpoints = []
         endpoints = []
         pythonnodes = set()
@@ -903,7 +903,7 @@ class TheanoNodenet(Nodenet):
                 if path:
                     graphs.append(path)
 
-        flowfuncs = {}
+        flowfunctions = {}
         floworder = OrderedSet()
         for idx, graph in enumerate(graphs):
             # split graph in parts:
@@ -912,16 +912,16 @@ class TheanoNodenet(Nodenet):
             paths = self.split_flow_graph_into_implementation_paths(nodes)
             for p in paths:
                 floworder.add(p['hash'])
-                if p['hash'] not in flowfuncs:
+                if p['hash'] not in flowfunctions:
                     func, dang_in, dang_out = self.compile_flow_subgraph([n.uid for n in p['members']], use_unique_input_names=True)
                     if func:
-                        flowfuncs[p['hash']] = (func, p['members'], set([nodes[-1]]), dang_in, dang_out)
+                        flowfunctions[p['hash']] = (func, p['members'], set([nodes[-1]]), dang_in, dang_out)
                 else:
-                    flowfuncs[p['hash']][2].add(nodes[-1])
+                    flowfunctions[p['hash']][2].add(nodes[-1])
         for funcid in floworder:
-            self.flowfuncs.append(flowfuncs[funcid])
+            self.flowfunctions.append(flowfunctions[funcid])
 
-        self.logger.debug("Compiled %d flowfunctions" % len(self.flowfuncs))
+        self.logger.debug("Compiled %d flowfunctions" % len(self.flowfunctions))
 
     def split_flow_graph_into_implementation_paths(self, nodes):
         paths = []
@@ -960,7 +960,8 @@ class TheanoNodenet(Nodenet):
                 'outputs': [],
                 'input_sources': [],
                 'dangling_outputs': [],
-                'list_outputs': []
+                'list_outputs': [],
+                'members': path['members']
             }
             member_uids = [n.uid for n in path['members']]
             outexpressions = {}
@@ -976,7 +977,7 @@ class TheanoNodenet(Nodenet):
                 for in_idx, in_name in enumerate(node.inputs):
                     if not node.inputmap[in_name] or node.inputmap[in_name][0] not in member_uids:
                         # this input is not satisfied from within this path
-                        in_expr = create_tensor(node.definition['inputdims'][in_idx], self.theanofloatX, name=in_name)
+                        in_expr = create_tensor(node.definition['inputdims'][in_idx], self.theanofloatX, name="%s_%s" % (node.uid, in_name))
                         inputs.append(in_expr)
                         if not node.inputmap[in_name] or node.inputmap[in_name][0] not in node_uids:
                             # it's not even satisfied by another path within the subgraph,
@@ -1075,7 +1076,7 @@ class TheanoNodenet(Nodenet):
 
             else:
                 sharedvars = self.collect_thetas(node_uids)
-                dummies = [create_tensor(var.ndim, self.theanofloatX, name=var.name) for var in sharedvars]
+                dummies = [create_tensor(var.ndim, self.theanofloatX, name="Theta_%s" % var.name) for var in sharedvars]
                 if thunk['implementation'] == 'theano':
                     givens = list(zip(sharedvars, dummies))
                     thunk['function'] = theano.function(inputs=inputs + dummies, outputs=outputs, givens=givens)

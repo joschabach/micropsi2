@@ -913,7 +913,7 @@ class TheanoNodenet(Nodenet):
             for p in paths:
                 floworder.add(p['hash'])
                 if p['hash'] not in flowfuncs:
-                    func, dang_in, dang_out = self.compile_flow_subgraph([n.uid for n in p['members']], verbose_args=True)
+                    func, dang_in, dang_out = self.compile_flow_subgraph([n.uid for n in p['members']], use_unique_input_names=True)
                     if func:
                         flowfuncs[p['hash']] = (func, p['members'], set([nodes[-1]]), dang_in, dang_out)
                 else:
@@ -937,7 +937,7 @@ class TheanoNodenet(Nodenet):
 
         return paths
 
-    def compile_flow_subgraph(self, node_uids, use_different_thetas=False, verbose_args=False):
+    def compile_flow_subgraph(self, node_uids, use_different_thetas=False, use_unique_input_names=False):
         """ Compile and return one callable for the given flow_module_uids.
         If use_different_thetas is True, the callable expects an argument names "thetas".
         Thetas are expected to be sorted in the same way collect_thetas() would return them.
@@ -981,8 +981,8 @@ class TheanoNodenet(Nodenet):
                         if not node.inputmap[in_name] or node.inputmap[in_name][0] not in node_uids:
                             # it's not even satisfied by another path within the subgraph,
                             # and needs to be provided as input to the emerging callable
-                            if verbose_args:
-                                thunk['input_sources'].append(('kwargs', -1, "%s:%s" % (node.uid, in_name)))
+                            if use_unique_input_names:
+                                thunk['input_sources'].append(('kwargs', -1, "%s_%s" % (node.uid, in_name)))
                             else:
                                 thunk['input_sources'].append(('kwargs', -1, in_name))
                             dangling_inputs.append((node.uid, in_name))
@@ -1084,6 +1084,16 @@ class TheanoNodenet(Nodenet):
                     thunk['function'] = outexpressions[thunk['node'].uid][0]
 
             thunks.append(thunk)
+
+        if not use_unique_input_names:
+            # check for name collisions
+            for thunk in thunks:
+                if len(set(thunk['input_sources'])) != (len(thunk['input_sources'])):
+                    raise RuntimeError("""
+                        Name Collision in inputs detected!
+                        This graph can only be compiled as callable if you use unique_input_names.
+                        set use_unique_input_names to True, and give the inputs as "UID_NAME"
+                        where uid is the uid of the node getting this input, and name is the input name of this node""")
 
         def compiled(thetas=None, **kwargs):
             """ Compiled callable for this subgraph """

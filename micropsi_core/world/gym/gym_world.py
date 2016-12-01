@@ -56,6 +56,8 @@ class OAIGym(World):
         self.n_dim_state, self.n_discrete_states = inspect_space(self.env.observation_space)
         self.n_dim_action, self.n_discrete_actions = inspect_space(self.env.action_space)
 
+        self.rendering = True
+
     @classmethod
     def get_config_options(cls):
         print('### oai world get config')
@@ -125,7 +127,8 @@ class OAIGymAdapter(ArrayWorldAdapter):
 
             obs, r, terminal, info = self.world.env.step(action)
 
-        self.world.env.render()
+        if self.world.rendering:
+            self.world.env.render()
 
         if self.world.n_discrete_states:
             # for discrete state spaces, OAI returns its observation as a single integer < n,

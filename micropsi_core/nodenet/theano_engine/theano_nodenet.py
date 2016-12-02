@@ -216,6 +216,7 @@ class TheanoNodenet(Nodenet):
         self.thetas = {}
 
         self.flowgraph = nx.MultiDiGraph()
+        self.is_flowbuilder_active = False
         self.flowfunctions = []
         self.flowgraph.add_node("datasources")
         self.flowgraph.add_node("datatargets")
@@ -872,7 +873,8 @@ class TheanoNodenet(Nodenet):
         self.update_flow_graphs()
 
     def update_flow_graphs(self, node_uids=None):
-
+        if self.is_flowbuilder_active:
+            return
         self.flowfunctions = []
         startpoints = []
         endpoints = []
@@ -915,9 +917,9 @@ class TheanoNodenet(Nodenet):
                 if p['hash'] not in flowfunctions:
                     func, dang_in, dang_out = self.compile_flow_subgraph([n.uid for n in p['members']], use_unique_input_names=True)
                     if func:
-                        flowfunctions[p['hash']] = (func, p['members'], set([nodes[-1]]), dang_in, dang_out)
+                        flowfunctions[p['hash']] = {'callable': func, 'members': p['members'], 'endnodes': set([nodes[-1]]), 'inputs': dang_in, 'outputs': dang_out}
                 else:
-                    flowfunctions[p['hash']][2].add(nodes[-1])
+                    flowfunctions[p['hash']]['endnodes'].add(nodes[-1])
         for funcid in floworder:
             self.flowfunctions.append(flowfunctions[funcid])
 

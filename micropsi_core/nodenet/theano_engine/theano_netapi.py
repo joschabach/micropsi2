@@ -2,6 +2,8 @@ __author__ = 'rvuine'
 
 from micropsi_core.nodenet.netapi import NetAPI
 
+from contextlib import contextmanager
+
 
 class TheanoNetAPI(NetAPI):
     """
@@ -16,6 +18,19 @@ class TheanoNetAPI(NetAPI):
     @property
     def floatX(self):
         return self.__nodenet.numpyfloatX
+
+    @property
+    @contextmanager
+    def flowbuilder(self):
+        """ Contextmanager to prevent the nodenet from compiling flow-graphs. Will compile when the context is left:
+        Usage:
+        with netapi.flowbuilder:
+            # create & connect flow modules
+        nodenet.step() """
+        self.__nodenet.is_flowbuilder_active = True
+        yield
+        self.__nodenet.is_flowbuilder_active = False
+        self.__nodenet.update_flow_graphs()
 
     def announce_nodes(self, nodespace_uid, numer_of_nodes, average_element_per_node):
         self.__nodenet.announce_nodes(nodespace_uid, numer_of_nodes, average_element_per_node)

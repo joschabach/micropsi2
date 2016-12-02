@@ -107,6 +107,16 @@ class FlowModule(TheanoNode):
             return self._nodenet.get_theta(self.is_copy_of, name)
         return self._nodenet.get_theta(self.uid, name)
 
+    def set_state(self, name, val):
+        if self.is_copy_of:
+            raise RuntimeError("Shallow copies can not set states")
+        super().set_state(name, val)
+
+    def get_state(self, name):
+        if self.is_copy_of:
+            return self._nodenet.get_node(self.is_copy_of).get_state(name)
+        return super().get_state(name)
+
     def set_parameter(self, name, val):
         if self.is_copy_of:
             raise RuntimeError("Shallow copies can not set parameters")
@@ -148,13 +158,17 @@ class FlowModule(TheanoNode):
         """ activates the sur gate if this Flowmodule is part of an active graph """
         self.get_gate('sur').gate_function(1 if self.is_part_of_active_graph else 0)
 
-    def build(self, *inputs):
-        """ Builds the node, calls the initfunction if needed, and returns an outexpression.
-        This can be either a symbolic theano expression or a python function """
+    def ensure_initialized(self):
         if not self.__initialized and not self.is_copy_of:
             self._initfunction(self._nodenet.netapi, self, self.parameters)
             self.__initialized = True
 
+    def build(self, *inputs):
+        """ Builds the node, calls the initfunction if needed, and returns an outexpression.
+        This can be either a symbolic theano expression or a python function """
+        if self.is_copy_of:
+            self._nodenet.get_node(self.is_copy_of).ensure_initialized()
+        self.ensure_initialized()
         if self.implementation == 'theano':
             outexpression = self._buildfunction(*inputs, netapi=self._nodenet.netapi, node=self, parameters=self.clone_parameters())
 

@@ -107,6 +107,16 @@ class FlowModule(TheanoNode):
             return self._nodenet.get_theta(self.is_copy_of, name)
         return self._nodenet.get_theta(self.uid, name)
 
+    def set_state(self, name, val):
+        if self.is_copy_of:
+            raise RuntimeError("Shallow copies can not set states")
+        super().set_state(name, val)
+
+    def get_state(self, name):
+        if self.is_copy_of:
+            return self._nodenet.get_node(self.is_copy_of).get_state(name)
+        return super().get_state(name)
+
     def set_parameter(self, name, val):
         if self.is_copy_of:
             raise RuntimeError("Shallow copies can not set parameters")

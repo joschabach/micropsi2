@@ -693,6 +693,7 @@ def test_shadow_flowgraph(runtime, test_nodenet, default_world, resourcepath):
     node1 = netapi.create_node("Thetas", None, "node1")
     node1.set_parameter('use_thetas', True)
     node1.set_parameter('weights_shape', 5)
+    node1.set_state('foo', 'bar')
     node2 = netapi.create_node("Thetas", None, "node2")
     node2.set_parameter('use_thetas', False)
     node2.set_parameter('weights_shape', 5)
@@ -707,15 +708,19 @@ def test_shadow_flowgraph(runtime, test_nodenet, default_world, resourcepath):
     copies = netapi.create_shadow_flowgraph([node1, node2])
 
     copyfunction = netapi.get_callable_flowgraph([copies[0], copies[1]])
-    assert np.all(copyfunction(X=x) == result)
 
+    assert np.all(copyfunction(X=x) == result)
     assert netapi.collect_thetas(copies) == netapi.collect_thetas([node1, node2])
+    assert copies[0].get_state('foo') == 'bar'
+    assert not copies[1].get_parameter('use_thetas')
 
     # change original
     node2.set_parameter('use_thetas', True)
+    node1.set_state('foo', 'baz')
 
     # recompile, assert change took effect
     assert copies[1].get_parameter('use_thetas')
+    assert copies[0].get_state('foo') == 'baz'
     function = netapi.get_callable_flowgraph([node1, node2])
     result2 = function(X=x)[0]
     assert np.all(result2 != result)

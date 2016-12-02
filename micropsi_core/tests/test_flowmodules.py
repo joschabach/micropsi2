@@ -649,20 +649,22 @@ def test_flow_trpo_modules(runtime, test_nodenet, default_world, resourcepath):
 def test_none_output_skips_following_graphs(runtime, test_nodenet, default_world, resourcepath):
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
-    double = netapi.create_node("Double", None, "Double")
-    py = netapi.create_node("Numpy", None, "Numpy")
-    bisect = netapi.create_node("Bisect", None, "Bisect")
+    with netapi.flowbuilder:
+        double = netapi.create_node("Double", None, "Double")
+        py = netapi.create_node("Numpy", None, "Numpy")
+        bisect = netapi.create_node("Bisect", None, "Bisect")
 
-    netapi.flow("worldadapter", "datasources", double, "inputs")
-    netapi.flow(double, "outputs", py, "inputs")
-    netapi.flow(py, "outputs", bisect, "inputs")
-    netapi.flow(bisect, "outputs", "worldadapter", "datatargets")
+        netapi.flow("worldadapter", "datasources", double, "inputs")
+        netapi.flow(double, "outputs", py, "inputs")
+        netapi.flow(py, "outputs", bisect, "inputs")
+        netapi.flow(bisect, "outputs", "worldadapter", "datatargets")
 
-    source = netapi.create_node("Neuron", None, "Source")
-    netapi.link(source, 'gen', source, 'gen')
-    source.activation = 1
-    netapi.link(source, 'gen', py, 'sub')
-    netapi.link(source, 'gen', bisect, 'sub')
+        source = netapi.create_node("Neuron", None, "Source")
+        netapi.link(source, 'gen', source, 'gen')
+        source.activation = 1
+        netapi.link(source, 'gen', py, 'sub')
+        netapi.link(source, 'gen', bisect, 'sub')
+        assert len(nodenet.flowfunctions) == 0
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)

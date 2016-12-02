@@ -216,6 +216,7 @@ class TheanoNodenet(Nodenet):
         self.thetas = {}
 
         self.flowgraph = nx.MultiDiGraph()
+        self.is_flowbuilder_active = False
         self.flowfunctions = []
         self.flowgraph.add_node("datasources")
         self.flowgraph.add_node("datatargets")
@@ -872,7 +873,8 @@ class TheanoNodenet(Nodenet):
         self.update_flow_graphs()
 
     def update_flow_graphs(self, node_uids=None):
-
+        if self.is_flowbuilder_active:
+            return
         self.flowfunctions = []
         startpoints = []
         endpoints = []

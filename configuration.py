@@ -22,11 +22,16 @@ if not os.path.isdir(dirinfo.user_data_dir):
     os.makedirs(dirinfo.user_data_dir)
 
 if not os.path.isfile(configini):
-    configini = os.path.join(os.path.dirname(os.path.realpath(__file__)), "config.default.ini")
-    using_default = True
-    print("Using default configuration")
+    if os.path.isfile(os.path.abspath('config.ini')):
+        configini = os.path.abspath('config.ini')
+        print("Using local custom config")
+    else:
+        configini = os.path.join(os.path.dirname(os.path.realpath(__file__)), "config.default.ini")
+        using_default = True
+        print("Using default configuration")
 else:
     print("Using custom configuration")
+
 try:
     config = configparser.ConfigParser()
     with open(configini) as fp:

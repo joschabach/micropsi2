@@ -90,11 +90,11 @@ class TheanoCalculateFlowmodules(Propagate):
                 'datatargets': None
             }
 
-        for func, nodes, endnodes, dangling_inputs, dangling_outputs in nodenet.flowfunctions:
-            if any([node.is_requested() for node in endnodes]):
+        for func in nodenet.flowfunctions:
+            if any([node.is_requested() for node in func['endnodes']]):
                 skip = False
                 inputs = {}
-                for node_uid, in_name in dangling_inputs:
+                for node_uid, in_name in func['inputs']:
                     source_uid, source_name = nodenet.get_node(node_uid).inputmap[in_name]
                     if flowio[source_uid][source_name] is None:
                         netapi.logger.debug("Skipping graph bc. empty inputs")
@@ -103,15 +103,15 @@ class TheanoCalculateFlowmodules(Propagate):
                     else:
                         inputs["%s_%s" % (node_uid, in_name)] = flowio[source_uid][source_name]
                 if skip:
-                    for node_uid, out_name in dangling_outputs:
+                    for node_uid, out_name in func['outputs']:
                         if node_uid not in flowio:
                             flowio[node_uid] = {}
                         flowio[node_uid][out_name] = None
                     continue
-                out = func(**inputs)
-                for n in nodes:
+                out = func['callable'](**inputs)
+                for n in func['members']:
                     n.is_part_of_active_graph = True
-                for index, (node_uid, out_name) in enumerate(dangling_outputs):
+                for index, (node_uid, out_name) in enumerate(func['outputs']):
                     if ('worldadapter', 'datatargets') in nodenet.get_node(node_uid).outputmap[out_name]:
                         nodenet.worldadapter_instance.add_datatarget_values(out[index])
                     if node_uid not in flowio:

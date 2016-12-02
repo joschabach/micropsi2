@@ -939,10 +939,17 @@ class TheanoNodenet(Nodenet):
 
         return paths
 
-    def compile_flow_subgraph(self, node_uids, use_different_thetas=False, use_unique_input_names=False):
+    def compile_flow_subgraph(self, node_uids, requested_outputs=None, use_different_thetas=False, use_unique_input_names=False):
         """ Compile and return one callable for the given flow_module_uids.
         If use_different_thetas is True, the callable expects an argument names "thetas".
         Thetas are expected to be sorted in the same way collect_thetas() would return them.
+
+        Params
+        ---
+        node_uids :
+
+        requested_outputs : list of tuples (node_uid, out_name)
+
         """
         subgraph = [self.get_node(uid) for uid in self.flow_toposort if uid in node_uids]
 
@@ -1140,7 +1147,8 @@ class TheanoNodenet(Nodenet):
                 if out:
                     all_outputs.append(out)
                     for idx in thunk['dangling_outputs']:
-                        final_outputs.append(out[idx])
+                        if requested_outputs is None or thunk['outputs'][idx] in requested_outputs:
+                            final_outputs.append(out[idx])
             return final_outputs
 
         compiled.__doc__ = """Compiled subgraph of nodes %s

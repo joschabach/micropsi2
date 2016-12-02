@@ -100,13 +100,13 @@ class TheanoNetAPI(NetAPI):
         target = target_node if target_node == 'worldadapter' else target_node.uid
         return self.__nodenet.unflow(source, source_output, target, target_input)
 
-    def get_callable_flowgraph(self, nodes, use_different_thetas=False, use_unique_input_names=False):
+    def get_callable_flowgraph(self, nodes, requested_outputs=None, use_different_thetas=False, use_unique_input_names=False):
         """ Returns one callable for the given flow_modules.
         Parameters:
             use_different_thetas (default: False) - Return a callable that excepts a parameter "thetas" that will be used instead of existing thetas
             use_unique_input_names (default: False) - Return a callable that excepts input parameter names as "uid_name" where uid is the node_uid, and name is the input_name
         """
-        func, dangling_inputs, dangling_outputs = self.__nodenet.compile_flow_subgraph([n.uid for n in nodes], use_different_thetas=use_different_thetas, use_unique_input_names=use_unique_input_names)
+        func, dangling_inputs, dangling_outputs = self.__nodenet.compile_flow_subgraph([n.uid for n in nodes], requested_outputs=requested_outputs, use_different_thetas=use_different_thetas, use_unique_input_names=use_unique_input_names)
         return func
 
     def collect_thetas(self, nodes):

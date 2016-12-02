@@ -18,6 +18,8 @@ dirinfo = AppDirs("MicroPsi Runtime")
 configini = os.path.join(dirinfo.user_data_dir, "config.ini")
 using_default = False
 
+print("MicroPsi configuration directory: ", dirinfo.user_data_dir)
+
 if not os.path.isdir(dirinfo.user_data_dir):
     os.makedirs(dirinfo.user_data_dir)
 

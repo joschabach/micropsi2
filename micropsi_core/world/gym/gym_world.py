@@ -97,7 +97,7 @@ class OAIGymAdapter(ArrayWorldAdapter):
         self.add_datasource("reward")
         self.add_datasource("is_terminal")
 
-
+        self.t_this_episode = 0
 
     def update_data_sources_and_targets(self):
         # print('\nworldadapter.update, datatarget values:\n', self.datatarget_values)
@@ -139,10 +139,15 @@ class OAIGymAdapter(ArrayWorldAdapter):
         else:
             obs_vector = obs
 
+        if self.t_this_episode >= 200:
+            terminal = True
+            self.t_this_episode = 0
+
         state = np.concatenate([obs_vector, [r], [int(terminal)]])
         # if terminal:
         #     print('terminal')
         self.datasource_values = np.array(state, dtype=floatX)
+        self.t_this_episode += 1
 
         # print('\nworldadapter.update, datasource values:\n', self.datasource_values)
 

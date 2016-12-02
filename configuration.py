@@ -13,7 +13,7 @@ import warnings
 import configparser
 from appdirs import AppDirs
 
-dirinfo = AppDirs("MicroPsi Runtime")
+dirinfo = AppDirs("MicroPsi Runtime", roaming=True)
 
 configini = os.path.join(dirinfo.user_data_dir, "config.ini")
 using_default = False

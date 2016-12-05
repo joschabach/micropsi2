@@ -484,6 +484,13 @@ class TheanoNodenet(Nodenet):
             metadata['recorders'] = self.construct_recorders_dict()
             fp.write(json.dumps(metadata, sort_keys=True, indent=4))
 
+        for node_uid in self.thetas:
+            # save thetas
+            data = {}
+            for idx, name in enumerate(self.thetas[node_uid]['names']):
+                data[name] = self.thetas[node_uid]['variables'][idx].get_value()
+            np.savez(os.path.join(base_path, "%s_thetas.npz" % node_uid), **data)
+
         # write graph data
         nx.write_adjlist(self.flowgraph, os.path.join(base_path, "flowgraph.adjlist"))
 
@@ -553,8 +560,13 @@ class TheanoNodenet(Nodenet):
             if os.path.isfile(flowfile):
                 self.flowgraph = nx.read_adjlist(flowfile, create_using=nx.MultiDiGraph())
 
-            # for uid in self.flow_module_instances:
-            #     self.flowgraph.add_node(uid)
+            for node_uid in self.flow_module_instances:
+                theta_file = os.path.join(self.get_persistency_path(), "%s_thetas.npz" % node_uid)
+                if os.path.isfile(theta_file):
+                    data = np.load(theta_file)
+                    for key in data:
+                        self.set_theta(node_uid, key, data[key])
+
             self.update_flow_graphs()
 
             # re-initialize step operators for theano recompile to new shared variables
@@ -661,7 +673,9 @@ class TheanoNodenet(Nodenet):
                         get_numerical_node_type(data['type'], nativemodules=self.native_modules),
                         parameters=data.get('parameters', {}),
                         inputmap=data['inputmap'],
-                        outputmap=data['outputmap'])
+                        outputmap=data['outputmap'],
+                        is_copy_of=data.get('is_copy_of'),
+                        initialized=data.get('initialized'))
                     self.flow_module_instances[node.uid] = node
                 else:
                     node = TheanoNode(self, self.get_partition(uid), parent_uid, uid, get_numerical_node_type(data['type'], nativemodules=self.native_modules), parameters=data.get('parameters'))
@@ -1208,12 +1222,16 @@ class TheanoNodenet(Nodenet):
                 'names': [],
                 'variables': []
             }
-        new_names = sorted(self.thetas[node_uid]['names'] + [name])
-        index = new_names.index(name)
-        self.thetas[node_uid]['names'] = new_names
-        if not isinstance(val, T.sharedvar.TensorSharedVariable):
-            val = theano.shared(value=val.astype(T.config.floatX), name=name, borrow=True)
-        self.thetas[node_uid]['variables'].insert(index, val)
+        if name not in self.thetas[node_uid]['names']:
+            new_names = sorted(self.thetas[node_uid]['names'] + [name])
+            self.thetas[node_uid]['names'] = new_names
+            index = self.thetas[node_uid]['names'].index(name)
+            if not isinstance(val, T.sharedvar.TensorSharedVariable):
+                val = theano.shared(value=val.astype(T.config.floatX), name=name, borrow=True)
+            self.thetas[node_uid]['variables'].insert(index, val)
+        else:
+            index = self.thetas[node_uid]['names'].index(name)
+            self.thetas[node_uid]['variables'][index].set_value(val, borrow=True)
 
     def get_theta(self, node_uid, name):
         data = self.thetas[node_uid]

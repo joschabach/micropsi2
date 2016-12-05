@@ -394,29 +394,45 @@ def test_converging_flowgraphs(runtime, test_nodenet, default_world, resourcepat
 def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepath):
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
-    flowmodule = netapi.create_node("Double", None, "Double")
-    nodenet.flow('worldadapter', 'datasources', flowmodule.uid, "inputs")
-    nodenet.flow(flowmodule.uid, "outputs", 'worldadapter', 'datatargets')
+    double = netapi.create_node("Double", None, "Double")
+    thetas = netapi.create_node("Thetas", None, "Thetas")
+    thetas.set_parameter("weights_shape", 5)
+    thetas.set_parameter("use_thetas", True)
+
+    nodenet.flow('worldadapter', 'datasources', double.uid, "inputs")
+    nodenet.flow(double.uid, 'outputs', thetas.uid, "X")
+    nodenet.flow(thetas.uid, "Y", 'worldadapter', 'datatargets')
     source = netapi.create_node("Neuron", None)
     netapi.link(source, 'gen', source, 'gen')
-    netapi.link(source, 'gen', flowmodule, 'sub')
+    netapi.link(source, 'gen', thetas, 'sub')
     source.activation = 1
+
+    custom_theta = np.random.rand(5).astype(netapi.floatX)
+    thetas.set_theta("weights", custom_theta)
+
+    sources = np.zeros((5), dtype=netapi.floatX)
+    sources[:] = np.random.randn(*sources.shape)
+    worldadapter.datasource_values = sources
+
+    nodenet.step()
+
+    result = worldadapter.datatarget_values
+
+    assert np.all(result == sources * 2 * thetas.get_theta("weights").get_value() + thetas.get_theta("bias").get_value())
 
     runtime.save_nodenet(test_nodenet)
     runtime.revert_nodenet(test_nodenet)
 
     nodenet = runtime.nodenets[test_nodenet]
-    flowmodule = nodenet.get_node(flowmodule.uid)
     netapi = nodenet.netapi
     nodenet.worldadapter_instance = worldadapter
-
-    sources = np.zeros((5), dtype=nodenet.numpyfloatX)
-    sources[:] = np.random.randn(*sources.shape)
-
     worldadapter.datasource_values = sources
+    thetas = netapi.get_node(thetas.uid)
+    assert np.all(thetas.get_theta("weights").get_value() == custom_theta)
 
     nodenet.step()
-    assert np.all(worldadapter.datatarget_values == sources * 2)
+
+    assert np.all(worldadapter.datatarget_values == result)
 
 
 @pytest.mark.engine("theano_engine")

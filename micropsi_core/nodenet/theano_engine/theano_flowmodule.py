@@ -35,7 +35,7 @@ class FlowModule(TheanoNode):
     def outputs(self):
         return self.definition['outputs']
 
-    def __init__(self, nodenet, partition, parent_uid, uid, type, parameters={}, inputmap={}, outputmap={}, is_copy_of=False):
+    def __init__(self, nodenet, partition, parent_uid, uid, type, parameters={}, inputmap={}, outputmap={}, is_copy_of=False, initialized=False):
         super().__init__(nodenet, partition, parent_uid, uid, type, parameters=parameters)
         self.definition = nodenet.native_module_definitions[self.type]
         self.implementation = self.definition['implementation']
@@ -55,6 +55,7 @@ class FlowModule(TheanoNode):
         for name in outputmap:
             for link in outputmap[name]:
                 self.outputmap[name].add(tuple(link))
+        self.__initialized = initialized
 
     def get_flow_data(self, *args, **kwargs):
         inmap = {}
@@ -70,7 +71,8 @@ class FlowModule(TheanoNode):
             'flow_module': True,
             'inputmap': inmap,
             'outputmap': outmap,
-            'is_copy_of': self.is_copy_of
+            'is_copy_of': self.is_copy_of,
+            'initialized': self.__initialized
         }
         return data
 

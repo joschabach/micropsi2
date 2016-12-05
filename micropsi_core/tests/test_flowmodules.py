@@ -705,7 +705,7 @@ def test_shadow_flowgraph(runtime, test_nodenet, default_world, resourcepath):
     x = np.array([1, 2, 3, 4, 5], dtype=netapi.floatX)
     result = function(X=x)[0]
 
-    copies = netapi.create_shadow_flowgraph([node1, node2])
+    copies = netapi.shadow_flowgraph([node1, node2])
 
     copyfunction = netapi.get_callable_flowgraph([copies[0], copies[1]])
 

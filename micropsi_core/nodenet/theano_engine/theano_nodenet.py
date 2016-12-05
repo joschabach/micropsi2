@@ -1150,7 +1150,7 @@ class TheanoNodenet(Nodenet):
 
         return compiled, dangling_inputs, dangling_outputs
 
-    def create_shadow_flowgraph(self, flow_modules):
+    def shadow_flowgraph(self, flow_modules):
         """ Creates shallow copies of the given flow_modules, copying instances and internal connections.
         Shallow copies will always have the parameters and shared variables of their originals
         """

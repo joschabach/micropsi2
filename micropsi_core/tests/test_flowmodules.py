@@ -738,3 +738,25 @@ def test_shadow_flowgraph(runtime, test_nodenet, default_world, resourcepath):
     netapi = nodenet.netapi
     copies = [netapi.get_node(copies[0].uid), netapi.get_node(copies[1].uid)]
     assert not copies[1].get_parameter('use_thetas')
+
+
+@pytest.mark.engine("theano_engine")
+def test_naming_collision_in_callable_subgraph(runtime, test_nodenet, default_world, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+
+    double = netapi.create_node("Double", None, "Double")
+    bisect = netapi.create_node("Bisect", None, "Bisect")
+    add = netapi.create_node("Add", None, "Add")
+
+    netapi.flow(double, "outputs", add, "input1")
+    netapi.flow(bisect, "outputs", add, "input2")
+
+    with pytest.raises(RuntimeError):
+        netapi.get_callable_flowgraph([double, bisect, add])
+
+    function = netapi.get_callable_flowgraph([double, bisect, add], use_unique_input_names=True)
+    kwargs = {
+        "%s_inputs" % double.uid: [1.],
+        "%s_inputs" % bisect.uid: [1.]
+    }
+    assert function(**kwargs) == [2.5]

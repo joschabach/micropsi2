@@ -1070,8 +1070,9 @@ class TheanoNodenet(Nodenet):
                             outputs.append(flattened_outex[out_idx + node_flattened_output_offset])
                         if "external" in dangling:
                             # this output will be a final one:
-                            dangling_outputs.append((node.uid, out_name))
-                            thunk['dangling_outputs'].append(thunk_flattened_output_index)
+                            if requested_outputs is None or (node.uid, out_name) in requested_outputs:
+                                dangling_outputs.append((node.uid, out_name))
+                                thunk['dangling_outputs'].append(thunk_flattened_output_index)
                         thunk_flattened_output_index += outputlengths[out_idx]
 
             # now, set the function of this thunk. Either compile a theano function
@@ -1147,8 +1148,7 @@ class TheanoNodenet(Nodenet):
                 if out:
                     all_outputs.append(out)
                     for idx in thunk['dangling_outputs']:
-                        if requested_outputs is None or thunk['outputs'][idx] in requested_outputs:
-                            final_outputs.append(out[idx])
+                        final_outputs.append(out[idx])
             return final_outputs
 
         compiled.__doc__ = """Compiled subgraph of nodes %s

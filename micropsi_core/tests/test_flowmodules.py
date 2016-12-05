@@ -760,3 +760,21 @@ def test_naming_collision_in_callable_subgraph(runtime, test_nodenet, default_wo
         "%s_inputs" % bisect.uid: [1.]
     }
     assert function(**kwargs) == [2.5]
+
+
+@pytest.mark.engine("theano_engine")
+def test_filter_subgraph_outputs(runtime, test_nodenet, default_world, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+
+    double = netapi.create_node("Double", None, "Double")
+    twoout = netapi.create_node("TwoOutputs", None, "TwoOutputs")
+
+    netapi.flow(twoout, "A", double, "inputs")
+
+    function = netapi.get_callable_flowgraph([twoout, double])
+    assert function(X=[2.]) == [3., 4.]
+    assert "B of %s" % twoout.uid in function.__doc__
+
+    function = netapi.get_callable_flowgraph([twoout, double], requested_outputs=[(double.uid, "outputs")])
+    assert function(X=[2.]) == [4.]
+    assert "B of %s" % twoout.uid not in function.__doc__

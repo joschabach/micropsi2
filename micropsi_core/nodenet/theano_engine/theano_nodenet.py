@@ -944,11 +944,30 @@ class TheanoNodenet(Nodenet):
         If use_different_thetas is True, the callable expects an argument names "thetas".
         Thetas are expected to be sorted in the same way collect_thetas() would return them.
 
-        Params
-        ---
-        node_uids :
+        Parameters
+        ----------
+        node_uids : list
+            the uids of the members of this graph
 
-        requested_outputs : list of tuples (node_uid, out_name)
+        requested_outputs : list, optional
+            list of tuples (node_uid, out_name) to filter the callable's return-values. defaults to None, returning all outputs
+
+        use_different_thetas : boolean, optional
+            if true, return a callable that excepts a parameter "thetas" that will be used instead of existing thetas. defaults to False
+
+        use_unique_input_names : boolen, optional
+            if true, the returned callable expects input-kwargs to be prefixe by node_uid: "UID_NAME". defaults to False, using only the name of the input
+
+        Returns
+        -------
+        callable : function
+            the compiled function for this subgraph
+
+        dangling_inputs : list
+            list of tuples (node_uid, input) that the callable expectes as inputs
+
+        dangling_outputs : list
+            list of tuples (node_uid, input) that the callable will return as output
 
         """
         subgraph = [self.get_node(uid) for uid in self.flow_toposort if uid in node_uids]

@@ -1387,6 +1387,17 @@ def get_netapi_autocomplete_data(nodenet_uid, name=None):
     return True, runtime.get_netapi_autocomplete_data(nodenet_uid, name=None)
 
 
+@rpc("flow")
+def flow(nodenet_uid, source_uid, source_output, target_uid, target_input):
+    """ Link two flow_modules """
+    return runtime.flow(nodenet_uid, source_uid, source_output, target_uid, target_input)
+
+
+@rpc("unflow")
+def unflow(nodenet_uid, source_uid, source_output, target_uid, target_input):
+    """ Removes the link between the given flow_modules """
+    return runtime.unflow(nodenet_uid, source_uid, source_output, target_uid, target_input)
+
 @rpc("runtime_info")
 def runtime_info():
     return True, runtime.runtime_info()

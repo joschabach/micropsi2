@@ -114,6 +114,11 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
         for i, key in enumerate(self.get_available_datatargets()):
             self.datatargets[key] = values[i]
 
+    def add_datatarget_values(self, values):
+        """allows the agent to add a list of values to the datatargets"""
+        for i, key in enumerate(self.get_available_datatargets()):
+            self.datatargets[key] += values[i]
+
     def get_datatarget_feedback_value(self, key):
         """get feedback whether the actuator-induced action succeeded"""
         return self.datatarget_feedback.get(key, 0)
@@ -325,6 +330,11 @@ try:
             assert len(values) == len(self.datatarget_values)
             self.datatarget_values = values
 
+        def add_datatarget_values(self, values):
+            """sets the complete datatargets to new values"""
+            assert len(values) == len(self.datatarget_values)
+            self.datatarget_values += values
+
         def set_datatarget_feedback_values(self, values):
             """sets the complete datatargets_feedback to new values"""
             assert len(values) == len(self.datatarget_feedback_values)
@@ -332,6 +342,7 @@ try:
 
         def reset_datatargets(self):
             """ resets (zeros) the datatargets """
+            # self.datatarget_values = np.zeros_like(self.datatarget_values)
             pass  # pragma: no cover
 
         @abstractmethod
@@ -347,6 +358,25 @@ try:
             Values of the superclass' dict objects will be bypassed and ignored.
             """
             pass  # pragma: no cover
+
+
+    class DefaultArray(ArrayWorldAdapter):
+        """
+        A default ArrayWorldadapter, that provides example-datasources and -targets
+        """
+        def __init__(self, world, uid=None, config={}, **data):
+            super().__init__(world, uid=uid, config=config, **data)
+            for i in range(64):
+                self.datasource_names.append("s_%d" % i)
+                if i % 2 == 0:
+                    self.datatarget_names.append("t_%d" % i)
+            self.datasource_values = np.random.randn(64)
+            self.datatarget_values = np.zeros_like(self.datatarget_values)
+
+        def update_data_sources_and_targets(self):
+            import random
+            self.datatarget_feedback_values[:] = self.datatarget_values
+            self.datasource_values[:] = np.random.randn(64)
 
 
 except ImportError: # pragma: no cover

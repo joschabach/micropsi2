@@ -65,3 +65,55 @@ class TheanoCalculate(Calculate):
             partition.calculate()
         if nodenet.use_modulators:
             self.count_success_and_failure(nodenet)
+
+
+class TheanoCalculateFlowmodules(Propagate):
+
+    @property
+    def priority(self):
+        return 0
+
+    def __init__(self, nodenet):
+        self.nodenet = nodenet
+
+    def execute(self, nodenet, nodes, netapi):
+        if not nodenet.flow_module_instances:
+            return
+        for uid, item in nodenet.flow_module_instances.items():
+            item.is_part_of_active_graph = False
+            item.take_slot_activation_snapshot()
+        flowio = {}
+
+        if nodenet.worldadapter_instance:
+            flowio['worldadapter'] = {
+                'datasources': nodenet.worldadapter_instance.get_datasource_values(),
+                'datatargets': None
+            }
+
+        for func in nodenet.flowfunctions:
+            if any([node.is_requested() for node in func['endnodes']]):
+                skip = False
+                inputs = {}
+                for node_uid, in_name in func['inputs']:
+                    source_uid, source_name = nodenet.get_node(node_uid).inputmap[in_name]
+                    if flowio[source_uid][source_name] is None:
+                        netapi.logger.debug("Skipping graph bc. empty inputs")
+                        skip = True
+                        break
+                    else:
+                        inputs["%s_%s" % (node_uid, in_name)] = flowio[source_uid][source_name]
+                if skip:
+                    for node_uid, out_name in func['outputs']:
+                        if node_uid not in flowio:
+                            flowio[node_uid] = {}
+                        flowio[node_uid][out_name] = None
+                    continue
+                out = func['callable'](**inputs)
+                for n in func['members']:
+                    n.is_part_of_active_graph = True
+                for index, (node_uid, out_name) in enumerate(func['outputs']):
+                    if ('worldadapter', 'datatargets') in nodenet.get_node(node_uid).outputmap[out_name]:
+                        nodenet.worldadapter_instance.add_datatarget_values(out[index])
+                    if node_uid not in flowio:
+                        flowio[node_uid] = {}
+                    flowio[node_uid][out_name] = out[index] if out is not None else None

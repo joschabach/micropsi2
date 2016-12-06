@@ -462,7 +462,18 @@ class Nodenet(metaclass=ABCMeta):
         """
         data = {}
         for key in self.native_modules:
-            data[key] = self.native_modules[key].get_data()
+            if not self.native_modules[key].is_flow_module:
+                data[key] = self.native_modules[key].get_data()
+        return data
+
+    def get_flow_module_definitions(self):
+        """
+        Returns the flow modules supported by this nodenet
+        """
+        data = {}
+        for key in self.native_modules:
+            if self.native_modules[key].is_flow_module:
+                data[key] = self.native_modules[key].get_data()
         return data
 
     @abstractmethod

@@ -220,3 +220,58 @@ def test_set_world_properties(runtime, default_nodenet):
 def test_get_world_uid_by_name(runtime, test_world):
     assert runtime.get_world_uid_by_name("World of Pain") == test_world
     assert runtime.get_world_uid_by_name("Netherworld") is None
+
+
+def test_world_discovery(runtime, default_nodenet, resourcepath):
+    import os
+    with open(os.path.join(resourcepath, 'worlds.json'), 'w') as fp:
+        fp.write("""
+            {"worlds": ["custom_world.py"],
+            "worldadapters": ["someadapter.py"]}""")
+    with open(os.path.join(resourcepath, 'custom_world.py'), 'w') as fp:
+        fp.write("""
+
+from micropsi_core.world.world import World
+from dependency import things
+
+class MyWorld(World):
+    supported_worldadapters = ['MyCustomWA']
+
+    def __init__(self, filename, **kwargs):
+        super().__init__(filename, **kwargs)
+        for key in things:
+            setattr(self, key, things[key])
+
+""")
+    os.mkdir(os.path.join(resourcepath, 'dependency'))
+    with open(os.path.join(resourcepath, 'dependency', '__init__.py'), 'w') as fp:
+        fp.write("""
+things = {'foo': 'baz'}
+""")
+
+    with open(os.path.join(resourcepath, 'someadapter.py'), 'w') as fp:
+        fp.write("""
+
+from micropsi_core.world.worldadapter import WorldAdapter
+
+class MyCustomWA(WorldAdapter):
+    def __init__(self, world, uid=None, config={}, **data):
+        super().__init__(world, uid=uid, config=config, **data)
+        self.datasources = {'foo': 1}
+        self.datatargets = {'bar': 0}
+        self.datatarget_feedback = {'bar': 0}
+
+    def update_data_sources_and_targets(self):
+        self.datasources['foo'] = self.datatargets['bar'] * 2
+
+""")
+
+    runtime.reload_native_modules()
+    assert "MyWorld" in runtime.get_available_world_types()
+
+    result, world_uid = runtime.new_world("test world", "MyWorld")
+
+    assert runtime.worlds[world_uid].foo == 'baz'
+    assert runtime.set_nodenet_properties(default_nodenet, world_uid=world_uid, worldadapter="MyCustomWA")
+    assert runtime.nodenets[default_nodenet].worldadapter_instance.__class__.__name__ == 'MyCustomWA'
+

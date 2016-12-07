@@ -1529,9 +1529,49 @@ def load_user_files(path, reload_nodefunctions=False, errors=[]):
                 err = reload_nodefunctions_file(abspath)
             elif f == 'operations.py':
                 err = parse_recipe_or_operations_file(abspath, reload_nodefunctions)
+            elif f == 'worlds.json':
+                err = parse_world_definitions(abspath)
             if err:
-                errors.append(err)
+                if type(err) == list:
+                    errors.extend(err)
+                else:
+                    errors.append(err)
     return errors
+
+
+def parse_world_definitions(path):
+    import importlib
+    import imp
+    base_path = os.path.dirname(path)
+    errors = []
+    with open(path) as fp:
+        try:
+            data = json.load(fp)
+        except ValueError:
+            return "World data in %s/worlds.json not well formed" % path
+        worldfiles = data['worlds']
+        worldadapterfiles = data['worldadapters']
+        for w in worldfiles:
+            relpath = os.path.relpath(os.path.join(base_path, w), start=RESOURCE_PATH)
+            name = w[:-3]
+            try:
+                loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
+                wmodule = loader.load_module()
+            except SyntaxError as e:
+                errors.append("%s in world file %s, line %d" % (e.__class__.__name__, relpath, e.lineno))
+            except (ImportError, SystemError) as e:
+                errors.append("%s in world file %s: %s" % (e.__class__.__name__, relpath, str(e)))
+        for w in worldadapterfiles:
+            relpath = os.path.relpath(os.path.join(base_path, w), start=RESOURCE_PATH)
+            name = w[:-3]
+            try:
+                loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
+                wmodule = loader.load_module()
+            except SyntaxError as e:
+                errors.append("%s in world file %s, line %d" % (e.__class__.__name__, relpath, e.lineno))
+            except (ImportError, SystemError) as e:
+                errors.append("%s in world file %s: %s" % (e.__class__.__name__, relpath, str(e)))
+    return errors or None
 
 
 def parse_native_module_file(path):
@@ -1713,22 +1753,22 @@ def initialize(persistency_path=None, resource_path=None):
         logging.getLogger("system").error(e)
 
     # discover available worlds:
-    import importlib
-    basedir = os.path.join(os.path.dirname(__file__), 'world')
-    dirs = os.listdir(basedir)
-    #  look into each folder in world/
-    for d in dirs:
-        worlddir = os.path.join(basedir, d)
-        if os.path.isdir(worlddir) and not d.startswith('__'):
-            try:
-                init = importlib.import_module(".%s" % d, package='micropsi_core.world')
-                # import all modules defined in __init__.__all__
-                if init and hasattr(init, '__all__'):
-                    for world in init.__all__:
-                        importlib.import_module(".%s" % world, package='micropsi_core.world.%s' % d)
-                        logging.getLogger("system").debug("Found %s world" % world)
-            except ImportError:
-                logging.getLogger("system").debug("Error importing %s world" % world)
+    # import importlib
+    # basedir = os.path.join(os.path.dirname(__file__), 'world')
+    # dirs = os.listdir(basedir)
+    # #  look into each folder in world/
+    # for d in dirs:
+    #     worlddir = os.path.join(basedir, d)
+    #     if os.path.isdir(worlddir) and not d.startswith('__'):
+    #         try:
+    #             init = importlib.import_module(".%s" % d, package='micropsi_core.world')
+    #             # import all modules defined in __init__.__all__
+    #             if init and hasattr(init, '__all__'):
+    #                 for world in init.__all__:
+    #                     importlib.import_module(".%s" % world, package='micropsi_core.world.%s' % d)
+    #                     logging.getLogger("system").debug("Found %s world" % world)
+    #         except ImportError:
+    #             logging.getLogger("system").debug("Error importing %s world" % world)
 
     # initialize runners
     # Initialize the threads for the continuous calculation of nodenets and worlds

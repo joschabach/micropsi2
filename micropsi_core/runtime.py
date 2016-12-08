@@ -32,6 +32,11 @@ import logging
 
 from .micropsi_logger import MicropsiLogger
 
+from pluginbase import PluginBase
+
+world_plugins = PluginBase(package="micropsi_core.worlds")
+plugin_source = None
+world_modules = []
 
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
@@ -1513,14 +1518,16 @@ def load_definitions():
     return nodenet_data, world_data
 
 
-def load_user_files(path, reload_nodefunctions=False, errors=[]):
-    global native_modules, custom_recipes
+def load_user_files(path, reload_nodefunctions=False, errors=[], plugin_folders=set()):
+    global native_modules, custom_recipes, world_modules
     for f in os.listdir(path):
         if not f.startswith('.') and f != '__pycache__':
             abspath = os.path.join(path, f)
             err = None
             if os.path.isdir(abspath):
-                errors.extend(load_user_files(path=abspath, reload_nodefunctions=reload_nodefunctions, errors=[]))
+                errs, folders = load_user_files(path=abspath, reload_nodefunctions=reload_nodefunctions, errors=[], plugin_folders=plugin_folders)
+                errors.extend(errs)
+                plugin_folders = plugin_folders | folders
             elif f == 'nodetypes.json':
                 err = parse_native_module_file(abspath)
             elif f == 'recipes.py':
@@ -1530,48 +1537,16 @@ def load_user_files(path, reload_nodefunctions=False, errors=[]):
             elif f == 'operations.py':
                 err = parse_recipe_or_operations_file(abspath, reload_nodefunctions)
             elif f == 'worlds.json':
-                err = parse_world_definitions(abspath)
+                plugin_folders.add(path)
+                world_modules.append(os.path.basename(path))
+                sys.path.append(path)
+                # err = parse_world_definitions(abspath)
             if err:
                 if type(err) == list:
                     errors.extend(err)
                 else:
                     errors.append(err)
-    return errors
-
-
-def parse_world_definitions(path):
-    import importlib
-    import imp
-    base_path = os.path.dirname(path)
-    errors = []
-    with open(path) as fp:
-        try:
-            data = json.load(fp)
-        except ValueError:
-            return "World data in %s/worlds.json not well formed" % path
-        worldfiles = data['worlds']
-        worldadapterfiles = data['worldadapters']
-        for w in worldfiles:
-            relpath = os.path.relpath(os.path.join(base_path, w), start=RESOURCE_PATH)
-            name = w[:-3]
-            try:
-                loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
-                wmodule = loader.load_module()
-            except SyntaxError as e:
-                errors.append("%s in world file %s, line %d" % (e.__class__.__name__, relpath, e.lineno))
-            except (ImportError, SystemError) as e:
-                errors.append("%s in world file %s: %s" % (e.__class__.__name__, relpath, str(e)))
-        for w in worldadapterfiles:
-            relpath = os.path.relpath(os.path.join(base_path, w), start=RESOURCE_PATH)
-            name = w[:-3]
-            try:
-                loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
-                wmodule = loader.load_module()
-            except SyntaxError as e:
-                errors.append("%s in world file %s, line %d" % (e.__class__.__name__, relpath, e.lineno))
-            except (ImportError, SystemError) as e:
-                errors.append("%s in world file %s: %s" % (e.__class__.__name__, relpath, str(e)))
-    return errors or None
+    return errors, plugin_folders
 
 
 def parse_native_module_file(path):
@@ -1684,7 +1659,7 @@ def reload_nodefunctions_file(path):
 
 def reload_code():
     # stop nodenets, save state
-    global native_modules, custom_recipes, custom_operations
+    global native_modules, custom_recipes, plugin_source, custom_operations
     native_modules = {}
     custom_recipes = {}
     custom_operations = {}
@@ -1705,13 +1680,18 @@ def reload_code():
         if nodenets[uid].is_active:
             runners[uid] = True
             nodenets[uid].is_active = False
-    errors.extend(load_user_files(RESOURCE_PATH, reload_nodefunctions=True, errors=[]))
+    errs, plugin_folders = load_user_files(RESOURCE_PATH, reload_nodefunctions=True, errors=[])
+    errors.extend(errs)
     for nodenet_uid in nodenets:
         nodenets[nodenet_uid].reload_native_modules(native_modules)
     # restart previously active nodenets
     for uid in runners:
         nodenets[uid].is_active = True
 
+    plugin_source = world_plugins.make_plugin_source(searchpath=list(plugin_folders))
+    with plugin_source:
+        for module in world_modules:
+            plugin_source.load_plugin(module)
     if len(errors) == 0:
         return True, []
     else:

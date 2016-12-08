@@ -1136,7 +1136,7 @@ def test_group_highdim_elements(runtime, test_nodenet, resourcepath):
 def phatNM(netapi, node, **_):
     pass""")
 
-    runtime.reload_native_modules()
+    runtime.reload_code()
     nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
     node = netapi.create_node("PhatNM", None, 'fatnode')

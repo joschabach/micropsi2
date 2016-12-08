@@ -266,7 +266,7 @@ class MyCustomWA(WorldAdapter):
 
 """)
 
-    runtime.reload_native_modules()
+    runtime.reload_code()
     assert "MyWorld" in runtime.get_available_world_types()
 
     result, world_uid = runtime.new_world("test world", "MyWorld")

@@ -286,10 +286,10 @@ $(function() {
         });
     });
 
-    $('.navbar a.reload_native_modules').on('click', function(event){
+    $('.navbar a.reload_code').on('click', function(event){
         event.preventDefault();
         if($(event.target).hasClass("reload_revert")){
-            api.call('reload_native_modules', {}, function(){
+            api.call('reload_code', {}, function(){
                 api.call('revert_nodenet', {nodenet_uid: currentNodenet}, function(){
                     window.location.reload();
                 });
@@ -297,7 +297,7 @@ $(function() {
             return
         }
         $('#loading').show();
-        api.call('reload_native_modules', {}, function(){
+        api.call('reload_code', {}, function(){
             dialogs.notification("reload successful");
             window.location.reload();
         });

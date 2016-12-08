@@ -62,7 +62,7 @@ def test_user_prompt(runtime, test_nodenet, resourcepath):
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
-    runtime.reload_native_modules()
+    runtime.reload_code()
     res, node_uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test")
     nativemodule = nodenet.get_node(node_uid)
 
@@ -302,7 +302,7 @@ def test_node_parameters(runtime, test_nodenet, resourcepath):
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
-    assert runtime.reload_native_modules()
+    assert runtime.reload_code()
     res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test", parameters={"threshold": "", "protocol_mode": "most_active_one"})
     # nativemodule = runtime.nodenets[test_nodenet].get_node(uid)
     assert runtime.save_nodenet(test_nodenet)
@@ -352,7 +352,7 @@ def test_multiple_nodenet_interference(runtime, engine, resourcepath):
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    node.get_gate('gen').gate_function(17)")
 
-    runtime.reload_native_modules()
+    runtime.reload_code()
 
     result, n1_uid = runtime.new_nodenet('Net1', engine=engine, owner='Pytest User')
     result, n2_uid = runtime.new_nodenet('Net2', engine=engine, owner='Pytest User')
@@ -460,7 +460,7 @@ def test_native_module_reload_changes_gates(runtime, test_nodenet, resourcepath)
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
-    assert runtime.reload_native_modules()
+    assert runtime.reload_code()
     res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test", parameters={"threshold": "", "protocol_mode": "most_active_one"})
     res, neuron_uid = runtime.add_node(test_nodenet, 'Neuron', [10, 10])
     runtime.add_link(test_nodenet, neuron_uid, 'gen', uid, 'gen')
@@ -472,7 +472,7 @@ def test_native_module_reload_changes_gates(runtime, test_nodenet, resourcepath)
             "gatetypes": ["foo", "bar"],
             "nodefunction_name": "testnodefunc"
             }}""")
-    assert runtime.reload_native_modules()
+    assert runtime.reload_code()
     nativemodule = runtime.nodenets[test_nodenet].get_node(uid)
     assert nativemodule.get_gate_types() == ["foo", "bar"]
     neuron = runtime.nodenets[test_nodenet].get_node(neuron_uid)

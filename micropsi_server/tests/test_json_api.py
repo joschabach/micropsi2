@@ -101,7 +101,7 @@ def test_set_node_state(app, test_nodenet, resourcepath):
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
-    response = app.get_json('/rpc/reload_native_modules()')
+    response = app.get_json('/rpc/reload_code()')
     assert_success(response)
 
     response = app.post_json('/rpc/add_node', params={
@@ -1141,7 +1141,7 @@ def test_delete_link(app, test_nodenet, node):
     data['nodes'][node]['links'] == {}
 
 
-def test_reload_native_modules(app, test_nodenet, resourcepath):
+def test_reload_code(app, test_nodenet, resourcepath):
     app.set_auth()
     # create a native module:
     import os
@@ -1156,7 +1156,7 @@ def test_reload_native_modules(app, test_nodenet, resourcepath):
             "symbol": "t"}}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
-    response = app.get_json('/rpc/reload_native_modules()')
+    response = app.get_json('/rpc/reload_code()')
     assert_success(response)
     response = app.get_json('/rpc/get_available_node_types(nodenet_uid="%s")' % test_nodenet)
     data = response.json_body['data']['native_modules']['Testnode']
@@ -1181,7 +1181,7 @@ def test_user_prompt_response(app, test_nodenet, resourcepath):
             "symbol": "t"}}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
-    response = app.get_json('/rpc/reload_native_modules()')
+    response = app.get_json('/rpc/reload_code()')
     assert_success(response)
 
     response = app.post_json('/rpc/add_node', params={
@@ -1296,7 +1296,7 @@ def test_get_recipes(app, default_nodenet, resourcepath):
 def foobar(netapi, quatsch=23):
     return {'quatsch': quatsch}
 """)
-    response = app.get_json('/rpc/reload_native_modules()')
+    response = app.get_json('/rpc/reload_code()')
     response = app.get_json('/rpc/get_available_recipes()')
     data = response.json_body['data']
     assert 'foobar' in data
@@ -1314,7 +1314,7 @@ def test_run_recipes(app, test_nodenet, resourcepath):
 def foobar(netapi, quatsch=23):
     return {'quatsch': quatsch}
 """)
-    response = app.get_json('/rpc/reload_native_modules()')
+    response = app.get_json('/rpc/reload_code()')
     response = app.post_json('/rpc/run_recipe', {
         'nodenet_uid': test_nodenet,
         'name': 'foobar',
@@ -1348,7 +1348,7 @@ def test_nodenet_data_structure(app, test_nodenet, resourcepath, node):
             "symbol": "t"}}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
-    response = app.get_json('/rpc/reload_native_modules()')
+    response = app.get_json('/rpc/reload_code()')
     response = app.post_json('/rpc/add_nodespace', params={
         'nodenet_uid': test_nodenet,
         'nodespace': None,

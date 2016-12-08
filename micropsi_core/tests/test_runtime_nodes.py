@@ -147,7 +147,7 @@ def test_save_nodenet(runtime, test_nodenet):
     runtime.delete_nodenet(test_nodenet)
 
 
-def test_reload_native_modules(runtime, test_nodenet, resourcepath):
+def test_reload_code(runtime, test_nodenet, resourcepath):
     def hashlink(l):
         return "%s:%s:%s:%s" % (l['source_node_uid'], l['source_gate_name'], l['target_node_uid'], l['target_slot_name'])
     import os
@@ -163,14 +163,14 @@ def test_reload_native_modules(runtime, test_nodenet, resourcepath):
             }}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
-    runtime.reload_native_modules()
+    runtime.reload_code()
     reg = netapi.create_node("Neuron", None, "reg")
     test = netapi.create_node("Testnode", None, "test")
     netapi.link(reg, 'gen', test, 'gen')
     netapi.link(test, 'bar', reg, 'gen')
     data_before = runtime.nodenets[test_nodenet].export_json()
     links_before = set([hashlink(l) for l in data_before.pop('links')])
-    runtime.reload_native_modules()
+    runtime.reload_code()
     data_after = runtime.nodenets[test_nodenet].export_json()
     links_after = set([hashlink(l) for l in data_after.pop('links')])
     assert data_before == data_after
@@ -194,7 +194,7 @@ def test_native_module_and_recipe_categories(runtime, test_nodenet, resourcepath
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
     with open(recipe_file, 'w') as fp:
         fp.write("def testrecipe(netapi):\r\n    pass")
-    runtime.reload_native_modules()
+    runtime.reload_code()
     res = runtime.get_available_native_module_types(test_nodenet)
     assert res['Testnode']['category'] == 'Test'
     assert res['Testnode']['line_number'] == 1
@@ -230,11 +230,11 @@ def test_remove_and_reload_native_module(runtime, test_nodenet, resourcepath):
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
-    runtime.reload_native_modules()
+    runtime.reload_code()
     res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10, 10], name="Testnode")
     os.remove(nodetype_file)
     os.remove(nodefunc_file)
-    runtime.reload_native_modules()
+    runtime.reload_code()
     assert 'Testnode' not in runtime.get_available_native_module_types(test_nodenet)
 
 
@@ -255,7 +255,7 @@ def test_engine_specific_nodetype_dict(runtime, test_nodenet, resourcepath):
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
-    runtime.reload_native_modules()
+    runtime.reload_code()
     res, data = runtime.get_nodenet_metadata(test_nodenet)
     assert "Testnode" not in data['native_modules']
 
@@ -277,7 +277,7 @@ def test_engine_specific_nodetype_theano(runtime, test_nodenet, resourcepath):
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
-    runtime.reload_native_modules()
+    runtime.reload_code()
     res, data = runtime.get_nodenet_metadata(test_nodenet)
     assert "Testnode" not in data['native_modules']
 
@@ -299,7 +299,7 @@ def test_get_recipes(runtime, test_nodenet, resourcepath):
 def testfoo(netapi, count=23):
     return {'count':count}
 """)
-    runtime.reload_native_modules()
+    runtime.reload_code()
     recipes = runtime.get_available_recipes()
     assert 'testfoo' in recipes
     assert len(recipes['testfoo']['parameters']) == 1
@@ -315,7 +315,7 @@ def test_run_recipe(runtime, test_nodenet, resourcepath):
 def testfoo(netapi, count=23):
     return {'count':count}
 """)
-    runtime.reload_native_modules()
+    runtime.reload_code()
     state, result = runtime.run_recipe(test_nodenet, 'testfoo', {'count': 42})
     assert state
     assert result['count'] == 42
@@ -339,7 +339,7 @@ def test_node_parameter_defaults(runtime, test_nodenet, resourcepath):
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
-    runtime.reload_native_modules()
+    runtime.reload_code()
     res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10, 10], name="Test")
     node = runtime.nodenets[test_nodenet].get_node(uid)
     assert node.get_parameter("testparam") == 13
@@ -362,7 +362,7 @@ def test_node_parameters_from_persistence(runtime, test_nodenet, resourcepath):
             }}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
-    runtime.reload_native_modules()
+    runtime.reload_code()
     res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10, 10], name="Test")
     node = runtime.nodenets[test_nodenet].get_node(uid)
     node.set_parameter("testparam", 42)

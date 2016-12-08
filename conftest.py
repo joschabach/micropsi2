@@ -91,7 +91,7 @@ def pytest_runtest_setup(item):
                 os.remove(path)
     os.mkdir(os.path.join(testpath, 'Test'))
     open(os.path.join(testpath, 'Test', '__init__.py'), 'w').close()
-    micropsi_runtime.reload_native_modules()
+    micropsi_runtime.reload_code()
     micropsi_runtime.logger.clear_logs()
     micropsi_runtime.set_runner_properties(1, 1)
     set_logging_levels()

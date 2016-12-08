@@ -183,7 +183,7 @@ def test_delete_partition_unlinks_native_module(runtime, test_nodenet, resourcep
             "gatetypes": ["gen", "foo", "bar"]}}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
-    runtime.reload_native_modules()
+    runtime.reload_code()
     testnode = netapi.create_node("Testnode", None, "test")
     netapi.link(testnode, 'foo', register, 'gen')
     netapi.link(register, 'gen', testnode, 'bar')
@@ -209,7 +209,7 @@ def test_delete_nodespace_unlinks_native_module(runtime, test_nodenet, resourcep
             "gatetypes": ["gen", "foo", "bar"]}}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
-    runtime.reload_native_modules()
+    runtime.reload_code()
     testnode = netapi.create_node("Testnode", None, "test")
     netapi.link(testnode, 'foo', foopipe, 'sub')
     netapi.link(foopipe, 'sur', testnode, 'bar')

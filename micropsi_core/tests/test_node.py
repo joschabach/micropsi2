@@ -81,7 +81,7 @@ def test_fat_native_modules(runtime, test_nodenet, resourcepath):
 def phatNM(netapi, node, **_):
     pass""")
 
-    runtime.reload_native_modules()
+    runtime.reload_code()
     netapi = runtime.nodenets[test_nodenet].netapi
     node = netapi.create_node("PhatNM", None, "phatty")
     node.take_slot_activation_snapshot()

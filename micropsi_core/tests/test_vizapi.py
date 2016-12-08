@@ -83,7 +83,7 @@ def plotfunc(netapi, node=None, **params):
     plot.add_activation_plot(activations)
     plot.save_to_file(filepath)
 """)
-    runtime.reload_native_modules()
+    runtime.reload_code()
     node = nodenet.netapi.create_node("Plotter", None, name="Plotter")
     node.set_parameter("plotpath", resourcepath)
     runtime.start_nodenetrunner(test_nodenet)

@@ -16,7 +16,7 @@ delete_nodes.selectioninfo = {
     'mincount': 1,
     'maxcount': -1
 }""")
-    runtime.reload_native_modules()
+    runtime.reload_code()
     ops = runtime.get_available_operations()
     assert ops['delete_nodes']['category'] == 'foobar'
     res, uid = runtime.add_node(test_nodenet, "Neuron", [10, 10], None)

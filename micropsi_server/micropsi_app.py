@@ -1272,9 +1272,9 @@ def delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_t
     return runtime.delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type)
 
 
-@rpc("reload_native_modules", permission_required="manage nodenets")
-def reload_native_modules():
-    return runtime.reload_native_modules()
+@rpc("reload_code", permission_required="manage nodenets")
+def reload_code():
+    return runtime.reload_code()
 
 
 @rpc("user_prompt_response")

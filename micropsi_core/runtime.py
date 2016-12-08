@@ -1682,7 +1682,7 @@ def reload_nodefunctions_file(path):
         return "%s in nodfunction file %s: %s" % (e.__class__.__name__, relpath, str(e))
 
 
-def reload_native_modules():
+def reload_code():
     # stop nodenets, save state
     global native_modules, custom_recipes, custom_operations
     native_modules = {}
@@ -1748,7 +1748,7 @@ def initialize(persistency_path=None, resource_path=None):
         }, cfg['logging'].get('logfile'))
 
     load_definitions()
-    result, errors = reload_native_modules()
+    result, errors = reload_code()
     for e in errors:
         logging.getLogger("system").error(e)
 

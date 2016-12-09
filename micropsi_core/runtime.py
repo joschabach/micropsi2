@@ -428,6 +428,7 @@ def get_nodenet_metadata(nodenet_uid):
         'nodetypes': nodenet.get_standard_nodetype_definitions(),
         'nodespaces': nodenet.construct_nodespaces_dict(None, transitive=True),
         'native_modules': nodenet.get_native_module_definitions(),
+        'flow_modules': nodenet.get_flow_module_definitions(),
         'monitors': nodenet.construct_monitors_dict(),
         'rootnodespace': nodenet.get_nodespace(None).uid,
         'resource_path': RESOURCE_PATH
@@ -1442,6 +1443,18 @@ def get_netapi_autocomplete_data(nodenet_uid, name=None):
     return data
 
 
+def flow(nodenet_uid, source_uid, source_output, target_uid, target_input):
+    """ Link two flow_modules """
+    nodenet = get_nodenet(nodenet_uid)
+    return True, nodenet.flow(source_uid, source_output, target_uid, target_input)
+
+
+def unflow(nodenet_uid, source_uid, source_output, target_uid, target_input):
+    """ Removes the link between the given flow_modules """
+    nodenet = get_nodenet(nodenet_uid)
+    return True, nodenet.unflow(source_uid, source_output, target_uid, target_input)
+
+
 # --- end of API
 
 
@@ -1556,9 +1569,8 @@ def parse_native_module_file(path):
         category = os.path.relpath(os.path.dirname(path), start=RESOURCE_PATH)
         try:
             modules = json.load(fp)
-        except ValueError as oi:
-            print("oi: "+oi)
-            return "Nodetype data in %s/nodetypes.json not well-formed. Boing." % category
+        except ValueError:
+            return "Nodetype data in %s/nodetypes.json not well-formed." % category
         for key in modules:
             modules[key]['path'] = os.path.join(os.path.dirname(path), 'nodefunctions.py')
             modules[key]['category'] = category

@@ -8,10 +8,13 @@ import os
 import copy
 import math
 
+import theano
 from theano import tensor as T
 import numpy as np
 import scipy
+import networkx as nx
 
+from micropsi_core.tools import OrderedSet
 from micropsi_core.nodenet import monitor
 from micropsi_core.nodenet import recorder
 from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION
@@ -23,6 +26,7 @@ from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
 from micropsi_core.nodenet.theano_engine.theano_nodespace import *
 from micropsi_core.nodenet.theano_engine.theano_netapi import TheanoNetAPI
 from micropsi_core.nodenet.theano_engine.theano_partition import TheanoPartition
+from micropsi_core.nodenet.theano_engine.theano_flowmodule import FlowModule
 
 from configuration import config as settings
 
@@ -106,7 +110,7 @@ class TheanoNodenet(Nodenet):
     def current_step(self):
         return self._step
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None):
+    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None, flow_modules={}):
 
         # map of string uids to positions. Not all nodes necessarily have an entry.
         self.positions = {}
@@ -129,17 +133,20 @@ class TheanoNodenet(Nodenet):
         precision = settings['theano']['precision']
         if precision == "32":
             T.config.floatX = "float32"
+            self.theanofloatX = "float32"
             self.scipyfloatX = scipy.float32
             self.numpyfloatX = np.float32
             self.byte_per_float = 4
         elif precision == "64":
             T.config.floatX = "float64"
+            self.theanofloatX = "float64"
             self.scipyfloatX = scipy.float64
             self.numpyfloatX = np.float64
             self.byte_per_float = 8
         else:  # pragma: no cover
             self.logger.warning("Unsupported precision value from configuration: %s, falling back to float64", precision)
             T.config.floatX = "float64"
+            self.theanofloatX = "float64"
             self.scipyfloatX = scipy.float64
             self.numpyfloatX = np.float64
             self.byte_per_float = 8
@@ -202,6 +209,17 @@ class TheanoNodenet(Nodenet):
         for key in native_modules:
             if native_modules[key].get('engine', self.engine) == self.engine:
                 self.native_module_definitions[key] = native_modules[key]
+
+        self.flow_module_definitions = flow_modules
+        self.flow_module_instances = {}
+        self.flow_graphs = []
+        self.thetas = {}
+
+        self.flowgraph = nx.MultiDiGraph()
+        self.is_flowbuilder_active = False
+        self.flowfunctions = []
+        self.flowgraph.add_node("datasources")
+        self.flowgraph.add_node("datatargets")
 
         self.create_nodespace(None, "Root", nodespace_to_id(1, rootpartition.pid))
 
@@ -443,7 +461,8 @@ class TheanoNodenet(Nodenet):
     def initialize_stepoperators(self):
         self.stepoperators = [
             TheanoPropagate(),
-            TheanoCalculate(self)]
+            TheanoCalculate(self),
+            TheanoCalculateFlowmodules(self)]
         if self.use_modulators:
             self.stepoperators.append(DoernerianEmotionalModulators())
         self.stepoperators.sort(key=lambda op: op.priority)
@@ -458,12 +477,22 @@ class TheanoNodenet(Nodenet):
             metadata['names'] = self.names
             metadata['actuatormap'] = self.actuatormap
             metadata['sensormap'] = self.sensormap
-            metadata['nodes'] = self.constructnative_modules_and_comments_dict()
+            metadata['nodes'] = self.construct_native_modules_and_comments_dict()
             metadata['monitors'] = self.construct_monitors_dict()
             metadata['modulators'] = self.construct_modulators_dict()
             metadata['partition_parents'] = self.inverted_partitionmap
             metadata['recorders'] = self.construct_recorders_dict()
             fp.write(json.dumps(metadata, sort_keys=True, indent=4))
+
+        for node_uid in self.thetas:
+            # save thetas
+            data = {}
+            for idx, name in enumerate(self.thetas[node_uid]['names']):
+                data[name] = self.thetas[node_uid]['variables'][idx].get_value()
+            np.savez(os.path.join(base_path, "%s_thetas.npz" % node_uid), **data)
+
+        # write graph data
+        nx.write_adjlist(self.flowgraph, os.path.join(base_path, "flowgraph.adjlist"))
 
         for recorder_uid in self._recorders:
             self._recorders[recorder_uid].save()
@@ -526,6 +555,19 @@ class TheanoNodenet(Nodenet):
             for recorder_uid in initfrom.get('recorders', {}):
                 data = initfrom['recorders'][recorder_uid]
                 self._recorders[recorder_uid] = getattr(recorder, data['classname'])(self, **data)
+
+            flowfile = os.path.join(self.get_persistency_path(), 'flowgraph.adjlist')
+            if os.path.isfile(flowfile):
+                self.flowgraph = nx.read_adjlist(flowfile, create_using=nx.MultiDiGraph())
+
+            for node_uid in self.flow_module_instances:
+                theta_file = os.path.join(self.get_persistency_path(), "%s_thetas.npz" % node_uid)
+                if os.path.isfile(theta_file):
+                    data = np.load(theta_file)
+                    for key in data:
+                        self.set_theta(node_uid, key, data[key])
+
+            self.update_flow_graphs()
 
             # re-initialize step operators for theano recompile to new shared variables
             self.initialize_stepoperators()
@@ -622,7 +664,21 @@ class TheanoNodenet(Nodenet):
                 data['type'] = 'Comment'
                 invalid_nodes.append(uid)
             if native_module_instances_only:
-                node = TheanoNode(self, self.get_partition(uid), parent_uid, uid, get_numerical_node_type(data['type'], nativemodules=self.native_modules), parameters=data.get('parameters'))
+                if data.get('flow_module'):
+                    node = FlowModule(
+                        self,
+                        self.get_partition(uid),
+                        data['parent_nodespace'],
+                        data['uid'],
+                        get_numerical_node_type(data['type'], nativemodules=self.native_modules),
+                        parameters=data.get('parameters', {}),
+                        inputmap=data['inputmap'],
+                        outputmap=data['outputmap'],
+                        is_copy_of=data.get('is_copy_of'),
+                        initialized=data.get('initialized'))
+                    self.flow_module_instances[node.uid] = node
+                else:
+                    node = TheanoNode(self, self.get_partition(uid), parent_uid, uid, get_numerical_node_type(data['type'], nativemodules=self.native_modules), parameters=data.get('parameters'))
                 self.proxycache[node.uid] = node
                 new_uid = node.uid
             else:
@@ -732,7 +788,10 @@ class TheanoNodenet(Nodenet):
         if partition is None:
             raise KeyError("No node with id %s exists", uid)
         if uid in partition.native_module_instances:
-            return partition.native_module_instances[uid]
+            if uid in self.flow_module_instances:
+                return self.flow_module_instances[uid]
+            else:
+                return partition.native_module_instances[uid]
         elif uid in partition.comment_instances:
             return partition.comment_instances[uid]
         elif uid in self.proxycache:
@@ -740,7 +799,12 @@ class TheanoNodenet(Nodenet):
         elif self.is_node(uid):
             id = node_from_id(uid)
             parent_id = partition.allocated_node_parents[id]
-            node = TheanoNode(self, partition, nodespace_to_id(parent_id, partition.pid), uid, partition.allocated_nodes[id])
+            nodetype = get_string_node_type(partition.allocated_nodes[id], self.native_modules)
+            if self.get_nodetype(nodetype).is_flow_module:
+                node = FlowModule(self, partition, nodespace_to_id(parent_id, partition.pid), uid, partition.allocated_nodes[id])
+                self.flow_module_instances[uid] = node
+            else:
+                node = TheanoNode(self, partition, nodespace_to_id(parent_id, partition.pid), uid, partition.allocated_nodes[id])
             self.proxycache[node.uid] = node
             return node
         else:
@@ -771,6 +835,420 @@ class TheanoNodenet(Nodenet):
         partition = self.get_partition(nodespace_uid)
         partition.announce_nodes(number_of_nodes, average_elements_per_node)
 
+    def _create_flow_module(self, node):
+        self.flowgraph.add_node(node.uid, implementation=node.nodetype.implementation)
+
+    def flow(self, source_uid, source_output, target_uid, target_input):
+        if source_uid == "worldadapter" and source_output == "datasources":
+            self.flowgraph.add_edge('datasources', target_uid, key="%s_%s" % (source_output, target_input))
+            self.flow_module_instances[target_uid].set_input(target_input, source_uid, source_output)
+
+        elif target_uid == "worldadapter" and target_input == "datatargets":
+            self.flowgraph.add_edge(source_uid, 'datatargets', key="%s_%s" % (source_output, target_input))
+            self.flow_module_instances[source_uid].set_output(source_output, target_uid, target_input)
+
+        else:
+            self.flowgraph.add_edge(source_uid, target_uid, key="%s_%s" % (source_output, target_input))
+            self.flow_module_instances[target_uid].set_input(target_input, source_uid, source_output)
+            self.flow_module_instances[source_uid].set_output(source_output, target_uid, target_input)
+
+        self.update_flow_graphs()
+
+    def unflow(self, source_uid, source_output, target_uid, target_input):
+        if source_uid == "worldadapter" and source_output == "datasources":
+            self.flowgraph.remove_edge('datasources', target_uid, key="%s_%s" % (source_output, target_input))
+            self.flow_module_instances[target_uid].unset_input(target_input, source_uid, source_output)
+
+        elif target_uid == "worldadapter" and target_input == "datatargets":
+            self.flowgraph.remove_edge(source_uid, 'datatargets', key="%s_%s" % (source_output, target_input))
+            self.flow_module_instances[source_uid].unset_output(source_output, target_uid, target_input)
+
+        else:
+            self.flowgraph.remove_edge(source_uid, target_uid, key="%s_%s" % (source_output, target_input))
+            self.flow_module_instances[target_uid].unset_input(target_input, source_uid, source_output)
+            self.flow_module_instances[source_uid].unset_output(source_output, target_uid, target_input)
+
+        self.update_flow_graphs()
+
+    def _delete_flow_module(self, delete_uid):
+        self.flowgraph.remove_node(delete_uid)
+        module = self.flow_module_instances[delete_uid]
+        for name in module.inputmap:
+            if module.inputmap[name]:
+                source_uid, source_name = module.inputmap[name]
+                if source_uid in self.flow_module_instances:
+                    self.flow_module_instances[source_uid].unset_output(source_name, delete_uid, name)
+        for name in module.outputmap:
+            for target_uid, target_name in module.outputmap[name]:
+                if target_uid in self.flow_module_instances:
+                    self.flow_module_instances[target_uid].unset_input(target_name, delete_uid, name)
+
+        del self.flow_module_instances[delete_uid]
+        self.update_flow_graphs()
+
+    def update_flow_graphs(self, node_uids=None):
+        if self.is_flowbuilder_active:
+            return
+        self.flowfunctions = []
+        startpoints = []
+        endpoints = []
+        pythonnodes = set()
+
+        toposort = nx.topological_sort(self.flowgraph)
+        self.flow_toposort = toposort
+        for uid in toposort:
+            node = self.flow_module_instances.get(uid)
+            if node is not None:
+                if node.implementation == 'python':
+                    pythonnodes.add(uid)
+                if node.is_input_node():
+                    startpoints.append(uid)
+                if node.is_output_node():
+                    endpoints.append(uid)
+
+        graphs = []
+        for enduid in endpoints:
+            ancestors = nx.ancestors(self.flowgraph, enduid)
+            if ancestors:
+                fullpath = [uid for uid in toposort if uid in ancestors] + [enduid]
+                path = []
+                for uid in reversed(fullpath):
+                    if uid in endpoints and uid != enduid:
+                        break
+                    path.insert(0, uid)
+                if path:
+                    graphs.append(path)
+
+        flowfunctions = {}
+        floworder = OrderedSet()
+        for idx, graph in enumerate(graphs):
+            # split graph in parts:
+            node_uids = [uid for uid in graph if uid != 'datasources' and uid != 'datatargets']
+            nodes = [self.get_node(uid) for uid in node_uids]
+            paths = self.split_flow_graph_into_implementation_paths(nodes)
+            for p in paths:
+                floworder.add(p['hash'])
+                if p['hash'] not in flowfunctions:
+                    func, dang_in, dang_out = self.compile_flow_subgraph([n.uid for n in p['members']], use_unique_input_names=True)
+                    if func:
+                        flowfunctions[p['hash']] = {'callable': func, 'members': p['members'], 'endnodes': set([nodes[-1]]), 'inputs': dang_in, 'outputs': dang_out}
+                else:
+                    flowfunctions[p['hash']]['endnodes'].add(nodes[-1])
+        for funcid in floworder:
+            self.flowfunctions.append(flowfunctions[funcid])
+
+        self.logger.debug("Compiled %d flowfunctions" % len(self.flowfunctions))
+
+    def split_flow_graph_into_implementation_paths(self, nodes):
+        paths = []
+        for node in nodes:
+            if node.implementation == 'python':
+                paths.append({'implementation': 'python', 'members': [node], 'hash': node.uid})
+            else:
+                if len(paths) == 0 or paths[-1]['implementation'] == 'python':
+                    paths.append({'implementation': 'theano', 'members': [node], 'hash': node.uid})
+                else:
+                    paths[-1]['members'].append(node)
+                    paths[-1]['hash'] += node.uid
+
+        return paths
+
+    def compile_flow_subgraph(self, node_uids, requested_outputs=None, use_different_thetas=False, use_unique_input_names=False):
+        """ Compile and return one callable for the given flow_module_uids.
+        If use_different_thetas is True, the callable expects an argument names "thetas".
+        Thetas are expected to be sorted in the same way collect_thetas() would return them.
+
+        Parameters
+        ----------
+        node_uids : list
+            the uids of the members of this graph
+
+        requested_outputs : list, optional
+            list of tuples (node_uid, out_name) to filter the callable's return-values. defaults to None, returning all outputs
+
+        use_different_thetas : boolean, optional
+            if true, return a callable that excepts a parameter "thetas" that will be used instead of existing thetas. defaults to False
+
+        use_unique_input_names : boolen, optional
+            if true, the returned callable expects input-kwargs to be prefixe by node_uid: "UID_NAME". defaults to False, using only the name of the input
+
+        Returns
+        -------
+        callable : function
+            the compiled function for this subgraph
+
+        dangling_inputs : list
+            list of tuples (node_uid, input) that the callable expectes as inputs
+
+        dangling_outputs : list
+            list of tuples (node_uid, input) that the callable will return as output
+
+        """
+        subgraph = [self.get_node(uid) for uid in self.flow_toposort if uid in node_uids]
+
+        # split the nodes into symbolic/non-symbolic paths
+        paths = self.split_flow_graph_into_implementation_paths(subgraph)
+
+        dangling_inputs = []
+        dangling_outputs = []
+
+        thunks = []
+
+        for path_idx, path in enumerate(paths):
+            thunk = {
+                'implementation': path['implementation'],
+                'function': None,
+                'node': None,
+                'outputs': [],
+                'input_sources': [],
+                'dangling_outputs': [],
+                'list_outputs': [],
+                'members': path['members']
+            }
+            member_uids = [n.uid for n in path['members']]
+            outexpressions = {}
+            inputs = []
+            outputs = []
+
+            # index for outputs of this thunk, considering unpacked list outputs
+            thunk_flattened_output_index = 0
+
+            for node in path['members']:
+                buildargs = []
+                # collect the inputs for this Flowmodule:
+                for in_idx, in_name in enumerate(node.inputs):
+                    if not node.inputmap[in_name] or node.inputmap[in_name][0] not in member_uids:
+                        # this input is not satisfied from within this path
+                        in_expr = create_tensor(node.definition['inputdims'][in_idx], self.theanofloatX, name="%s_%s" % (node.uid, in_name))
+                        inputs.append(in_expr)
+                        if not node.inputmap[in_name] or node.inputmap[in_name][0] not in node_uids:
+                            # it's not even satisfied by another path within the subgraph,
+                            # and needs to be provided as input to the emerging callable
+                            if use_unique_input_names:
+                                thunk['input_sources'].append(('kwargs', -1, "%s_%s" % (node.uid, in_name)))
+                            else:
+                                thunk['input_sources'].append(('kwargs', -1, in_name))
+                            dangling_inputs.append((node.uid, in_name))
+                        else:
+                            # this input will be satisfied by another path within the subgraph
+                            source_uid, source_name = node.inputmap[in_name]
+                            for idx, p in enumerate(paths):
+                                if self.get_node(source_uid) in p['members']:
+                                    # record which thunk, and which index of its output-array satisfies this input
+                                    thunk['input_sources'].append(('path', idx, thunks[idx]['outputs'].index((source_uid, source_name))))
+                        buildargs.append(in_expr)
+                    else:
+                        # this input is satisfied within this path
+                        source_uid, source_name = node.inputmap[in_name]
+                        buildargs.append(outexpressions[source_uid][self.get_node(source_uid).outputs.index(source_name)])
+
+                # build the outexpression
+                if len(node.outputs) <= 1:
+                    original_outex = [node.build(*buildargs)]
+                elif node.implementation == 'python':
+                    func = node.build(*buildargs)
+                    original_outex = [func] * len(node.outputs)
+                else:
+                    original_outex = node.build(*buildargs)
+
+                outexpressions[node.uid] = original_outex
+                flattened_outex = []
+                outputlengths = []
+                flattened_markers = []
+                # check if this node has a list as one of its return values:
+                for idx, ex in enumerate(original_outex):
+                    if type(ex) == list:
+                        # if so, flatten the outputs, and mark the offset and length of the flattened output
+                        # so that we can later reconstruct the nested output-structure
+                        flattened_markers.append((len(outputs) + idx, len(ex)))
+                        outputlengths.append(len(ex))
+                        for item in ex:
+                            flattened_outex.append(item)
+                    else:
+                        flattened_outex.append(ex)
+                        outputlengths.append(1)
+
+                # offset for indexing the flattened_outexpression by output_index
+                node_flattened_output_offset = 0
+
+                # go thorugh the nodes outputs, and see how they will be used:
+                for out_idx, out_name in enumerate(node.outputs):
+                    dangling = ['external']
+                    if node.outputmap[out_name]:
+                        # if this output is used, we have to see where every connection goes
+                        # iterate through every connection, and note if it's used path-internally,
+                        # subgraph-internally, or will produce an output of the emerging callable
+                        dangling = []
+                        for pair in node.outputmap[out_name]:
+                            if pair[0] in member_uids:
+                                # path-internally satisfied
+                                dangling.append(False)
+                            elif pair[0] in node_uids:
+                                # internal dangling aka subgraph-internally satisfied
+                                dangling.append("internal")
+                            else:
+                                # externally dangling aka this will be a final output
+                                dangling.append("external")
+                    # now, handle internally or externally dangling outputs if there are any:
+                    if set(dangling) != {False}:
+                        thunk['outputs'].append((node.uid, out_name))
+                        if outputlengths[out_idx] > 1:
+                            # if this is output should produce a list, note this, for later de-flattenation
+                            # and append the flattened output to the output-collection
+                            thunk['list_outputs'].append((thunk_flattened_output_index, outputlengths[out_idx]))
+                            for i in range(outputlengths[out_idx]):
+                                outputs.append(flattened_outex[out_idx + node_flattened_output_offset + i])
+                            node_flattened_output_offset += outputlengths[out_idx] - 1
+                        else:
+                            outputs.append(flattened_outex[out_idx + node_flattened_output_offset])
+                        if "external" in dangling:
+                            # this output will be a final one:
+                            if requested_outputs is None or (node.uid, out_name) in requested_outputs:
+                                dangling_outputs.append((node.uid, out_name))
+                                thunk['dangling_outputs'].append(thunk_flattened_output_index)
+                        thunk_flattened_output_index += outputlengths[out_idx]
+
+            # now, set the function of this thunk. Either compile a theano function
+            # or assign the python function.
+            if not use_different_thetas:
+                if thunk['implementation'] == 'theano':
+                    thunk['function'] = theano.function(inputs=inputs, outputs=outputs)
+                else:
+                    thunk['node'] = path['members'][0]
+                    thunk['function'] = outexpressions[thunk['node'].uid][0]
+
+            else:
+                sharedvars = self.collect_thetas(node_uids)
+                dummies = [create_tensor(var.ndim, self.theanofloatX, name="Theta_%s" % var.name) for var in sharedvars]
+                if thunk['implementation'] == 'theano':
+                    givens = list(zip(sharedvars, dummies))
+                    thunk['function'] = theano.function(inputs=inputs + dummies, outputs=outputs, givens=givens)
+                else:
+                    thunk['node'] = path['members'][0]
+                    thunk['function'] = outexpressions[thunk['node'].uid][0]
+
+            thunks.append(thunk)
+
+        if not use_unique_input_names:
+            # check for name collisions
+            for thunk in thunks:
+                if len(set(thunk['input_sources'])) != (len(thunk['input_sources'])):
+                    raise RuntimeError("""
+                        Name Collision in inputs detected!
+                        This graph can only be compiled as callable if you use unique_input_names.
+                        set use_unique_input_names to True, and give the inputs as "UID_NAME"
+                        where uid is the uid of the node getting this input, and name is the input name of this node""")
+
+        def compiled(thetas=None, **kwargs):
+            """ Compiled callable for this subgraph """
+            all_outputs = []  # outputs for use within this thunk
+            final_outputs = []  # final, external dangling outputs
+            for idx, thunk in enumerate(thunks):
+                funcargs = []
+                # get the inputs: Either from the kwargs, or from the already existing outputs
+                for source, pidx, item in thunk['input_sources']:
+                    if source == 'kwargs':
+                        funcargs.append(kwargs[item])
+                    elif source == 'path':
+                        funcargs.append(all_outputs[pidx][item])
+                if thunk['implementation'] == 'python':
+                    out = thunk['function'](*funcargs, netapi=self.netapi, node=thunk['node'], parameters=thunk['node'].parameters)
+                    if len(thunk['node'].outputs) <= 1:
+                        out = [out]
+                else:
+                    if thetas:
+                        funcargs += thetas
+                    out = thunk['function'](*funcargs)
+                if thunk['list_outputs']:
+                    # if we have list_outputs, we need to nest the output of this thunk again
+                    # to recreate the nested structure from a flat list of outputs
+                    new_out = []
+                    out_iter = iter(out)
+                    try:
+                        for out_index in range(len(out)):
+                            for offset, length in thunk['list_outputs']:
+                                if offset == out_index:
+                                    sublist = []
+                                    for i in range(length):
+                                        sublist.append(next(out_iter))
+                                    new_out.append(sublist)
+                                else:
+                                    new_out.append(next(out_iter))
+                    except StopIteration:
+                        # iterator finished, we handled all items.
+                        pass
+                    out = new_out
+                if out:
+                    all_outputs.append(out)
+                    for idx in thunk['dangling_outputs']:
+                        final_outputs.append(out[idx])
+            return final_outputs
+
+        compiled.__doc__ = """Compiled subgraph of nodes %s
+            Inputs: %s
+            Outputs: %s
+        """ % (str(subgraph), str([("%s of %s" % x[::-1]) for x in dangling_inputs]), str([("%s of %s" % x[::-1]) for x in dangling_outputs]))
+
+        return compiled, dangling_inputs, dangling_outputs
+
+    def shadow_flowgraph(self, flow_modules):
+        """ Creates shallow copies of the given flow_modules, copying instances and internal connections.
+        Shallow copies will always have the parameters and shared variables of their originals
+        """
+        copies = []
+        copymap = {}
+        for node in flow_modules:
+            copy_uid = self.create_node(
+                node.type,
+                node.parent_nodespace,
+                node.position,
+                name=node.name,
+                parameters=node.clone_parameters())
+            copy = self.get_node(copy_uid)
+            copy.is_copy_of = node.uid
+            copymap[node.uid] = copy
+            copies.append(copy)
+        for node in flow_modules:
+            for in_name in node.inputmap:
+                if node.inputmap[in_name]:
+                    source_uid, source_name = node.inputmap[in_name]
+                    if source_uid in copymap:
+                        self.flow(copymap[source_uid].uid, source_name, copymap[node.uid].uid, in_name)
+        return copies
+
+    def set_theta(self, node_uid, name, val):
+        if node_uid not in self.thetas:
+            self.thetas[node_uid] = {
+                'names': [],
+                'variables': []
+            }
+        if name not in self.thetas[node_uid]['names']:
+            new_names = sorted(self.thetas[node_uid]['names'] + [name])
+            self.thetas[node_uid]['names'] = new_names
+            index = self.thetas[node_uid]['names'].index(name)
+            if not isinstance(val, T.sharedvar.TensorSharedVariable):
+                val = theano.shared(value=val.astype(T.config.floatX), name=name, borrow=True)
+            self.thetas[node_uid]['variables'].insert(index, val)
+        else:
+            index = self.thetas[node_uid]['names'].index(name)
+            self.thetas[node_uid]['variables'][index].set_value(val, borrow=True)
+
+    def get_theta(self, node_uid, name):
+        data = self.thetas[node_uid]
+        index = data['names'].index(name)
+        return data['variables'][index]
+
+    def collect_thetas(self, node_uids):
+        shared_vars = []
+        for uid in node_uids:
+            node = self.get_node(uid)
+            if node.is_copy_of:
+                uid = node.is_copy_of
+            data = self.thetas.get(uid)
+            if data:
+                shared_vars.extend(data['variables'])
+        return shared_vars
+
     def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_configuration=None):
         nodespace_uid = self.get_nodespace(nodespace_uid).uid
         partition = self.get_partition(nodespace_uid)
@@ -800,6 +1278,9 @@ class TheanoNodenet(Nodenet):
                 self.get_node(uid).set_parameter("datatarget", parameters['datatarget'])
                 if name is None or name == "" or name == uid:
                     name = parameters['datatarget']
+
+        if nodetype in self.native_modules and self.native_modules[nodetype].is_flow_module:
+            self._create_flow_module(self.get_node(uid))
 
         if name is not None and name != "" and name != uid:
             self.names[uid] = name
@@ -900,6 +1381,9 @@ class TheanoNodenet(Nodenet):
                         to_partition.inlinks[partition.spid][1].set_value(np.delete(to_elements, zero_rows))
 
         partition.delete_node(node_id)
+
+        if uid in self.flow_module_instances:
+            self._delete_flow_module(uid)
 
         # remove sensor association if there should be one
         if uid in self.sensormap.values():
@@ -1140,7 +1624,10 @@ class TheanoNodenet(Nodenet):
         return actuators
 
     def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1):
-        return self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight)
+        result = self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight)
+        if target_node_uid in self.flow_module_instances:
+            self.update_flow_graphs()
+        return result
 
     def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1):
 
@@ -1190,7 +1677,10 @@ class TheanoNodenet(Nodenet):
         return True
 
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):
-        return self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, 0)
+        result = self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, 0)
+        if target_node_uid in self.flow_module_instances:
+            self.update_flow_graphs()
+        return result
 
     def reload_native_modules(self, native_modules):
 
@@ -1234,22 +1724,36 @@ class TheanoNodenet(Nodenet):
             self.native_modules = newnative_modules
 
             # update the living instances that have the same slot/gate numbers
-            new_instances = {}
-            for id, instance in partition.native_module_instances.items():
+            new_native_module_instances = {}
+            for uid, instance in partition.native_module_instances.items():
                 parameters = instance.clone_parameters()
                 state = instance.clone_state()
                 position = instance.position
                 name = instance.name
-                partition = self.get_partition(id)
-                new_native_module_instance = TheanoNode(self, partition, instance.parent_nodespace, id, partition.allocated_nodes[node_from_id(id)])
-                new_native_module_instance.position = position
-                new_native_module_instance.name = name
+                partition = self.get_partition(uid)
+                if uid in self.flow_module_instances:
+                    data = instance.get_data(complete=True)
+                    new_instance = FlowModule(
+                        self,
+                        partition,
+                        instance.parent_nodespace,
+                        uid,
+                        partition.allocated_nodes[node_from_id(uid)],
+                        inputmap=data['inputmap'],
+                        outputmap=data['outputmap']
+                    )
+
+                else:
+                    new_instance = TheanoNode(self, partition, instance.parent_nodespace, uid, partition.allocated_nodes[node_from_id(uid)])
+                new_native_module_instances[uid] = new_instance
+                new_instance.position = position
+                new_instance.name = name
                 for key, value in parameters.items():
-                    new_native_module_instance.set_parameter(key, value)
+                    new_instance.set_parameter(key, value)
                 for key, value in state.items():
-                    new_native_module_instance.set_state(key, value)
-                new_instances[id] = new_native_module_instance
-            partition.native_module_instances = new_instances
+                    new_instance.set_state(key, value)
+
+            partition.native_module_instances = new_native_module_instances
 
             # update native modules numeric types, as these may have been set with a different native module
             # node types list
@@ -1257,6 +1761,9 @@ class TheanoNodenet(Nodenet):
             for id in native_module_ids:
                 instance = self.get_node(node_to_id(id, partition.pid))
                 partition.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
+
+        # recompile flow_graphs:
+        self.update_flow_graphs()
 
         # recreate the deleted ones. Gate configurations and links will not be transferred.
         for uid, data in instances_to_recreate.items():
@@ -1406,7 +1913,7 @@ class TheanoNodenet(Nodenet):
 
         return data
 
-    def constructnative_modules_and_comments_dict(self):
+    def construct_native_modules_and_comments_dict(self):
         data = {}
         i = 0
         for partition in self.partitions.values():
@@ -1415,6 +1922,8 @@ class TheanoNodenet(Nodenet):
                 i += 1
                 node_uid = node_to_id(node_id, partition.pid)
                 data[node_uid] = self.get_node(node_uid).get_data(complete=True)
+                if node_uid in self.flow_module_instances:
+                    data[node_uid].update(self.flow_module_instances[node_uid].get_flow_data())
         return data
 
     def construct_nodes_dict(self, nodespace_uid=None, complete=False, include_links=True):
@@ -1516,7 +2025,7 @@ class TheanoNodenet(Nodenet):
             a_array = partition.a.get_value(borrow=True)
             valid = np.where(partition.actuator_indices >= 0)
             actuator_values_to_write[valid] += a_array[partition.actuator_indices[valid]]
-        if self.use_modulators and bool(self.actuatormap):
+        if self.use_modulators:
             writeables = sorted(DoernerianEmotionalModulators.writeable_modulators)
             # remove modulators from actuator values
             modulator_values = actuator_values_to_write[-len(writeables):]
@@ -1525,7 +2034,7 @@ class TheanoNodenet(Nodenet):
                 if key in self.actuatormap:
                     self.set_modulator(key, modulator_values[idx])
         if self._worldadapter_instance:
-            self._worldadapter_instance.set_datatarget_values(actuator_values_to_write)
+            self._worldadapter_instance.add_datatarget_values(actuator_values_to_write)
 
     def _rebuild_sensor_actuator_indices(self, partition=None):
         """
@@ -1695,7 +2204,6 @@ class TheanoNodenet(Nodenet):
             partition_from.set_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to, new_w)
 
         self.proxycache.clear()
-
 
     def get_available_gatefunctions(self):
         return {

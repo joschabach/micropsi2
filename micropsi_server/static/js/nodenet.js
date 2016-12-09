@@ -16,6 +16,7 @@ var viewProperties = {
     selectionColor: new Color("#0099ff"),
     hoverColor: new Color("#089AC7"),
     linkColor: new Color("#000000"),
+    flowConnectionColor: new Color("#1F3755"),
     nodeColor: new Color("#c2c2d6"),
     nodeForegroundColor: new Color ("#000000"),
     nodeFontColor: new Color ("#000000"),
@@ -23,6 +24,7 @@ var viewProperties = {
     symbolSize: 14,
     nodeWidth: 84,
     compactNodeWidth: 32,
+    flowModuleWidth: 160,
     cornerWidth: 6,
     padding: 5,
     slotWidth: 34,
@@ -58,6 +60,7 @@ var nodenet_loaded = false;
 // hashes from uids to object definitions; we import these via json
 nodes = {};
 links = {};
+flow_connections = {};
 selection = {};
 monitors = {};
 
@@ -114,11 +117,14 @@ selectionBox.name = "selectionBox";
 
 nodetypes = {};
 native_modules = {};
+flow_modules = {};
 native_module_categories = {};
+flow_module_categories = {};
 available_gatetypes = [];
 nodespaces = {};
 sorted_nodetypes = [];
 sorted_native_modules = [];
+sorted_flow_modules = [];
 nodenet_data = null;
 
 initializeMenus();
@@ -244,7 +250,7 @@ function setNodenetValues(data){
 
 function buildCategoryTree(item, path, idx){
     if (idx < path.length){
-        name = path[idx];
+        var name = path[idx];
         if (!item[name]){
             item[name] = {};
         }
@@ -303,21 +309,22 @@ function setCurrentNodenet(uid, nodespace, changed){
 
             $.cookie('selected_nodenet', currentNodenet+"/", { expires: 7, path: '/' });
             if(nodenetChanged || jQuery.isEmptyObject(nodetypes)){
-                nodetypes = data.nodetypes;
-                native_modules = data.native_modules;
-                sorted_nodetypes = Object.keys(nodetypes);
-                sorted_nodetypes.sort(function(a, b){
+                var sortfunc = function(a, b){
                     if(a < b) return -1;
                     if(a > b) return 1;
                     return 0;
-                });
+                };
+                nodetypes = data.nodetypes;
+                sorted_nodetypes = Object.keys(nodetypes);
+                sorted_nodetypes.sort(sortfunc);
+
                 native_modules = data.native_modules;
                 sorted_native_modules = Object.keys(native_modules);
-                sorted_native_modules.sort(function(a, b){
-                    if(a < b) return -1;
-                    if(a > b) return 1;
-                    return 0;
-                });
+                sorted_native_modules.sort(sortfunc);
+
+                flow_modules = data.flow_modules;
+                sorted_flow_modules = Object.keys(flow_modules);
+                sorted_flow_modules.sort(sortfunc);
 
                 categories = [];
                 for(var key in native_modules){
@@ -327,6 +334,15 @@ function setCurrentNodenet(uid, nodespace, changed){
                 native_module_categories = {}
                 for(var i =0; i < categories.length; i++){
                     buildCategoryTree(native_module_categories, categories[i], 0);
+                }
+                flow_categories = [];
+                for(var key in flow_modules){
+                    nodetypes[key] = flow_modules[key];
+                    flow_categories.push(flow_modules[key].category.split('/'));
+                }
+                flow_module_categories = {}
+                for(var i =0; i < flow_categories.length; i++){
+                    buildCategoryTree(flow_module_categories, flow_categories[i], 0);
                 }
 
                 available_gatetypes = [];
@@ -396,8 +412,10 @@ function setNodespaceData(data, changed){
             removeLink(links[uid]);
         }
         var links_data = {}
+        var flow_connections = {};
         for(uid in data.nodes){
-            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_configuration, data.nodes[uid].is_highdimensional, data.nodes[uid].inlinks, data.nodes[uid].outlinks);
+            var node = data.nodes[uid]
+            item = new Node(uid, node['position'][0], node['position'][1], node.parent_nodespace, node.name, node.type, node.activation, node.state, node.parameters, node.gate_activations, node.gate_configuration, node.is_highdimensional, node.inlinks, node.outlinks, node.inputmap);
             if(uid in nodes){
                 if(nodeRedrawNeeded(item)) {
                     nodes[uid].update(item);
@@ -408,12 +426,26 @@ function setNodespaceData(data, changed){
             } else{
                 addNode(item);
             }
-            for(gate in data.nodes[uid].links){
-                for(var i = 0; i < data.nodes[uid].links[gate].length; i++){
-                    luid = uid + ":" + gate + ":" + data.nodes[uid].links[gate][i]['target_slot_name'] + ":" + data.nodes[uid].links[gate][i]['target_node_uid']
-                    links_data[luid] = data.nodes[uid].links[gate][i]
+            for(gate in node.links){
+                for(var i = 0; i < node.links[gate].length; i++){
+                    luid = uid + ":" + gate + ":" + node.links[gate][i]['target_slot_name'] + ":" + node.links[gate][i]['target_node_uid']
+                    links_data[luid] = node.links[gate][i]
                     links_data[luid].source_node_uid = uid
                     links_data[luid].source_gate_name = gate
+                }
+            }
+            if(node.inputmap){
+                for(var name in node.inputmap){
+                    var source_uid = node.inputmap[name][0];
+                    var source_name = node.inputmap[name][1];
+                    cid = source_uid + ":" + source_name + ":" + name + ":" + uid;
+                    links_data[cid] = {
+                        'source_node_uid': source_uid,
+                        'target_node_uid': uid,
+                        'source_name': source_name,
+                        'target_name': name,
+                        'is_flow_connection': true
+                    };
                 }
             }
         }
@@ -431,6 +463,11 @@ function setNodespaceData(data, changed){
             for(var uid in links) {
                 if(!(uid in links_data)) {
                     removeLink(links[uid]);
+                }
+            }
+            for(var uid in flow_connections) {
+                if(!(uid in links_data)) {
+                    removeLink(flow_connections[uid]);
                 }
             }
             addLinks(links_data);
@@ -495,6 +532,20 @@ function setNodespaceDiffData(data, changed){
                         links_data[luid].source_gate_name = gate
                     }
                 }
+                if(nodedata.inputmap){
+                    for(var name in nodedata.inputmap){
+                        var source_uid = nodedata.inputmap[name][0];
+                        var source_name = nodedata.inputmap[name][1];
+                        cid = source_uid + ":" + source_name + ":" + name + ":" + uid;
+                        links_data[cid] = {
+                            'source_node_uid': source_uid,
+                            'target_node_uid': uid,
+                            'source_name': source_name,
+                            'target_name': name,
+                            'is_flow_connection': true
+                        };
+                    }
+                }
             }
             addLinks(links_data);
         }
@@ -539,9 +590,15 @@ function addLinks(link_data){
         sourceId = link_data[uid]['source_node_uid'];
         targetId = link_data[uid]['target_node_uid'];
         if (sourceId in nodes && targetId in nodes && nodes[sourceId].parent == nodes[targetId].parent){
-            link = new Link(uid, sourceId, link_data[uid].source_gate_name, targetId, link_data[uid].target_slot_name, link_data[uid].weight);
+            if(link_data[uid].is_flow_connection){
+                link = new Link(uid, sourceId, link_data[uid].source_name, targetId, link_data[uid].target_name, 1, true);
+            } else {
+                link = new Link(uid, sourceId, link_data[uid].source_gate_name, targetId, link_data[uid].target_slot_name, link_data[uid].weight);
+            }
             if(uid in links){
                 redrawLink(link);
+            } else if(uid in flow_connections){
+                redrawFlowConnection(link);
             } else {
                 addLink(link);
             }
@@ -671,7 +728,7 @@ function updateModulators(data){
 
 
 // data structure for net entities
-function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters, gate_activations, gate_configuration, is_highdim, inlinks, outlinks) {
+function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters, gate_activations, gate_configuration, is_highdim, inlinks, outlinks, inputmap) {
 	this.uid = uid;
 	this.x = x;
 	this.y = y;
@@ -697,6 +754,8 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
     this.inlinks = inlinks || 0;
     this.outlinks = outlinks || 0;
     this.symbol = nodetypes[type].symbol || type.substr(0,1);
+    this.is_flow_module = (this.type in flow_modules)
+    this.inputmap = inputmap;
     var i;
     for(i in nodetypes[type].slottypes){
         this.slots[nodetypes[type].slottypes[i]] = new Slot(nodetypes[type].slottypes[i]);
@@ -725,6 +784,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
         this.gate_activations = item.gate_activations;
         this.outlinks = item.outlinks;
         this.inlinks = item.inlinks;
+        this.inputmap = item.inputmap;
         for(var i in nodetypes[type].gatetypes){
             var gatetype = nodetypes[type].gatetypes[i];
             this.gates[gatetype].gate_configuration = this.gate_configuration[gatetype];
@@ -771,14 +831,14 @@ function Gate(name, index, activation, gate_configuration, is_highdim) {
 }
 
 // link, connects two nodes, from a gate to a slot
-function Link(uid, sourceNodeUid, gateName, targetNodeUid, slotName, weight){
+function Link(uid, sourceNodeUid, gateName, targetNodeUid, slotName, weight, is_flow_connection){
     this.uid = uid;
     this.sourceNodeUid = sourceNodeUid;
     this.gateName = gateName;
     this.targetNodeUid = targetNodeUid;
     this.slotName = slotName;
     this.weight = weight;
-
+    this.is_flow_connection = is_flow_connection;
     this.strokeColor = null;
     this.strokeWidth = null;
 }
@@ -800,16 +860,21 @@ function addLink(link) {
             nodes[link.targetNodeUid].slots[link.slotName].incoming[link.uid]=link;
             slot = true;
         }
-        if((sourceNode.uid && !gate) || (targetNode.uid && !slot)){
+        if(((sourceNode.uid && !gate) || (targetNode.uid && !slot)) && !link.is_flow_connection){
             console.error('Incompatible slots and gates: gate:'+ link.gateName + ' / slot:'+link.slotName);
             return;
         }
-        // check if link is visible
-        if (!(isOutsideNodespace(nodes[link.sourceNodeUid]) &&
-            isOutsideNodespace(nodes[link.targetNodeUid]))) {
-            renderLink(link);
+        if(link.is_flow_connection){
+            renderFlowConnection(link);
+            flow_connections[link.uid] = link;
+        } else {
+            links[link.uid] = link;
+            // check if link is visible
+            if (!(isOutsideNodespace(nodes[link.sourceNodeUid]) &&
+                isOutsideNodespace(nodes[link.targetNodeUid]))) {
+                renderLink(link);
+            }
         }
-        links[link.uid] = link;
     } else {
         console.error("Error: Attempting to create link without establishing nodes first");
     }
@@ -826,6 +891,17 @@ function redrawLink(link, forceRedraw){
         }
         renderLink(link);
         links[link.uid] = link;
+    }
+}
+function redrawFlowConnection(link, forceRedraw){
+    var oldLink = flow_connections[link.uid];
+    if (forceRedraw || !oldLink || !(link.uid in linkLayer.children) || oldLink.weight != link.weight ||
+            !nodes[oldLink.sourceNodeUid] || !nodes[link.sourceNodeUid]) {
+        if(link.uid in linkLayer.children){
+            linkLayer.children[link.uid].remove();
+        }
+        renderFlowConnection(link);
+        flow_connections[link.uid] = link;
     }
 }
 
@@ -934,6 +1010,14 @@ function redrawNodeNet() {
             renderLink(links[i]);
         }
     }
+    for(uid in flow_connections){
+        var sourceNode = nodes[flow_connections[uid].sourceNodeUid];
+        var targetNode = nodes[flow_connections[uid].targetNodeUid];
+        // check if the link is visible
+        if (!(isOutsideNodespace(sourceNode) && isOutsideNodespace(targetNode))) {
+            renderFlowConnection(flow_connections[uid]);
+        }
+    }
     updateViewSize();
     drawGridLines(view.element);
 }
@@ -989,6 +1073,19 @@ function redrawNodeLinks(node) {
                 linkLayer.children[linkUid].remove();
             }
             renderLink(links[linkUid]);
+        }
+    }
+    redrawNodeFlowConnections(node);
+}
+function redrawNodeFlowConnections(node) {
+    if(node.is_flow_module){
+        for(var uid in flow_connections){
+            if(flow_connections[uid].sourceNodeUid == node.uid || flow_connections[uid].targetNodeUid == node.uid){
+                if(uid in linkLayer.children) {
+                    linkLayer.children[uid].remove();
+                }
+                renderFlowConnection(flow_connections[uid]);
+            }
         }
     }
 }
@@ -1238,6 +1335,39 @@ function renderLink(link, force) {
     linkLayer.addChild(linkContainer);
 }
 
+function renderFlowConnection(link, force) {
+    if(nodespaceProperties[currentNodeSpace].renderlinks == 'no'){
+        return;
+    }
+    if(nodespaceProperties[currentNodeSpace].renderlinks == 'selection'){
+        var is_selected = selection && (link.sourceNodeUid in selection || link.targetNodeUid in selection);
+        if(!is_selected){
+            return;
+        }
+    }
+    var sourceNode = nodes[link.sourceNodeUid];
+    var targetNode = nodes[link.targetNodeUid];
+    var sourceType = flow_modules[sourceNode.type];
+    var targetType = flow_modules[targetNode.type];
+
+    var itemlength = sourceNode.bounds.width / sourceType.outputs.length;
+    var idx = sourceType.outputs.indexOf(link.gateName);
+    var linkStart = new Point(sourceNode.bounds.x + ((idx+.5) * itemlength), sourceNode.bounds.y + viewProperties.lineHeight * 0.7 * viewProperties.zoomFactor);
+    itemlength = targetNode.bounds.width / targetType.inputs.length;
+    idx = targetType.inputs.indexOf(link.slotName);
+    var linkEnd = new Point(targetNode.bounds.x + ((idx+.5) * itemlength), targetNode.bounds.y + targetNode.bounds.height - viewProperties.lineHeight * 0.3 * viewProperties.zoomFactor);
+
+    var linkPath = new Path([linkStart, linkEnd]);
+    linkPath.strokeColor = viewProperties.flowConnectionColor;
+    linkPath.strokeWidth = 10 * viewProperties.zoomFactor;
+    linkPath.opacity = 0.8;
+    linkPath.name = "path";
+    linkPath.dashArray = [viewProperties.zoomFactor,viewProperties.zoomFactor];
+    var linkContainer = new Group(linkPath);
+    linkContainer.name = link.uid;
+    linkLayer.addChild(linkContainer);
+}
+
 // draw the line part of the link
 function createLink(startPoint, startAngle, startDirection, endPoint, endAngle, endDirection, linkColor, linkWidth, linkType) {
     var arrowEntry = new Point(viewProperties.arrowLength*viewProperties.zoomFactor,0).rotate(endAngle)+endPoint;
@@ -1323,6 +1453,13 @@ function renderFullNode(node) {
     var nodeItem;
     if(node.type == 'Comment'){
         nodeItem = renderComment(node);
+    } else if(node.type in flow_modules){
+        var skeleton = createFullNodeSkeleton(node);
+        var activations = createFullNodeActivations(node);
+        var inputs = createFlowInputs(node);
+        var outputs = createFlowOutputs(node);
+        var gateAnnotations = createGateAnnotation(node);
+        nodeItem = new Group([activations, skeleton, inputs, outputs, gateAnnotations]);
     } else {
         var skeleton = createFullNodeSkeleton(node);
         var activations = createFullNodeActivations(node);
@@ -1333,6 +1470,100 @@ function renderFullNode(node) {
     nodeItem.name = node.uid;
     nodeItem.isCompact = false;
     nodeLayer.addChild(nodeItem);
+}
+
+function createFlowInputs(node){
+    var inputs = flow_modules[node.type].inputs;
+    var num = inputs.length;
+    var inputshapes = [];
+    var itemlength = node.bounds.width / num;
+    for(var i = 0; i < num; i++){
+        var label = new PointText(node.bounds.x + ((i+.5) * itemlength), node.bounds.y + node.bounds.height - viewProperties.lineHeight * 0.3 * viewProperties.zoomFactor);
+        label.content = inputs[i];
+        label.name = inputs[i];
+        label.paragraphStyle.justification = 'center';
+        label.characterStyle = {
+            fillColor: viewProperties.nodeFontColor,
+            fontSize: viewProperties.fontSize*viewProperties.zoomFactor
+        }
+        if(num > 1 && i < num - 1){
+            var border = new Path.Rectangle(
+                    node.bounds.x + ((i+1) * itemlength),
+                    node.bounds.y + node.bounds.height - viewProperties.lineHeight * viewProperties.zoomFactor,
+                    viewProperties.shadowDisplacement.x * viewProperties.zoomFactor,
+                    viewProperties.lineHeight * viewProperties.zoomFactor
+                );
+            border.fillColor = viewProperties.shadowColor;
+            border.fillColor.alpha = 0.3;
+            inputshapes.push(new Group([label, border]));
+        } else {
+            inputshapes.push(label);
+        }
+    }
+    var bounds = node.bounds;
+    var upper = new Path.Rectangle(bounds.x+viewProperties.shadowDisplacement.x*viewProperties.zoomFactor,
+        bounds.y + bounds.height - (viewProperties.lineHeight - viewProperties.strokeWidth)*viewProperties.zoomFactor,
+        bounds.width - viewProperties.shadowDisplacement.x*viewProperties.zoomFactor,
+        viewProperties.innerShadowDisplacement.y*viewProperties.zoomFactor);
+    upper.fillColor = viewProperties.shadowColor;
+    upper.fillColor.alpha = 0.3;
+    var lower = upper.clone();
+    lower.position += new Point(0, viewProperties.innerShadowDisplacement.y*viewProperties.zoomFactor);
+    lower.fillColor = viewProperties.highlightColor;
+    lower.fillColor.alpha = 0.3;
+    var delimiter = new Group([upper, lower]);
+    delimiter.name = "delimiter";
+    inputshapes.push(delimiter);
+    var group = new Group(inputshapes);
+    group.name = 'flowModuleInputs';
+    return group;
+}
+
+function createFlowOutputs(node, with_delimiter){
+    var outputs = flow_modules[node.type].outputs;
+    var num = outputs.length;
+    var outputshapes = [];
+    var itemlength = node.bounds.width / num;
+    for(var i = 0; i < num; i++){
+        var label = new PointText(node.bounds.x + ((i+.5) * itemlength), node.bounds.y + viewProperties.lineHeight * 0.7 * viewProperties.zoomFactor);
+        label.content = outputs[i];
+        label.name = outputs[i];
+        label.paragraphStyle.justification = 'center';
+        label.characterStyle = {
+            fillColor: viewProperties.nodeFontColor,
+            fontSize: viewProperties.fontSize*viewProperties.zoomFactor
+        }
+        if(num > 1 && i < num - 1){
+            var border = new Path.Rectangle(
+                    node.bounds.x + ((i+1) * itemlength),
+                    node.bounds.y,
+                    viewProperties.shadowDisplacement.x * viewProperties.zoomFactor,
+                    viewProperties.lineHeight * viewProperties.zoomFactor
+                );
+            border.fillColor = viewProperties.shadowColor;
+            border.fillColor.alpha = 0.3;
+            outputshapes.push(new Group([label, border]));
+        } else {
+            outputshapes.push(label);
+        }
+    }
+    if(with_delimiter){
+        var bounds = node.bounds;
+        var upper = new Path.Rectangle(bounds.x+viewProperties.shadowDisplacement.x*viewProperties.zoomFactor,
+            bounds.y + (viewProperties.lineHeight - viewProperties.strokeWidth)*viewProperties.zoomFactor,
+            bounds.width - viewProperties.shadowDisplacement.x*viewProperties.zoomFactor,
+            viewProperties.innerShadowDisplacement.y*viewProperties.zoomFactor);
+        upper.fillColor = viewProperties.shadowColor;
+        upper.fillColor.alpha = 0.3;
+        var lower = upper.clone();
+        lower.position += new Point(0, viewProperties.innerShadowDisplacement.y*viewProperties.zoomFactor);
+        lower.fillColor = viewProperties.highlightColor;
+        lower.fillColor.alpha = 0.3;
+        delimiter = new Group([upper, lower]);
+        delimiter.name = "delimiter";
+        outputshapes.push(delimiter);
+    }
+    return new Group(outputshapes);
 }
 
 function renderComment(node){
@@ -1367,6 +1598,16 @@ function renderCompactNode(node) {
     var nodeItem;
     if(node.type == "Comment"){
         nodeItem = renderComment(node);
+    } else if(node.type in flow_modules){
+        var skeleton = createCompactNodeSkeleton(node);
+        var activations = createCompactNodeActivations(node);
+        var label = createCompactNodeLabel(node);
+        var inputs = createFlowInputs(node);
+        var outputs = createFlowOutputs(node, true);
+        nodeItem = new Group([activations, skeleton, inputs, outputs]);
+        if (label){
+            nodeItem.addChild(label);
+        }
     } else {
         var skeleton = createCompactNodeSkeleton(node);
         var activations = createCompactNodeActivations(node);
@@ -1396,6 +1637,11 @@ function calculateNodeBounds(node) {
         height = viewProperties.lineHeight*(Math.max(node.slotIndexes.length, node.gateIndexes.length)+2)*viewProperties.zoomFactor;
     } else {
         width = height = viewProperties.compactNodeWidth * viewProperties.zoomFactor;
+    }
+    if(node.type in flow_modules){
+        def = flow_modules[node.type];
+        width = Math.max(def.inputs.length, def.outputs.length) * viewProperties.flowModuleWidth * viewProperties.zoomFactor;
+        height += viewProperties.lineHeight * viewProperties.zoomFactor;
     }
     return new Rectangle(node.x*viewProperties.zoomFactor - width/2,
         node.y*viewProperties.zoomFactor - height/2, // center node on origin
@@ -2620,6 +2866,21 @@ function openContextMenu(menu_id, event) {
                     key = sorted_native_modules[idx];
                     if(native_modules[key].category == current_category){
                         items += '<li><a data-create-node="' + key + '">'+ native_modules[key].name +'</a></li>';
+                    }
+                }
+                return items;
+            });
+            html += '</ul></li>';
+        }
+        if(Object.keys(flow_modules).length){
+            html += '<li class="divider"></li><li class="noop"><a>Create Flow Module<i class="icon-chevron-right"></i></a>';
+            html += '<ul class="sub-menu dropdown-menu">';
+            html += buildRecursiveDropdown(flow_module_categories, '', '', function(current_category){
+                items = '';
+                for(var idx in sorted_flow_modules){
+                    key = sorted_flow_modules[idx];
+                    if(flow_modules[key].category == current_category){
+                        items += '<li><a data-create-node="' + key + '">'+ flow_modules[key].name +'</a></li>';
                     }
                 }
                 return items;

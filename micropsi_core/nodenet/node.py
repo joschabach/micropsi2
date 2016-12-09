@@ -513,7 +513,7 @@ class Nodetype(object):
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None,
-                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', dimensionality={}):
+                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', dimensionality={}, flow_module=False, inputs=None, outputs=None, implementation=None, **_):
         """Initializes or creates a nodetype.
 
         Arguments:
@@ -531,14 +531,24 @@ class Nodetype(object):
 
         self.dimensionality = {}
         self.is_highdimensional = bool(dimensionality)
+        self.is_flow_module = flow_module
         if nodenet.engine == "dict_engine" and self.is_highdimensional:
             nodenet.logger.warning("Dict engine does not support high dimensional native_modules")
             self.is_highdimensional = False
             self.dimensionality = {}
 
         self.name = name
-        self.slottypes = slottypes or []
-        self.gatetypes = gatetypes or []
+
+        if self.is_flow_module:
+            self.slottypes = ['sub']
+            self.gatetypes = ['sur']
+        else:
+            self.slottypes = slottypes or []
+            self.gatetypes = gatetypes or []
+
+        self.implementation = implementation
+        self.inputs = inputs
+        self.outputs = outputs
 
         self.path = path
         self.category = category
@@ -546,7 +556,7 @@ class Nodetype(object):
         self.symbol = symbol
         self.logger = nodenet.logger
 
-        self.parameters = parameters or {}
+        self.parameters = parameters or []
         self.parameter_values = parameter_values or {}
         self.parameter_defaults = parameter_defaults or {}
 
@@ -608,8 +618,14 @@ class Nodetype(object):
             'path': self.path,
             'category': self.category,
             'line_number': self.line_number,
-            'is_highdimensional': self.is_highdimensional
+            'is_highdimensional': self.is_highdimensional,
         }
+        if self.is_flow_module:
+            data.update({
+                'inputs': self.inputs,  # flowmodule
+                'outputs': self.outputs,  # flowmodule
+                'implementation': self.implementation
+            })
         if self.is_highdimensional:
             data['gatetypes'] = self.gategroups
             data['slottypes'] = self.slotgroups

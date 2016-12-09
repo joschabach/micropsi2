@@ -89,7 +89,10 @@ class UserManager(object):
         # set up persistence
         if userfile_path is None:
             userfile_path = cfg['paths']['usermanager_path']
-        os.makedirs(os.path.dirname(userfile_path), exist_ok=True)
+
+        dirpath = os.path.dirname(userfile_path)
+        if not os.path.isdir(dirpath):
+            os.makedirs(dirpath, exist_ok=True)
 
         self.user_file_name = userfile_path  # todo: make this work without a file system
         try:
@@ -102,6 +105,7 @@ class UserManager(object):
 
         if not self.users:
             self.users = {}
+            self.create_user('admin', role="Administrator")
 
         # set up sessions
         for name in self.users:

@@ -3,6 +3,7 @@ import os
 import shutil
 import pytest
 import logging
+import tempfile
 
 try:
     import theano
@@ -11,11 +12,9 @@ except:
     engine_defaults = "dict_engine"
 
 
-testpath = os.path.abspath(os.path.join('.', 'test-data'))
-try:
-    shutil.rmtree(testpath)
-except OSError:
-    pass
+directory = tempfile.TemporaryDirectory()
+testpath = directory.name
+print("test data directory:", testpath)
 
 from micropsi_core import runtime as micropsi_runtime
 from micropsi_core.runtime import cfg
@@ -100,13 +99,11 @@ def pytest_runtest_setup(item):
 def pytest_internalerror(excrepr, excinfo):
     """ called for internal errors. """
     micropsi_runtime.kill_runners()
-    shutil.rmtree(testpath)
 
 
 def pytest_keyboard_interrupt(excinfo):
     """ called for keyboard interrupt. """
     micropsi_runtime.kill_runners()
-    shutil.rmtree(testpath)
 
 
 def set_logging_levels():

@@ -619,9 +619,13 @@ class Nodetype(object):
             'category': self.category,
             'line_number': self.line_number,
             'is_highdimensional': self.is_highdimensional,
-            'inputs': self.inputs,  # flowmodule
-            'outputs': self.outputs,  # flowmodule
         }
+        if self.is_flow_module:
+            data.update({
+                'inputs': self.inputs,  # flowmodule
+                'outputs': self.outputs,  # flowmodule
+                'implementation': self.implementation
+            })
         if self.is_highdimensional:
             data['gatetypes'] = self.gategroups
             data['slottypes'] = self.slotgroups

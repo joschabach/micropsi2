@@ -105,6 +105,7 @@ class TheanoNetAPI(NetAPI):
         Parameters:
             use_different_thetas (default: False) - Return a callable that excepts a parameter "thetas" that will be used instead of existing thetas
             use_unique_input_names (default: False) - Return a callable that excepts input parameter names as "uid_name" where uid is the node_uid, and name is the input_name
+            requested_outputs (default:None) - Optional list of (node_uid, outputname) tuples, so that the callable will return only the given outputs
         """
         func, dangling_inputs, dangling_outputs = self.__nodenet.compile_flow_subgraph([n.uid for n in nodes], requested_outputs=requested_outputs, use_different_thetas=use_different_thetas, use_unique_input_names=use_unique_input_names)
         return func
@@ -113,8 +114,8 @@ class TheanoNetAPI(NetAPI):
         """ Returns a list of thetas, sorted by node first, alphabetically second """
         return self.__nodenet.collect_thetas([n.uid for n in nodes])
 
-    def create_shadow_flowgraph(self, flow_modules):
+    def shadow_flowgraph(self, flow_modules):
         """ Creates a shallow copy of the given flow_modules, copying instances and internal connections.
         Shallow copies will always have the parameters and shared variables of their originals
         """
-        return self.__nodenet.create_shadow_flowgraph(flow_modules)
+        return self.__nodenet.shadow_flowgraph(flow_modules)

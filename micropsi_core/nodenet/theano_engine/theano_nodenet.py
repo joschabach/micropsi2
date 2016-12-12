@@ -484,6 +484,13 @@ class TheanoNodenet(Nodenet):
             metadata['recorders'] = self.construct_recorders_dict()
             fp.write(json.dumps(metadata, sort_keys=True, indent=4))
 
+        for node_uid in self.thetas:
+            # save thetas
+            data = {}
+            for idx, name in enumerate(self.thetas[node_uid]['names']):
+                data[name] = self.thetas[node_uid]['variables'][idx].get_value()
+            np.savez(os.path.join(base_path, "%s_thetas.npz" % node_uid), **data)
+
         # write graph data
         nx.write_adjlist(self.flowgraph, os.path.join(base_path, "flowgraph.adjlist"))
 
@@ -553,8 +560,13 @@ class TheanoNodenet(Nodenet):
             if os.path.isfile(flowfile):
                 self.flowgraph = nx.read_adjlist(flowfile, create_using=nx.MultiDiGraph())
 
-            # for uid in self.flow_module_instances:
-            #     self.flowgraph.add_node(uid)
+            for node_uid in self.flow_module_instances:
+                theta_file = os.path.join(self.get_persistency_path(), "%s_thetas.npz" % node_uid)
+                if os.path.isfile(theta_file):
+                    data = np.load(theta_file)
+                    for key in data:
+                        self.set_theta(node_uid, key, data[key])
+
             self.update_flow_graphs()
 
             # re-initialize step operators for theano recompile to new shared variables
@@ -661,7 +673,9 @@ class TheanoNodenet(Nodenet):
                         get_numerical_node_type(data['type'], nativemodules=self.native_modules),
                         parameters=data.get('parameters', {}),
                         inputmap=data['inputmap'],
-                        outputmap=data['outputmap'])
+                        outputmap=data['outputmap'],
+                        is_copy_of=data.get('is_copy_of'),
+                        initialized=data.get('initialized'))
                     self.flow_module_instances[node.uid] = node
                 else:
                     node = TheanoNode(self, self.get_partition(uid), parent_uid, uid, get_numerical_node_type(data['type'], nativemodules=self.native_modules), parameters=data.get('parameters'))
@@ -944,11 +958,30 @@ class TheanoNodenet(Nodenet):
         If use_different_thetas is True, the callable expects an argument names "thetas".
         Thetas are expected to be sorted in the same way collect_thetas() would return them.
 
-        Params
-        ---
-        node_uids :
+        Parameters
+        ----------
+        node_uids : list
+            the uids of the members of this graph
 
-        requested_outputs : list of tuples (node_uid, out_name)
+        requested_outputs : list, optional
+            list of tuples (node_uid, out_name) to filter the callable's return-values. defaults to None, returning all outputs
+
+        use_different_thetas : boolean, optional
+            if true, return a callable that excepts a parameter "thetas" that will be used instead of existing thetas. defaults to False
+
+        use_unique_input_names : boolen, optional
+            if true, the returned callable expects input-kwargs to be prefixe by node_uid: "UID_NAME". defaults to False, using only the name of the input
+
+        Returns
+        -------
+        callable : function
+            the compiled function for this subgraph
+
+        dangling_inputs : list
+            list of tuples (node_uid, input) that the callable expectes as inputs
+
+        dangling_outputs : list
+            list of tuples (node_uid, input) that the callable will return as output
 
         """
         subgraph = [self.get_node(uid) for uid in self.flow_toposort if uid in node_uids]
@@ -1070,8 +1103,9 @@ class TheanoNodenet(Nodenet):
                             outputs.append(flattened_outex[out_idx + node_flattened_output_offset])
                         if "external" in dangling:
                             # this output will be a final one:
-                            dangling_outputs.append((node.uid, out_name))
-                            thunk['dangling_outputs'].append(thunk_flattened_output_index)
+                            if requested_outputs is None or (node.uid, out_name) in requested_outputs:
+                                dangling_outputs.append((node.uid, out_name))
+                                thunk['dangling_outputs'].append(thunk_flattened_output_index)
                         thunk_flattened_output_index += outputlengths[out_idx]
 
             # now, set the function of this thunk. Either compile a theano function
@@ -1158,7 +1192,7 @@ class TheanoNodenet(Nodenet):
 
         return compiled, dangling_inputs, dangling_outputs
 
-    def create_shadow_flowgraph(self, flow_modules):
+    def shadow_flowgraph(self, flow_modules):
         """ Creates shallow copies of the given flow_modules, copying instances and internal connections.
         Shallow copies will always have the parameters and shared variables of their originals
         """
@@ -1189,12 +1223,16 @@ class TheanoNodenet(Nodenet):
                 'names': [],
                 'variables': []
             }
-        new_names = sorted(self.thetas[node_uid]['names'] + [name])
-        index = new_names.index(name)
-        self.thetas[node_uid]['names'] = new_names
-        if not isinstance(val, T.sharedvar.TensorSharedVariable):
-            val = theano.shared(value=val.astype(T.config.floatX), name=name, borrow=True)
-        self.thetas[node_uid]['variables'].insert(index, val)
+        if name not in self.thetas[node_uid]['names']:
+            new_names = sorted(self.thetas[node_uid]['names'] + [name])
+            self.thetas[node_uid]['names'] = new_names
+            index = self.thetas[node_uid]['names'].index(name)
+            if not isinstance(val, T.sharedvar.TensorSharedVariable):
+                val = theano.shared(value=val.astype(T.config.floatX), name=name, borrow=True)
+            self.thetas[node_uid]['variables'].insert(index, val)
+        else:
+            index = self.thetas[node_uid]['names'].index(name)
+            self.thetas[node_uid]['variables'][index].set_value(val, borrow=True)
 
     def get_theta(self, node_uid, name):
         data = self.thetas[node_uid]

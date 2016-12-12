@@ -181,6 +181,7 @@ def trpoinpython(X, Y, netapi, node, parameters):
 
 @pytest.mark.engine("theano_engine")
 def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepath):
+    """ Basic definition and existance test """
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
     result, metadata = runtime.get_nodenet_metadata(test_nodenet)
@@ -220,6 +221,7 @@ def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepat
 
 @pytest.mark.engine("theano_engine")
 def test_multiple_flowgraphs(runtime, test_nodenet, default_world, resourcepath):
+    """ Testing a flow from datasources to datatargets """
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
     double = netapi.create_node("Double", None, "Double")
@@ -275,6 +277,7 @@ def test_multiple_flowgraphs(runtime, test_nodenet, default_world, resourcepath)
 
 @pytest.mark.engine("theano_engine")
 def test_disconnect_flowmodules(runtime, test_nodenet, default_world, resourcepath):
+    """ test disconnecting flowmodules """
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
     double = netapi.create_node("Double", None, "Double")
@@ -391,29 +394,45 @@ def test_converging_flowgraphs(runtime, test_nodenet, default_world, resourcepat
 def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepath):
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
-    flowmodule = netapi.create_node("Double", None, "Double")
-    nodenet.flow('worldadapter', 'datasources', flowmodule.uid, "inputs")
-    nodenet.flow(flowmodule.uid, "outputs", 'worldadapter', 'datatargets')
+    double = netapi.create_node("Double", None, "Double")
+    thetas = netapi.create_node("Thetas", None, "Thetas")
+    thetas.set_parameter("weights_shape", 5)
+    thetas.set_parameter("use_thetas", True)
+
+    nodenet.flow('worldadapter', 'datasources', double.uid, "inputs")
+    nodenet.flow(double.uid, 'outputs', thetas.uid, "X")
+    nodenet.flow(thetas.uid, "Y", 'worldadapter', 'datatargets')
     source = netapi.create_node("Neuron", None)
     netapi.link(source, 'gen', source, 'gen')
-    netapi.link(source, 'gen', flowmodule, 'sub')
+    netapi.link(source, 'gen', thetas, 'sub')
     source.activation = 1
+
+    custom_theta = np.random.rand(5).astype(netapi.floatX)
+    thetas.set_theta("weights", custom_theta)
+
+    sources = np.zeros((5), dtype=netapi.floatX)
+    sources[:] = np.random.randn(*sources.shape)
+    worldadapter.datasource_values = sources
+
+    nodenet.step()
+
+    result = worldadapter.datatarget_values
+
+    assert np.all(result == sources * 2 * thetas.get_theta("weights").get_value() + thetas.get_theta("bias").get_value())
 
     runtime.save_nodenet(test_nodenet)
     runtime.revert_nodenet(test_nodenet)
 
     nodenet = runtime.nodenets[test_nodenet]
-    flowmodule = nodenet.get_node(flowmodule.uid)
     netapi = nodenet.netapi
     nodenet.worldadapter_instance = worldadapter
-
-    sources = np.zeros((5), dtype=nodenet.numpyfloatX)
-    sources[:] = np.random.randn(*sources.shape)
-
     worldadapter.datasource_values = sources
+    thetas = netapi.get_node(thetas.uid)
+    assert np.all(thetas.get_theta("weights").get_value() == custom_theta)
 
     nodenet.step()
-    assert np.all(worldadapter.datatarget_values == sources * 2)
+
+    assert np.all(worldadapter.datatarget_values == result)
 
 
 @pytest.mark.engine("theano_engine")
@@ -542,6 +561,7 @@ def test_compile_flow_subgraph(runtime, test_nodenet, default_world, resourcepat
 
 @pytest.mark.engine("theano_engine")
 def test_get_callable_flowgraph_bridges_numpy_gaps(runtime, test_nodenet, default_world, resourcepath):
+    """ Asserts that callable_flowgraph wraps everything in one callable, symbolic or numeric """
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
     double = netapi.create_node("Double", None, "Double")
@@ -600,6 +620,7 @@ def test_collect_thetas(runtime, test_nodenet, default_world, resourcepath):
 
 @pytest.mark.engine("theano_engine")
 def test_flow_edgecase(runtime, test_nodenet, default_world, resourcepath):
+    """ Tests a structural edge case: diverging and again converging graph with a numpy node in one arm"""
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
     twoout = netapi.create_node("TwoOutputs", None, "twoout")
@@ -621,6 +642,7 @@ def test_flow_edgecase(runtime, test_nodenet, default_world, resourcepath):
 
 @pytest.mark.engine("theano_engine")
 def test_flow_trpo_modules(runtime, test_nodenet, default_world, resourcepath):
+    """ Test the trpo modules, that can return list-outputs """
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
     trpoout = netapi.create_node("TRPOOut", None, "TRPOOut")
@@ -647,6 +669,8 @@ def test_flow_trpo_modules(runtime, test_nodenet, default_world, resourcepath):
 
 @pytest.mark.engine("theano_engine")
 def test_none_output_skips_following_graphs(runtime, test_nodenet, default_world, resourcepath):
+    """ Tests the "staudamm" functionality: a graph can return None, thus preventing graphs
+    depending on this output as their input from being executed, even if they are requested """
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
 
     with netapi.flowbuilder:
@@ -705,7 +729,7 @@ def test_shadow_flowgraph(runtime, test_nodenet, default_world, resourcepath):
     x = np.array([1, 2, 3, 4, 5], dtype=netapi.floatX)
     result = function(X=x)[0]
 
-    copies = netapi.create_shadow_flowgraph([node1, node2])
+    copies = netapi.shadow_flowgraph([node1, node2])
 
     copyfunction = netapi.get_callable_flowgraph([copies[0], copies[1]])
 
@@ -738,3 +762,46 @@ def test_shadow_flowgraph(runtime, test_nodenet, default_world, resourcepath):
     netapi = nodenet.netapi
     copies = [netapi.get_node(copies[0].uid), netapi.get_node(copies[1].uid)]
     assert not copies[1].get_parameter('use_thetas')
+
+
+@pytest.mark.engine("theano_engine")
+def test_naming_collision_in_callable_subgraph(runtime, test_nodenet, default_world, resourcepath):
+    """ Asserts that compiling a graph that has naming collisions raises an Exception,
+    asserts that unique_inputs_names fixes the collision"""
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+
+    double = netapi.create_node("Double", None, "Double")
+    bisect = netapi.create_node("Bisect", None, "Bisect")
+    add = netapi.create_node("Add", None, "Add")
+
+    netapi.flow(double, "outputs", add, "input1")
+    netapi.flow(bisect, "outputs", add, "input2")
+
+    with pytest.raises(RuntimeError):
+        netapi.get_callable_flowgraph([double, bisect, add])
+
+    function = netapi.get_callable_flowgraph([double, bisect, add], use_unique_input_names=True)
+    kwargs = {
+        "%s_inputs" % double.uid: [1.],
+        "%s_inputs" % bisect.uid: [1.]
+    }
+    assert function(**kwargs) == [2.5]
+
+
+@pytest.mark.engine("theano_engine")
+def test_filter_subgraph_outputs(runtime, test_nodenet, default_world, resourcepath):
+    """ Tests requesting only specific outputs from a subgraph """
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+
+    double = netapi.create_node("Double", None, "Double")
+    twoout = netapi.create_node("TwoOutputs", None, "TwoOutputs")
+
+    netapi.flow(twoout, "A", double, "inputs")
+
+    function = netapi.get_callable_flowgraph([twoout, double])
+    assert function(X=[2.]) == [3., 4.]
+    assert "B of %s" % twoout.uid in function.__doc__
+
+    function = netapi.get_callable_flowgraph([twoout, double], requested_outputs=[(double.uid, "outputs")])
+    assert function(X=[2.]) == [4.]
+    assert "B of %s" % twoout.uid not in function.__doc__

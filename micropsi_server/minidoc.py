@@ -19,7 +19,7 @@ __date__ = '23.11.12'
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), "..")
 PREFIX = "minidoc/"
 FILETYPES = [".py"]
-EXCLUDED_DIRS = ["..", "test", "tests", "__pycache__"]
+EXCLUDED_DIRS = ["..", "test", "tests", "__pycache__", "bin", "lib", "include", "htmlcov", "cherrypy"]
 EXCLUDED_FILES = ["__init__.py"]
 EXCLUDE_HIDDEN = True
 

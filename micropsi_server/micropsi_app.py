@@ -211,18 +211,32 @@ def monitors():
     return template("viewer", mode="monitors", logging_levels=runtime.get_logging_levels(), version=VERSION, user_id=user_id, permissions=permissions)
 
 
-@micropsi_app.route('/minidoc/')
-def document_base():
+@micropsi_app.route('/minidoc')
+def minidoc_base():
     return template("minidoc",
         navi=minidoc.get_navigation(),
         content=minidoc.get_documentation_body(), title="Minidoc")
 
 
 @micropsi_app.route('/minidoc/<filepath:path>')
-def document(filepath):
+def minidoc_file(filepath):
     return template("minidoc",
         navi=minidoc.get_navigation(),
         content=minidoc.get_documentation_body(filepath), title="Minidoc: " + filepath)
+
+
+@micropsi_app.route('/apidoc')
+def apidoc_base():
+    return template("minidoc",
+        navi=minidoc.get_api_navigation(),
+        content=minidoc.get_api_doc(), title="Api Documentation")
+
+
+@micropsi_app.route('/apidoc/<filepath:path>')
+def apidoc_file(filepath):
+    return template("minidoc",
+        navi=minidoc.get_api_navigation(),
+        content=minidoc.get_api_doc(filepath), title="Api Documentation: " + filepath)
 
 
 @micropsi_app.route("/environment")

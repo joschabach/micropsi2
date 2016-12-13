@@ -19,7 +19,7 @@ __date__ = '23.11.12'
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), "..")
 PREFIX = "minidoc/"
 FILETYPES = [".py"]
-EXCLUDED_DIRS = ["..", "test", "tests", "__pycache__", "bin", "lib", "include", "htmlcov", "cherrypy"]
+EXCLUDED_DIRS = ["..", "test", "tests", "__pycache__", "bin", "lib", "include", "htmlcov", "cherrypy", "src"]
 EXCLUDED_FILES = ["__init__.py"]
 EXCLUDE_HIDDEN = True
 
@@ -114,6 +114,14 @@ def _get_dir_list(realpath, indent = "&nbsp;"*4):
 
     result = ""
     for pathname, dirnames, filenames in os.walk(realpath):
+        # prune recurse directories
+        for x in EXCLUDED_DIRS:
+            if x in dirnames:
+                dirnames.remove(x)
+        if EXCLUDE_HIDDEN:
+            for x in dirnames.copy():
+                if x.startswith('.'):
+                    dirnames.remove(x)
         dir = os.path.basename(pathname)
         if dir not in EXCLUDED_DIRS and not (EXCLUDE_HIDDEN and dir.startswith(".")):
             url = _convert_path_to_url(pathname)

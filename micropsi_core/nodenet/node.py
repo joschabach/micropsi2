@@ -137,6 +137,9 @@ class Node(metaclass=ABCMeta):
         self.logger = nodetype.logger
 
     def get_data(self, complete=False, include_links=True):
+        """
+        Return this node's json data for the frontend
+        """
         data = {
             "name": self.name,
             "position": self.position,
@@ -156,6 +159,9 @@ class Node(metaclass=ABCMeta):
         return data
 
     def construct_links_dict(self):
+        """
+        Return a dict of links originating at this node
+        """
         links = {}
         for key in self.get_gate_types():
             gatelinks = self.get_gate(key).get_links()
@@ -306,6 +312,9 @@ class Node(metaclass=ABCMeta):
         return list(self.nodetype.slottypes)
 
     def get_associated_links(self):
+        """
+        Return a list of all links originating or terminating at this node
+        """
         links = []
         for key in self.get_gate_types():
             links.extend(self.get_gate(key).get_links())
@@ -314,6 +323,9 @@ class Node(metaclass=ABCMeta):
         return links
 
     def get_associated_node_uids(self):
+        """
+        Return a list of all node_uids that are linked to this node
+        """
         nodes = []
         for link in self.get_associated_links():
             if link.source_node.uid != self.uid:
@@ -323,6 +335,9 @@ class Node(metaclass=ABCMeta):
         return nodes
 
     def construct_gates_dict(self):
+        """
+        Return a dict mapping gate-names to gate-activations
+        """
         data = {}
         for gate_name in self.get_gate_types():
             data[gate_name] = self.get_gate(gate_name).activation

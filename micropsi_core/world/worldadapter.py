@@ -359,7 +359,6 @@ try:
             """
             pass  # pragma: no cover
 
-
     class DefaultArray(ArrayWorldAdapter):
         """
         A default ArrayWorldadapter, that provides example-datasources and -targets

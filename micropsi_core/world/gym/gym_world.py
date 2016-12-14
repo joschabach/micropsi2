@@ -22,6 +22,7 @@ def inspect_space(gym_space):
     ----
         n_dim: int
             nr of dimensions of the space
+
         n_discrete: int or None
             if the space is discrete: the nr n of allowed values, which are the integers {0,...,n}
 

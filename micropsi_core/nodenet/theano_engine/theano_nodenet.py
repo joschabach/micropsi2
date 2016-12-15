@@ -492,7 +492,7 @@ class TheanoNodenet(Nodenet):
             np.savez(os.path.join(base_path, "%s_thetas.npz" % node_uid), **data)
 
         # write graph data
-        nx.write_adjlist(self.flowgraph, os.path.join(base_path, "flowgraph.adjlist"))
+        nx.write_gpickle(self.flowgraph, os.path.join(base_path, "flowgraph.pickle"))
 
         for recorder_uid in self._recorders:
             self._recorders[recorder_uid].save()
@@ -556,9 +556,10 @@ class TheanoNodenet(Nodenet):
                 data = initfrom['recorders'][recorder_uid]
                 self._recorders[recorder_uid] = getattr(recorder, data['classname'])(self, **data)
 
-            flowfile = os.path.join(self.get_persistency_path(), 'flowgraph.adjlist')
+            flowfile = os.path.join(self.get_persistency_path(), 'flowgraph.pickle')
+
             if os.path.isfile(flowfile):
-                self.flowgraph = nx.read_adjlist(flowfile, create_using=nx.MultiDiGraph())
+                self.flowgraph = nx.read_gpickle(flowfile)
 
             for node_uid in self.flow_module_instances:
                 theta_file = os.path.join(self.get_persistency_path(), "%s_thetas.npz" % node_uid)

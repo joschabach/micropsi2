@@ -20,6 +20,8 @@ __author__ = 'joscha'
 __date__ = '10.05.12'
 
 import logging
+import functools
+import operator
 from threading import Lock
 from micropsi_core.world.worldobject import WorldObject
 from abc import ABCMeta, abstractmethod
@@ -187,6 +189,8 @@ try:
 
             self.datasource_names = []
             self.datatarget_names = []
+            self.datasource_slices = {}
+            self.datatarget_slices = {}
             self.datasource_values = np.zeros(0)
             self.datatarget_values = np.zeros(0)
             self.datatarget_feedback_values = np.zeros(0)
@@ -194,6 +198,7 @@ try:
         def add_datasource(self, name, initial_value=0.):
             """ Adds a datasource, and returns the index
             where they were added"""
+            self.datasource_slices[name] = slice(len(self.datasource_names), len(self.datasource_names) + 1)
             self.datasource_names.append(name)
             self.datasource_values = np.concatenate((self.datasource_values, np.asarray([initial_value])))
             return len(self.datasource_names) - 1
@@ -201,31 +206,66 @@ try:
         def add_datatarget(self, name, initial_value=0.):
             """ Adds a datatarget, and returns the index
             where they were added"""
+            self.datatarget_slices[name] = slice(len(self.datatarget_names), len(self.datatarget_names) + 1)
             self.datatarget_names.append(name)
             self.datatarget_values = np.concatenate((self.datatarget_values, np.asarray([initial_value])))
             self.datatarget_feedback_values = np.concatenate((self.datatarget_feedback_values, np.asarray([initial_value])))
             return len(self.datatarget_names) - 1
 
-        def add_datasources(self, names, initial_values=False):
-            """ Adds a list of datasources, and returns the indexes
-            where they were added"""
-            offset = len(self.datasource_names)
-            self.datasource_names.extend(names)
-            if not initial_values or len(initial_values) != len(names):
-                initial_values = np.zeros(len(names))
-            self.datasource_values = np.concatenate((self.datasource_values, np.asarray(initial_values)))
-            return range(offset, offset + len(names))
+        def add_datasource_group(self, name, shape, initial_values=None):
+            """ Add a high-dimensional datasource.
+            Will automatically create names for the entries based on the given name (e.g. "vision_0_0, vision_0_1", etc)
+            according to the shape information.
+            initial_values can be provided either in their original shape or flattened.
+            internal storage will be flattened.
+            """
+            if initial_values:
+                size = initial_values.size
+                initial_values = np.asarray(initial_values).flatten()
+            else:
+                size = functools.reduce(operator.mul, shape, 1)
+                initial_values = np.zeros(size)
+            names = []
+            dims = len(shape)
+            idxs = np.unravel_index(np.arange(size), shape)
+            for i in range(size):
+                parts = [name]
+                for j in range(dims):
+                    parts.append(str(idxs[j][i]))
+                names.append('_'.join(parts))
 
-        def add_datatargets(self, names, initial_values=False):
-            """ Adds a list of datatargets, and returns the indexes
-            where they were added"""
-            offset = len(self.datatarget_names)
+            self.datasource_slices[name] = slice(len(self.datasource_names), len(self.datasource_names) + size)
+            self.datasource_names.extend(names)
+            self.datasource_values = np.concatenate((self.datasource_values, initial_values))
+            return self.datasource_slices[name]
+
+        def add_datatarget_group(self, name, shape, initial_values=None):
+            """ Add a high-dimensional datatarget.
+            Will automatically create names for the entries based on the given name (e.g. "target_0_0, target_0_1", etc)
+            according to the shape information.
+            initial_values can be provided either in their original shape or flattened.
+            internal storage will be flattened.
+            """
+            if initial_values:
+                size = initial_values.size
+                initial_values = np.asarray(initial_values).flatten()
+            else:
+                size = functools.reduce(operator.mul, shape, 1)
+                initial_values = np.zeros(size)
+            names = []
+            dims = len(shape)
+            idxs = np.unravel_index(np.arange(size), shape)
+            for i in range(size):
+                parts = [name]
+                for j in range(dims):
+                    parts.append(str(idxs[j][i]))
+                names.append('_'.join(parts))
+
+            self.datatarget_slices[name] = slice(len(self.datatarget_names), len(self.datatarget_names) + size)
             self.datatarget_names.extend(names)
-            if not initial_values or len(initial_values) != len(names):
-                initial_values = np.zeros(len(names))
-            self.datatarget_values = np.concatenate((self.datatarget_values, np.asarray(initial_values)))
-            self.datatarget_feedback_values = np.concatenate((self.datatarget_feedback_values, np.asarray(initial_values)))
-            return range(offset, offset + len(names))
+            self.datatarget_values = np.concatenate((self.datatarget_values, initial_values))
+            self.datatarget_feedback_values = np.concatenate((self.datatarget_feedback_values, np.zeros(size)))
+            return self.datatarget_slices[name]
 
         def get_available_datasources(self):
             """Returns a list of all datasource names"""
@@ -270,20 +310,29 @@ try:
             """allows the agent to read all datatarget_feedback values"""
             return self.datatarget_feedback_values
 
-        def get_datasource_range(self, start_key, length):
-            """Returns an array of datasource values, with offset at the given key and with the given length"""
-            idx = self.get_datasource_index(start_key)
-            return self.datasource_values[idx:idx + length]
+        def get_datasource_group(self, name, shape=None):
+            """Return an array or matrix of datasource_values for the given group.
+            Optional already shaped according to the provided argument"""
+            data = self.datasource_values[self.datasource_slices[name]]
+            if shape is not None:
+                data = data.reshape(shape)
+            return data
 
-        def get_datatarget_range(self, start_key, length):
-            """Returns an array of datatarget values, with offset at the given key and with the given length"""
-            idx = self.get_datatarget_index(start_key)
-            return self.datatarget_values[idx:idx + length]
+        def get_datatarget_group(self, name, shape=None):
+            """Return an array or matrix of datatarget_values for the given group.
+            Optional already shaped according to the provided argument"""
+            data = self.datatarget_values[self.datatarget_slices[name]]
+            if shape is not None:
+                data = data.reshape(shape)
+            return data
 
-        def get_datatarget_feedback_range(self, start_key, length):
-            """Returns an array of datatarget_feedback values, with offset at the given key and with the given length"""
-            idx = self.get_datatarget_index(start_key)
-            return self.datatarget_feedback_values[idx:idx + length]
+        def get_datatarget_feedback_group(self, name, shape=None):
+            """Return an array or matrix of datatarget_feedback_values for the given group.
+            Optional already shaped according to the provided argument"""
+            data = self.datatarget_feedback_values[self.datatarget_slices[name]]
+            if shape is not None:
+                data = data.reshape(shape)
+            return data
 
         def set_datasource_value(self, key, value):
             """Sets the given datasource value"""
@@ -305,20 +354,20 @@ try:
             idx = self.get_datatarget_index(key)
             self.datatarget_feedback_values[idx] = value
 
-        def set_datasource_range(self, start_key, values):
-            """Sets the given datasource values, with offset at the given key """
-            idx = self.get_datasource_index(start_key)
-            self.datasource_values[idx:idx + len(values)] = values
+        def set_datasource_group(self, name, values):
+            """Set the values of the given datasource group """
+            slce = self.datasource_slices[name]
+            self.datasource_values[slce] = values.flatten()
 
-        def set_datatarget_range(self, start_key, values):
-            """Sets the given datatarget values, with offset at the given key """
-            idx = self.get_datatarget_index(start_key)
-            self.datatarget_values[idx:idx + len(values)] = values
+        def set_datatarget_group(self, name, values):
+            """Set the values of the given datatarget group """
+            slce = self.datatarget_slices[name]
+            self.datatarget_values[slce] = values.flatten()
 
-        def set_datatarget_feedback_range(self, start_key, values):
-            """Sets the given datatarget_feedback values, with offset at the given key """
-            idx = self.get_datatarget_index(start_key)
-            self.datatarget_feedback_values[idx:idx + len(values)] = values
+        def set_datatarget_feedback_group(self, name, values):
+            """Set the values of the given datatarget_feedback group """
+            slce = self.datatarget_slices[name]
+            self.datatarget_feedback_values[slce] = values.flatten()
 
         def set_datasource_values(self, values):
             """sets the complete datasources to new values"""
@@ -358,6 +407,7 @@ try:
             Values of the superclass' dict objects will be bypassed and ignored.
             """
             pass  # pragma: no cover
+
 
 
     class DefaultArray(ArrayWorldAdapter):

@@ -135,6 +135,46 @@ def test_arrayworldadapter(default_world):
         assert adapter.set_datatarget_feedback_values(np.asarray([.1, .2, .3, .4, .5]))
 
 
+@pytest.mark.skipif(not numpy_available, reason="requires numpy")
+def test_structured_datasources(default_world):
+
+    class TestArrayWA(wa.ArrayWorldAdapter):
+        def update_data_sources_and_targets(self):
+            self.datasource_values = np.random.rand(self.datasource_values.shape)
+            self.datatarget_feedback_values = np.copy(self.datatarget_values)
+
+    adapter = TestArrayWA(runtime.worlds[default_world])
+
+    vision_shape = (2, 5)
+    adapter.add_datasource("s_foo")
+    adapter.add_datasource_group("s_vision", shape=vision_shape)
+    adapter.add_datasource("s_bar")
+
+    motor_shape = (3, 2)
+    adapter.add_datatarget("t_execute")
+    adapter.add_datatarget_group("t_motor", shape=motor_shape)
+
+    vision = np.random.rand(*vision_shape)
+    motor = np.random.rand(*motor_shape)
+
+    adapter.set_datasource_group("s_vision", vision)
+    adapter.set_datatarget_group("t_motor", motor)
+
+    assert len(adapter.datasource_values) == 12
+    assert len(adapter.datatarget_values) == 7
+    assert len(adapter.datatarget_feedback_values) == 7
+
+    assert adapter.datasource_names[8] == 's_vision_1_2'
+    assert adapter.datatarget_names[5] == 't_motor_2_0'
+
+    assert np.all(adapter.get_datasource_group("s_vision") == vision.flatten())
+    assert np.all(adapter.get_datasource_group("s_vision", shape=vision_shape) == vision)
+    assert np.all(adapter.get_datatarget_group("t_motor") == motor.flatten())
+    assert np.all(adapter.get_datatarget_group("t_motor", shape=motor_shape) == motor)
+    assert np.all(adapter.get_datatarget_feedback_group("t_motor") == np.zeros(6))
+    assert np.all(adapter.get_datatarget_feedback_group("t_motor", shape=motor_shape) == np.zeros(6).reshape(motor_shape))
+
+
 def test_worldadapter_mixin(default_world):
 
     class TestMixin(wa.WorldAdapterMixin):

@@ -1010,6 +1010,7 @@ class TheanoNodenet(Nodenet):
             outexpressions = {}
             inputs = []
             outputs = []
+            skip = False
 
             # index for outputs of this thunk, considering unpacked list outputs
             thunk_flattened_output_index = 0
@@ -1044,13 +1045,18 @@ class TheanoNodenet(Nodenet):
                         buildargs.append(outexpressions[source_uid][self.get_node(source_uid).outputs.index(source_name)])
 
                 # build the outexpression
-                if len(node.outputs) <= 1:
-                    original_outex = [node.build(*buildargs)]
-                elif node.implementation == 'python':
-                    func = node.build(*buildargs)
-                    original_outex = [func] * len(node.outputs)
-                else:
-                    original_outex = node.build(*buildargs)
+                try:
+                    if len(node.outputs) <= 1:
+                        original_outex = [node.build(*buildargs)]
+                    elif node.implementation == 'python':
+                        func = node.build(*buildargs)
+                        original_outex = [func] * len(node.outputs)
+                    else:
+                        original_outex = node.build(*buildargs)
+                except Exception as err:
+                    self.logger.error("Error in buildfunction of Flowodule %s.\n %s: %s" % (str(node), err.__class__.__name__, str(err)))
+                    skip = True
+                    break
 
                 outexpressions[node.uid] = original_outex
                 flattened_outex = []
@@ -1108,6 +1114,10 @@ class TheanoNodenet(Nodenet):
                                 dangling_outputs.append((node.uid, out_name))
                                 thunk['dangling_outputs'].append(thunk_flattened_output_index)
                         thunk_flattened_output_index += outputlengths[out_idx]
+
+            if skip:
+                # thunk borked, skip
+                continue
 
             # now, set the function of this thunk. Either compile a theano function
             # or assign the python function.

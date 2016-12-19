@@ -23,7 +23,7 @@ class SimpleArrayWA(ArrayWorldAdapter):
         self.datasources = np.random.rand(len(self.datasources))
 
 
-def prepare(runtime, test_nodenet, default_world, resourcepath):
+def prepare(runtime, test_nodenet, default_world, resourcepath, wa_class=SimpleArrayWA):
     """ Create a bunch of available flowmodules for the following tests """
     import os
     with open(os.path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
@@ -174,7 +174,7 @@ def trpoinpython(X, Y, netapi, node, parameters):
 
     nodenet = runtime.nodenets[test_nodenet]
     netapi = nodenet.netapi
-    worldadapter = SimpleArrayWA(runtime.worlds[default_world])
+    worldadapter = wa_class(runtime.worlds[default_world])
     nodenet.worldadapter_instance = worldadapter
     runtime.reload_native_modules()
     return nodenet, netapi, worldadapter
@@ -806,3 +806,40 @@ def test_filter_subgraph_outputs(runtime, test_nodenet, default_world, resourcep
     function = netapi.get_callable_flowgraph([twoout, double], requested_outputs=[(double.uid, "outputs")])
     assert function(X=[2.]) == [4.]
     assert "B of %s" % twoout.uid not in function.__doc__
+
+
+@pytest.mark.engine("theano_engine")
+def test_connect_flow_modules_to_structured_datasource_group(runtime, test_nodenet, default_world, resourcepath):
+
+    class StructuredArrayWA(ArrayWorldAdapter):
+        def __init__(self, world):
+            super().__init__(world)
+            self.add_datasource('execute')
+            self.add_datasource_group('vision', (2, 3))
+            self.add_datatarget('reset')
+            self.add_datatarget_group('motor', (2, 3))
+            self.update_data_sources_and_targets()
+
+        def update_data_sources_and_targets(self):
+            self.datatarget_feedback_values = np.copy(self.datatarget_values)
+            self.datasources = np.random.rand(len(self.datasources))
+
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath, wa_class=StructuredArrayWA)
+
+    sources = np.zeros((7), dtype=nodenet.numpyfloatX)
+    sources[:] = np.random.randn(*sources.shape)
+    worldadapter.datasource_values = sources
+
+    double = netapi.create_node("Double", None, "Double")
+    netapi.flow('worldadapter', 'vision', double, 'inputs')
+    netapi.flow(double, 'outputs', 'worldadapter', 'motor')
+
+    source = netapi.create_node("Neuron", None)
+    source.activation = 1
+    netapi.link(source, 'gen', source, 'gen')
+    netapi.link(source, 'gen', double, 'sub')
+
+    nodenet.step()
+    worldadapter.update_data_sources_and_targets()
+    assert worldadapter.datatarget_values[0] == 0
+    assert np.all(worldadapter.datatarget_feedback_values[1:] == sources[1:] * 2)

@@ -70,6 +70,14 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
     def get_config_options(cls):
         return []
 
+    @property
+    def datasource_groups(self):
+        return []
+
+    @property
+    def datatarget_groups(self):
+        return []
+
     def __init__(self, world, uid=None, config={}, **data):
         self.datasources = {}
         self.datatargets = {}
@@ -184,13 +192,22 @@ try:
         Engines that bulk-query values, such as the theano_engine, will be faster.
         Numpy arrays can be passed directly into the engine.
         """
+
+        @property
+        def datasource_groups(self):
+            return list(self._datasource_groups.keys())
+
+        @property
+        def datatarget_groups(self):
+            return list(self._datatarget_groups.keys())
+
         def __init__(self, world, uid=None, **data):
             WorldAdapter.__init__(self, world, uid=uid, **data)
 
             self.datasource_names = []
             self.datatarget_names = []
-            self.datasource_slices = {}
-            self.datatarget_slices = {}
+            self._datasource_groups = {}
+            self._datatarget_groups = {}
             self.datasource_values = np.zeros(0)
             self.datatarget_values = np.zeros(0)
             self.datatarget_feedback_values = np.zeros(0)
@@ -198,7 +215,6 @@ try:
         def add_datasource(self, name, initial_value=0.):
             """ Adds a datasource, and returns the index
             where they were added"""
-            self.datasource_slices[name] = slice(len(self.datasource_names), len(self.datasource_names) + 1)
             self.datasource_names.append(name)
             self.datasource_values = np.concatenate((self.datasource_values, np.asarray([initial_value])))
             return len(self.datasource_names) - 1
@@ -206,7 +222,6 @@ try:
         def add_datatarget(self, name, initial_value=0.):
             """ Adds a datatarget, and returns the index
             where they were added"""
-            self.datatarget_slices[name] = slice(len(self.datatarget_names), len(self.datatarget_names) + 1)
             self.datatarget_names.append(name)
             self.datatarget_values = np.concatenate((self.datatarget_values, np.asarray([initial_value])))
             self.datatarget_feedback_values = np.concatenate((self.datatarget_feedback_values, np.asarray([initial_value])))
@@ -239,10 +254,10 @@ try:
                 initial_values = np.zeros(size)
 
             names = self._generate_names(name, size, shape)
-            self.datasource_slices[name] = slice(len(self.datasource_names), len(self.datasource_names) + size)
+            self._datasource_groups[name] = slice(len(self.datasource_names), len(self.datasource_names) + size)
             self.datasource_names.extend(names)
             self.datasource_values = np.concatenate((self.datasource_values, initial_values))
-            return self.datasource_slices[name]
+            return self._datasource_groups[name]
 
         def add_datatarget_group(self, name, shape, initial_values=None):
             """ Add a high-dimensional datatarget.
@@ -258,11 +273,11 @@ try:
                 size = functools.reduce(operator.mul, shape, 1)
                 initial_values = np.zeros(size)
             names = self._generate_names(name, size, shape)
-            self.datatarget_slices[name] = slice(len(self.datatarget_names), len(self.datatarget_names) + size)
+            self._datatarget_groups[name] = slice(len(self.datatarget_names), len(self.datatarget_names) + size)
             self.datatarget_names.extend(names)
             self.datatarget_values = np.concatenate((self.datatarget_values, initial_values))
             self.datatarget_feedback_values = np.concatenate((self.datatarget_feedback_values, np.zeros(size)))
-            return self.datatarget_slices[name]
+            return self._datatarget_groups[name]
 
         def get_available_datasources(self):
             """Returns a list of all datasource names"""
@@ -310,7 +325,7 @@ try:
         def get_datasource_group(self, name, shape=None):
             """Return an array or matrix of datasource_values for the given group.
             Optional already shaped according to the provided argument"""
-            data = self.datasource_values[self.datasource_slices[name]]
+            data = self.datasource_values[self._datasource_groups[name]]
             if shape is not None:
                 data = data.reshape(shape)
             return data
@@ -318,7 +333,7 @@ try:
         def get_datatarget_group(self, name, shape=None):
             """Return an array or matrix of datatarget_values for the given group.
             Optional already shaped according to the provided argument"""
-            data = self.datatarget_values[self.datatarget_slices[name]]
+            data = self.datatarget_values[self._datatarget_groups[name]]
             if shape is not None:
                 data = data.reshape(shape)
             return data
@@ -326,7 +341,7 @@ try:
         def get_datatarget_feedback_group(self, name, shape=None):
             """Return an array or matrix of datatarget_feedback_values for the given group.
             Optional already shaped according to the provided argument"""
-            data = self.datatarget_feedback_values[self.datatarget_slices[name]]
+            data = self.datatarget_feedback_values[self._datatarget_groups[name]]
             if shape is not None:
                 data = data.reshape(shape)
             return data
@@ -353,17 +368,17 @@ try:
 
         def set_datasource_group(self, name, values):
             """Set the values of the given datasource group """
-            slce = self.datasource_slices[name]
+            slce = self._datasource_groups[name]
             self.datasource_values[slce] = values.flatten()
 
-        def set_datatarget_group(self, name, values):
+        def add_to_datatarget_group(self, name, values):
             """Set the values of the given datatarget group """
-            slce = self.datatarget_slices[name]
+            slce = self._datatarget_groups[name]
             self.datatarget_values[slce] = values.flatten()
 
         def set_datatarget_feedback_group(self, name, values):
             """Set the values of the given datatarget_feedback group """
-            slce = self.datatarget_slices[name]
+            slce = self._datatarget_groups[name]
             self.datatarget_feedback_values[slce] = values.flatten()
 
         def set_datasource_values(self, values):

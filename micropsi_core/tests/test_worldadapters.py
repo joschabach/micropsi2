@@ -148,7 +148,7 @@ def test_structured_datasources(default_world):
     motor = np.random.rand(*motor_shape)
 
     adapter.set_datasource_group("s_vision", vision)
-    adapter.set_datatarget_group("t_motor", motor)
+    adapter.add_to_datatarget_group("t_motor", motor)
 
     assert len(adapter.datasource_values) == 12
     assert len(adapter.datatarget_values) == 7

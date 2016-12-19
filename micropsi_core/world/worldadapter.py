@@ -212,6 +212,18 @@ try:
             self.datatarget_feedback_values = np.concatenate((self.datatarget_feedback_values, np.asarray([initial_value])))
             return len(self.datatarget_names) - 1
 
+        def _generate_names(self, basename, size, shape):
+            """ internal helper to create datasource or -target names fo groups"""
+            names = []
+            dims = len(shape)
+            idxs = np.unravel_index(np.arange(size), shape)
+            for i in range(size):
+                parts = [basename]
+                for j in range(dims):
+                    parts.append(str(idxs[j][i]))
+                names.append('_'.join(parts))
+            return names
+
         def add_datasource_group(self, name, shape, initial_values=None):
             """ Add a high-dimensional datasource.
             Will automatically create names for the entries based on the given name (e.g. "vision_0_0, vision_0_1", etc)
@@ -225,15 +237,8 @@ try:
             else:
                 size = functools.reduce(operator.mul, shape, 1)
                 initial_values = np.zeros(size)
-            names = []
-            dims = len(shape)
-            idxs = np.unravel_index(np.arange(size), shape)
-            for i in range(size):
-                parts = [name]
-                for j in range(dims):
-                    parts.append(str(idxs[j][i]))
-                names.append('_'.join(parts))
 
+            names = self._generate_names(name, size, shape)
             self.datasource_slices[name] = slice(len(self.datasource_names), len(self.datasource_names) + size)
             self.datasource_names.extend(names)
             self.datasource_values = np.concatenate((self.datasource_values, initial_values))
@@ -252,15 +257,7 @@ try:
             else:
                 size = functools.reduce(operator.mul, shape, 1)
                 initial_values = np.zeros(size)
-            names = []
-            dims = len(shape)
-            idxs = np.unravel_index(np.arange(size), shape)
-            for i in range(size):
-                parts = [name]
-                for j in range(dims):
-                    parts.append(str(idxs[j][i]))
-                names.append('_'.join(parts))
-
+            names = self._generate_names(name, size, shape)
             self.datatarget_slices[name] = slice(len(self.datatarget_names), len(self.datatarget_names) + size)
             self.datatarget_names.extend(names)
             self.datatarget_values = np.concatenate((self.datatarget_values, initial_values))

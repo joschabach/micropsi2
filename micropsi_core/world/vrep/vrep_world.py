@@ -416,9 +416,7 @@ class VrepGreyscaleVisionMixin(WorldAdapterMixin):
             else:
                 self.vision_resolution = (int(resolution[0] / 2**self.downscale), int(resolution[1] / 2**self.downscale))
                 self.logger.info("Vision resolution is {} (greyscale) after downscaling by 2**{}".format(self.vision_resolution, self.downscale))
-        for y in range(self.vision_resolution[1]):
-            for x in range(self.vision_resolution[0]):
-                self.add_datasource("px_%03d_%03d" % (x, y))
+        self.add_datasource_group("px", self.vision_resolution)
 
         self.image = plt.imshow(np.zeros(shape=(self.vision_resolution[0], self.vision_resolution[1])), cmap="bone", interpolation='nearest')
         self.image.norm.vmin = 0
@@ -437,7 +435,7 @@ class VrepGreyscaleVisionMixin(WorldAdapterMixin):
 
         y_image = y_image/255.0
 
-        self.set_datasource_range('px_000_000', y_image.flatten())
+        self.set_datasource_group('px', y_image)
         self.image.set_data(y_image)
         # print('vrep vision image sum', np.sum(abs(y_image)))
 
@@ -459,10 +457,8 @@ class VrepRGBVisionMixin(WorldAdapterMixin):
                 self.vision_resolution = (int(resolution[0] / self.downscale_factor), int(resolution[1] / self.downscale_factor))
                 self.logger.info("Vision resolution is %s (RGB)" % str(self.vision_resolution))
 
-        for x in range(self.vision_resolution[0]):
-            for y in range(self.vision_resolution[1]):
-                for c in range(3):
-                    self.add_datasource("px_%03d_%03d_%d" % (x, y, c))
+        shape = (self.vision_resolution[0], self.vision_resolution[1], 3)
+        self.add_datasource_group("px", shape)
 
         self.logger.info("added %d vision data sources." % (self.vision_resolution[1]*self.vision_resolution[0]*3))
 
@@ -488,7 +484,7 @@ class VrepRGBVisionMixin(WorldAdapterMixin):
         # plt.savefig('/tmp/upsi/vision_worldadapter{}.png'.format(self.world.current_step))
         # plt.close('all')
 
-        self.set_datasource_range('px_000_000_0', scaled_image.flatten())
+        self.set_datasource_group('px', scaled_image)
         self.image.set_data(scaled_image)
 
 
@@ -764,7 +760,8 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
 
             if self.control_type != "ik":
                 self.tvals = [0] * len(self.datatarget_values)
-                self.current_angle_target_values = np.array(self.get_datatarget_range('joint_1', len(self.joints)))
+                idx = self.get_datatarget_index('joint_1')
+                self.current_angle_target_values = np.asarray(self.datatarget_values[idx:idx + len(self.joints)])
                 joint_angle_offset = self.get_datasource_index("joint_angle_1")
                 for i, joint_handle in enumerate(self.joints):
                     tval = self.current_angle_target_values[i] * math.pi

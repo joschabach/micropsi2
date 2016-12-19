@@ -1698,8 +1698,9 @@ def test_flow_modules(app, runtime, test_nodenet, resourcepath, default_world):
     class SimpleArrayWA(ArrayWorldAdapter):
         def __init__(self, world):
             super().__init__(world)
-            self.add_datasources(['a', 'b', 'c', 'd', 'e'])
-            self.add_datatargets(['a', 'b', 'c', 'd', 'e'])
+            for x in ['a', 'b', 'c', 'd', 'e']:
+                self.add_datasource(x)
+                self.add_datatarget(x)
             self.update_data_sources_and_targets()
 
         def update_data_sources_and_targets(self):

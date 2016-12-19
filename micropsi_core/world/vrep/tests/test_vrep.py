@@ -102,7 +102,8 @@ def test_vrep_iiwa_ik_worldadapter_synchmode(runtime):
     # values now:
     ok, ik_pos = robotmock.simxGetObjectPosition(1, worldadapter.ik_follower_handle, -1, robotmock.simx_opmode_oneshot)
     # datatargets
-    worldadapter.set_datatarget_range('ik_x', [0.1, 0.2, 0.3])
+    idx = worldadapter.get_datatarget_index('ik_x')
+    worldadapter.datatarget_values[idx:idx + 3] = [0.1, 0.2, 0.3]
     # expected settings after action
     expected = [round(val + (0.1 * (i + 1)), 4) for i, val in enumerate(ik_pos)]
     # start doing stuff.
@@ -208,15 +209,17 @@ def test_vrep_objects6d(runtime):
     worldadapter.set_datatarget_value("execute-fork", 1)
     worldadapter.set_datatarget_value("execute-ghost-fork", 1)
     world.step()
-    worldadapter.set_datatarget_range('fork-x', [.1, .3, .5])
-    worldadapter.set_datatarget_range('ghost-fork-x', [.2, .4, .6])
-    worldadapter.set_datatarget_range('fork-alpha', [.3, .6, .9])
-    worldadapter.set_datatarget_range('ghost-fork-alpha', [.4, .7, 1.])
+    for i, x in enumerate(['x', 'y', 'z']):
+        worldadapter.set_datatarget_value('fork-%s' % x, .1 * (i + 1))
+        worldadapter.set_datatarget_value('ghost-fork-%s' % x, .2 * (i + 1))
+    for i, x in enumerate(['alpha', 'beta', 'gamma']):
+        worldadapter.set_datatarget_value('fork-%s' % x, .3 * (i + 1))
+        worldadapter.set_datatarget_value('ghost-fork-%s' % x, .4 * (i + 1))
     world.step()
-    assert np.all(worldadapter.get_datasource_range("fork-x", 3) == [.1, .3, .5])
-    assert np.all(worldadapter.get_datasource_range("ghost-fork-x", 3) == [.2, .4, .6])
-    assert np.all(worldadapter.get_datasource_range("fork-alpha", 3) == [.3, .6, .9])
-    assert np.all(worldadapter.get_datasource_range("ghost-fork-alpha", 3) == [.4, .7, 1.])
+    assert worldadapter.get_datasource_value("fork-y") == .2
+    assert worldadapter.get_datasource_value("ghost-fork-y") == .4
+    assert worldadapter.get_datasource_value("fork-beta") == .6
+    assert worldadapter.get_datasource_value("ghost-fork-beta") == .8
 
     assert 'plots' in world.get_world_view(1)
 
@@ -235,7 +238,8 @@ def test_vrep_forcetorque(runtime):
 
     result, worldadapter = world.register_nodenet('Robot', 'test', nodenet_name='test', config=waconfig)
     worldadapter.set_datatarget_value('execute', 1)
-    worldadapter.set_datatarget_range('joint_1', [.3, .4])
+    worldadapter.set_datatarget_value('joint_1', .3)
+    worldadapter.set_datatarget_value('joint_2', .4)
     world.step()
     # what to assert?
 
@@ -262,7 +266,8 @@ def test_vrep_ikrobot(runtime):
     # 2 default, 3 ik, 6 + execute for objects6d
     assert len(worldadapter.datatarget_values) == 2 + 3 + 7
     worldadapter.set_datatarget_value('execute', 1)
-    worldadapter.set_datatarget_range('ik_x', [.3, .4, .5])
+    for i, x in enumerate(['x', 'y', 'z']):
+        worldadapter.set_datatarget_value('ik_%s' % x, .1 * i)
     world.step()
     # what to assert?
 
@@ -288,7 +293,8 @@ def test_vrep_ikrobotwithgrayscalevision(runtime):
     # assert vision in datasources
     assert len(worldadapter.datasource_values) == 23 + (16 * 16)
     worldadapter.set_datatarget_value('execute', 1)
-    worldadapter.set_datatarget_range('ik_x', [.3, .4, .5])
+    for i, x in enumerate(['x', 'y', 'z']):
+        worldadapter.set_datatarget_value('ik_%s' % x, .1 * i)
     world.step()
     # what to assert?
 

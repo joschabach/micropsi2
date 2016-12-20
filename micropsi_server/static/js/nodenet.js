@@ -89,7 +89,7 @@ viewProperties.zoomFactor = parseFloat($.cookie('zoom_factor')) || viewPropertie
 
 var nodenetcookie = $.cookie('selected_nodenet') || '';
 if (nodenetcookie && nodenetcookie.indexOf('/') > 0){
-    nodenetcookie = nodenetcookie.split("/");
+    nodenetcookie = nodenetcookie.replace('"', '').split("/");
     currentNodenet = nodenetcookie[0];
     currentNodeSpace = nodenetcookie[1] || null;
 } else {

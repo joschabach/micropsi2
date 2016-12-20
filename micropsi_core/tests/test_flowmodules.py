@@ -432,8 +432,11 @@ def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepa
     assert np.all(thetas.get_theta("weights").get_value() == custom_theta)
 
     nodenet.step()
-
     assert np.all(worldadapter.datatarget_values == result)
+
+    # also assert, that the edge-keys are preserved:
+    # this would raise an exception otherwise
+    netapi.unflow(netapi.get_node(double.uid), 'outputs', netapi.get_node(thetas.uid), 'X')
 
 
 @pytest.mark.engine("theano_engine")

@@ -420,8 +420,6 @@ try:
             """
             pass  # pragma: no cover
 
-
-
     class DefaultArray(ArrayWorldAdapter):
         """
         A default ArrayWorldadapter, that provides example-datasources and -targets
@@ -441,5 +439,5 @@ try:
             self.datasource_values[:] = np.random.randn(64)
 
 
-except ImportError: # pragma: no cover
+except ImportError:  # pragma: no cover
     pass

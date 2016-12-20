@@ -6,10 +6,8 @@ from contextlib import contextmanager
 
 
 class TheanoNetAPI(NetAPI):
-    """
-    Theano / numpy extension of the NetAPI, giving native modules access to bulk operations and efficient
-    data structures for machine learning purposes.
-    """
+    # Theano / numpy extension of the NetAPI, giving native modules access to bulk operations and efficient
+    # data structures for machine learning purposes.
 
     def __init__(self, nodenet):
         super(TheanoNetAPI, self).__init__(nodenet)
@@ -17,6 +15,7 @@ class TheanoNetAPI(NetAPI):
 
     @property
     def floatX(self):
+        """ configured numpy float datatype (either numpy.float32 or numpy.float64"""
         return self.__nodenet.numpyfloatX
 
     @property
@@ -33,6 +32,7 @@ class TheanoNetAPI(NetAPI):
         self.__nodenet.update_flow_graphs()
 
     def announce_nodes(self, nodespace_uid, numer_of_nodes, average_element_per_node):
+        """ announce a new number of nodes and grow the internal matrices before adding the nodes """
         self.__nodenet.announce_nodes(nodespace_uid, numer_of_nodes, average_element_per_node)
 
     def decay_por_links(self, nodespace_uid):
@@ -82,9 +82,11 @@ class TheanoNetAPI(NetAPI):
         return self.__nodenet.remove_recorder(uid)
 
     def group_node_gates(self, node_uid, gate_prefix, group_name=None):
+        """ Creates a group of the high-dimensional gates of the given node"""
         self.__nodenet.group_highdimensional_elements(node_uid, gate=gate_prefix, group_name=group_name)
 
     def group_node_slots(self, node_uid, slot_prefix, group_name=None):
+        """ Creates a group of the high-dimensional slots of the given node"""
         self.__nodenet.group_highdimensional_elements(node_uid, slot=slot_prefix, group_name=group_name)
 
     def flow(self, source_node, source_output, target_node, target_input):

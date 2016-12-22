@@ -5,7 +5,7 @@ import os
 
 import micropsi_core
 from micropsi_core.nodenet import monitor
-from micropsi_core.nodenet.node import Nodetype
+from micropsi_core.nodenet.node import Nodetype, FlowNodetype, HighdimensionalNodetype
 from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION
 from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators
 from .dict_stepoperators import DictPropagate, DictCalculate
@@ -252,7 +252,12 @@ class DictNodenet(Nodenet):
         for key in native_modules:
             if native_modules[key].get('engine', self.engine) == self.engine:
                 try:
-                    self.native_modules[key] = Nodetype(nodenet=self, **native_modules[key])
+                    if native_modules[key].get('is_flow_module'):
+                        raise NotImplementedError("dict nodenet does not support flow modules")
+                    elif native_modules[key].get('dimensionality'):
+                        raise NotImplementedError("dict nodenet does not support highdimensional native modules")
+                    else:
+                        self.native_modules[key] = Nodetype(nodenet=self, **native_modules[key])
                 except Exception as err:
                     self.logger.error("Can not instantiate node type %s: %s: %s" % (type, err.__class__.__name__, str(err)))
 

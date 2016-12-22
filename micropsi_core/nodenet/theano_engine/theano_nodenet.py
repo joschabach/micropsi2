@@ -18,7 +18,7 @@ from micropsi_core.tools import OrderedSet
 from micropsi_core.nodenet import monitor
 from micropsi_core.nodenet import recorder
 from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION
-from micropsi_core.nodenet.node import Nodetype
+from micropsi_core.nodenet.node import Nodetype, FlowNodetype, HighdimensionalNodetype
 from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators
 from micropsi_core.nodenet.theano_engine.theano_node import *
 from micropsi_core.nodenet.theano_engine.theano_definitions import *
@@ -314,7 +314,7 @@ class TheanoNodenet(Nodenet):
                 if len(from_els):
                     slot_numerical = el - partition.allocated_node_offsets[nid]
                     slot_type = get_string_slot_type(slot_numerical, obj_nodetype)
-                    if obj_nodetype.is_highdimensional:
+                    if type(obj_nodetype) == HighdimensionalNodetype:
                         if slot_type.rstrip('0123456789') in obj_nodetype.dimensionality['slots']:
                             slot_type = slot_type.rstrip('0123456789') + '0'
                     from_nids = partition.allocated_elements_to_nodes[from_els]
@@ -326,7 +326,7 @@ class TheanoNodenet(Nodenet):
                         from_obj_nodetype = self.get_nodetype(get_string_node_type(from_nodetype, self.native_modules))
                         gate_numerical = from_el - partition.allocated_node_offsets[from_nids[j]]
                         gate_type = get_string_gate_type(gate_numerical, from_obj_nodetype)
-                        if from_obj_nodetype.is_highdimensional:
+                        if type(from_obj_nodetype) == HighdimensionalNodetype:
                             if gate_type.rstrip('0123456789') in from_obj_nodetype.dimensionality['gates']:
                                 gate_type = gate_type.rstrip('0123456789') + '0'
                         ldict = {
@@ -341,7 +341,7 @@ class TheanoNodenet(Nodenet):
                 if len(to_els):
                     gate_numerical = el - partition.allocated_node_offsets[nid]
                     gate_type = get_string_gate_type(gate_numerical, obj_nodetype)
-                    if obj_nodetype.is_highdimensional:
+                    if type(obj_nodetype) == HighdimensionalNodetype:
                         if gate_type.rstrip('0123456789') in obj_nodetype.dimensionality['gates']:
                             gate_type = gate_type.rstrip('0123456789') + '0'
                     to_nids = partition.allocated_elements_to_nodes[to_els]
@@ -352,7 +352,7 @@ class TheanoNodenet(Nodenet):
                         to_obj_nodetype = self.get_nodetype(get_string_node_type(to_nodetype, self.native_modules))
                         slot_numerical = to_el - partition.allocated_node_offsets[to_nids[j]]
                         slot_type = get_string_slot_type(slot_numerical, to_obj_nodetype)
-                        if to_obj_nodetype.is_highdimensional:
+                        if type(to_obj_nodetype) == HighdimensionalNodetype:
                             if slot_type.rstrip('0123456789') in to_obj_nodetype.dimensionality['slots']:
                                 slot_type = slot_type.rstrip('0123456789') + '0'
                         ldict = {
@@ -395,10 +395,10 @@ class TheanoNodenet(Nodenet):
                             to_obj_nodetype = self.get_nodetype(get_string_node_type(to_nodetype, self.native_modules))
                             slot_numerical = to_elements[slot_index] - to_partition.allocated_node_offsets[target_nid]
                             slot_type = get_string_slot_type(slot_numerical, to_obj_nodetype)
-                            if to_obj_nodetype.is_highdimensional:
+                            if type(to_obj_nodetype) == HighdimensionalNodetype:
                                 if slot_type.rstrip('0123456789') in to_obj_nodetype.dimensionality['slots']:
                                     slot_type = slot_type.rstrip('0123456789') + '0'
-                            if obj_nodetype.is_highdimensional:
+                            if type(obj_nodetype) == HighdimensionalNodetype:
                                 if gate_type.rstrip('0123456789') in obj_nodetype.dimensionality['gates']:
                                     gate_type = gate_type.rstrip('0123456789') + '0'
 
@@ -439,10 +439,10 @@ class TheanoNodenet(Nodenet):
                         from_obj_nodetype = self.get_nodetype(get_string_node_type(from_nodetype, self.native_modules))
                         gate_numerical = from_elements[gate_index] - from_partition.allocated_node_offsets[source_nid]
                         gate_type = get_string_gate_type(gate_numerical, from_obj_nodetype)
-                        if from_obj_nodetype.is_highdimensional:
+                        if type(from_obj_nodetype) == HighdimensionalNodetype:
                             if gate_type.rstrip('0123456789') in from_obj_nodetype.dimensionality['gates']:
                                 gate_type = gate_type.rstrip('0123456789') + '0'
-                        if obj_nodetype.is_highdimensional:
+                        if type(obj_nodetype) == HighdimensionalNodetype:
                             if slot_type.rstrip('0123456789') in obj_nodetype.dimensionality['slots']:
                                 slot_type = slot_type.rstrip('0123456789') + '0'
 
@@ -801,7 +801,7 @@ class TheanoNodenet(Nodenet):
             id = node_from_id(uid)
             parent_id = partition.allocated_node_parents[id]
             nodetype = get_string_node_type(partition.allocated_nodes[id], self.native_modules)
-            if self.get_nodetype(nodetype).is_flow_module:
+            if type(self.get_nodetype(nodetype)) == FlowNodetype:
                 node = FlowModule(self, partition, nodespace_to_id(parent_id, partition.pid), uid, partition.allocated_nodes[id])
                 self.flow_module_instances[uid] = node
             else:
@@ -1296,7 +1296,7 @@ class TheanoNodenet(Nodenet):
                 if name is None or name == "" or name == uid:
                     name = parameters['datatarget']
 
-        if nodetype in self.native_modules and self.native_modules[nodetype].is_flow_module:
+        if nodetype in self.native_modules and type(self.native_modules[nodetype]) == FlowNodetype:
             self._create_flow_module(self.get_node(uid))
 
         if name is not None and name != "" and name != uid:
@@ -1708,13 +1708,18 @@ class TheanoNodenet(Nodenet):
         # create the new nodetypes
         self.native_module_definitions = {}
         newnative_modules = {}
-        for type, data in native_modules.items():
+        for key, data in native_modules.items():
             if data.get('engine', self.engine) == self.engine:
                 try:
-                    newnative_modules[type] = Nodetype(nodenet=self, **data)
-                    self.native_module_definitions[type] = data
+                    if data.get('flow_module'):
+                        newnative_modules[key] = FlowNodetype(nodenet=self, **data)
+                    elif data.get('dimensionality'):
+                        newnative_modules[key] = HighdimensionalNodetype(nodenet=self, **data)
+                    else:
+                        newnative_modules[key] = Nodetype(nodenet=self, **data)
+                    self.native_module_definitions[key] = data
                 except Exception as err:
-                    self.logger.error("Can not instantiate node type %s: %s: %s" % (type, err.__class__.__name__, str(err)))
+                    self.logger.error("Can not instantiate node type %s: %s: %s" % (key, err.__class__.__name__, str(err)))
 
         for partition in self.partitions.values():
             for uid, instance in partition.native_module_instances.items():

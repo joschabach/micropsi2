@@ -426,11 +426,11 @@ try:
         """
         def __init__(self, world, uid=None, config={}, **data):
             super().__init__(world, uid=uid, config=config, **data)
-            for i in range(64):
-                self.datasource_names.append("s_%d" % i)
-                if i % 2 == 0:
-                    self.datatarget_names.append("t_%d" % i)
-            self.datasource_values = np.random.randn(64)
+            self.add_datasource("test")
+            self.add_datasource_group("vision", (3, 7))
+            self.add_datatarget("test")
+            self.add_datatarget_group("action", (2, 3))
+            self.datasource_values = np.random.randn(len(self.datasource_values.shape))
             self.datatarget_values = np.zeros_like(self.datatarget_values)
 
         def update_data_sources_and_targets(self):

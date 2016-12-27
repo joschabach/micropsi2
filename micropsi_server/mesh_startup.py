@@ -2,7 +2,8 @@
 def no_exit(code):
     pass
 
-def mesh_startup():
+
+def mesh_startup(port=7543):
 
     import sys
     from os import walk
@@ -17,4 +18,4 @@ def mesh_startup():
 
     import micropsi_server.micropsi_app
 
-    micropsi_server.micropsi_app.main("localhost", 7543)
+    micropsi_server.micropsi_app.main(None, port)

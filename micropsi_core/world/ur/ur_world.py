@@ -12,6 +12,7 @@ import numpy as np
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import ArrayWorldAdapter, WorldAdapterMixin
 
+from micropsi_core.world.ur.optoforce_mixin import OptoForce6DMixin
 
 class URConnection(threading.Thread):
     """
@@ -148,7 +149,7 @@ class URWorld(World):
     A Universal Robots environment, using the port 30003 realtime ("matlab") interface of the
     robot controller.
     """
-    supported_worldadapters = ['UR']
+    supported_worldadapters = ['UR', 'UROptoForce6D']
 
     #assets = {
     #    'template': 'ur/ur.tpl',
@@ -213,4 +214,15 @@ class UR(WorldAdapterMixin, ArrayWorldAdapter):
         self.reset_simulation_state()
 
     def update_data_sources_and_targets(self):
-        self.datasource_values = np.copy(self.world.connection_daemon.tool_pos_6D)
+        self.write_to_world()
+        self.read_from_world()
+
+    def read_from_world(self):
+        super().read_from_world()
+        self.set_datasource_range("tip-x", np.copy(self.world.connection_daemon.tool_pos_6D))
+
+
+class UROptoForce6D(UR, OptoForce6DMixin):
+    """
+    A world adapter for a UR3 system with an OptoForce 6D F/T sensor.
+    """

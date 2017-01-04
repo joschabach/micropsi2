@@ -183,6 +183,14 @@ class Default(WorldAdapter):
 try:
     import numpy as np
 
+    # configure dtype for value arrays.
+    # TODO: Move this and the config in theano_nodenet to one central point
+    from configuration import config as settings
+    precision = settings['theano']['precision']
+    floatX = np.float32
+    if precision == "64":
+        floatX == "64"
+
     # Only available if numpy is installed
 
     class ArrayWorldAdapter(WorldAdapter, metaclass=ABCMeta):
@@ -208,23 +216,23 @@ try:
             self.datatarget_names = []
             self._datasource_groups = {}
             self._datatarget_groups = {}
-            self.datasource_values = np.zeros(0)
-            self.datatarget_values = np.zeros(0)
-            self.datatarget_feedback_values = np.zeros(0)
+            self.datasource_values = np.zeros(0, dtype=floatX)
+            self.datatarget_values = np.zeros(0, dtype=floatX)
+            self.datatarget_feedback_values = np.zeros(0, dtype=floatX)
 
         def add_datasource(self, name, initial_value=0.):
             """ Adds a datasource, and returns the index
             where they were added"""
             self.datasource_names.append(name)
-            self.datasource_values = np.concatenate((self.datasource_values, np.asarray([initial_value])))
+            self.datasource_values = np.concatenate((self.datasource_values, np.asarray([initial_value], dtype=floatX)))
             return len(self.datasource_names) - 1
 
         def add_datatarget(self, name, initial_value=0.):
             """ Adds a datatarget, and returns the index
             where they were added"""
             self.datatarget_names.append(name)
-            self.datatarget_values = np.concatenate((self.datatarget_values, np.asarray([initial_value])))
-            self.datatarget_feedback_values = np.concatenate((self.datatarget_feedback_values, np.asarray([initial_value])))
+            self.datatarget_values = np.concatenate((self.datatarget_values, np.asarray([initial_value], dtype=floatX)))
+            self.datatarget_feedback_values = np.concatenate((self.datatarget_feedback_values, np.asarray([initial_value], dtype=floatX)))
             return len(self.datatarget_names) - 1
 
         def _generate_names(self, basename, size, shape):
@@ -248,10 +256,10 @@ try:
             """
             if initial_values:
                 size = initial_values.size
-                initial_values = np.asarray(initial_values).flatten()
+                initial_values = np.asarray(initial_values, dtype=floatX).flatten()
             else:
                 size = functools.reduce(operator.mul, shape, 1)
-                initial_values = np.zeros(size)
+                initial_values = np.zeros(size, dtype=floatX)
 
             names = self._generate_names(name, size, shape)
             self._datasource_groups[name] = slice(len(self.datasource_names), len(self.datasource_names) + size)
@@ -268,15 +276,15 @@ try:
             """
             if initial_values:
                 size = initial_values.size
-                initial_values = np.asarray(initial_values).flatten()
+                initial_values = np.asarray(initial_values, dtype=floatX).flatten()
             else:
                 size = functools.reduce(operator.mul, shape, 1)
-                initial_values = np.zeros(size)
+                initial_values = np.zeros(size, dtype=floatX)
             names = self._generate_names(name, size, shape)
             self._datatarget_groups[name] = slice(len(self.datatarget_names), len(self.datatarget_names) + size)
             self.datatarget_names.extend(names)
             self.datatarget_values = np.concatenate((self.datatarget_values, initial_values))
-            self.datatarget_feedback_values = np.concatenate((self.datatarget_feedback_values, np.zeros(size)))
+            self.datatarget_feedback_values = np.concatenate((self.datatarget_feedback_values, np.zeros(size, dtype=floatX)))
             return self._datatarget_groups[name]
 
         def get_available_datasources(self):

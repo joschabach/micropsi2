@@ -66,19 +66,18 @@ def test_arrayworldadapter(default_world):
 
     # get
     assert adapter.get_available_datasources() == adapter.datasource_names
-    assert adapter.get_datasource_value("bar") == 0.7
-    assert np.all(adapter.get_datasource_values() == np.asarray([0., .7]))
-    assert type(adapter.get_datasource_value("bar")) == np.float64
+    assert np.allclose(adapter.get_datasource_value("bar"), 0.7)
+    assert np.allclose(adapter.get_datasource_values(), np.asarray([0., .7]))
 
     # index
     assert adapter.get_datasource_index("bar") == 1
 
     # set
     adapter.set_datasource_value("foo", 123.)
-    assert adapter.get_datasource_value("foo") == 123.
-    assert np.all(adapter.get_datasource_values() == np.asarray([123., 0.7]))
+    assert np.allclose(adapter.get_datasource_value("foo"), 123.)
+    assert np.allclose(adapter.get_datasource_values(), np.asarray([123., 0.7]))
     adapter.set_datasource_values(np.asarray([.1, .2]))
-    assert np.all(adapter.get_datasource_values() == np.asarray([.1, .2]))
+    assert np.allclose(adapter.get_datasource_values(), np.asarray([.1, .2]))
     with pytest.raises(AssertionError):
         assert adapter.set_datasource_values(np.asarray([.1, .2, .3, .4, .5]))
 
@@ -91,9 +90,8 @@ def test_arrayworldadapter(default_world):
 
     # get
     assert adapter.get_available_datatargets() == adapter.datatarget_names
-    assert adapter.get_datatarget_value("t_bar") == 0.6
-    assert np.all(adapter.get_datatarget_values() == np.asarray([0., 0.6]))
-    assert type(adapter.get_datatarget_value("t_bar")) == np.float64
+    assert np.allclose(adapter.get_datatarget_value("t_bar"), 0.6)
+    assert np.allclose(adapter.get_datatarget_values(), np.asarray([0., 0.6]))
 
     # index
     assert adapter.get_datatarget_index("t_bar") == 1
@@ -101,10 +99,10 @@ def test_arrayworldadapter(default_world):
     # set
     adapter.set_datatarget_value("t_foo", .1)
     adapter.add_to_datatarget("t_foo", 2.1)
-    assert adapter.get_datatarget_value("t_foo") == 2.2
-    assert np.all(adapter.get_datatarget_values() == np.asarray([2.2, 0.6]))
+    assert np.allclose(adapter.get_datatarget_value("t_foo"), 2.2)
+    assert np.allclose(adapter.get_datatarget_values(), np.asarray([2.2, 0.6]))
     adapter.set_datatarget_values(np.asarray([.1, .2]))
-    assert np.all(adapter.get_datatarget_values() == np.asarray([.1, .2]))
+    assert np.allclose(adapter.get_datatarget_values(), np.asarray([.1, .2]))
     with pytest.raises(AssertionError):
         assert adapter.set_datatarget_values(np.asarray([.1, .2, .3, .4, .5]))
 
@@ -112,15 +110,14 @@ def test_arrayworldadapter(default_world):
 
     # get
     assert adapter.get_datatarget_feedback_value("t_foo") == 0.
-    assert np.all(adapter.get_datatarget_feedback_values() == np.asarray([0, 0.6]))
-    assert type(adapter.get_datatarget_feedback_value("t_foo")) == np.float64
+    assert np.allclose(adapter.get_datatarget_feedback_values(), np.asarray([0, 0.6]))
 
     # set
     adapter.set_datatarget_feedback_value("t_bar", 123.)
     assert adapter.get_datatarget_feedback_value("t_bar") == 123.
-    assert np.all(adapter.get_datatarget_feedback_values() == np.asarray([0., 123.]))
+    assert np.allclose(adapter.get_datatarget_feedback_values(), np.asarray([0., 123.]))
     adapter.set_datatarget_feedback_values(np.asarray([.1, .2]))
-    assert np.all(adapter.get_datatarget_feedback_values() == np.asarray([.1, .2]))
+    assert np.allclose(adapter.get_datatarget_feedback_values(), np.asarray([.1, .2]))
     with pytest.raises(AssertionError):
         assert adapter.set_datatarget_feedback_values(np.asarray([.1, .2, .3, .4, .5]))
 
@@ -157,12 +154,12 @@ def test_structured_datasources(default_world):
     assert adapter.datasource_names[8] == 's_vision_1_2'
     assert adapter.datatarget_names[5] == 't_motor_2_0'
 
-    assert np.all(adapter.get_datasource_group("s_vision") == vision.flatten())
-    assert np.all(adapter.get_datasource_group("s_vision", shape=vision_shape) == vision)
-    assert np.all(adapter.get_datatarget_group("t_motor") == motor.flatten())
-    assert np.all(adapter.get_datatarget_group("t_motor", shape=motor_shape) == motor)
-    assert np.all(adapter.get_datatarget_feedback_group("t_motor") == np.zeros(6))
-    assert np.all(adapter.get_datatarget_feedback_group("t_motor", shape=motor_shape) == np.zeros(6).reshape(motor_shape))
+    assert np.allclose(adapter.get_datasource_group("s_vision"), vision.flatten())
+    assert np.allclose(adapter.get_datasource_group("s_vision", shape=vision_shape), vision)
+    assert np.allclose(adapter.get_datatarget_group("t_motor"), motor.flatten())
+    assert np.allclose(adapter.get_datatarget_group("t_motor", shape=motor_shape), motor)
+    assert np.allclose(adapter.get_datatarget_feedback_group("t_motor"), np.zeros(6))
+    assert np.allclose(adapter.get_datatarget_feedback_group("t_motor", shape=motor_shape), np.zeros(6).reshape(motor_shape))
 
 
 def test_worldadapter_mixin(default_world):

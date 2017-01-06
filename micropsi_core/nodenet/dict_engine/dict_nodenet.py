@@ -259,7 +259,7 @@ class DictNodenet(Nodenet):
                     else:
                         self.native_modules[key] = Nodetype(nodenet=self, **native_modules[key])
                 except Exception as err:
-                    self.logger.error("Can not instantiate node type %s: %s: %s" % (type, err.__class__.__name__, str(err)))
+                    self.logger.error("Can not instantiate node type %s: %s: %s" % (key, err.__class__.__name__, str(err)))
 
         saved = self.export_json()
         self.clear()

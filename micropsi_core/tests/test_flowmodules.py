@@ -843,7 +843,9 @@ def test_connect_flow_modules_to_structured_datasource_group(runtime, test_noden
     nodenet.native_modules['wa_out_vision'].outputs == ['vision']
     in_node_found = False
     out_node_found = False
-    assert len(nodenet.flow_module_instances) == 2
+    ds_found = False
+    dt_found = False
+    assert len(nodenet.flow_module_instances) == 4
     for uid, node in nodenet.flow_module_instances.items():
         if node.name == 'motor':
             assert node.type == 'wa_in_motor'
@@ -857,9 +859,23 @@ def test_connect_flow_modules_to_structured_datasource_group(runtime, test_noden
             assert node.outputs == ['vision']
             assert node.inputs == []
             assert node.get_data()['type'] == 'wa_out_vision'
+        elif node.name == 'datasources':
+            assert node.type == 'wa_out_datasources'
+            ds_found = True
+            assert node.outputs == ['datasources']
+            assert node.inputs == []
+            assert node.get_data()['type'] == 'wa_out_datasources'
+        elif node.name == 'datatargets':
+            assert node.type == 'wa_in_datatargets'
+            dt_found = True
+            assert node.outputs == []
+            assert node.inputs == ['datatargets']
+            assert node.get_data()['type'] == 'wa_in_datatargets'
 
     assert in_node_found
     assert out_node_found
+    assert ds_found
+    assert dt_found
 
     sources = np.zeros((7), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
@@ -882,4 +898,4 @@ def test_connect_flow_modules_to_structured_datasource_group(runtime, test_noden
     runtime.revert_nodenet(test_nodenet)
 
     nodenet = runtime.nodenets[test_nodenet]
-    assert len(nodenet.flow_module_instances) == 3
+    assert len(nodenet.flow_module_instances) == 5

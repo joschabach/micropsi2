@@ -6,9 +6,7 @@ except ImportError:
 
 
 class NetAPI(object):
-    """
-    Node Net API facade class for use from within the node net (in node functions)
-    """
+    # Node Net API facade class for use from within the node net (in node functions)
 
     @property
     def uid(self):
@@ -16,18 +14,22 @@ class NetAPI(object):
 
     @property
     def step(self):
+        """ The current step of the nodenet """
         return self.__nodenet.current_step
 
     @property
     def worldadapter(self):
+        """ The worldadapter instance """
         return self.__nodenet.worldadapter_instance
 
     @property
     def logger(self):
+        """ The nodenet logger """
         return self.__nodenet.logger
 
     @property
     def vizapi(self):
+        """ An API for visualizations """
         return vizapi
 
     def __init__(self, nodenet):
@@ -316,17 +318,6 @@ class NetAPI(object):
                     sensor.set_parameter('datasource', datasource)
                 all_sensors.append(sensor)
         return all_sensors
-
-    # def set_gatefunction(self, nodespace, nodetype, gatetype, gatefunction):
-    #     """Sets the gatefunction for gates of type gatetype of nodes of type nodetype, in the given
-    #         nodespace.
-    #         The gatefunction needs to be given as a string.
-    #     """
-    #     nodespace = self.get_nodespace(nodespace)
-    #     for uid in nodespace.get_known_ids(entitytype="nodes"):
-    #         node = self.get_node(uid)
-    #         if node.type == nodetype:
-    #             node.set_gatefunction_name(gatetype, gatefunction)
 
     def notify_user(self, node, msg):
         """

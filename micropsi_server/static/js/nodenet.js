@@ -89,7 +89,7 @@ viewProperties.zoomFactor = parseFloat($.cookie('zoom_factor')) || viewPropertie
 
 var nodenetcookie = $.cookie('selected_nodenet') || '';
 if (nodenetcookie && nodenetcookie.indexOf('/') > 0){
-    nodenetcookie = nodenetcookie.split("/");
+    nodenetcookie = nodenetcookie.replace('"', '').split("/");
     currentNodenet = nodenetcookie[0];
     currentNodeSpace = nodenetcookie[1] || null;
 } else {
@@ -145,7 +145,7 @@ if(currentNodenet){
 } else {
     splash = new PointText(new Point(50, 50));
     splash.characterStyle = { fontSize: 20, fillColor: "#66666" };
-    splash.content = 'Create a nodenet by selecting "New..." from the "Nodenet" menu.';
+    splash.content = 'Create an agent by selecting "New..." from the "Agent" menu.';
     nodeLayer.addChild(splash);
     toggleButtons(false);
 }

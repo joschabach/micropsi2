@@ -252,7 +252,7 @@ class DictNodenet(Nodenet):
         for key in native_modules:
             if native_modules[key].get('engine', self.engine) == self.engine:
                 try:
-                    if native_modules[key].get('is_flow_module'):
+                    if native_modules[key].get('flow_module'):
                         raise NotImplementedError("dict nodenet does not support flow modules")
                     elif native_modules[key].get('dimensionality'):
                         raise NotImplementedError("dict nodenet does not support highdimensional native modules")

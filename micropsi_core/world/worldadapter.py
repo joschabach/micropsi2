@@ -85,6 +85,7 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
         self.datasource_lock = Lock()
         self.config = config
         self.nodenet = None  # will be assigned by the nodenet once it's loaded
+        self.generate_flow_modules = False
         WorldObject.__init__(self, world, category='agents', uid=uid, **data)
         self.logger = logging.getLogger('agent.%s' % self.uid)
         if data.get('name'):

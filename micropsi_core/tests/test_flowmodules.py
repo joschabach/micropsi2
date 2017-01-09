@@ -822,6 +822,7 @@ def test_connect_flow_modules_to_structured_datasource_group(runtime, test_noden
     class StructuredArrayWA(ArrayWorldAdapter):
         def __init__(self, world, **kwargs):
             super().__init__(world)
+            self.generate_flow_modules = True
             self.add_datasource('execute')
             self.add_datasource_group('vision', (2, 3))
             self.add_datatarget('reset')

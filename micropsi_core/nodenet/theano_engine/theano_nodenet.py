@@ -1811,7 +1811,7 @@ class TheanoNodenet(Nodenet):
 
     def generate_worldadapter_flow_types(self, delete_existing=False):
         """ returns native_module_definitions for datasources and targets from the configured worldadapter"""
-        if not self.worldadapter_instance:
+        if not self.worldadapter_instance or not self.worldadapter_instance.generate_flow_modules:
             return {}
 
         auto_nodetypes = []

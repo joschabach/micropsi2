@@ -10,7 +10,7 @@ import gym
 floatX = 'float32' # where do we configure this?
 
 
-def inspect_space(gym_space):
+def inspect_space(gym_space, verbose=False):
     """
     find the dimensionaltity and (if discrete) number of values of an OAI state/action space
 
@@ -32,8 +32,10 @@ def inspect_space(gym_space):
     if isinstance(gym_space, gym.spaces.Box):
         n_dim = gym_space.shape[0]
         n_discrete = False
+        lo, hi = gym_space.low, gym_space.high
+        if verbose:
+            print('lower bounds: {}\n upper bounds{}'.format(lo, hi))
         def checkbounds(action):
-            lo, hi = gym_space.low, gym_space.high
             bounded_action = np.clip(action, lo, hi)
             punishment = 0 # 0.1* np.sum(abs(action - bounded_action))
             if punishment != 0:
@@ -64,7 +66,7 @@ class OAIGym(World):
         self.time_limit = config['time_limit']
 
         self.n_dim_state, self.n_discrete_states, _ = inspect_space(self.env.observation_space)
-        self.n_dim_action, self.n_discrete_actions, self.checkbounds = inspect_space(self.env.action_space)
+        self.n_dim_action, self.n_discrete_actions, self.checkbounds = inspect_space(self.env.action_space, verbose=True)
 
         self.rendering = True
 

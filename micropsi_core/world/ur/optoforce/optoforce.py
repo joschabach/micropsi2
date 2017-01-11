@@ -1,6 +1,6 @@
 import ctypes
 import numpy as np
-
+import os
 
 class FT(ctypes.Structure):
     _fields_ = [('fx', ctypes.c_int),
@@ -22,10 +22,11 @@ def init():
 
     global _optoforce
 
-    _optoforce = ctypes.CDLL('./liboptoforce.so')
+    location = "./micropsi_core/world/ur/optoforce"
+    _optoforce = ctypes.CDLL(os.path.join(location, "liboptoforce.so"))
 
     if not _optoforce.init():
-        raise Exception("Could not initialized OptoForce 6D F/T sensor. Sensor connected to USB, permissions good?");
+        raise Exception("Could not initialize OptoForce 6D F/T sensor. Sensor connected to USB, permissions good?");
 
 
 def shutdown():
@@ -49,3 +50,4 @@ def get_ft_np():
     """
     _optoforce.fill_ft(_ftbyteref)
     return np.array([_ft.fx, _ft.fy, _ft.fy, _ft.tx, _ft.ty, _ft.tz])
+

@@ -25,3 +25,6 @@ class OptoForce6DMixin(WorldAdapterMixin):
     def read_from_world(self):
         super().read_from_world()
         self.set_datasource_range("wrist-fx", optoforce.get_ft_np())
+
+    def shutdown(self):
+        optoforce.shutdown()

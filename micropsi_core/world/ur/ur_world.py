@@ -166,6 +166,16 @@ class URWorld(World):
     def get_world_view(self, step):
         return None
 
+    def shutdown(self):
+        for uid in self.agents:
+            self.agents[uid].shutdown()
+
+    def signal_handler(self, *args):
+        self.shutdown()
+
+    def __del__(self):
+        self.shutdown()
+
     @classmethod
     def get_config_options(cls):
         return [
@@ -220,6 +230,9 @@ class UR(WorldAdapterMixin, ArrayWorldAdapter):
     def read_from_world(self):
         super().read_from_world()
         self.set_datasource_range("tip-x", np.copy(self.world.connection_daemon.tool_pos_6D))
+
+    def shutdown(self):
+        pass
 
 
 class UROptoForce6D(UR, OptoForce6DMixin):

@@ -30,6 +30,8 @@ class URConnection(threading.Thread):
         self.is_connected = False
         self.logger = logging.getLogger("world")
 
+        self.joint_pos = np.zeros(6)
+        self.joint_speeds = np.zeros(6)
         self.tool_pos_6D = np.zeros(6)
         self.tool_frc_6D = np.zeros(6)
 
@@ -82,11 +84,53 @@ class URConnection(threading.Thread):
         pkt_tgt_joint_tqe = self.socket.recv(48)  # target joint moments (torques)
         read += 48
 
-        pkt_act_joint_pos = self.socket.recv(48)  # actual joint positions
-        read += 48
+        pkt_act_joint_pos_base = self.socket.recv(8)
+        read += 8
+        self.joint_pos[0] = struct.unpack('!d', pkt_act_joint_pos_base)[0]              # actual base position
 
-        pkt_act_joint_vel = self.socket.recv(48)  # actual joint velocities
-        read += 48
+        pkt_act_joint_pos_shoulder = self.socket.recv(8)
+        read += 8
+        self.joint_pos[1] = struct.unpack('!d', pkt_act_joint_pos_shoulder)[0]          # actual shoulder position
+
+        pkt_act_joint_pos_elbow = self.socket.recv(8)
+        read += 8
+        self.joint_pos[2] = struct.unpack('!d', pkt_act_joint_pos_elbow)[0]             # actual elbow position
+
+        pkt_act_joint_pos_wrist1 = self.socket.recv(8)
+        read += 8
+        self.joint_pos[3] = struct.unpack('!d', pkt_act_joint_pos_wrist1)[0]            # actual wrist1 position
+
+        pkt_act_joint_pos_wrist2 = self.socket.recv(8)
+        read += 8
+        self.joint_pos[4] = struct.unpack('!d', pkt_act_joint_pos_wrist2)[0]            # actual wrist2 position
+
+        pkt_act_joint_pos_wrist3 = self.socket.recv(8)
+        read += 8
+        self.joint_pos[5] = struct.unpack('!d', pkt_act_joint_pos_wrist3)[0]            # actual wrist3 position
+
+        pkt_act_joint_speed_base = self.socket.recv(8)
+        read += 8
+        self.joint_speeds[0] = struct.unpack('!d', pkt_act_joint_speed_base)[0]         # actual base speed
+
+        pkt_act_joint_speed_shoulder = self.socket.recv(8)
+        read += 8
+        self.joint_speeds[1] = struct.unpack('!d', pkt_act_joint_speed_shoulder)[0]     # actual shoulder speed
+
+        pkt_act_joint_speed_elbow = self.socket.recv(8)
+        read += 8
+        self.joint_speeds[2] = struct.unpack('!d', pkt_act_joint_speed_elbow)[0]        # actual elbow speed
+
+        pkt_act_joint_speed_wrist1 = self.socket.recv(8)
+        read += 8
+        self.joint_speeds[3] = struct.unpack('!d', pkt_act_joint_speed_wrist1)[0]       # actual wrist1 speed
+
+        pkt_act_joint_speed_wrist2 = self.socket.recv(8)
+        read += 8
+        self.joint_speeds[4] = struct.unpack('!d', pkt_act_joint_speed_wrist2)[0]       # actual wrist2 speed
+
+        pkt_act_joint_speed_wrist3 = self.socket.recv(8)
+        read += 8
+        self.joint_speeds[5] = struct.unpack('!d', pkt_act_joint_speed_wrist3)[0]       # actual wrist3 speed
 
         pkt_act_joint_cur = self.socket.recv(48)  # actual joint currents
         read += 48
@@ -222,6 +266,27 @@ class UR(WorldAdapterMixin, ArrayWorldAdapter):
         self.add_datasource("tip-ry")
         self.add_datasource("tip-rz")
 
+        self.add_datasource("tipf-x")
+        self.add_datasource("tipf-y")
+        self.add_datasource("tipf-z")
+        self.add_datasource("tipf-rx")
+        self.add_datasource("tipf-ry")
+        self.add_datasource("tipf-rz")
+
+        self.add_datasource("j-base")
+        self.add_datasource("j-shoulder")
+        self.add_datasource("j-elbow")
+        self.add_datasource("j-wrist1")
+        self.add_datasource("j-wrist2")
+        self.add_datasource("j-wrist3")
+
+        self.add_datasource("js-base")
+        self.add_datasource("js-shoulder")
+        self.add_datasource("js-elbow")
+        self.add_datasource("js-wrist1")
+        self.add_datasource("js-wrist2")
+        self.add_datasource("js-wrist3")
+
         if self.nodenet:
             self.nodenet.worldadapter_instance = self
         self.initialized = True
@@ -235,6 +300,9 @@ class UR(WorldAdapterMixin, ArrayWorldAdapter):
     def read_from_world(self):
         super().read_from_world()
         self.set_datasource_range("tip-x", np.copy(self.world.connection_daemon.tool_pos_6D))
+        self.set_datasource_range("tipf-x", np.copy(self.world.connection_daemon.tool_frc_6D))
+        self.set_datasource_range("j-base", np.copy(self.world.connection_daemon.joint_pos))
+        self.set_datasource_range("js-base", np.copy(self.world.connection_daemon.joint_speeds))
 
     def reset_datatargets(self):
         self.datatarget_values = np.zeros_like(self.datatarget_values)

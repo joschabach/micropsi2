@@ -231,25 +231,8 @@ try:
             self.datatarget_feedback_values = np.concatenate((self.datatarget_feedback_values, np.asarray([initial_value], dtype=floatX)))
             return len(self.datatarget_names) - 1
 
-        def _generate_names(self, basename, size, shape):
-            """ internal helper to create datasource or -target names fo groups"""
-            names = []
-            dims = len(shape)
-            idxs = np.unravel_index(np.arange(size), shape)
-            for i in range(size):
-                parts = [basename]
-                for j in range(dims):
-                    parts.append(str(idxs[j][i]))
-                names.append('_'.join(parts))
-            return names
-
         def add_flow_datasource(self, name, shape, initial_values=None):
-            """ Add a high-dimensional datasource.
-            Will automatically create names for the entries based on the given name (e.g. "vision_0_0, vision_0_1", etc)
-            according to the shape information.
-            initial_values can be provided either in their original shape or flattened.
-            internal storage will be flattened.
-            """
+            """ Add a high-dimensional datasource for flowmodules."""
             if initial_values is None:
                 initial_values = np.zeros(shape, dtype=floatX)
 
@@ -257,12 +240,7 @@ try:
             return self.flow_datasources[name]
 
         def add_flow_datatarget(self, name, shape, initial_values=None):
-            """ Add a high-dimensional datatarget.
-            Will automatically create names for the entries based on the given name (e.g. "target_0_0, target_0_1", etc)
-            according to the shape information.
-            initial_values can be provided either in their original shape or flattened.
-            internal storage will be flattened.
-            """
+            """ Add a high-dimensional datatarget for flowmodules"""
             if initial_values is None:
                 initial_values = np.zeros(shape, dtype=floatX)
 
@@ -320,18 +298,15 @@ try:
             return self.datatarget_feedback_values
 
         def get_flow_datasource(self, name):
-            """Return an array or matrix of datasource_values for the given group.
-            Optional already shaped according to the provided argument"""
+            """ return the array/matrix for the given flow datasource"""
             return self.flow_datasources[name]
 
         def get_flow_datatarget(self, name):
-            """Return an array or matrix of datatarget_values for the given group.
-            Optional already shaped according to the provided argument"""
+            """ return the array/matrix for the given flow datatarget"""
             return self.flow_datatargets[name]
 
         def get_flow_datatarget_feedback(self, name):
-            """Return an array or matrix of datatarget_feedback_values for the given group.
-            Optional already shaped according to the provided argument"""
+            """ return the array/matrix for the given flow datatarget_feedback"""
             return self.flow_datatarget_feedbacks[name]
 
         def set_datasource_value(self, key, value):
@@ -355,17 +330,17 @@ try:
             self.datatarget_feedback_values[idx] = value
 
         def set_flow_datasource(self, name, values):
-            """Set the values of the given datasource group """
+            """Set the values of the given flow_datasource """
             values = values.reshape(self.flow_datasources[name].shape)
             self.flow_datasources[name] = values
 
         def add_to_flow_datatarget(self, name, values):
-            """Set the values of the given datatarget group """
+            """Add the given values to the given flow_datatarget """
             values = values.reshape(self.flow_datatargets[name].shape)
             self.flow_datatargets[name] += values
 
         def set_flow_datatarget_feedback(self, name, values):
-            """Set the values of the given datatarget_feedback group """
+            """Set the values of the given flow_datatarget_feedback """
             values = values.reshape(self.flow_datatarget_feedbacks[name].shape)
             self.flow_datatarget_feedbacks[name] = values
 

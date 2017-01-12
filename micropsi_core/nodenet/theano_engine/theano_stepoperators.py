@@ -85,11 +85,11 @@ class TheanoCalculateFlowmodules(Propagate):
         flowio = {}
 
         if nodenet.worldadapter_instance:
-            flowio['worldadapter'] = {
-                'datasources': nodenet.worldadapter_instance.get_datasource_values(),
-            }
-            for g in nodenet.worldadapter_instance.datasource_groups:
-                flowio['worldadapter'][g] = nodenet.worldadapter_instance.get_datasource_group(g)
+            if 'datasources' in nodenet.worldadapter_flow_nodes:
+                sourcenode = nodenet.get_node(nodenet.worldadapter_flow_nodes['datasources'])
+                flowio[sourcenode.uid] = {}
+                for key in sourcenode.outputs:
+                    flowio[sourcenode.uid][key] = nodenet.worldadapter_instance.get_datasource_group(key)
 
         for func in nodenet.flowfunctions:
             if any([node.is_requested() for node in func['endnodes']]):
@@ -113,12 +113,11 @@ class TheanoCalculateFlowmodules(Propagate):
                 for n in func['members']:
                     n.is_part_of_active_graph = True
                 for index, (node_uid, out_name) in enumerate(func['outputs']):
-                    for uid, name in nodenet.get_node(node_uid).outputmap[out_name]:
-                        if uid == 'worldadapter':
-                            if name == 'datatargets':
-                                nodenet.worldadapter_instance.add_datatarget_values(out[index])
-                            else:
-                                nodenet.worldadapter_instance.add_to_datatarget_group(name, out[index])
                     if node_uid not in flowio:
                         flowio[node_uid] = {}
+                    if 'datatargets' in nodenet.worldadapter_flow_nodes:
+                        targetnode = nodenet.get_node(nodenet.worldadapter_flow_nodes['datatargets'])
+                        for uid, name in nodenet.get_node(node_uid).outputmap[out_name]:
+                            if uid == targetnode.uid:
+                                nodenet.worldadapter_instance.add_to_datatarget_group(name, out[index])
                     flowio[node_uid][out_name] = out[index] if out is not None else None

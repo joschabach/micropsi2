@@ -71,21 +71,19 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
         return []
 
     @property
-    def datasource_groups(self):
-        return []
-
-    @property
-    def datatarget_groups(self):
-        return []
+    def generate_flow_modules(self):
+        return False
 
     def __init__(self, world, uid=None, config={}, **data):
         self.datasources = {}
         self.datatargets = {}
+        self.datasource_groups = {}
+        self.datatarget_groups = {}
+        self.datatarget_feedback_groups = {}
         self.datatarget_feedback = {}
         self.datasource_lock = Lock()
         self.config = config
         self.nodenet = None  # will be assigned by the nodenet once it's loaded
-        self.generate_flow_modules = False
         WorldObject.__init__(self, world, category='agents', uid=uid, **data)
         self.logger = logging.getLogger('agent.%s' % self.uid)
         if data.get('name'):
@@ -190,7 +188,7 @@ try:
     precision = settings['theano']['precision']
     floatX = np.float32
     if precision == "64":
-        floatX == "64"
+        floatX = np.float64
 
     # Only available if numpy is installed
 
@@ -203,20 +201,17 @@ try:
         """
 
         @property
-        def datasource_groups(self):
-            return list(self._datasource_groups.keys())
-
-        @property
-        def datatarget_groups(self):
-            return list(self._datatarget_groups.keys())
+        def generate_flow_modules(self):
+            return len(self.datasource_groups) or len(self.datatarget_groups)
 
         def __init__(self, world, uid=None, **data):
             WorldAdapter.__init__(self, world, uid=uid, **data)
 
             self.datasource_names = []
             self.datatarget_names = []
-            self._datasource_groups = {}
-            self._datatarget_groups = {}
+            self.datasource_groups = {}
+            self.datatarget_groups = {}
+            self.datatarget_feedback_groups = {}
             self.datasource_values = np.zeros(0, dtype=floatX)
             self.datatarget_values = np.zeros(0, dtype=floatX)
             self.datatarget_feedback_values = np.zeros(0, dtype=floatX)
@@ -255,18 +250,11 @@ try:
             initial_values can be provided either in their original shape or flattened.
             internal storage will be flattened.
             """
-            if initial_values:
-                size = initial_values.size
-                initial_values = np.asarray(initial_values, dtype=floatX).flatten()
-            else:
-                size = functools.reduce(operator.mul, shape, 1)
-                initial_values = np.zeros(size, dtype=floatX)
+            if initial_values is None:
+                initial_values = np.zeros(shape, dtype=floatX)
 
-            names = self._generate_names(name, size, shape)
-            self._datasource_groups[name] = slice(len(self.datasource_names), len(self.datasource_names) + size)
-            self.datasource_names.extend(names)
-            self.datasource_values = np.concatenate((self.datasource_values, initial_values))
-            return self._datasource_groups[name]
+            self.datasource_groups[name] = initial_values
+            return self.datasource_groups[name]
 
         def add_datatarget_group(self, name, shape, initial_values=None):
             """ Add a high-dimensional datatarget.
@@ -275,18 +263,12 @@ try:
             initial_values can be provided either in their original shape or flattened.
             internal storage will be flattened.
             """
-            if initial_values:
-                size = initial_values.size
-                initial_values = np.asarray(initial_values, dtype=floatX).flatten()
-            else:
-                size = functools.reduce(operator.mul, shape, 1)
-                initial_values = np.zeros(size, dtype=floatX)
-            names = self._generate_names(name, size, shape)
-            self._datatarget_groups[name] = slice(len(self.datatarget_names), len(self.datatarget_names) + size)
-            self.datatarget_names.extend(names)
-            self.datatarget_values = np.concatenate((self.datatarget_values, initial_values))
-            self.datatarget_feedback_values = np.concatenate((self.datatarget_feedback_values, np.zeros(size, dtype=floatX)))
-            return self._datatarget_groups[name]
+            if initial_values is None:
+                initial_values = np.zeros(shape, dtype=floatX)
+
+            self.datatarget_groups[name] = initial_values
+            self.datatarget_feedback_groups[name] = np.zeros_like(initial_values)
+            return self.datatarget_groups[name]
 
         def get_available_datasources(self):
             """Returns a list of all datasource names"""
@@ -295,6 +277,12 @@ try:
         def get_available_datatargets(self):
             """Returns a list of all datatarget names"""
             return self.datatarget_names
+
+        def get_available_datasource_groups(self):
+            return list(self.datasource_groups.keys())
+
+        def get_available_datatarget_groups(self):
+            return list(self.datatarget_groups.keys())
 
         def get_datasource_index(self, name):
             """Returns the index of the given datasource in the value array"""
@@ -331,29 +319,20 @@ try:
             """allows the agent to read all datatarget_feedback values"""
             return self.datatarget_feedback_values
 
-        def get_datasource_group(self, name, shape=None):
+        def get_datasource_group(self, name):
             """Return an array or matrix of datasource_values for the given group.
             Optional already shaped according to the provided argument"""
-            data = self.datasource_values[self._datasource_groups[name]]
-            if shape is not None:
-                data = data.reshape(shape)
-            return data
+            return self.datasource_groups[name]
 
-        def get_datatarget_group(self, name, shape=None):
+        def get_datatarget_group(self, name):
             """Return an array or matrix of datatarget_values for the given group.
             Optional already shaped according to the provided argument"""
-            data = self.datatarget_values[self._datatarget_groups[name]]
-            if shape is not None:
-                data = data.reshape(shape)
-            return data
+            return self.datatarget_groups[name]
 
-        def get_datatarget_feedback_group(self, name, shape=None):
+        def get_datatarget_feedback_group(self, name):
             """Return an array or matrix of datatarget_feedback_values for the given group.
             Optional already shaped according to the provided argument"""
-            data = self.datatarget_feedback_values[self._datatarget_groups[name]]
-            if shape is not None:
-                data = data.reshape(shape)
-            return data
+            return self.datatarget_feedback_groups[name]
 
         def set_datasource_value(self, key, value):
             """Sets the given datasource value"""
@@ -377,18 +356,18 @@ try:
 
         def set_datasource_group(self, name, values):
             """Set the values of the given datasource group """
-            slce = self._datasource_groups[name]
-            self.datasource_values[slce] = values.flatten()
+            values = values.reshape(self.datasource_groups[name].shape)
+            self.datasource_groups[name] = values
 
         def add_to_datatarget_group(self, name, values):
             """Set the values of the given datatarget group """
-            slce = self._datatarget_groups[name]
-            self.datatarget_values[slce] = values.flatten()
+            values = values.reshape(self.datatarget_groups[name].shape)
+            self.datatarget_groups[name] += values
 
         def set_datatarget_feedback_group(self, name, values):
             """Set the values of the given datatarget_feedback group """
-            slce = self._datatarget_groups[name]
-            self.datatarget_feedback_values[slce] = values.flatten()
+            values = values.reshape(self.datatarget_feedback_groups[name].shape)
+            self.datatarget_feedback_groups[name] = values
 
         def set_datasource_values(self, values):
             """sets the complete datasources to new values"""
@@ -435,17 +414,18 @@ try:
         """
         def __init__(self, world, uid=None, config={}, **data):
             super().__init__(world, uid=uid, config=config, **data)
-            self.add_datasource("test")
+            self.add_datasource("test", initial_value=0)
             self.add_datasource_group("vision", (3, 7))
-            self.add_datatarget("test")
+            self.add_datatarget("test", initial_value=0)
             self.add_datatarget_group("action", (2, 3))
-            self.datasource_values = np.random.randn(len(self.datasource_values.shape))
-            self.datatarget_values = np.zeros_like(self.datatarget_values)
+            self.update_data_sources_and_targets()
 
         def update_data_sources_and_targets(self):
             import random
             self.datatarget_feedback_values[:] = self.datatarget_values
-            self.datasource_values[:] = np.random.randn(64)
+            self.datasource_values[:] = np.random.randn(len(self.datasource_values))
+            self.datasource_groups['vision'][:] = np.random.randn(*self.datasource_values.shape)
+            self.datatarget_groups['action'][:] = np.zeros_like(self.datatarget_groups['action'])
 
 
 except ImportError:  # pragma: no cover

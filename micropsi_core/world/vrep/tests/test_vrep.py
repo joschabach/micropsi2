@@ -292,7 +292,7 @@ def test_vrep_ikrobotwithgrayscalevision(runtime):
     result, worldadapter = world.register_nodenet('IKRobotWithGreyscaleVision', 'test', nodenet_name='test', config=waconfig)
     # assert vision in datasources
     assert len(worldadapter.datasource_values) == 23
-    assert worldadapter.get_datasource_group('vision').shape == (16, 16)
+    assert worldadapter.get_flow_datasource('vision').shape == (16, 16)
     worldadapter.set_datatarget_value('execute', 1)
     for i, x in enumerate(['x', 'y', 'z']):
         worldadapter.set_datatarget_value('ik_%s' % x, .1 * i)

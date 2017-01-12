@@ -225,10 +225,10 @@ class FlowModule(TheanoNode):
 
     def worldadapter_flowfunction(self, *args, **kwargs):
         if len(self.outputs) == 1:
-            returnvalue = self._nodenet.worldadapter_instance.get_datasource_group(self.outputs[0])
+            returnvalue = self._nodenet.worldadapter_instance.get_flow_datasource(self.outputs[0])
         else:
             returnvalue = []
             for key in self.outputs:
-                returnvalue.append(self._nodenet.worldadapter_instance.get_datasource_group(key))
+                returnvalue.append(self._nodenet.worldadapter_instance.get_flow_datasource(key))
         return returnvalue
 

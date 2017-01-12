@@ -77,9 +77,9 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
     def __init__(self, world, uid=None, config={}, **data):
         self.datasources = {}
         self.datatargets = {}
-        self.datasource_groups = {}
-        self.datatarget_groups = {}
-        self.datatarget_feedback_groups = {}
+        self.flow_datasources = {}
+        self.flow_datatargets = {}
+        self.flow_datatarget_feedbacks = {}
         self.datatarget_feedback = {}
         self.datasource_lock = Lock()
         self.config = config
@@ -202,16 +202,16 @@ try:
 
         @property
         def generate_flow_modules(self):
-            return len(self.datasource_groups) or len(self.datatarget_groups)
+            return len(self.flow_datasources) or len(self.flow_datatargets)
 
         def __init__(self, world, uid=None, **data):
             WorldAdapter.__init__(self, world, uid=uid, **data)
 
             self.datasource_names = []
             self.datatarget_names = []
-            self.datasource_groups = {}
-            self.datatarget_groups = {}
-            self.datatarget_feedback_groups = {}
+            self.flow_datasources = {}
+            self.flow_datatargets = {}
+            self.flow_datatarget_feedbacks = {}
             self.datasource_values = np.zeros(0, dtype=floatX)
             self.datatarget_values = np.zeros(0, dtype=floatX)
             self.datatarget_feedback_values = np.zeros(0, dtype=floatX)
@@ -243,7 +243,7 @@ try:
                 names.append('_'.join(parts))
             return names
 
-        def add_datasource_group(self, name, shape, initial_values=None):
+        def add_flow_datasource(self, name, shape, initial_values=None):
             """ Add a high-dimensional datasource.
             Will automatically create names for the entries based on the given name (e.g. "vision_0_0, vision_0_1", etc)
             according to the shape information.
@@ -253,10 +253,10 @@ try:
             if initial_values is None:
                 initial_values = np.zeros(shape, dtype=floatX)
 
-            self.datasource_groups[name] = initial_values
-            return self.datasource_groups[name]
+            self.flow_datasources[name] = initial_values
+            return self.flow_datasources[name]
 
-        def add_datatarget_group(self, name, shape, initial_values=None):
+        def add_flow_datatarget(self, name, shape, initial_values=None):
             """ Add a high-dimensional datatarget.
             Will automatically create names for the entries based on the given name (e.g. "target_0_0, target_0_1", etc)
             according to the shape information.
@@ -266,9 +266,9 @@ try:
             if initial_values is None:
                 initial_values = np.zeros(shape, dtype=floatX)
 
-            self.datatarget_groups[name] = initial_values
-            self.datatarget_feedback_groups[name] = np.zeros_like(initial_values)
-            return self.datatarget_groups[name]
+            self.flow_datatargets[name] = initial_values
+            self.flow_datatarget_feedbacks[name] = np.zeros_like(initial_values)
+            return self.flow_datatargets[name]
 
         def get_available_datasources(self):
             """Returns a list of all datasource names"""
@@ -278,11 +278,11 @@ try:
             """Returns a list of all datatarget names"""
             return self.datatarget_names
 
-        def get_available_datasource_groups(self):
-            return list(self.datasource_groups.keys())
+        def get_available_flow_datasources(self):
+            return list(self.flow_datasources.keys())
 
-        def get_available_datatarget_groups(self):
-            return list(self.datatarget_groups.keys())
+        def get_available_flow_datatargets(self):
+            return list(self.flow_datatargets.keys())
 
         def get_datasource_index(self, name):
             """Returns the index of the given datasource in the value array"""
@@ -319,20 +319,20 @@ try:
             """allows the agent to read all datatarget_feedback values"""
             return self.datatarget_feedback_values
 
-        def get_datasource_group(self, name):
+        def get_flow_datasource(self, name):
             """Return an array or matrix of datasource_values for the given group.
             Optional already shaped according to the provided argument"""
-            return self.datasource_groups[name]
+            return self.flow_datasources[name]
 
-        def get_datatarget_group(self, name):
+        def get_flow_datatarget(self, name):
             """Return an array or matrix of datatarget_values for the given group.
             Optional already shaped according to the provided argument"""
-            return self.datatarget_groups[name]
+            return self.flow_datatargets[name]
 
-        def get_datatarget_feedback_group(self, name):
+        def get_flow_datatarget_feedback(self, name):
             """Return an array or matrix of datatarget_feedback_values for the given group.
             Optional already shaped according to the provided argument"""
-            return self.datatarget_feedback_groups[name]
+            return self.flow_datatarget_feedbacks[name]
 
         def set_datasource_value(self, key, value):
             """Sets the given datasource value"""
@@ -354,20 +354,20 @@ try:
             idx = self.get_datatarget_index(key)
             self.datatarget_feedback_values[idx] = value
 
-        def set_datasource_group(self, name, values):
+        def set_flow_datasource(self, name, values):
             """Set the values of the given datasource group """
-            values = values.reshape(self.datasource_groups[name].shape)
-            self.datasource_groups[name] = values
+            values = values.reshape(self.flow_datasources[name].shape)
+            self.flow_datasources[name] = values
 
-        def add_to_datatarget_group(self, name, values):
+        def add_to_flow_datatarget(self, name, values):
             """Set the values of the given datatarget group """
-            values = values.reshape(self.datatarget_groups[name].shape)
-            self.datatarget_groups[name] += values
+            values = values.reshape(self.flow_datatargets[name].shape)
+            self.flow_datatargets[name] += values
 
-        def set_datatarget_feedback_group(self, name, values):
+        def set_flow_datatarget_feedback(self, name, values):
             """Set the values of the given datatarget_feedback group """
-            values = values.reshape(self.datatarget_feedback_groups[name].shape)
-            self.datatarget_feedback_groups[name] = values
+            values = values.reshape(self.flow_datatarget_feedbacks[name].shape)
+            self.flow_datatarget_feedbacks[name] = values
 
         def set_datasource_values(self, values):
             """sets the complete datasources to new values"""
@@ -415,17 +415,17 @@ try:
         def __init__(self, world, uid=None, config={}, **data):
             super().__init__(world, uid=uid, config=config, **data)
             self.add_datasource("test", initial_value=0)
-            self.add_datasource_group("vision", (3, 7))
+            self.add_flow_datasource("vision", (3, 7))
             self.add_datatarget("test", initial_value=0)
-            self.add_datatarget_group("action", (2, 3))
+            self.add_flow_datatarget("action", (2, 3))
             self.update_data_sources_and_targets()
 
         def update_data_sources_and_targets(self):
             import random
             self.datatarget_feedback_values[:] = self.datatarget_values
             self.datasource_values[:] = np.random.randn(len(self.datasource_values))
-            self.datasource_groups['vision'][:] = np.random.randn(*self.datasource_values.shape)
-            self.datatarget_groups['action'][:] = np.zeros_like(self.datatarget_groups['action'])
+            self.flow_datasources['vision'][:] = np.random.randn(*self.datasource_values.shape)
+            self.flow_datatargets['action'][:] = np.zeros_like(self.flow_datatargets['action'])
 
 
 except ImportError:  # pragma: no cover

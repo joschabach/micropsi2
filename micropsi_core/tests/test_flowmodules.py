@@ -13,15 +13,15 @@ from micropsi_core.world.worldadapter import ArrayWorldAdapter
 class SimpleArrayWA(ArrayWorldAdapter):
     def __init__(self, world, **kwargs):
         super().__init__(world, **kwargs)
-        self.add_datasource_group("foo", shape=(5))
-        self.add_datatarget_group("bar", shape=(5))
+        self.add_flow_datasource("foo", shape=(5))
+        self.add_flow_datatarget("bar", shape=(5))
         self.update_data_sources_and_targets()
 
     def update_data_sources_and_targets(self):
-        for key in self.datatarget_groups:
-            self.datatarget_feedback_groups[key] = np.copy(self.datatarget_groups[key])
-        for key in self.datasource_groups:
-            self.datasource_groups[key] = np.random.rand(len(self.datasource_groups[key]))
+        for key in self.flow_datatargets:
+            self.flow_datatarget_feedbacks[key] = np.copy(self.flow_datatargets[key])
+        for key in self.flow_datasources:
+            self.flow_datasources[key] = np.random.rand(len(self.flow_datasources[key]))
 
 
 def prepare(runtime, test_nodenet, default_world, resourcepath, wa_class=SimpleArrayWA):
@@ -204,11 +204,11 @@ def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepat
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
 
-    worldadapter.set_datasource_group('foo', sources)
+    worldadapter.set_flow_datasource('foo', sources)
 
     # step & assert that nothing happened without sub-activation
     nodenet.step()
-    assert np.all(worldadapter.get_datatarget_group('bar') == np.zeros(5, dtype=nodenet.numpyfloatX))
+    assert np.all(worldadapter.get_flow_datatarget('bar') == np.zeros(5, dtype=nodenet.numpyfloatX))
     # assert len(nodenet.flowfunctions) == 0
 
     # create activation source:
@@ -221,7 +221,7 @@ def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepat
 
     # # step & assert that the initfunction and flowfunction ran
     nodenet.step()
-    assert np.all(worldadapter.get_datatarget_group('bar') == sources * 2)
+    assert np.all(worldadapter.get_flow_datatarget('bar') == sources * 2)
     assert hasattr(flowmodule, 'initfunction_ran')
 
 
@@ -255,7 +255,7 @@ def test_multiple_flowgraphs(runtime, test_nodenet, default_world, resourcepath)
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
 
-    worldadapter.set_datasource_group('foo', sources)
+    worldadapter.set_flow_datasource('foo', sources)
 
     # create activation source
     source = netapi.create_node("Neuron", None)
@@ -268,15 +268,15 @@ def test_multiple_flowgraphs(runtime, test_nodenet, default_world, resourcepath)
 
     # step & assert that only the first graph ran
     nodenet.step()
-    assert np.all(worldadapter.get_datatarget_group('bar') == sources * 3)
+    assert np.all(worldadapter.get_flow_datatarget('bar') == sources * 3)
 
     # link source to second graph:
     netapi.link(source, 'gen', bisect, 'sub')
     # assert len(nodenet.flowfunctions) == 2
-    worldadapter.datatarget_groups['bar'] = np.zeros_like(worldadapter.get_datatarget_group('bar'))
+    worldadapter.flow_datatargets['bar'] = np.zeros_like(worldadapter.get_flow_datatarget('bar'))
 
     nodenet.step()
-    assert np.allclose(worldadapter.get_datatarget_group('bar'), sources * 3.5)
+    assert np.allclose(worldadapter.get_flow_datatarget('bar'), sources * 3.5)
 
 
 @pytest.mark.engine("theano_engine")
@@ -311,10 +311,10 @@ def test_disconnect_flowmodules(runtime, test_nodenet, default_world, resourcepa
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
-    worldadapter.set_datasource_group('foo', sources)
+    worldadapter.set_flow_datasource('foo', sources)
 
     nodenet.step()
-    assert np.all(worldadapter.get_datatarget_group('bar') == np.zeros_like(worldadapter.get_datatarget_group('bar')))
+    assert np.all(worldadapter.get_flow_datatarget('bar') == np.zeros_like(worldadapter.get_flow_datatarget('bar')))
 
 
 @pytest.mark.engine("theano_engine")
@@ -340,7 +340,7 @@ def test_diverging_flowgraph(runtime, test_nodenet, default_world, resourcepath)
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
-    worldadapter.set_datasource_group('foo', sources)
+    worldadapter.set_flow_datasource('foo', sources)
 
     # create activation source
     source = netapi.create_node("Neuron", None)
@@ -350,14 +350,14 @@ def test_diverging_flowgraph(runtime, test_nodenet, default_world, resourcepath)
     # link activation source to double
     netapi.link(source, 'gen', double, 'sub')
     nodenet.step()
-    assert np.all(worldadapter.get_datatarget_group('bar') == sources)
-    worldadapter.datatarget_groups['bar'] = np.zeros_like(worldadapter.get_datatarget_group('bar'))
+    assert np.all(worldadapter.get_flow_datatarget('bar') == sources)
+    worldadapter.flow_datatargets['bar'] = np.zeros_like(worldadapter.get_flow_datatarget('bar'))
 
     # unlink double, link add:
     netapi.unlink(source, 'gen', double, 'sub')
     netapi.link(source, 'gen', add, 'sub')
     nodenet.step()
-    assert np.all(worldadapter.get_datatarget_group('bar') == sources * 1.5)
+    assert np.all(worldadapter.get_flow_datatarget('bar') == sources * 1.5)
 
 
 @pytest.mark.engine("theano_engine")
@@ -381,7 +381,7 @@ def test_converging_flowgraphs(runtime, test_nodenet, default_world, resourcepat
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
-    worldadapter.set_datasource_group('foo', sources)
+    worldadapter.set_flow_datasource('foo', sources)
 
     # create activation source
     source = netapi.create_node("Neuron", None)
@@ -391,7 +391,7 @@ def test_converging_flowgraphs(runtime, test_nodenet, default_world, resourcepat
     # link activation source to double
     netapi.link(source, 'gen', add, 'sub')
     nodenet.step()
-    assert np.all(worldadapter.get_datatarget_group('bar') == sources * 4)
+    assert np.all(worldadapter.get_flow_datatarget('bar') == sources * 4)
 
 
 @pytest.mark.engine("theano_engine")
@@ -415,11 +415,11 @@ def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepa
 
     sources = np.zeros((5), dtype=netapi.floatX)
     sources[:] = np.random.randn(*sources.shape)
-    worldadapter.set_datasource_group('foo', sources)
+    worldadapter.set_flow_datasource('foo', sources)
 
     nodenet.step()
 
-    result = worldadapter.get_datatarget_group('bar')
+    result = worldadapter.get_flow_datatarget('bar')
 
     assert np.all(result == sources * 2 * thetas.get_theta("weights").get_value() + thetas.get_theta("bias").get_value())
 
@@ -429,12 +429,12 @@ def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepa
     nodenet = runtime.nodenets[test_nodenet]
     netapi = nodenet.netapi
     worldadapter = nodenet.worldadapter_instance
-    worldadapter.set_datasource_group('foo', sources)
+    worldadapter.set_flow_datasource('foo', sources)
     thetas = netapi.get_node(thetas.uid)
 
     assert np.all(thetas.get_theta("weights").get_value() == custom_theta)
     nodenet.step()
-    assert np.all(worldadapter.get_datatarget_group('bar') == result)
+    assert np.all(worldadapter.get_flow_datatarget('bar') == result)
 
     # also assert, that the edge-keys are preserved:
     # this would raise an exception otherwise
@@ -475,10 +475,10 @@ def test_delete_flowmodule(runtime, test_nodenet, default_world, resourcepath):
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
-    worldadapter.set_datasource_group('foo', sources)
+    worldadapter.set_flow_datasource('foo', sources)
 
     nodenet.step()
-    assert np.all(worldadapter.get_datatarget_group('bar') == np.zeros(5))
+    assert np.all(worldadapter.get_flow_datatarget('bar') == np.zeros(5))
 
 
 @pytest.mark.engine("theano_engine")
@@ -506,10 +506,10 @@ def test_link_large_graph(runtime, test_nodenet, default_world, resourcepath):
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
-    worldadapter.set_datasource_group('foo', sources)
+    worldadapter.set_flow_datasource('foo', sources)
 
     nodenet.step()
-    assert np.all(worldadapter.get_datatarget_group('bar') == sources * 2)
+    assert np.all(worldadapter.get_flow_datatarget('bar') == sources * 2)
 
 
 @pytest.mark.engine("theano_engine")
@@ -533,21 +533,21 @@ def test_python_flowmodules(runtime, test_nodenet, default_world, resourcepath):
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
-    worldadapter.set_datasource_group('foo', sources)
+    worldadapter.set_flow_datasource('foo', sources)
 
     nodenet.step()
-    assert np.all(worldadapter.get_datatarget_group('bar') == 0)
+    assert np.all(worldadapter.get_flow_datatarget('bar') == 0)
 
     # netapi.link(source, 'gen', bisect, 'sub')
 
     nodenet.step()
-    assert np.all(worldadapter.get_datatarget_group('bar') == 0)
+    assert np.all(worldadapter.get_flow_datatarget('bar') == 0)
 
     netapi.link(source, 'gen', bisect, 'sub')
 
     nodenet.step()
     # ((x * 2) + 1) / 2 == x + .5
-    assert np.all(worldadapter.get_datatarget_group('bar') == sources + 0.5)
+    assert np.all(worldadapter.get_flow_datatarget('bar') == sources + 0.5)
     assert py.initfunction_ran
 
 
@@ -595,7 +595,7 @@ def test_collect_thetas(runtime, test_nodenet, default_world, resourcepath):
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
-    worldadapter.set_datasource_group('foo', sources)
+    worldadapter.set_flow_datasource('foo', sources)
 
     source = netapi.create_node("Neuron", None)
     netapi.link(source, 'gen', source, 'gen')
@@ -611,7 +611,7 @@ def test_collect_thetas(runtime, test_nodenet, default_world, resourcepath):
     assert collected[1] == module.get_theta('weights')
 
     result = sources * module.get_theta('weights').get_value() + module.get_theta('bias').get_value()
-    assert np.allclose(worldadapter.get_datatarget_group('bar'), result)
+    assert np.allclose(worldadapter.get_flow_datatarget('bar'), result)
 
     func = netapi.get_callable_flowgraph([module], use_different_thetas=True)
 
@@ -698,13 +698,13 @@ def test_none_output_skips_following_graphs(runtime, test_nodenet, default_world
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
-    worldadapter.set_datasource_group('foo', sources)
+    worldadapter.set_flow_datasource('foo', sources)
 
     py.set_parameter('no_return_flag', 1)
 
     nodenet.step()
     # assert that the bisect function did not run
-    assert np.all(worldadapter.get_datatarget_group('bar') == np.zeros(5))
+    assert np.all(worldadapter.get_flow_datatarget('bar') == np.zeros(5))
     # but python did
     assert nodenet.user_prompt['msg'] == 'numpyfunc ran'
     # and assert that you can get that info from the sur-gates:
@@ -713,7 +713,7 @@ def test_none_output_skips_following_graphs(runtime, test_nodenet, default_world
 
     py.set_parameter('no_return_flag', 0)
     nodenet.step()
-    assert np.all(worldadapter.get_datatarget_group('bar') == (2 * sources + 1) / 2)
+    assert np.all(worldadapter.get_flow_datatarget('bar') == (2 * sources + 1) / 2)
 
 
 @pytest.mark.engine("theano_engine")
@@ -814,22 +814,22 @@ def test_filter_subgraph_outputs(runtime, test_nodenet, default_world, resourcep
 
 
 @pytest.mark.engine("theano_engine")
-def test_connect_flow_modules_to_structured_datasource_group(runtime, test_nodenet, default_world, resourcepath):
+def test_connect_flow_modules_to_structured_flow_datasource(runtime, test_nodenet, default_world, resourcepath):
 
     class StructuredArrayWA(ArrayWorldAdapter):
         def __init__(self, world, **kwargs):
             super().__init__(world)
             self.add_datasource('execute')
-            self.add_datasource_group('vision', (6))
+            self.add_flow_datasource('vision', (6))
             self.add_datatarget('reset')
-            self.add_datatarget_group('motor', (6))
+            self.add_flow_datatarget('motor', (6))
             self.update_data_sources_and_targets()
 
         def update_data_sources_and_targets(self):
-            for key in self.datatarget_groups:
-                self.datatarget_feedback_groups[key] = np.copy(self.datatarget_groups[key])
-            for key in self.datasource_groups:
-                self.datasource_groups[key] = np.random.rand(*self.datasource_groups[key].shape)
+            for key in self.flow_datatargets:
+                self.flow_datatarget_feedbacks[key] = np.copy(self.flow_datatargets[key])
+            for key in self.flow_datasources:
+                self.flow_datasources[key] = np.random.rand(*self.flow_datasources[key].shape)
 
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath, wa_class=StructuredArrayWA)
     # get ndoetype defs
@@ -862,7 +862,7 @@ def test_connect_flow_modules_to_structured_datasource_group(runtime, test_noden
 
     sources = np.zeros((6), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
-    worldadapter.set_datasource_group('vision', sources)
+    worldadapter.set_flow_datasource('vision', sources)
 
     double = netapi.create_node("Double", None, "Double")
     netapi.flow('worldadapter', 'vision', double, 'inputs')
@@ -875,7 +875,7 @@ def test_connect_flow_modules_to_structured_datasource_group(runtime, test_noden
 
     runtime.step_nodenet(test_nodenet)
     assert worldadapter.datatarget_values[0] == 0
-    assert np.all(worldadapter.get_datatarget_group('motor') == sources * 2)
+    assert np.all(worldadapter.get_flow_datatarget('motor') == sources * 2)
 
     runtime.save_nodenet(test_nodenet)
     runtime.revert_nodenet(test_nodenet)

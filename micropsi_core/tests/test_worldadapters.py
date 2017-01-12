@@ -135,29 +135,29 @@ def test_structured_datasources(default_world):
     vision_shape = (2, 5)
     vision_init = np.random.rand(*vision_shape)
     adapter.add_datasource("s_foo")
-    adapter.add_datasource_group("s_vision", shape=vision_shape, initial_values=vision_init)
+    adapter.add_flow_datasource("s_vision", shape=vision_shape, initial_values=vision_init)
     adapter.add_datasource("s_bar")
 
     assert adapter.get_available_datasources() == ['s_foo', 's_bar']
-    assert adapter.get_available_datasource_groups() == ['s_vision']
+    assert adapter.get_available_flow_datasources() == ['s_vision']
 
     motor_shape = (3, 2)
     adapter.add_datatarget("t_execute")
-    adapter.add_datatarget_group("t_motor", shape=motor_shape)
+    adapter.add_flow_datatarget("t_motor", shape=motor_shape)
 
     assert adapter.get_available_datatargets() == ['t_execute']
-    assert adapter.get_available_datatarget_groups() == ['t_motor']
+    assert adapter.get_available_flow_datatargets() == ['t_motor']
 
     vision = np.random.rand(*vision_shape)
     motor = np.random.rand(*motor_shape)
 
-    adapter.set_datasource_group("s_vision", vision)
-    adapter.add_to_datatarget_group("t_motor", motor)
-    adapter.add_to_datatarget_group("t_motor", motor)
+    adapter.set_flow_datasource("s_vision", vision)
+    adapter.add_to_flow_datatarget("t_motor", motor)
+    adapter.add_to_flow_datatarget("t_motor", motor)
 
-    assert np.allclose(adapter.get_datasource_group("s_vision"), vision)
-    assert np.allclose(adapter.get_datatarget_group("t_motor"), 2 * motor)
-    assert np.allclose(adapter.get_datatarget_feedback_group("t_motor"), np.zeros((3, 2)))
+    assert np.allclose(adapter.get_flow_datasource("s_vision"), vision)
+    assert np.allclose(adapter.get_flow_datatarget("t_motor"), 2 * motor)
+    assert np.allclose(adapter.get_flow_datatarget_feedback("t_motor"), np.zeros((3, 2)))
 
 
 def test_worldadapter_mixin(default_world):

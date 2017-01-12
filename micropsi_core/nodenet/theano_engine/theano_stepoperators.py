@@ -89,7 +89,7 @@ class TheanoCalculateFlowmodules(Propagate):
                 sourcenode = nodenet.get_node(nodenet.worldadapter_flow_nodes['datasources'])
                 flowio[sourcenode.uid] = {}
                 for key in sourcenode.outputs:
-                    flowio[sourcenode.uid][key] = nodenet.worldadapter_instance.get_datasource_group(key)
+                    flowio[sourcenode.uid][key] = nodenet.worldadapter_instance.get_flow_datasource(key)
 
         for func in nodenet.flowfunctions:
             if any([node.is_requested() for node in func['endnodes']]):
@@ -119,5 +119,5 @@ class TheanoCalculateFlowmodules(Propagate):
                         targetnode = nodenet.get_node(nodenet.worldadapter_flow_nodes['datatargets'])
                         for uid, name in nodenet.get_node(node_uid).outputmap[out_name]:
                             if uid == targetnode.uid:
-                                nodenet.worldadapter_instance.add_to_datatarget_group(name, out[index])
+                                nodenet.worldadapter_instance.add_to_flow_datatarget(name, out[index])
                     flowio[node_uid][out_name] = out[index] if out is not None else None

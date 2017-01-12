@@ -417,7 +417,7 @@ class VrepGreyscaleVisionMixin(WorldAdapterMixin):
             else:
                 self.vision_resolution = (int(resolution[0] / 2**self.downscale), int(resolution[1] / 2**self.downscale))
                 self.logger.info("Vision resolution is {} (greyscale) after downscaling by 2**{}".format(self.vision_resolution, self.downscale))
-        self.add_datasource_group("vision", self.vision_resolution)
+        self.add_flow_datasource("vision", self.vision_resolution)
 
         self.image = plt.imshow(np.zeros(shape=(self.vision_resolution[0], self.vision_resolution[1])), cmap="bone", interpolation='nearest')
         self.image.norm.vmin = 0
@@ -436,7 +436,7 @@ class VrepGreyscaleVisionMixin(WorldAdapterMixin):
 
         y_image = y_image/255.0
 
-        self.set_datasource_group('vision', y_image)
+        self.set_flow_datasource('vision', y_image)
         self.image.set_data(y_image)
         # print('vrep vision image sum', np.sum(abs(y_image)))
 
@@ -459,7 +459,7 @@ class VrepRGBVisionMixin(WorldAdapterMixin):
                 self.logger.info("Vision resolution is %s (RGB)" % str(self.vision_resolution))
 
         shape = (self.vision_resolution[0], self.vision_resolution[1], 3)
-        self.add_datasource_group("vision", shape)
+        self.add_flow_datasource("vision", shape)
 
         self.logger.info("added %d vision data sources." % (self.vision_resolution[1]*self.vision_resolution[0]*3))
 
@@ -485,7 +485,7 @@ class VrepRGBVisionMixin(WorldAdapterMixin):
         # plt.savefig('/tmp/upsi/vision_worldadapter{}.png'.format(self.world.current_step))
         # plt.close('all')
 
-        self.set_datasource_group('vision', scaled_image)
+        self.set_flow_datasource('vision', scaled_image)
         self.image.set_data(scaled_image)
 
 

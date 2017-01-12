@@ -231,4 +231,3 @@ class FlowModule(TheanoNode):
             for key in self.outputs:
                 returnvalue.append(self._nodenet.worldadapter_instance.get_flow_datasource(key))
         return returnvalue
-

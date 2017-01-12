@@ -22,6 +22,7 @@ __date__ = '10.05.12'
 import logging
 import functools
 import operator
+from collections import OrderedDict
 from threading import Lock
 from micropsi_core.world.worldobject import WorldObject
 from abc import ABCMeta, abstractmethod
@@ -77,9 +78,9 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
     def __init__(self, world, uid=None, config={}, **data):
         self.datasources = {}
         self.datatargets = {}
-        self.flow_datasources = {}
-        self.flow_datatargets = {}
-        self.flow_datatarget_feedbacks = {}
+        self.flow_datasources = OrderedDict()
+        self.flow_datatargets = OrderedDict()
+        self.flow_datatarget_feedbacks = OrderedDict()
         self.datatarget_feedback = {}
         self.datasource_lock = Lock()
         self.config = config
@@ -209,9 +210,9 @@ try:
 
             self.datasource_names = []
             self.datatarget_names = []
-            self.flow_datasources = {}
-            self.flow_datatargets = {}
-            self.flow_datatarget_feedbacks = {}
+            self.flow_datasources = OrderedDict()
+            self.flow_datatargets = OrderedDict()
+            self.flow_datatarget_feedbacks = OrderedDict()
             self.datasource_values = np.zeros(0, dtype=floatX)
             self.datatarget_values = np.zeros(0, dtype=floatX)
             self.datatarget_feedback_values = np.zeros(0, dtype=floatX)

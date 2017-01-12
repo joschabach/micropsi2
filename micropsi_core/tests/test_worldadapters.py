@@ -133,33 +133,31 @@ def test_structured_datasources(default_world):
     adapter = TestArrayWA(runtime.worlds[default_world])
 
     vision_shape = (2, 5)
+    vision_init = np.random.rand(*vision_shape)
     adapter.add_datasource("s_foo")
-    adapter.add_datasource_group("s_vision", shape=vision_shape)
+    adapter.add_datasource_group("s_vision", shape=vision_shape, initial_values=vision_init)
     adapter.add_datasource("s_bar")
+
+    assert adapter.get_available_datasources() == ['s_foo', 's_bar']
+    assert adapter.get_available_datasource_groups() == ['s_vision']
 
     motor_shape = (3, 2)
     adapter.add_datatarget("t_execute")
     adapter.add_datatarget_group("t_motor", shape=motor_shape)
+
+    assert adapter.get_available_datatargets() == ['t_execute']
+    assert adapter.get_available_datatarget_groups() == ['t_motor']
 
     vision = np.random.rand(*vision_shape)
     motor = np.random.rand(*motor_shape)
 
     adapter.set_datasource_group("s_vision", vision)
     adapter.add_to_datatarget_group("t_motor", motor)
+    adapter.add_to_datatarget_group("t_motor", motor)
 
-    assert len(adapter.datasource_values) == 12
-    assert len(adapter.datatarget_values) == 7
-    assert len(adapter.datatarget_feedback_values) == 7
-
-    assert adapter.datasource_names[8] == 's_vision_1_2'
-    assert adapter.datatarget_names[5] == 't_motor_2_0'
-
-    assert np.allclose(adapter.get_datasource_group("s_vision"), vision.flatten())
-    assert np.allclose(adapter.get_datasource_group("s_vision", shape=vision_shape), vision)
-    assert np.allclose(adapter.get_datatarget_group("t_motor"), motor.flatten())
-    assert np.allclose(adapter.get_datatarget_group("t_motor", shape=motor_shape), motor)
-    assert np.allclose(adapter.get_datatarget_feedback_group("t_motor"), np.zeros(6))
-    assert np.allclose(adapter.get_datatarget_feedback_group("t_motor", shape=motor_shape), np.zeros(6).reshape(motor_shape))
+    assert np.allclose(adapter.get_datasource_group("s_vision"), vision)
+    assert np.allclose(adapter.get_datatarget_group("t_motor"), 2 * motor)
+    assert np.allclose(adapter.get_datatarget_feedback_group("t_motor"), np.zeros((3, 2)))
 
 
 def test_worldadapter_mixin(default_world):

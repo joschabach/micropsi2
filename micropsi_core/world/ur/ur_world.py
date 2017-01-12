@@ -13,6 +13,7 @@ from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import ArrayWorldAdapter, WorldAdapterMixin
 
 from micropsi_core.world.ur.optoforce_mixin import OptoForce6DMixin
+from micropsi_core.world.ur.speedj_control_mixin import SpeedJControlMixin
 
 class URConnection(threading.Thread):
     """
@@ -49,6 +50,10 @@ class URConnection(threading.Thread):
 
     def terminate(self):
         self.stop.set()
+
+    def write_command_to_robot(self, command):
+        #print(command)
+        self.socket.sendall(command.encode("ascii"))
 
     def update_values_from_robot(self):
         if not self.is_connected:
@@ -149,7 +154,7 @@ class URWorld(World):
     A Universal Robots environment, using the port 30003 realtime ("matlab") interface of the
     robot controller.
     """
-    supported_worldadapters = ['UR', 'UROptoForce6D']
+    supported_worldadapters = ['UR', 'URSpeedJControlled', 'UROptoForce6D']
 
     #assets = {
     #    'template': 'ur/ur.tpl',
@@ -231,11 +236,20 @@ class UR(WorldAdapterMixin, ArrayWorldAdapter):
         super().read_from_world()
         self.set_datasource_range("tip-x", np.copy(self.world.connection_daemon.tool_pos_6D))
 
+    def reset_datatargets(self):
+        self.datatarget_values = np.zeros_like(self.datatarget_values)
+
     def shutdown(self):
         pass
 
 
+class URSpeedJControlled(UR, SpeedJControlMixin):
+    """
+    A world adapter for a UR system that can be controlled using speedj commands.
+    """
+
+
 class UROptoForce6D(UR, OptoForce6DMixin):
     """
-    A world adapter for a UR3 system with an OptoForce 6D F/T sensor.
+    A world adapter for a UR system with an OptoForce 6D F/T sensor.
     """

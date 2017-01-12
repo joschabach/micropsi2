@@ -222,15 +222,17 @@ class TheanoNodenet(Nodenet):
         self.flow_graphs = []
         self.thetas = {}
 
+        flow_io_types = self.generate_worldadapter_flow_types(delete_existing=True)
+        self.native_module_definitions.update(flow_io_types)
+        for key in flow_io_types:
+            self.native_modules[key] = FlowNodetype(nodenet=self, **flow_io_types[key])
+
         self.flowgraph = nx.MultiDiGraph()
         self.is_flowbuilder_active = False
         self.flowfunctions = []
-        self.flowgraph.add_node("datasources")
-        self.flowgraph.add_node("datatargets")
+        self.worldadapter_flow_nodes = {}
 
         self.create_nodespace(None, "Root", nodespace_to_id(1, rootpartition.pid))
-
-        self.worldadapter_instance = worldadapter_instance
 
         self.initialize_nodenet({})
 
@@ -491,6 +493,7 @@ class TheanoNodenet(Nodenet):
             metadata['modulators'] = self.construct_modulators_dict()
             metadata['partition_parents'] = self.inverted_partitionmap
             metadata['recorders'] = self.construct_recorders_dict()
+            metadata['worldadapter_flow_nodes'] = self.worldadapter_flow_nodes
             fp.write(json.dumps(metadata, sort_keys=True, indent=4))
 
         for node_uid in self.thetas:
@@ -551,6 +554,7 @@ class TheanoNodenet(Nodenet):
             # reloading native modules ensures the types in allocated_nodes are up to date
             # (numerical native module types are runtime dependent and may differ from when allocated_nodes
             # was saved).
+            self.worldadapter_flow_nodes = initfrom.get('worldadapter_flow_nodes', {})
             self.reload_native_modules(self.native_module_definitions)
 
             for monitorid in monitors:
@@ -674,7 +678,7 @@ class TheanoNodenet(Nodenet):
                 data['type'] = 'Comment'
                 invalid_nodes.append(uid)
             if native_module_instances_only:
-                if data.get('flow_module'):
+                if data.get('flow_module') and data['type'] in self.native_module_definitions:
                     node = FlowModule(
                         self,
                         self.get_partition(uid),
@@ -850,36 +854,22 @@ class TheanoNodenet(Nodenet):
 
     def flow(self, source_uid, source_output, target_uid, target_input):
         if source_uid == "worldadapter":
-            self.flowgraph.add_node(source_output)
-            self.flowgraph.add_edge(source_output, target_uid, key="%s_%s" % (source_output, target_input))
-            self.flow_module_instances[target_uid].set_input(target_input, source_uid, source_output)
-
+            source_uid = self.worldadapter_flow_nodes['datasources']
         elif target_uid == "worldadapter":
-            self.flowgraph.add_node(target_input)
-            self.flowgraph.add_edge(source_uid, target_input, key="%s_%s" % (source_output, target_input))
-            self.flow_module_instances[source_uid].set_output(source_output, target_uid, target_input)
-
-        else:
-            self.flowgraph.add_edge(source_uid, target_uid, key="%s_%s" % (source_output, target_input))
-            self.flow_module_instances[target_uid].set_input(target_input, source_uid, source_output)
-            self.flow_module_instances[source_uid].set_output(source_output, target_uid, target_input)
-
+            target_uid = self.worldadapter_flow_nodes['datatargets']
+        self.flowgraph.add_edge(source_uid, target_uid, key="%s_%s" % (source_output, target_input))
+        self.flow_module_instances[target_uid].set_input(target_input, source_uid, source_output)
+        self.flow_module_instances[source_uid].set_output(source_output, target_uid, target_input)
         self.update_flow_graphs()
 
     def unflow(self, source_uid, source_output, target_uid, target_input):
         if source_uid == "worldadapter":
-            self.flowgraph.remove_edge(source_output, target_uid, key="%s_%s" % (source_output, target_input))
-            self.flow_module_instances[target_uid].unset_input(target_input, source_uid, source_output)
-
+            source_uid = self.worldadapter_flow_nodes['datasources']
         elif target_uid == "worldadapter":
-            self.flowgraph.remove_edge(source_uid, target_input, key="%s_%s" % (source_output, target_input))
-            self.flow_module_instances[source_uid].unset_output(source_output, target_uid, target_input)
-
-        else:
-            self.flowgraph.remove_edge(source_uid, target_uid, key="%s_%s" % (source_output, target_input))
-            self.flow_module_instances[target_uid].unset_input(target_input, source_uid, source_output)
-            self.flow_module_instances[source_uid].unset_output(source_output, target_uid, target_input)
-
+            target_uid = self.worldadapter_flow_nodes['datatargets']
+        self.flowgraph.remove_edge(source_uid, target_uid, key="%s_%s" % (source_output, target_input))
+        self.flow_module_instances[target_uid].unset_input(target_input, source_uid, source_output)
+        self.flow_module_instances[source_uid].unset_output(source_output, target_uid, target_input)
         self.update_flow_graphs()
 
     def _delete_flow_module(self, delete_uid):
@@ -931,15 +921,16 @@ class TheanoNodenet(Nodenet):
                 if path:
                     graphs.append(path)
 
-        worldadapter_names = ['datasources', 'datatargets']
-        if self.worldadapter_instance is not None:
-            worldadapter_names += self.worldadapter_instance.datasource_groups + self.worldadapter_instance.datatarget_groups
+        # worldadapter_names = []
+        # if self.worldadapter_instance is not None:
+        #     worldadapter_names += self.worldadapter_instance.get_available_datasource_groups() + self.worldadapter_instance.get_available_datatarget_groups()
 
         flowfunctions = {}
         floworder = OrderedSet()
         for idx, graph in enumerate(graphs):
             # split graph in parts:
-            node_uids = [uid for uid in graph if uid not in worldadapter_names]
+            # node_uids = [uid for uid in graph if uid not in worldadapter_names]
+            node_uids = [uid for uid in graph]
             nodes = [self.get_node(uid) for uid in node_uids]
             paths = self.split_flow_graph_into_implementation_paths(nodes)
             for p in paths:
@@ -1794,7 +1785,6 @@ class TheanoNodenet(Nodenet):
                 instance = self.get_node(node_to_id(id, partition.pid))
                 partition.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
 
-
         # recreate the deleted ones. Gate configurations and links will not be transferred.
         for uid, data in instances_to_recreate.items():
             new_uid = self.create_node(
@@ -1808,11 +1798,8 @@ class TheanoNodenet(Nodenet):
         # recompile flow_graphs:
         self.update_flow_graphs()
 
-
     def generate_worldadapter_flow_types(self, delete_existing=False):
         """ returns native_module_definitions for datasources and targets from the configured worldadapter"""
-        if not self.worldadapter_instance or not self.worldadapter_instance.generate_flow_modules:
-            return {}
 
         auto_nodetypes = []
         if delete_existing:
@@ -1826,35 +1813,43 @@ class TheanoNodenet(Nodenet):
 
             for key in auto_nodetypes:
                 del self.native_modules[key]
+                del self.native_module_definitions[key]
+
+            self.worldadapter_flow_nodes = {}
 
         data = {}
-        for out_group in self.worldadapter_instance.datasource_groups + ['datasources']:
-            key = 'wa_out_' + out_group
-            data[key] = {
-                'flow_module': True,
-                'implementation': 'python',
-                'name': out_group,
-                'outputs': [out_group],
-                'inputs': [],
-                'is_autogenerated': True
-            }
-        for in_group in self.worldadapter_instance.datatarget_groups + ['datatargets']:
-            key = 'wa_in_' + in_group
-            data[key] = {
-                'flow_module': True,
-                'implementation': 'python',
-                'name': in_group,
-                'inputs': [in_group],
-                'outputs': [],
-                'is_autogenerated': True
-            }
+        if self.worldadapter_instance and self.worldadapter_instance.generate_flow_modules:
+            if self.worldadapter_instance.get_available_datasource_groups():
+                data['datasources'] = {
+                    'flow_module': True,
+                    'implementation': 'python',
+                    'name': 'datasources',
+                    'outputs': self.worldadapter_instance.get_available_datasource_groups(),
+                    'inputs': [],
+                    'is_autogenerated': True
+                }
+            if self.worldadapter_instance.get_available_datatarget_groups():
+                dtgroups = self.worldadapter_instance.get_available_datatarget_groups()
+                dtdims = [self.worldadapter_instance.get_datatarget_group(name).ndim for name in dtgroups]
+                data['datatargets'] = {
+                    'flow_module': True,
+                    'implementation': 'python',
+                    'name': 'datatargets',
+                    'inputs': dtgroups,
+                    'outputs': [],
+                    'inputdims': dtdims,
+                    'is_autogenerated': True
+                }
         return data
 
     def generate_worldadapter_flow_instances(self):
         """ Generates flow module instances for the existing autogenerated worldadapter-flowmodule-types """
-        for key, data in self.native_module_definitions.items():
-            if data.get('is_autogenerated'):
-                self.create_node(key, None, [100, 100], name=data['name'])
+        if 'datasources' in self.native_module_definitions:
+            uid = self.create_node('datasources', None, [100, 100], name='datasources')
+            self.worldadapter_flow_nodes['datasources'] = uid
+        if 'datatargets' in self.native_module_definitions:
+            uid = self.create_node('datatargets', None, [300, 100], name='datatargets')
+            self.worldadapter_flow_nodes['datatargets'] = uid
 
     def get_activation_data(self, nodespace_uids=[], rounded=1):
         if rounded is not None:

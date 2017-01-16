@@ -37,7 +37,7 @@ def inspect_space(gym_space, verbose=False):
             print('lower bounds: {}\n upper bounds{}'.format(lo, hi))
         def checkbounds(action):
             bounded_action = np.clip(action, lo, hi)
-            punishment = 0 # 0.1* np.sum(abs(action - bounded_action))
+            punishment = 0 * np.sum(abs(action - bounded_action))
             if punishment != 0:
                 print("action {} violated bounds {}, {}. executed bounded action {} and punished by {}".format(action, lo, hi, bounded_action, punishment))
             return bounded_action, punishment

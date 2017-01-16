@@ -3,7 +3,7 @@
 import os
 import numpy as np
 
-from micropsi_core.nodenet.node import Node, Gate, Slot
+from micropsi_core.nodenet.node import Node, Gate, Slot, HighdimensionalNodetype
 from micropsi_core.nodenet.theano_engine.theano_link import TheanoLink
 from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
 from micropsi_core.nodenet.theano_engine.theano_definitions import *
@@ -14,9 +14,9 @@ class TheanoNode(Node):
         theano node proxy class
     """
 
-    def __init__(self, nodenet, partition, parent_uid, uid, type, parameters={}, **_):
+    def __init__(self, nodenet, partition, parent_uid, uid, numerictype, parameters={}, **_):
 
-        self._numerictype = type
+        self._numerictype = numerictype
         self._id = node_from_id(uid)
         self._uid = uid
         self._parent_id = nodespace_from_id(parent_uid)
@@ -28,12 +28,11 @@ class TheanoNode(Node):
         self.__slotcache = {}
 
         self.parameters = None
-
-        strtype = get_string_node_type(type, nodenet.native_modules)
+        strtype = get_string_node_type(numerictype, nodenet.native_modules)
 
         Node.__init__(self, strtype, nodenet.get_nodetype(strtype))
 
-        self.is_highdimensional = self._nodetype.is_highdimensional
+        self.is_highdimensional = type(self._nodetype) == HighdimensionalNodetype
 
         self.datafile = os.path.join(nodenet.get_persistency_path(), '%s_node_%s.npz' % (self._nodenet.uid, self.uid))
 

@@ -85,10 +85,11 @@ class TheanoCalculateFlowmodules(Propagate):
         flowio = {}
 
         if nodenet.worldadapter_instance:
-            flowio['worldadapter'] = {
-                'datasources': nodenet.worldadapter_instance.get_datasource_values(),
-                'datatargets': None
-            }
+            if 'datasources' in nodenet.worldadapter_flow_nodes:
+                sourcenode = nodenet.get_node(nodenet.worldadapter_flow_nodes['datasources'])
+                flowio[sourcenode.uid] = {}
+                for key in sourcenode.outputs:
+                    flowio[sourcenode.uid][key] = nodenet.worldadapter_instance.get_flow_datasource(key)
 
         for func in nodenet.flowfunctions:
             if any([node.is_requested() for node in func['endnodes']]):
@@ -112,8 +113,11 @@ class TheanoCalculateFlowmodules(Propagate):
                 for n in func['members']:
                     n.is_part_of_active_graph = True
                 for index, (node_uid, out_name) in enumerate(func['outputs']):
-                    if ('worldadapter', 'datatargets') in nodenet.get_node(node_uid).outputmap[out_name]:
-                        nodenet.worldadapter_instance.add_datatarget_values(out[index])
                     if node_uid not in flowio:
                         flowio[node_uid] = {}
+                    if 'datatargets' in nodenet.worldadapter_flow_nodes:
+                        targetnode = nodenet.get_node(nodenet.worldadapter_flow_nodes['datatargets'])
+                        for uid, name in nodenet.get_node(node_uid).outputmap[out_name]:
+                            if uid == targetnode.uid:
+                                nodenet.worldadapter_instance.add_to_flow_datatarget(name, out[index])
                     flowio[node_uid][out_name] = out[index] if out is not None else None

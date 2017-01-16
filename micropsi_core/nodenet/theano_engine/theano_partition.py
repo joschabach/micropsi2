@@ -9,6 +9,7 @@ import scipy.sparse as sp
 import theano.sparse as ST
 from theano.tensor import nnet as N
 
+from micropsi_core.nodenet.node import FlowNodetype, HighdimensionalNodetype
 from micropsi_core.nodenet.theano_engine.theano_definitions import *
 
 
@@ -1931,7 +1932,7 @@ class TheanoPartition():
             gate_configurations = {}
             gate_activations = {}
 
-            if nodetype.is_highdimensional:
+            if type(nodetype) == HighdimensionalNodetype:
                 gates = nodetype.gategroups
                 highdim_nodes.append(uid)
             else:
@@ -2015,8 +2016,8 @@ class TheanoPartition():
                     "activation": float(a[self.allocated_node_offsets[id] + GEN]),
                     "gate_activations": gate_activations,
                     "gate_configuration": gate_configurations,
-                    "is_highdimensional": nodetype.is_highdimensional}
-            if nodetype.is_flow_module:
+                    "is_highdimensional": type(nodetype) == HighdimensionalNodetype}
+            if type(nodetype) == FlowNodetype:
                 data.update(self.nodenet.flow_module_instances[uid].get_flow_data())
             if complete:
                 data['index'] = int(id)
@@ -2147,7 +2148,7 @@ class TheanoPartition():
                                     "target_node_uid": target_uid}
                         if source_gate_type not in nodes[source_uid]["links"]:
                             nodes[source_uid]["links"][source_gate_type] = []
-                        if target_nodetype.is_highdimensional:
+                        if type(target_nodetype) == HighdimensionalNodetype:
                             target_slot_type = target_slot_type.rstrip('0123456789')
                             if target_slot_type.rstrip('0123456789') in target_nodetype.dimensionality['slots']:
                                 target_slot_type = target_slot_type + '0'
@@ -2208,10 +2209,10 @@ class TheanoPartition():
                             elif inlink_type == 'identity':
                                 weight = 1
 
-                            if target_nodetype.is_highdimensional:
+                            if type(target_nodetype) == HighdimensionalNodetype:
                                 if target_slot_type.rstrip('0123456789') in target_nodetype.dimensionality['slots']:
                                     target_slot_type = target_slot_type.rstrip('0123456789') + '0'
-                            if source_nodetype.is_highdimensional:
+                            if type(source_nodetype) == HighdimensionalNodetype:
                                 if source_gate_type.rstrip('0123456789') in source_nodetype.dimensionality['gates']:
                                     source_gate_type = source_gate_type.rstrip('0123456789') + '0'
 

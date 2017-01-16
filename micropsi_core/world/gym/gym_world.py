@@ -112,8 +112,8 @@ class OAIGymAdapter(ArrayWorldAdapter):
     def update_data_sources_and_targets(self):
         bounds_punishment = 0
         self.t_this_episode += 1
-        action_values = self.get_flow_datasources['action']
-        restart = self.get_flow_datasources['restart']
+        action_values = self.get_flow_datatarget('action')
+        restart = self.get_flow_datatarget('restart')
 
         if restart > 0:
             obs = self.world.env.reset()

@@ -855,7 +855,7 @@ class TheanoNodenet(Nodenet):
     def flow(self, source_uid, source_output, target_uid, target_input):
         if source_uid == "worldadapter":
             source_uid = self.worldadapter_flow_nodes['datasources']
-        elif target_uid == "worldadapter":
+        if target_uid == "worldadapter":
             target_uid = self.worldadapter_flow_nodes['datatargets']
         self.flowgraph.add_edge(source_uid, target_uid, key="%s_%s" % (source_output, target_input))
         self.flow_module_instances[target_uid].set_input(target_input, source_uid, source_output)
@@ -865,7 +865,7 @@ class TheanoNodenet(Nodenet):
     def unflow(self, source_uid, source_output, target_uid, target_input):
         if source_uid == "worldadapter":
             source_uid = self.worldadapter_flow_nodes['datasources']
-        elif target_uid == "worldadapter":
+        if target_uid == "worldadapter":
             target_uid = self.worldadapter_flow_nodes['datatargets']
         self.flowgraph.remove_edge(source_uid, target_uid, key="%s_%s" % (source_output, target_input))
         self.flow_module_instances[target_uid].unset_input(target_input, source_uid, source_output)

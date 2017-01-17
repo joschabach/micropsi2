@@ -367,8 +367,9 @@ try:
 
         def reset_datatargets(self):
             """ resets (zeros) the datatargets """
-            # self.datatarget_values = np.zeros_like(self.datatarget_values)
-            pass  # pragma: no cover
+            self.datatarget_values = np.zeros_like(self.datatarget_values)
+            for name in self.flow_datatargets:
+                self.flow_datatargets[name] = np.zeros_like(self.flow_datatargets[name])
 
         @abstractmethod
         def update_data_sources_and_targets(self):

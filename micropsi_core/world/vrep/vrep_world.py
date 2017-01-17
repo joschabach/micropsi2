@@ -739,6 +739,10 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
             self.call_vrep(vrep.simxGetPingTime, [self.clientID])
         self.read_from_world()
 
+    def reset_datatargets(self):
+        """ Do not zero datatargets. TODO: Explain why! """
+        pass
+
     def write_to_world(self):
         old_datasource_values = np.array(self.datasource_values)
         self.datatarget_feedback_values = np.zeros_like(self.datatarget_values)
@@ -982,6 +986,10 @@ class Objects6D(VrepRGBVisionMixin, Vrep6DObjectsMixin, VrepCallMixin, ArrayWorl
     def update_data_sources_and_targets(self):
         self.write_to_world()
         self.read_from_world()
+
+    def reset_datatargets(self):
+        """ Do not zero datatargets"""
+        pass
 
     def write_to_world(self):
         restart = self.get_datatarget_value('restart') > 0.9 and self.world.current_step - self.last_restart >= 5

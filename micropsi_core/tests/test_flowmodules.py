@@ -875,7 +875,7 @@ def test_connect_flow_modules_to_structured_flow_datasource(runtime, test_nodene
 
     runtime.step_nodenet(test_nodenet)
     assert worldadapter.datatarget_values[0] == 0
-    assert np.all(worldadapter.get_flow_datatarget('motor') == sources * 2)
+    assert np.all(worldadapter.get_flow_datatarget_feedback('motor') == sources * 2)
 
     runtime.save_nodenet(test_nodenet)
     runtime.revert_nodenet(test_nodenet)

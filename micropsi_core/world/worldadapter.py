@@ -332,17 +332,17 @@ try:
 
         def set_flow_datasource(self, name, values):
             """Set the values of the given flow_datasource """
-            values = np.reshape(values, self.flow_datasources[name].shape)
+            values = np.array(np.reshape(values, self.flow_datasources[name].shape), dtype=floatX)
             self.flow_datasources[name] = values
 
         def add_to_flow_datatarget(self, name, values):
             """Add the given values to the given flow_datatarget """
-            values = np.reshape(values, self.flow_datatargets[name].shape)
+            values = np.array(np.reshape(values, self.flow_datatargets[name].shape), dtype=floatX)
             self.flow_datatargets[name] += values
 
         def set_flow_datatarget_feedback(self, name, values):
             """Set the values of the given flow_datatarget_feedback """
-            values = np.reshape(values, self.flow_datatarget_feedbacks[name].shape)
+            values = np.array(np.reshape(values, self.flow_datatarget_feedbacks[name].shape), dtype=floatX)
             self.flow_datatarget_feedbacks[name] = values
 
         def set_datasource_values(self, values):

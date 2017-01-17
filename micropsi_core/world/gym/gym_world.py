@@ -89,16 +89,16 @@ class OAIGymAdapter(ArrayWorldAdapter):
         # in case of a 1D discrete state space:
         # one sensor dimension for each possible state
         if self.world.n_discrete_states:
-            self.add_flow_datasource("state", shape=self.world.n_discrete_states)
+            self.add_flow_datasource("state", shape=(1,self.world.n_discrete_states))
         # for a continuous state space, sensor dimensions match the state space
         else:
-            self.add_flow_datasource("state", shape=self.world.n_dim_state)
+            self.add_flow_datasource("state", shape=(1,self.world.n_dim_state))
 
         # similarly, separate dimension for each discrete action:
         if self.world.n_discrete_actions:
-            self.add_flow_datatarget("action", shape=self.world.n_discrete_actions)
+            self.add_flow_datatarget("action", shape=(1,self.world.n_discrete_actions))
         else:
-            self.add_flow_datatarget("action", shape=self.world.n_dim_action)
+            self.add_flow_datatarget("action", shape=(1,self.world.n_dim_action))
 
         self.add_flow_datasource("reward", shape=1)
         self.add_flow_datasource("is_terminal", shape=1)
@@ -125,14 +125,14 @@ class OAIGymAdapter(ArrayWorldAdapter):
                 # OAI expects some integer < n encoding which of the n available actions to take.
                 # For that, we use the index of the most strongly activated datatarget dimension. This matches
                 # well to e.g. a softmax layer feeding into the action datatarget.
-                action = np.argmax(action)
+                action = np.argmax(action_values)
             else:
                 if self.inertia > 0:
                     action_values = self.last_action*self.inertia + action_values*(1-self.inertia)
                     self.last_action = action_values
                 action, bounds_punishment = self.world.checkbounds(action_values)
 
-            obs, r, terminal, info = self.world.env.step(action)
+            obs, r, terminal, info = self.world.env.step(action.flatten())
 
         if self.world.rendering:
             self.world.env.render()
@@ -147,14 +147,11 @@ class OAIGymAdapter(ArrayWorldAdapter):
             obs_vector = obs
 
         if self.t_this_episode >= self.world.time_limit:
+            print('time limit')
+            import ipdb; ipdb.set_trace(context=6)
             terminal = True
             self.t_this_episode = 0
 
         self.set_flow_datasource("state", obs_vector)
         self.set_flow_datasource("reward", r+bounds_punishment)
         self.set_flow_datasource("is_terminal", int(terminal))
-
-    def reset_datatargets(self):
-        """ resets (zeros) the datatargets """
-        self.datatarget_values[:] = 0.0
-

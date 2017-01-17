@@ -61,28 +61,23 @@ def test_arrayworldadapter(default_world):
 
     # add
     adapter.add_datasource("foo")
-    adapter.add_datasource("bar", initial_value=1)
-    adapter.add_datasources(["baz", "qux"])
-    adapter.add_datasources(["spam", "eggs"], initial_values=[1, 2])
-    assert adapter.datasource_names == ["foo", "bar", "baz", "qux", "spam", "eggs"]
+    adapter.add_datasource("bar", initial_value=0.7)
+    assert adapter.datasource_names == ["foo", "bar"]
 
     # get
     assert adapter.get_available_datasources() == adapter.datasource_names
-    assert adapter.get_datasource_value("eggs") == 2.0
-    assert np.all(adapter.get_datasource_range("baz", 2) == np.asarray([0., 0.]))
-    assert np.all(adapter.get_datasource_values() == np.asarray([0., 1., 0., 0., 1., 2.]))
-    assert type(adapter.get_datasource_value("eggs")) == np.float64
+    assert np.allclose(adapter.get_datasource_value("bar"), 0.7)
+    assert np.allclose(adapter.get_datasource_values(), np.asarray([0., .7]))
 
     # index
-    assert adapter.get_datasource_index("qux") == 3
+    assert adapter.get_datasource_index("bar") == 1
 
     # set
-    adapter.set_datasource_value("spam", 123.)
-    assert adapter.get_datasource_value("spam") == 123.
-    adapter.set_datasource_range("baz", [.34, .45])
-    assert np.all(adapter.get_datasource_values() == np.asarray([0., 1., .34, .45, 123., 2.]))
-    adapter.set_datasource_values(np.asarray([.1, .2, .3, .4, .5, .6]))
-    assert np.all(adapter.get_datasource_values() == np.asarray([.1, .2, .3, .4, .5, .6]))
+    adapter.set_datasource_value("foo", 123.)
+    assert np.allclose(adapter.get_datasource_value("foo"), 123.)
+    assert np.allclose(adapter.get_datasource_values(), np.asarray([123., 0.7]))
+    adapter.set_datasource_values(np.asarray([.1, .2]))
+    assert np.allclose(adapter.get_datasource_values(), np.asarray([.1, .2]))
     with pytest.raises(AssertionError):
         assert adapter.set_datasource_values(np.asarray([.1, .2, .3, .4, .5]))
 
@@ -90,49 +85,79 @@ def test_arrayworldadapter(default_world):
 
     # add
     adapter.add_datatarget("t_foo")
-    adapter.add_datatarget("t_bar", initial_value=1)
-    adapter.add_datatargets(["t_baz", "t_qux"])
-    adapter.add_datatargets(["t_spam", "t_eggs"], initial_values=[1, 2])
-    assert adapter.datatarget_names == ["t_foo", "t_bar", "t_baz", "t_qux", "t_spam", "t_eggs"]
+    adapter.add_datatarget("t_bar", initial_value=.6)
+    assert adapter.datatarget_names == ["t_foo", "t_bar"]
 
     # get
     assert adapter.get_available_datatargets() == adapter.datatarget_names
-    assert adapter.get_datatarget_value("t_eggs") == 2.0
-    assert np.all(adapter.get_datatarget_range("t_baz", 2) == np.asarray([0., 0.]))
-    assert np.all(adapter.get_datatarget_values() == np.asarray([0., 1., 0., 0., 1., 2.]))
-    assert type(adapter.get_datatarget_value("t_eggs")) == np.float64
+    assert np.allclose(adapter.get_datatarget_value("t_bar"), 0.6)
+    assert np.allclose(adapter.get_datatarget_values(), np.asarray([0., 0.6]))
 
     # index
-    assert adapter.get_datatarget_index("t_qux") == 3
+    assert adapter.get_datatarget_index("t_bar") == 1
 
     # set
-    adapter.set_datatarget_value("t_spam", .1)
-    adapter.add_to_datatarget("t_spam", 123.)
-    assert adapter.get_datatarget_value("t_spam") == 123.1
-    adapter.set_datatarget_range("t_baz", [.34, .45])
-    assert np.all(adapter.get_datatarget_values() == np.asarray([0., 1., .34, .45, 123.1, 2.]))
-    adapter.set_datatarget_values(np.asarray([.1, .2, .3, .4, .5, .6]))
-    assert np.all(adapter.get_datatarget_values() == np.asarray([.1, .2, .3, .4, .5, .6]))
+    adapter.set_datatarget_value("t_foo", .1)
+    adapter.add_to_datatarget("t_foo", 2.1)
+    assert np.allclose(adapter.get_datatarget_value("t_foo"), 2.2)
+    assert np.allclose(adapter.get_datatarget_values(), np.asarray([2.2, 0.6]))
+    adapter.set_datatarget_values(np.asarray([.1, .2]))
+    assert np.allclose(adapter.get_datatarget_values(), np.asarray([.1, .2]))
     with pytest.raises(AssertionError):
         assert adapter.set_datatarget_values(np.asarray([.1, .2, .3, .4, .5]))
 
     # datatarget_feedback --------
 
     # get
-    assert adapter.get_datatarget_feedback_value("t_eggs") == 2.0
-    assert np.all(adapter.get_datatarget_feedback_range("t_baz", 2) == np.asarray([0., 0.]))
-    assert np.all(adapter.get_datatarget_feedback_values() == np.asarray([0., 1., 0., 0., 1., 2.]))
-    assert type(adapter.get_datatarget_feedback_value("t_eggs")) == np.float64
+    assert adapter.get_datatarget_feedback_value("t_foo") == 0.
+    assert np.allclose(adapter.get_datatarget_feedback_values(), np.asarray([0, 0.6]))
 
     # set
-    adapter.set_datatarget_feedback_value("t_spam", 123.)
-    assert adapter.get_datatarget_feedback_value("t_spam") == 123.
-    adapter.set_datatarget_feedback_range("t_baz", [.34, .45])
-    assert np.all(adapter.get_datatarget_feedback_values() == np.asarray([0., 1., .34, .45, 123., 2.]))
-    adapter.set_datatarget_feedback_values(np.asarray([.1, .2, .3, .4, .5, .6]))
-    assert np.all(adapter.get_datatarget_feedback_values() == np.asarray([.1, .2, .3, .4, .5, .6]))
+    adapter.set_datatarget_feedback_value("t_bar", 123.)
+    assert adapter.get_datatarget_feedback_value("t_bar") == 123.
+    assert np.allclose(adapter.get_datatarget_feedback_values(), np.asarray([0., 123.]))
+    adapter.set_datatarget_feedback_values(np.asarray([.1, .2]))
+    assert np.allclose(adapter.get_datatarget_feedback_values(), np.asarray([.1, .2]))
     with pytest.raises(AssertionError):
         assert adapter.set_datatarget_feedback_values(np.asarray([.1, .2, .3, .4, .5]))
+
+
+@pytest.mark.skipif(not numpy_available, reason="requires numpy")
+def test_flow_datasources(default_world):
+
+    class TestArrayWA(wa.ArrayWorldAdapter):
+        def update_data_sources_and_targets(self):
+            self.datasource_values = np.random.rand(self.datasource_values.shape)
+            self.datatarget_feedback_values = np.copy(self.datatarget_values)
+
+    adapter = TestArrayWA(runtime.worlds[default_world])
+
+    vision_shape = (2, 5)
+    vision_init = np.random.rand(*vision_shape)
+    adapter.add_datasource("s_foo")
+    adapter.add_flow_datasource("s_vision", shape=vision_shape, initial_values=vision_init)
+    adapter.add_datasource("s_bar")
+
+    assert adapter.get_available_datasources() == ['s_foo', 's_bar']
+    assert adapter.get_available_flow_datasources() == ['s_vision']
+
+    motor_shape = (3, 2)
+    adapter.add_datatarget("t_execute")
+    adapter.add_flow_datatarget("t_motor", shape=motor_shape)
+
+    assert adapter.get_available_datatargets() == ['t_execute']
+    assert adapter.get_available_flow_datatargets() == ['t_motor']
+
+    vision = np.random.rand(*vision_shape)
+    motor = np.random.rand(*motor_shape)
+
+    adapter.set_flow_datasource("s_vision", vision)
+    adapter.add_to_flow_datatarget("t_motor", motor)
+    adapter.add_to_flow_datatarget("t_motor", motor)
+
+    assert np.allclose(adapter.get_flow_datasource("s_vision"), vision)
+    assert np.allclose(adapter.get_flow_datatarget("t_motor"), 2 * motor)
+    assert np.allclose(adapter.get_flow_datatarget_feedback("t_motor"), np.zeros((3, 2)))
 
 
 def test_worldadapter_mixin(default_world):

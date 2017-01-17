@@ -96,6 +96,8 @@ class TheanoCalculateFlowmodules(Propagate):
                 skip = False
                 inputs = {}
                 for node_uid, in_name in func['inputs']:
+                    if not nodenet.get_node(node_uid).inputmap[in_name]:
+                        raise RuntimeError("Missing Flow-input %s of node %s" % (in_name, str(nodenet.get_node(node_uid))))
                     source_uid, source_name = nodenet.get_node(node_uid).inputmap[in_name]
                     if flowio[source_uid][source_name] is None:
                         # netapi.logger.debug("Skipping graph bc. empty inputs")

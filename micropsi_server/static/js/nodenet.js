@@ -438,14 +438,16 @@ function setNodespaceData(data, changed){
                 for(var name in node.inputmap){
                     var source_uid = node.inputmap[name][0];
                     var source_name = node.inputmap[name][1];
-                    cid = source_uid + ":" + source_name + ":" + name + ":" + uid;
-                    links_data[cid] = {
-                        'source_node_uid': source_uid,
-                        'target_node_uid': uid,
-                        'source_name': source_name,
-                        'target_name': name,
-                        'is_flow_connection': true
-                    };
+                    if(source_uid && source_name){
+                        cid = source_uid + ":" + source_name + ":" + name + ":" + uid;
+                        links_data[cid] = {
+                            'source_node_uid': source_uid,
+                            'target_node_uid': uid,
+                            'source_name': source_name,
+                            'target_name': name,
+                            'is_flow_connection': true
+                        };
+                    }
                 }
             }
         }
@@ -536,14 +538,16 @@ function setNodespaceDiffData(data, changed){
                     for(var name in nodedata.inputmap){
                         var source_uid = nodedata.inputmap[name][0];
                         var source_name = nodedata.inputmap[name][1];
-                        cid = source_uid + ":" + source_name + ":" + name + ":" + uid;
-                        links_data[cid] = {
-                            'source_node_uid': source_uid,
-                            'target_node_uid': uid,
-                            'source_name': source_name,
-                            'target_name': name,
-                            'is_flow_connection': true
-                        };
+                        if (source_uid && source_name){
+                            cid = source_uid + ":" + source_name + ":" + name + ":" + uid;
+                            links_data[cid] = {
+                                'source_node_uid': source_uid,
+                                'target_node_uid': uid,
+                                'source_name': source_name,
+                                'target_name': name,
+                                'is_flow_connection': true
+                            };
+                        }
                     }
                 }
             }

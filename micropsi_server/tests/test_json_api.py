@@ -1782,8 +1782,7 @@ def double(inputs, netapi, node, parameters):
     worldadapter.flow_datasources['foo'][:] = sources
 
     runtime.step_nodenet(test_nodenet)
-    assert np.all(worldadapter.flow_datatargets['bar'] == sources * 2)
-    worldadapter.flow_datatargets['bar'] = np.zeros_like(worldadapter.flow_datatargets['bar'])
+    assert np.all(worldadapter.get_flow_datatarget_feedback('bar') == sources * 2)
 
     # disconnect first flow_module from datatargets, create a second one, and chain them
     result = app.post_json('/rpc/unflow', outward)
@@ -1803,8 +1802,7 @@ def double(inputs, netapi, node, parameters):
 
     sources[:] = worldadapter.flow_datasources['foo']
     runtime.step_nodenet(test_nodenet)
-    assert np.all(worldadapter.flow_datatargets['bar'] == sources * 4)
-    worldadapter.flow_datatargets['bar'] = np.zeros(worldadapter.flow_datatargets['bar'].shape, dtype=nodenet.numpyfloatX)
+    assert np.all(worldadapter.get_flow_datatarget_feedback('bar') == sources * 4)
 
     # disconnect the two flow_modules
     result = app.post_json('/rpc/unflow', {
@@ -1816,4 +1814,4 @@ def double(inputs, netapi, node, parameters):
     })
 
     runtime.step_nodenet(test_nodenet)
-    assert np.all(worldadapter.flow_datatargets['bar'] == np.zeros(worldadapter.flow_datatargets['bar'].shape))
+    assert np.all(worldadapter.get_flow_datatarget_feedback('bar') == np.zeros(worldadapter.flow_datatargets['bar'].shape))

@@ -112,7 +112,7 @@ class OAIGymAdapter(ArrayWorldAdapter):
     def update_data_sources_and_targets(self):
         bounds_punishment = 0
         self.t_this_episode += 1
-        action_values = self.get_flow_datatarget('action')
+        action_values = self.get_flow_datatarget('action').flatten()
         restart = self.get_flow_datatarget('restart')
 
         if restart > 0:
@@ -132,7 +132,7 @@ class OAIGymAdapter(ArrayWorldAdapter):
                     self.last_action = action_values
                 action, bounds_punishment = self.world.checkbounds(action_values)
 
-            obs, r, terminal, info = self.world.env.step(action.flatten())
+            obs, r, terminal, info = self.world.env.step(action)
 
         if self.world.rendering:
             self.world.env.render()

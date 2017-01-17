@@ -147,8 +147,6 @@ class OAIGymAdapter(ArrayWorldAdapter):
             obs_vector = obs
 
         if self.t_this_episode >= self.world.time_limit:
-            print('time limit')
-            import ipdb; ipdb.set_trace(context=6)
             terminal = True
             self.t_this_episode = 0
 

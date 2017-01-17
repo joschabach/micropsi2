@@ -528,7 +528,7 @@ class Nodetype(object):
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None,
-                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category=''):
+                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', **_):
         """Initializes or creates a nodetype.
 
         Arguments:
@@ -625,7 +625,7 @@ class FlowNodetype(Nodetype):
 class HighdimensionalNodetype(Nodetype):
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None,
-                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', dimensionality={}):
+                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', dimensionality={}, **_):
         super().__init__(name, nodenet, slottypes=slottypes, gatetypes=gatetypes, parameters=parameters,
                  nodefunction_definition=nodefunction_definition, nodefunction_name=nodefunction_name, parameter_values=parameter_values,
                  symbol=symbol, shape=shape, engine=engine, parameter_defaults=parameter_defaults, path='', category='')

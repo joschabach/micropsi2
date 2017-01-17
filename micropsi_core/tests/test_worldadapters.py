@@ -123,7 +123,7 @@ def test_arrayworldadapter(default_world):
 
 
 @pytest.mark.skipif(not numpy_available, reason="requires numpy")
-def test_structured_datasources(default_world):
+def test_flow_datasources(default_world):
 
     class TestArrayWA(wa.ArrayWorldAdapter):
         def update_data_sources_and_targets(self):

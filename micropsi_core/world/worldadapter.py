@@ -400,7 +400,7 @@ try:
             import random
             self.datatarget_feedback_values[:] = self.datatarget_values
             self.datasource_values[:] = np.random.randn(len(self.datasource_values))
-            self.flow_datasources['vision'][:] = np.random.randn(*self.datasource_values.shape)
+            self.flow_datasources['vision'][:] = np.random.randn(*self.flow_datasources['vision'].shape)
             self.flow_datatargets['action'][:] = np.zeros_like(self.flow_datatargets['action'])
 
 

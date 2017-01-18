@@ -874,7 +874,6 @@ def test_connect_flow_modules_to_structured_flow_datasource(runtime, test_nodene
 
     source = netapi.create_node("Neuron", None)
     source.activation = 1
-    netapi.link(source, 'gen', source, 'gen')
     netapi.link(source, 'gen', double, 'sub')
 
     runtime.step_nodenet(test_nodenet)
@@ -886,4 +885,14 @@ def test_connect_flow_modules_to_structured_flow_datasource(runtime, test_nodene
     runtime.revert_nodenet(test_nodenet)
 
     nodenet = runtime.nodenets[test_nodenet]
+    worldadapter = nodenet.worldadapter_instance
+
     assert len(nodenet.flow_module_instances) == 3
+
+    sources = np.zeros((6), dtype=nodenet.numpyfloatX)
+    sources[:] = np.random.randn(*sources.shape)
+    worldadapter.set_flow_datasource('vision', sources)
+    worldadapter.set_flow_datasource('start', np.asarray([0.64]))
+    runtime.step_nodenet(test_nodenet)
+    assert np.all(worldadapter.get_flow_datatarget_feedback('motor') == np.zeros(6))
+    assert np.allclose(worldadapter.get_flow_datatarget_feedback('stop'), [0.64])

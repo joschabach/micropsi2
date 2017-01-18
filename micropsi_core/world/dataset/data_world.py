@@ -50,7 +50,7 @@ class SupervisedLearning(ArrayWorldAdapter):
     def get_config_options(cls):
         return [
              {'name': 'input_key',
-             'description': 'key under which the Nxk matrix of input (predictor) variables is found'
+             'description': 'key under which the Nxk matrix of input (predictor) variables is found',
              'default': 'x'},
              {'name': 'target_key',
              'description': 'key under which the Nxl matrix of target variables is found',
@@ -77,31 +77,32 @@ class SupervisedLearning(ArrayWorldAdapter):
         self.l = Y.shape[1]
 
         self.len_train = int(self.N*self.holdout_fraction)
-        self.train_X = self.X[:self.len_train, :]
-        self.train_Y = self.Y[:self.len_train, :]
+        self.train_X = X[:self.len_train, :]
+        self.train_Y = Y[:self.len_train, :]
 
-        test_X = self.X[self.len_train:, :]
-        test_Y = self.Y[self.len_train:, :]
+        test_X = X[self.len_train:, :]
+        test_Y = Y[self.len_train:, :]
 
         self.epoch_count = 0 # nr of times the whole training set has been seen
         self.batch_start = 0 # row idx where the current batch begins
-        self.max_batch_start = self.N - self.batch_size # last row idx where we can start a batch
+        self.max_batch_start = self.len_train - self.batch_size # last row idx where we can start a batch
+        self.shuffle()
 
         if not self.batch_size:
             self.batch_size = self.len_train
 
-        self.add_flow_datasource("train_X", shape=(self.batch_size, self.k))
-        self.add_flow_datasource("train_Y", shape=(self.batch_size, self.l))
+        self.add_flow_datasource("train_x", shape=(self.batch_size, self.k))
+        self.add_flow_datasource("train_y", shape=(self.batch_size, self.l))
 
-        self.add_flow_datasource("test_X", shape=(self.N - self.len_train, self.k))
-        self.add_flow_datasource("test_Y", shape=(self.N - self.len_train,, self.l))
+        self.add_flow_datasource("test_x", shape=(self.N - self.len_train, self.k))
+        self.add_flow_datasource("test_y", shape=(self.N - self.len_train, self.l))
 
         self.add_flow_datasource("epoch_count", shape=1)
 
         # the contents of the test set never change, so we can write to this datasource
         # at init time and never touch it again.
-        self.set_flow_datasource("test_X", test_X)
-        self.set_flow_datasource("test_Y", test_Y)
+        self.set_flow_datasource("test_x", test_X)
+        self.set_flow_datasource("test_y", test_Y)
 
     def shuffle(self):
         self.shuffle_order = self.rng.permutation(self.len_train)
@@ -124,8 +125,8 @@ class SupervisedLearning(ArrayWorldAdapter):
         batch_X = self.train_X[batch_idxs, :]
         batch_Y = self.train_Y[batch_idxs, :]
 
-        self.set_flow_datasource("train_X", batch_X)
-        self.set_flow_datasource("train_Y", batch_Y)
+        self.set_flow_datasource("train_x", batch_X)
+        self.set_flow_datasource("train_y", batch_Y)
         self.set_flow_datasource("epoch_count", self.epoch_count)
 
 class UnsupervisedLearning(ArrayWorldAdapter):

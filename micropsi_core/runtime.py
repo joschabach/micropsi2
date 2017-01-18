@@ -1759,8 +1759,8 @@ def initialize(persistency_path=None, resource_path=None):
     #                 for world in init.__all__:
     #                     importlib.import_module(".%s" % world, package='micropsi_core.world.%s' % d)
     #                     logging.getLogger("system").debug("Found %s world" % world)
-    #         except ImportError:
-    #             logging.getLogger("system").debug("Error importing %s world" % world)
+    #         except ImportError as err:
+    #             logging.getLogger("system").debug("Error importing %s world (%s)" % (world, str(err)))
 
     # initialize runners
     # Initialize the threads for the continuous calculation of nodenets and worlds

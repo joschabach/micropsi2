@@ -64,6 +64,10 @@ def pytest_configure(config):
         "engine(name): mark test to run only on the specified engine")
 
 
+def pytest_unconfigure(config):
+    directory.cleanup()
+
+
 def pytest_generate_tests(metafunc):
     if 'engine' in metafunc.fixturenames:
         engines = []
@@ -99,11 +103,13 @@ def pytest_runtest_setup(item):
 def pytest_internalerror(excrepr, excinfo):
     """ called for internal errors. """
     micropsi_runtime.kill_runners()
+    directory.cleanup()
 
 
 def pytest_keyboard_interrupt(excinfo):
     """ called for keyboard interrupt. """
     micropsi_runtime.kill_runners()
+    directory.cleanup()
 
 
 def set_logging_levels():

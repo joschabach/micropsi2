@@ -359,7 +359,6 @@ try:
             """
             pass  # pragma: no cover
 
-
     class DefaultArray(ArrayWorldAdapter):
         """
         A default ArrayWorldadapter, that provides example-datasources and -targets
@@ -371,7 +370,7 @@ try:
                 if i % 2 == 0:
                     self.datatarget_names.append("t_%d" % i)
             self.datasource_values = np.random.randn(64)
-            self.datatarget_values = np.zeros_like(self.datatarget_values)
+            self.datatarget_values = np.zeros(len(self.datatarget_names))
 
         def update_data_sources_and_targets(self):
             import random

@@ -553,7 +553,7 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
         nodenets[uid].merge_data(data_to_merge)
 
     if world_uid and worldadapter:
-        set_nodenet_properties(uid, worldadapter=worldadapter, world_uid=world_uid)
+        set_nodenet_properties(uid, worldadapter=worldadapter, world_uid=world_uid, worldadapter_config=worldadapter_config)
 
     nodenets[uid].save()
     return True, data['uid']

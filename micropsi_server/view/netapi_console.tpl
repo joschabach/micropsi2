@@ -1,7 +1,7 @@
 
 <link rel="stylesheet" href="/static/css/highlight_styles/github.css">
-<script src="/static/js/highlight.pack.js"></script>
-<script src="/static/js/netapi_console.js"></script>
+<script src="/static/js/highlight.pack.js" type="text/javascript"></script>
+<script src="/static/js/netapi_console.js" type="text/javascript"></script>
 
 <div class="sectionbar">
     <span data-toggle="collapse" data-target="#netapi_console"><i

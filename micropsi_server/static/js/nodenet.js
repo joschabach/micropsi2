@@ -1351,6 +1351,10 @@ function renderFlowConnection(link, force) {
     }
     var sourceNode = nodes[link.sourceNodeUid];
     var targetNode = nodes[link.targetNodeUid];
+    if(!sourceNode || !targetNode){
+        // TODO: deleting nodes need to clean flowconnections
+        return;
+    }
     var sourceType = flow_modules[sourceNode.type];
     var targetType = flow_modules[targetNode.type];
 

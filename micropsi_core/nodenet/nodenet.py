@@ -15,7 +15,7 @@ import micropsi_core.tools
 from .netapi import NetAPI
 from . import monitor
 from . import recorder
-from .node import Nodetype
+from .node import Nodetype, FlowNodetype, HighdimensionalNodetype
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
@@ -185,7 +185,12 @@ class Nodenet(metaclass=ABCMeta):
         for type, data in native_modules.items():
             if data.get('engine', self.engine) == self.engine:
                 try:
-                    self.native_modules[type] = Nodetype(nodenet=self, **data)
+                    if data.get('flow_module'):
+                        self.native_modules[type] = FlowNodetype(nodenet=self, **data)
+                    elif data.get('dimensionality'):
+                        self.native_modules[type] = HighdimensionalNodetype(nodenet=self, **data)
+                    else:
+                        self.native_modules[type] = Nodetype(nodenet=self, **data)
                 except Exception as err:
                     self.logger.error("Can not instantiate node type %s: %s: %s" % (type, err.__class__.__name__, str(err)))
 
@@ -462,7 +467,7 @@ class Nodenet(metaclass=ABCMeta):
         """
         data = {}
         for key in self.native_modules:
-            if not self.native_modules[key].is_flow_module:
+            if type(self.native_modules[key]) != FlowNodetype:
                 data[key] = self.native_modules[key].get_data()
         return data
 
@@ -472,7 +477,7 @@ class Nodenet(metaclass=ABCMeta):
         """
         data = {}
         for key in self.native_modules:
-            if self.native_modules[key].is_flow_module:
+            if type(self.native_modules[key]) == FlowNodetype:
                 data[key] = self.native_modules[key].get_data()
         return data
 

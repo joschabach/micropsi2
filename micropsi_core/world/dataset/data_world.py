@@ -85,7 +85,7 @@ class SupervisedLearning(ArrayWorldAdapter):
 
         self.epoch_count = 0 # nr of times the whole training set has been seen
         self.batch_start = 0 # row idx where the current batch begins
-        self.max_batch_start = self.len_train - self.batch_size # last row idx where we can start a batch
+        self.max_batch_start = self.len_train - self.batch_size -1 # last row idx where we can start a batch
         self.shuffle()
 
         if not self.batch_size:
@@ -108,14 +108,22 @@ class SupervisedLearning(ArrayWorldAdapter):
         self.shuffle_order = self.rng.permutation(self.len_train)
 
     def batch_step(self):
-        if self.batch_start < self.max_batch_start:
+        bs = self.batch_start
+
+        if bs < self.max_batch_start:
             self.batch_start += self.batch_size
         else:
             self.shuffle()
             self.batch_start = 0
+            bs = 0
             self.epoch_count += 1
 
-        batch_idxs = self.shuffle_order[self.batch_start:self.batch_start+self.batch_size]
+        batch_idxs = self.shuffle_order[bs:bs+self.batch_size]
+
+        # assert batch_end < self.len_train # numpy silently returns fewer elements (!) if a slice index is out of bounds
+
+        assert len(batch_idxs) == self.batch_size
+
         return batch_idxs
 
 

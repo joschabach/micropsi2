@@ -68,6 +68,7 @@ class OAIGym(World):
         self.n_dim_action, self.n_discrete_actions, self.checkbounds = inspect_space(self.env.action_space, verbose=True)
 
         self.rendering = self.config.get('render') != 'False'
+        self.env.reset()
 
     @classmethod
     def get_config_options(cls):

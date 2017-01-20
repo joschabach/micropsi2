@@ -1,8 +1,8 @@
 
-from micropsi_core.world.world import World
-from micropsi_core.world.worldadapter import ArrayWorldAdapter, WorldAdapterMixin
+from micropsi_core.world.worldadapter import WorldAdapterMixin
 from micropsi_core.world.ur.optoforce import optoforce
 import numpy as np
+
 
 class OptoForce6DMixin(WorldAdapterMixin):
     """

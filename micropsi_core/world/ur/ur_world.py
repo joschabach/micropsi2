@@ -16,6 +16,7 @@ from micropsi_core.world.ur.optoforce_mixin import OptoForce6DMixin
 from micropsi_core.world.ur.speedj_control_mixin import SpeedJControlMixin
 from micropsi_core.world.ur.movej_control_mixin import MoveJControlMixin
 
+
 class URConnection(threading.Thread):
     """
     Connection thread to continuously read the UR 125Hz real time interface
@@ -55,7 +56,7 @@ class URConnection(threading.Thread):
         self.stop.set()
 
     def write_command_to_robot(self, command):
-        #print(command)
+        # print(command)
         self.socket.sendall(command.encode("ascii"))
 
     def update_values_from_robot(self):
@@ -201,10 +202,10 @@ class URWorld(World):
     """
     supported_worldadapters = ['UR', 'URSpeedJControlled', 'UROptoForce6D', 'URMoveJControlled']
 
-    #assets = {
-    #    'template': 'ur/ur.tpl',
-    #    'js': "ur/ur.js",
-    #}
+    # assets = {
+    #     'template': 'ur/ur.tpl',
+    #     'js': "ur/ur.js",
+    # }
 
     def __init__(self, filename, world_type="URWorld", name="", owner="", engine=None, uid=None, version=1, config={}):
         World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version, config=config)
@@ -242,7 +243,7 @@ class UR(WorldAdapterMixin, ArrayWorldAdapter):
     @classmethod
     def get_config_options(cls):
         options = super().get_config_options()
-        #options.extend([])
+        # options.extend([])
         return options
 
     def __init__(self, world, uid=None, **data):
@@ -292,7 +293,6 @@ class UR(WorldAdapterMixin, ArrayWorldAdapter):
         self.add_datasource("joint-speed-wrist2")
         self.add_datasource("joint-speed-wrist3")
 
-
         if self.nodenet:
             self.nodenet.worldadapter_instance = self
         self.initialized = True
@@ -338,7 +338,6 @@ class UR(WorldAdapterMixin, ArrayWorldAdapter):
         self.set_datasource_value("joint-speed-wrist2", self.world.connection_daemon.joint_speeds[4])
         self.set_datasource_value("joint-speed-wrist3", self.world.connection_daemon.joint_speeds[5])
 
-
     def shutdown(self):
         pass
 
@@ -348,10 +347,12 @@ class URSpeedJControlled(UR, SpeedJControlMixin):
     A world adapter for a UR system that can be controlled using speedj commands.
     """
 
+
 class UROptoForce6D(UR, OptoForce6DMixin):
     """
     A world adapter for a UR system with an OptoForce 6D F/T sensor.
     """
+
 
 class URMoveJControlled(UR, MoveJControlMixin):
     """

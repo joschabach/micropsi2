@@ -67,7 +67,7 @@ class OAIGym(World):
         self.n_dim_state, self.n_discrete_states, _ = inspect_space(self.env.observation_space)
         self.n_dim_action, self.n_discrete_actions, self.checkbounds = inspect_space(self.env.action_space, verbose=True)
 
-        self.rendering = True
+        self.rendering = self.config.get('render') != 'False'
 
     @classmethod
     def get_config_options(cls):
@@ -77,7 +77,11 @@ class OAIGym(World):
              'default': 'CartPole-v0'},
             {'name': 'time_limit',
              'description': 'Episode length',
-             'default': 500}
+             'default': 500},
+            {'name': 'render',
+             'description': 'whether to render a world-view',
+             'options': ['True', 'False'],
+             'default': 'True'}
         ]
 
 

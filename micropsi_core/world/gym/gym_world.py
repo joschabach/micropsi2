@@ -59,10 +59,10 @@ class OAIGym(World):
     supported_worldadapters = ['OAIGymAdapter']
 
     def __init__(self, filename, world_type="OAIGym", name="", owner="", engine=None, uid=None, version=1, config={}):
-        World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
+        World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version, config=config)
 
-        self.env = gym.make(config['env_id'])
-        self.time_limit = config['time_limit']
+        self.env = gym.make(self.config['env_id'])
+        self.time_limit = self.config['time_limit']
 
         self.n_dim_state, self.n_discrete_states, _ = inspect_space(self.env.observation_space)
         self.n_dim_action, self.n_discrete_actions, self.checkbounds = inspect_space(self.env.action_space, verbose=True)
@@ -74,8 +74,10 @@ class OAIGym(World):
         return [
             {'name': 'env_id',
              'description': 'OpenAI environment ID',
-             'default': 'CartPole-v0',
-             'time_limit': 500}
+             'default': 'CartPole-v0'},
+            {'name': 'time_limit',
+             'description': 'Episode length',
+             'default': 500}
         ]
 
 

@@ -1,8 +1,8 @@
 
-from micropsi_core.world.world import World
-from micropsi_core.world.worldadapter import ArrayWorldAdapter, WorldAdapterMixin
+from micropsi_core.world.worldadapter import WorldAdapterMixin
 import numpy as np
 import os
+
 
 class MoveJControlMixin(WorldAdapterMixin):
     """
@@ -17,7 +17,7 @@ class MoveJControlMixin(WorldAdapterMixin):
                         'default': '0.4'},
                         {'name': 'velocity',
                         'description': 'joint speed parameter to be used in movej commands',
-                        'default': '0.3',}])
+                        'default': '0.3'}])
         return options
 
     def initialize(self):

@@ -1,8 +1,8 @@
 
-from micropsi_core.world.world import World
-from micropsi_core.world.worldadapter import ArrayWorldAdapter, WorldAdapterMixin
+from micropsi_core.world.worldadapter import WorldAdapterMixin
 import numpy as np
 import os
+
 
 class SpeedJControlMixin(WorldAdapterMixin):
     """
@@ -34,12 +34,12 @@ class SpeedJControlMixin(WorldAdapterMixin):
         speeds = self.get_flow_datatarget("joint-speed")
 
         command = "speedj([%.4f, %.4f, %.4f, %.4f, %.4f, %.4f], %.4f)" % (
-            min(max(self.get_datatarget_value('joint-speed-base')+speeds[0], -1), 1),
-            min(max(self.get_datatarget_value('joint-speed-shoulder')+speeds[1], -1), 1),
-            min(max(self.get_datatarget_value('joint-speed-elbow')+speeds[2], -1), 1),
-            min(max(self.get_datatarget_value('joint-speed-wrist1')+speeds[3], -1), 1),
-            min(max(self.get_datatarget_value('joint-speed-wrist2')+speeds[4], -1), 1),
-            min(max(self.get_datatarget_value('joint-speed-wrist3')+speeds[5], -1), 1),
+            min(max(self.get_datatarget_value('joint-speed-base') + speeds[0], -1), 1),
+            min(max(self.get_datatarget_value('joint-speed-shoulder') + speeds[1], -1), 1),
+            min(max(self.get_datatarget_value('joint-speed-elbow') + speeds[2], -1), 1),
+            min(max(self.get_datatarget_value('joint-speed-wrist1') + speeds[3], -1), 1),
+            min(max(self.get_datatarget_value('joint-speed-wrist2') + speeds[4], -1), 1),
+            min(max(self.get_datatarget_value('joint-speed-wrist3') + speeds[5], -1), 1),
             float(self.acceleration)
         )
         command += os.linesep

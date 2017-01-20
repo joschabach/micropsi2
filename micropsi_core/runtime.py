@@ -1554,7 +1554,6 @@ def load_user_files(path, reload_nodefunctions=False, errors=[]):
 
 def parse_world_definitions(path):
     import importlib
-    import imp
     base_path = os.path.dirname(path)
     errors = []
     with open(path) as fp:
@@ -1564,12 +1563,17 @@ def parse_world_definitions(path):
             return "World data in %s/worlds.json not well formed" % path
         worldfiles = data['worlds']
         worldadapterfiles = data['worldadapters']
+        dependencies = data.get('dependencies', [])
+        for dep in dependencies:
+            sys.path.append(dep)
         for w in worldfiles:
             relpath = os.path.relpath(os.path.join(base_path, w), start=RESOURCE_PATH)
+            sys.path.append(base_path)
             name = w[:-3]
             try:
                 loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
                 wmodule = loader.load_module()
+                logging.getLogger("system").debug("Found world %s " % name)
             except SyntaxError as e:
                 errors.append("%s in world file %s, line %d" % (e.__class__.__name__, relpath, e.lineno))
             except (ImportError, SystemError) as e:

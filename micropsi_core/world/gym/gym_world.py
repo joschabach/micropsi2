@@ -1,13 +1,10 @@
 
 import numpy as np
 
-
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import ArrayWorldAdapter
 
 import gym
-
-floatX = 'float32' # where do we configure this?
 
 
 def inspect_space(gym_space, verbose=False):

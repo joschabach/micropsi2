@@ -70,7 +70,7 @@ class MoveJControlMixin(WorldAdapterMixin):
         super().read_from_world()
 
         diff = self.world.connection_daemon.tool_pos_6D - self.last_target
-        in_target = sum(np.abs(diff)) < 0.01
+        in_target = sum(np.abs(diff)) < 0.5
         self.set_datasource_value("in-target", 1 if in_target else 0)
 
     def shutdown(self):

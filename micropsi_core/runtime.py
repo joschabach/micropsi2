@@ -1656,7 +1656,7 @@ def reload_nodefunctions_file(path):
         return "%s in nodefunction file %s, line %d" % (e.__class__.__name__, relpath, e.lineno)
     except (ImportError, SystemError) as e:
         relpath = os.path.relpath(path, start=RESOURCE_PATH)
-        return "%s in nodfunction file %s: %s" % (e.__class__.__name__, relpath, str(e))
+        return "%s in nodefunction file %s: %s" % (e.__class__.__name__, relpath, str(e))
 
 
 def reload_native_modules():

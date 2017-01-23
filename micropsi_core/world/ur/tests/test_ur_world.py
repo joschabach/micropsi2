@@ -39,5 +39,10 @@ def test_urworld_basic(urmock, optomock, runtime):
 
     success, nodenet_uid = runtime.new_nodenet('urmovej', 'theano_engine', worldadapter='URMoveJControlled', world_uid=world_uid, use_modulators=False)
     net = runtime.get_nodenet(nodenet_uid)
+    neuron = net.netapi.create_node('Neuron', None, "src")
+    neuron.activation = 1
+    actuator = net.netapi.create_node('Actuator', None, "exec")
+    actuator.set_parameter('datatarget', 'execute')
+    net.netapi.link(neuron, 'gen', actuator, 'gen')
     assert net.worldadapter_instance.__class__.__name__ == "URMoveJControlled"
     assert runtime.step_nodenet(nodenet_uid) == 1

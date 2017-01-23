@@ -13,7 +13,7 @@ class OptoForce6DMixin(WorldAdapterMixin):
     def initialize(self):
         super().initialize()
 
-        self.add_flow_datasource("wrist-ft", 6, optoforce.get_ft_np())
+        self.add_flow_datasource("wrist-ft", 6)
         self.add_datasource("wrist-ft-fx")
         self.add_datasource("wrist-ft-fy")
         self.add_datasource("wrist-ft-fz")
@@ -25,9 +25,8 @@ class OptoForce6DMixin(WorldAdapterMixin):
 
     def read_from_world(self):
         super().read_from_world()
-
         optodata = np.copy(optoforce.get_ft_np())
-        self.set_flow_datasource("wrist-force", optodata)
+        self.set_flow_datasource("wrist-ft", optodata)
         self.set_datasource_value("wrist-ft-fx", optodata[0])
         self.set_datasource_value("wrist-ft-fy", optodata[1])
         self.set_datasource_value("wrist-ft-fz", optodata[2])

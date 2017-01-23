@@ -68,7 +68,7 @@ class OAIGym(World):
         self.n_dim_action, self.n_discrete_actions, self.checkbounds = inspect_space(self.env.action_space, verbose=True)
 
         self.rendering = self.config.get('render') != 'False'
-        self.env.reset()
+        self.env_initialized = False # gym envs need to be env.reset() once before stepping.
 
     @classmethod
     def get_config_options(cls):
@@ -120,10 +120,11 @@ class OAIGymAdapter(ArrayWorldAdapter):
         action_values = self.get_flow_datatarget('action').ravel()
         restart = self.get_flow_datatarget('restart')
 
-        if restart > 0:
+        if restart > 0 or not self.world.env_initialized:
             obs = self.world.env.reset()
             r = 0
             terminal = False
+            self.world.env_initialized = True
         else:
             if self.world.n_discrete_actions:
                 # For discrete action spaces, each action is represented by one datatarget dimension.

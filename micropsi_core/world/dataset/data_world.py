@@ -41,7 +41,7 @@ class Dataset(World):
             {'name': 'path',
              'description': 'path of a numpy archive',
              'default': ''}
-            ]
+        ]
 
 
 class SupervisedLearning(ArrayWorldAdapter):
@@ -49,20 +49,20 @@ class SupervisedLearning(ArrayWorldAdapter):
     @classmethod
     def get_config_options(cls):
         return [
-             {'name': 'input_key',
+            {'name': 'input_key',
              'description': 'key under which the Nxk matrix of input (predictor) variables is found',
              'default': 'x'},
-             {'name': 'target_key',
+            {'name': 'target_key',
              'description': 'key under which the Nxl matrix of target variables is found',
              'default': 'y'},
-             {'name':'holdout_fraction',
+            {'name': 'holdout_fraction',
              'description': 'ratio of training to holdout data',
              'default': 0.75},
-             {'name': 'batch_size',
+            {'name': 'batch_size',
              'description': '(optional) provide only a certain number of samples from the training set in each world step',
              'default': 500}
 
-            ]
+        ]
 
     def __init__(self, world, uid=None, **data):
         super().__init__(world, uid, **data)
@@ -76,16 +76,16 @@ class SupervisedLearning(ArrayWorldAdapter):
         self.k = X.shape[1]
         self.l = Y.shape[1]
 
-        self.len_train = int(self.N*self.holdout_fraction)
+        self.len_train = int(self.N * self.holdout_fraction)
         self.train_X = X[:self.len_train, :]
         self.train_Y = Y[:self.len_train, :]
 
         test_X = X[self.len_train:, :]
         test_Y = Y[self.len_train:, :]
 
-        self.epoch_count = 0 # nr of times the whole training set has been seen
-        self.batch_start = 0 # row idx where the current batch begins
-        self.max_batch_start = self.len_train - self.batch_size -1 # last row idx where we can start a batch
+        self.epoch_count = 0  # nr of times the whole training set has been seen
+        self.batch_start = 0  # row idx where the current batch begins
+        self.max_batch_start = self.len_train - self.batch_size - 1  # last row idx where we can start a batch
         self.shuffle()
 
         if not self.batch_size:
@@ -118,14 +118,13 @@ class SupervisedLearning(ArrayWorldAdapter):
             bs = 0
             self.epoch_count += 1
 
-        batch_idxs = self.shuffle_order[bs:bs+self.batch_size]
+        batch_idxs = self.shuffle_order[bs:bs + self.batch_size]
 
         # assert batch_end < self.len_train # numpy silently returns fewer elements (!) if a slice index is out of bounds
 
         assert len(batch_idxs) == self.batch_size
 
         return batch_idxs
-
 
     def update_data_sources_and_targets(self):
         batch_idxs = self.batch_step()
@@ -137,10 +136,12 @@ class SupervisedLearning(ArrayWorldAdapter):
         self.set_flow_datasource("train_y", batch_Y)
         self.set_flow_datasource("epoch_count", self.epoch_count)
 
-class UnsupervisedLearning(ArrayWorldAdapter):
-    # like Supervised, but without Y datasource
-    pass
 
-class TimeseriesPrediction(ArrayWorldAdapter):
-    # adds the option for temporal embeddings (with special attention to time discontinuities)
-    pass
+# class UnsupervisedLearning(ArrayWorldAdapter):
+#     # like Supervised, but without Y datasource
+#     pass
+
+
+# class TimeseriesPrediction(ArrayWorldAdapter):
+#     # adds the option for temporal embeddings (with special attention to time discontinuities)
+#     pass

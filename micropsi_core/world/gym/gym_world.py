@@ -67,7 +67,6 @@ class OAIGym(World):
         self.n_dim_state, self.n_discrete_states, _ = inspect_space(self.env.observation_space)
         self.n_dim_action, self.n_discrete_actions, self.checkbounds = inspect_space(self.env.action_space, verbose=True)
 
-        self.rendering = self.config.get('render') != 'False'
         self.env_initialized = False # gym envs need to be env.reset() once before stepping.
 
     @classmethod
@@ -78,12 +77,8 @@ class OAIGym(World):
              'default': 'CartPole-v0'},
             {'name': 'time_limit',
              'description': 'Episode length',
-             'default': 500},
-            {'name': 'render',
-             'description': 'whether to render a world-view',
-             'options': ['True', 'False'],
-             'default': 'True'}
-        ]
+             'default': 500}
+             ]
 
 
 class OAIGymAdapter(ArrayWorldAdapter):
@@ -107,12 +102,14 @@ class OAIGymAdapter(ArrayWorldAdapter):
 
         self.add_flow_datasource("reward", shape=1)
         self.add_flow_datasource("is_terminal", shape=1)
-
         self.add_flow_datatarget("restart", shape=1)
+
+        self.add_datatarget("render")
 
         self.inertia = inertia
         self.last_action = 0
         self.t_this_episode = 0
+        self.rendering = False
 
     def update_data_sources_and_targets(self):
         bounds_punishment = 0
@@ -140,7 +137,7 @@ class OAIGymAdapter(ArrayWorldAdapter):
 
             obs, r, terminal, info = self.world.env.step(action)
 
-        if self.world.rendering:
+        if self.get_datatarget_value('render') > 0:
             self.world.env.render()
 
         if self.world.n_discrete_states:

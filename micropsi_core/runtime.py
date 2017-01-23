@@ -536,15 +536,14 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
         step=0,
         uid=uid,
         name=nodenet_name,
-        worldadapter=worldadapter,
         owner=owner,
-        world=world_uid,
         settings={},
         engine=engine,
         use_modulators=use_modulators,
         worldadapter_config=worldadapter_config)
 
     nodenet_data[data['uid']] = Bunch(**data)
+
     load_nodenet(data['uid'])
     if template is not None and template in nodenet_data:
         load_nodenet(template)
@@ -552,6 +551,9 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
         data_to_merge.update(data)
         load_nodenet(uid)
         nodenets[uid].merge_data(data_to_merge)
+
+    if world_uid and worldadapter:
+        set_nodenet_properties(uid, worldadapter=worldadapter, world_uid=world_uid, worldadapter_config=worldadapter_config)
 
     nodenets[uid].save()
     return True, data['uid']
@@ -575,9 +577,12 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
     """Sets the supplied parameters (and only those) for the nodenet with the given uid."""
 
     nodenet = get_nodenet(nodenet_uid)
+    if world_uid == '':
+        world_uid = None
     if nodenet.world and (nodenet.world != world_uid or nodenet.worldadapter != worldadapter):
         worlds[nodenet.world].unregister_nodenet(nodenet.uid)
         nodenet.world = None
+        nodenet.worldadapter_instance = None
     if worldadapter is None:
         worldadapter = nodenet.worldadapter
     if world_uid is not None and worldadapter is not None:
@@ -1695,7 +1700,7 @@ def reload_nodefunctions_file(path):
         return "%s in nodefunction file %s, line %d" % (e.__class__.__name__, relpath, e.lineno)
     except (ImportError, SystemError) as e:
         relpath = os.path.relpath(path, start=RESOURCE_PATH)
-        return "%s in nodfunction file %s: %s" % (e.__class__.__name__, relpath, str(e))
+        return "%s in nodefunction file %s: %s" % (e.__class__.__name__, relpath, str(e))
 
 
 def reload_code():

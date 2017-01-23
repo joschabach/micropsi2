@@ -20,6 +20,9 @@ __author__ = 'joscha'
 __date__ = '10.05.12'
 
 import logging
+import functools
+import operator
+from collections import OrderedDict
 from threading import Lock
 from micropsi_core.world.worldobject import WorldObject
 from abc import ABCMeta, abstractmethod
@@ -68,9 +71,16 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
     def get_config_options(cls):
         return []
 
+    @property
+    def generate_flow_modules(self):
+        return False
+
     def __init__(self, world, uid=None, config={}, **data):
         self.datasources = {}
         self.datatargets = {}
+        self.flow_datasources = OrderedDict()
+        self.flow_datatargets = OrderedDict()
+        self.flow_datatarget_feedbacks = OrderedDict()
         self.datatarget_feedback = {}
         self.datasource_lock = Lock()
         self.config = config
@@ -173,6 +183,14 @@ class Default(WorldAdapter):
 try:
     import numpy as np
 
+    # configure dtype for value arrays.
+    # TODO: Move this and the config in theano_nodenet to one central point
+    from configuration import config as settings
+    precision = settings['theano']['precision']
+    floatX = np.float32
+    if precision == "64":
+        floatX = np.float64
+
     # Only available if numpy is installed
 
     class ArrayWorldAdapter(WorldAdapter, metaclass=ABCMeta):
@@ -182,50 +200,54 @@ try:
         Engines that bulk-query values, such as the theano_engine, will be faster.
         Numpy arrays can be passed directly into the engine.
         """
+
+        @property
+        def generate_flow_modules(self):
+            return len(self.flow_datasources) or len(self.flow_datatargets)
+
         def __init__(self, world, uid=None, **data):
             WorldAdapter.__init__(self, world, uid=uid, **data)
 
             self.datasource_names = []
             self.datatarget_names = []
-            self.datasource_values = np.zeros(0)
-            self.datatarget_values = np.zeros(0)
-            self.datatarget_feedback_values = np.zeros(0)
+            self.flow_datasources = OrderedDict()
+            self.flow_datatargets = OrderedDict()
+            self.flow_datatarget_feedbacks = OrderedDict()
+            self.datasource_values = np.zeros(0, dtype=floatX)
+            self.datatarget_values = np.zeros(0, dtype=floatX)
+            self.datatarget_feedback_values = np.zeros(0, dtype=floatX)
 
         def add_datasource(self, name, initial_value=0.):
             """ Adds a datasource, and returns the index
             where they were added"""
             self.datasource_names.append(name)
-            self.datasource_values = np.concatenate((self.datasource_values, np.asarray([initial_value])))
+            self.datasource_values = np.concatenate((self.datasource_values, np.asarray([initial_value], dtype=floatX)))
             return len(self.datasource_names) - 1
 
         def add_datatarget(self, name, initial_value=0.):
             """ Adds a datatarget, and returns the index
             where they were added"""
             self.datatarget_names.append(name)
-            self.datatarget_values = np.concatenate((self.datatarget_values, np.asarray([initial_value])))
-            self.datatarget_feedback_values = np.concatenate((self.datatarget_feedback_values, np.asarray([initial_value])))
+            self.datatarget_values = np.concatenate((self.datatarget_values, np.asarray([initial_value], dtype=floatX)))
+            self.datatarget_feedback_values = np.concatenate((self.datatarget_feedback_values, np.asarray([initial_value], dtype=floatX)))
             return len(self.datatarget_names) - 1
 
-        def add_datasources(self, names, initial_values=False):
-            """ Adds a list of datasources, and returns the indexes
-            where they were added"""
-            offset = len(self.datasource_names)
-            self.datasource_names.extend(names)
-            if not initial_values or len(initial_values) != len(names):
-                initial_values = np.zeros(len(names))
-            self.datasource_values = np.concatenate((self.datasource_values, np.asarray(initial_values)))
-            return range(offset, offset + len(names))
+        def add_flow_datasource(self, name, shape, initial_values=None):
+            """ Add a high-dimensional datasource for flowmodules."""
+            if initial_values is None:
+                initial_values = np.zeros(shape, dtype=floatX)
 
-        def add_datatargets(self, names, initial_values=False):
-            """ Adds a list of datatargets, and returns the indexes
-            where they were added"""
-            offset = len(self.datatarget_names)
-            self.datatarget_names.extend(names)
-            if not initial_values or len(initial_values) != len(names):
-                initial_values = np.zeros(len(names))
-            self.datatarget_values = np.concatenate((self.datatarget_values, np.asarray(initial_values)))
-            self.datatarget_feedback_values = np.concatenate((self.datatarget_feedback_values, np.asarray(initial_values)))
-            return range(offset, offset + len(names))
+            self.flow_datasources[name] = initial_values
+            return self.flow_datasources[name]
+
+        def add_flow_datatarget(self, name, shape, initial_values=None):
+            """ Add a high-dimensional datatarget for flowmodules"""
+            if initial_values is None:
+                initial_values = np.zeros(shape, dtype=floatX)
+
+            self.flow_datatargets[name] = initial_values
+            self.flow_datatarget_feedbacks[name] = np.zeros_like(initial_values)
+            return self.flow_datatargets[name]
 
         def get_available_datasources(self):
             """Returns a list of all datasource names"""
@@ -234,6 +256,12 @@ try:
         def get_available_datatargets(self):
             """Returns a list of all datatarget names"""
             return self.datatarget_names
+
+        def get_available_flow_datasources(self):
+            return list(self.flow_datasources.keys())
+
+        def get_available_flow_datatargets(self):
+            return list(self.flow_datatargets.keys())
 
         def get_datasource_index(self, name):
             """Returns the index of the given datasource in the value array"""
@@ -270,20 +298,17 @@ try:
             """allows the agent to read all datatarget_feedback values"""
             return self.datatarget_feedback_values
 
-        def get_datasource_range(self, start_key, length):
-            """Returns an array of datasource values, with offset at the given key and with the given length"""
-            idx = self.get_datasource_index(start_key)
-            return self.datasource_values[idx:idx + length]
+        def get_flow_datasource(self, name):
+            """ return the array/matrix for the given flow datasource"""
+            return self.flow_datasources[name]
 
-        def get_datatarget_range(self, start_key, length):
-            """Returns an array of datatarget values, with offset at the given key and with the given length"""
-            idx = self.get_datatarget_index(start_key)
-            return self.datatarget_values[idx:idx + length]
+        def get_flow_datatarget(self, name):
+            """ return the array/matrix for the given flow datatarget"""
+            return self.flow_datatargets[name]
 
-        def get_datatarget_feedback_range(self, start_key, length):
-            """Returns an array of datatarget_feedback values, with offset at the given key and with the given length"""
-            idx = self.get_datatarget_index(start_key)
-            return self.datatarget_feedback_values[idx:idx + length]
+        def get_flow_datatarget_feedback(self, name):
+            """ return the array/matrix for the given flow datatarget_feedback"""
+            return self.flow_datatarget_feedbacks[name]
 
         def set_datasource_value(self, key, value):
             """Sets the given datasource value"""
@@ -305,20 +330,20 @@ try:
             idx = self.get_datatarget_index(key)
             self.datatarget_feedback_values[idx] = value
 
-        def set_datasource_range(self, start_key, values):
-            """Sets the given datasource values, with offset at the given key """
-            idx = self.get_datasource_index(start_key)
-            self.datasource_values[idx:idx + len(values)] = values
+        def set_flow_datasource(self, name, values):
+            """Set the values of the given flow_datasource """
+            values = np.array(np.reshape(values, self.flow_datasources[name].shape), dtype=floatX)
+            self.flow_datasources[name] = values
 
-        def set_datatarget_range(self, start_key, values):
-            """Sets the given datatarget values, with offset at the given key """
-            idx = self.get_datatarget_index(start_key)
-            self.datatarget_values[idx:idx + len(values)] = values
+        def add_to_flow_datatarget(self, name, values):
+            """Add the given values to the given flow_datatarget """
+            values = np.array(np.reshape(values, self.flow_datatargets[name].shape), dtype=floatX)
+            self.flow_datatargets[name] += values
 
-        def set_datatarget_feedback_range(self, start_key, values):
-            """Sets the given datatarget_feedback values, with offset at the given key """
-            idx = self.get_datatarget_index(start_key)
-            self.datatarget_feedback_values[idx:idx + len(values)] = values
+        def set_flow_datatarget_feedback(self, name, values):
+            """Set the values of the given flow_datatarget_feedback """
+            values = np.array(np.reshape(values, self.flow_datatarget_feedbacks[name].shape), dtype=floatX)
+            self.flow_datatarget_feedbacks[name] = values
 
         def set_datasource_values(self, values):
             """sets the complete datasources to new values"""
@@ -342,8 +367,9 @@ try:
 
         def reset_datatargets(self):
             """ resets (zeros) the datatargets """
-            # self.datatarget_values = np.zeros_like(self.datatarget_values)
-            pass  # pragma: no cover
+            self.datatarget_values = np.zeros_like(self.datatarget_values)
+            for name in self.flow_datatargets:
+                self.flow_datatargets[name] = np.zeros_like(self.flow_datatargets[name])
 
         @abstractmethod
         def update_data_sources_and_targets(self):
@@ -365,18 +391,19 @@ try:
         """
         def __init__(self, world, uid=None, config={}, **data):
             super().__init__(world, uid=uid, config=config, **data)
-            for i in range(64):
-                self.datasource_names.append("s_%d" % i)
-                if i % 2 == 0:
-                    self.datatarget_names.append("t_%d" % i)
-            self.datasource_values = np.random.randn(64)
-            self.datatarget_values = np.zeros(len(self.datatarget_names))
+            self.add_datasource("test", initial_value=0)
+            self.add_flow_datasource("vision", (3, 7))
+            self.add_datatarget("test", initial_value=0)
+            self.add_flow_datatarget("action", (2, 3))
+            self.update_data_sources_and_targets()
 
         def update_data_sources_and_targets(self):
             import random
             self.datatarget_feedback_values[:] = self.datatarget_values
-            self.datasource_values[:] = np.random.randn(64)
+            self.datasource_values[:] = np.random.randn(len(self.datasource_values))
+            self.flow_datasources['vision'][:] = np.random.randn(*self.flow_datasources['vision'].shape)
+            self.flow_datatargets['action'][:] = np.zeros_like(self.flow_datatargets['action'])
 
 
-except ImportError: # pragma: no cover
+except ImportError:  # pragma: no cover
     pass

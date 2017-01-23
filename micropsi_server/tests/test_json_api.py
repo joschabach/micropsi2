@@ -1691,20 +1691,22 @@ def test_get_recorders(app, test_nodenet):
 
 
 @pytest.mark.engine("theano_engine")
-def test_flow_modules(app, runtime, test_nodenet, resourcepath, default_world):
+def test_flow_modules(app, runtime, test_nodenet, resourcepath):
     import numpy as np
     from micropsi_core.world.worldadapter import ArrayWorldAdapter
 
     class SimpleArrayWA(ArrayWorldAdapter):
-        def __init__(self, world):
-            super().__init__(world)
-            self.add_datasources(['a', 'b', 'c', 'd', 'e'])
-            self.add_datatargets(['a', 'b', 'c', 'd', 'e'])
+        def __init__(self, world, **kwargs):
+            super().__init__(world, **kwargs)
+            self.add_flow_datasource("foo", shape=(2, 3))
+            self.add_flow_datatarget("bar", shape=(2, 3))
             self.update_data_sources_and_targets()
 
         def update_data_sources_and_targets(self):
-            self.datatarget_feedback_values = np.copy(self.datatarget_values)
-            self.datasources = np.random.rand(len(self.datasources))
+            for key in self.flow_datatargets:
+                self.flow_datatarget_feedbacks[key] = np.copy(self.flow_datatargets[key])
+            for key in self.flow_datasources:
+                self.flow_datasources[key][:] = np.random.rand(*self.flow_datasources[key].shape)
 
     import os
     with open(os.path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
@@ -1716,7 +1718,7 @@ def test_flow_modules(app, runtime, test_nodenet, resourcepath, default_world):
         "build_function_name" : "double",
         "inputs": ["inputs"],
         "outputs": ["outputs"],
-        "inputdims": [1]
+        "inputdims": [2]
     }}""")
     with open(os.path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
         fp.write("""
@@ -1727,8 +1729,13 @@ def double(inputs, netapi, node, parameters):
     app.set_auth()
     nodenet = runtime.nodenets[test_nodenet]
     netapi = nodenet.netapi
-    worldadapter = SimpleArrayWA(runtime.worlds[default_world])
-    nodenet.worldadapter_instance = worldadapter
+
+    res, wuid = runtime.new_world("FlowWorld", "DefaultWorld")
+    worldobj = runtime.load_world(wuid)
+    worldobj.supported_worldadapters["SimpleArrayWA"] = SimpleArrayWA
+    runtime.set_nodenet_properties(test_nodenet, worldadapter="SimpleArrayWA", world_uid=wuid)
+    worldadapter = nodenet.worldadapter_instance
+
     runtime.reload_native_modules()
 
     # create one flow_module, wire to sources & targets
@@ -1751,14 +1758,14 @@ def double(inputs, netapi, node, parameters):
         'source_uid': flow_uid,
         'source_output': 'outputs',
         'target_uid': 'worldadapter',
-        'target_input': 'datatargets'
+        'target_input': 'bar'
     }
     result = app.post_json('/rpc/flow', outward)
     assert_success(result)
     inward = {
         'nodenet_uid': test_nodenet,
         'source_uid': 'worldadapter',
-        'source_output': 'datasources',
+        'source_output': 'foo',
         'target_uid': flow_uid,
         'target_input': 'inputs',
     }
@@ -1770,13 +1777,12 @@ def double(inputs, netapi, node, parameters):
 
     assert data['nodenet']['nodes'][flow_uid]
 
-    sources = np.zeros((5), dtype=nodenet.numpyfloatX)
+    sources = np.zeros((2, 3), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
-    worldadapter.datasource_values = sources
+    worldadapter.flow_datasources['foo'][:] = sources
 
     runtime.step_nodenet(test_nodenet)
-    assert np.all(worldadapter.datatarget_values == sources * 2)
-    worldadapter.datatarget_values = np.zeros(len(worldadapter.datatarget_values), dtype=nodenet.numpyfloatX)
+    assert np.all(worldadapter.get_flow_datatarget_feedback('bar') == sources * 2)
 
     # disconnect first flow_module from datatargets, create a second one, and chain them
     result = app.post_json('/rpc/unflow', outward)
@@ -1784,7 +1790,7 @@ def double(inputs, netapi, node, parameters):
 
     double2 = netapi.create_node("Double", None, "double2")
     netapi.link(source, 'gen', double2, 'sub')
-    netapi.flow(double2, 'outputs', 'worldadapter', 'datatargets')
+    netapi.flow(double2, 'outputs', 'worldadapter', 'bar')
     result = app.post_json('/rpc/flow', {
         'nodenet_uid': test_nodenet,
         'source_uid': flow_uid,
@@ -1794,9 +1800,9 @@ def double(inputs, netapi, node, parameters):
     })
     assert_success(result)
 
+    sources[:] = worldadapter.flow_datasources['foo']
     runtime.step_nodenet(test_nodenet)
-    assert np.all(worldadapter.datatarget_values == sources * 4)
-    worldadapter.datatarget_values = np.zeros(len(worldadapter.datatarget_values), dtype=nodenet.numpyfloatX)
+    assert np.all(worldadapter.get_flow_datatarget_feedback('bar') == sources * 4)
 
     # disconnect the two flow_modules
     result = app.post_json('/rpc/unflow', {
@@ -1808,4 +1814,4 @@ def double(inputs, netapi, node, parameters):
     })
 
     runtime.step_nodenet(test_nodenet)
-    assert np.all(worldadapter.datatarget_values == np.zeros(len(worldadapter.datatarget_values)))
+    assert np.all(worldadapter.get_flow_datatarget_feedback('bar') == np.zeros(worldadapter.flow_datatargets['bar'].shape))

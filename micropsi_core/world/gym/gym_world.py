@@ -7,53 +7,6 @@ from micropsi_core.world.worldadapter import ArrayWorldAdapter
 import gym
 
 
-def inspect_space(gym_space, verbose=False):
-    """
-    find the dimensionaltity and (if discrete) number of values of an OAI state/action space
-
-    Params
-    ----
-        gym_space : open ai `gym.spaces.Box` or `gym.spaces.Discrete object`
-
-    Returns
-    ----
-        n_dim: int
-            nr of dimensions of the space
-
-        n_discrete: int or None
-            if the space is discrete: the nr n of allowed values, which are the integers 0 to n.
-
-        checkbounds: callable
-            clips a given vector to the bounds of the space and optionally emits a bounds_punishment if the bounds had been violated.
-    """
-    if isinstance(gym_space, gym.spaces.Box):
-        n_dim = gym_space.shape[0]
-        n_discrete = False
-        lo, hi = gym_space.low, gym_space.high
-        if verbose:
-            print('lower bounds: {}\n upper bounds{}'.format(lo, hi))
-
-        def checkbounds(action):
-            bounded_action = np.clip(action, lo, hi)
-            bounds_punishment = 0 * np.sum(abs(action - bounded_action))
-            if bounds_punishment != 0 and verbose:
-                print("action {} violated bounds {}, {}. executed bounded action {} and punished by {}".format(action, lo, hi, bounded_action, bounds_punishment))
-            return bounded_action, bounds_punishment
-
-    elif isinstance(gym_space, gym.spaces.Discrete):
-        n_dim = 1
-        n_discrete = gym_space.n
-
-        def checkbounds(action):
-            return (action, 0)
-    else:
-        # some OAI envs have multidimensional discrete action spaces
-        # (represented as tuples of gym.spaces.Discrete or gym.spaces.MultiDiscrete).
-        # We don't deal with that for now.
-        raise Exception('OAI worldadapter currently requires environments with either continuous or binary discrete action spaces')
-    return n_dim, n_discrete, checkbounds
-
-
 class OAIGym(World):
 
     supported_worldadapters = ['OAIGymAdapter']
@@ -64,8 +17,8 @@ class OAIGym(World):
         self.env = gym.make(self.config['env_id'])
         self.time_limit = self.config['time_limit']
 
-        self.n_dim_state, self.n_discrete_states, _ = inspect_space(self.env.observation_space)
-        self.n_dim_action, self.n_discrete_actions, self.checkbounds = inspect_space(self.env.action_space, verbose=True)
+        self.n_dim_state, self.n_discrete_states, _ = self.inspect_space(self.env.observation_space)
+        self.n_dim_action, self.n_discrete_actions, self.checkbounds = self.inspect_space(self.env.action_space)
 
         self.env_initialized = False # gym envs need to be env.reset() once before stepping.
 
@@ -80,6 +33,48 @@ class OAIGym(World):
              'default': 500}
              ]
 
+    def inspect_space(self, gym_space):
+        """
+        find the dimensionaltity and (if discrete) number of values of an OAI state/action space
+
+        Params
+        ----
+            gym_space : open ai `gym.spaces.Box` or `gym.spaces.Discrete object`
+
+        Returns
+        ----
+            n_dim: int
+                nr of dimensions of the space
+
+            n_discrete: int or None
+                if the space is discrete: the nr n of allowed values, which are the integers 0 to n.
+
+            checkbounds: callable
+                clips a given vector to the bounds of the space and optionally emits a bounds_punishment if the bounds had been violated.
+        """
+        if isinstance(gym_space, gym.spaces.Box):
+            n_dim = gym_space.shape[0]
+            n_discrete = False
+            lo, hi = gym_space.low, gym_space.high
+
+            def checkbounds(action):
+                bounded_action = np.clip(action, lo, hi)
+                bounds_punishment = 0 * np.sum(abs(action - bounded_action))
+                if bounds_punishment != 0:
+                    self.logger.debug("action {} violated bounds {}, {}. executed bounded action {} and punished by {}".format(action, lo, hi, bounded_action, bounds_punishment))
+                return bounded_action, bounds_punishment
+
+        elif isinstance(gym_space, gym.spaces.Discrete):
+            n_dim = 1
+            n_discrete = gym_space.n
+            def checkbounds(action):
+                return (action, 0)
+        else:
+            # some OAI envs have multidimensional discrete action spaces
+            # (represented as tuples of gym.spaces.Discrete or gym.spaces.MultiDiscrete).
+            # We don't deal with that for now.
+            raise Exception('OAI worldadapter currently requires environments with either continuous or binary discrete action spaces')
+        return n_dim, n_discrete, checkbounds
 
 class OAIGymAdapter(ArrayWorldAdapter):
 

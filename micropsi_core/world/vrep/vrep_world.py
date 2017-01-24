@@ -720,7 +720,7 @@ class Robot(WorldAdapterMixin, ArrayWorldAdapter, VrepCallMixin):
             self.add_datatarget("ik_y")
             self.add_datatarget("ik_z")
 
-        self.call_vrep(vrep.simxGetObjectGroupData, [self.clientID, vrep.sim_object_joint_type, 15, vrep.simx_opmode_streaming], empty_result_ok=True)
+        a, b, c, d = self.call_vrep(vrep.simxGetObjectGroupData, [self.clientID, vrep.sim_object_joint_type, 15, vrep.simx_opmode_streaming], empty_result_ok=True)
 
         self.last_restart = 0
 

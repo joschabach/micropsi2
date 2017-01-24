@@ -275,3 +275,93 @@ class MyCustomWA(WorldAdapter):
     assert runtime.set_nodenet_properties(default_nodenet, world_uid=world_uid, worldadapter="MyCustomWA")
     assert runtime.nodenets[default_nodenet].worldadapter_instance.__class__.__name__ == 'MyCustomWA'
 
+
+def test_reload_world_code(runtime, default_nodenet, resourcepath):
+    import os
+    with open(os.path.join(resourcepath, 'worlds.json'), 'w') as fp:
+        fp.write("""
+            {"worlds": ["custom_world.py"],
+            "worldadapters": ["someadapter.py"]}""")
+    with open(os.path.join(resourcepath, 'custom_world.py'), 'w') as fp:
+        fp.write("""
+
+from micropsi_core.world.world import World
+
+class MyWorld(World):
+    supported_worldadapters = ['MyCustomWA']
+
+    def __init__(self, filename, **kwargs):
+        super().__init__(filename, **kwargs)
+
+""")
+
+    with open(os.path.join(resourcepath, 'someadapter.py'), 'w') as fp:
+        fp.write("""
+
+from micropsi_core.world.worldadapter import WorldAdapter
+
+class MyCustomWA(WorldAdapter):
+    def __init__(self, world, uid=None, config={}, **data):
+        super().__init__(world, uid=uid, config=config, **data)
+
+    def update_data_sources_and_targets(self):
+        pass
+
+""")
+
+    runtime.reload_code()
+    assert "MyWorld" in runtime.get_available_world_types()
+
+    result, world_uid = runtime.new_world("test world", "MyWorld")
+
+    assert runtime.set_nodenet_properties(default_nodenet, world_uid=world_uid, worldadapter="MyCustomWA")
+    wa = runtime.nodenets[default_nodenet].worldadapter_instance
+    assert wa.__class__.__name__ == 'MyCustomWA'
+    assert wa.get_available_datasources() == []
+
+    with open(os.path.join(resourcepath, 'custom_world.py'), 'w') as fp:
+        fp.write("""
+
+from micropsi_core.world.world import World
+
+class MyWorld(World):
+    supported_worldadapters = ['MyCustomWA', 'SecondWA']
+
+    def __init__(self, filename, **kwargs):
+        super().__init__(filename, **kwargs)
+
+""")
+
+    with open(os.path.join(resourcepath, 'someadapter.py'), 'w') as fp:
+        fp.write("""
+
+from micropsi_core.world.worldadapter import WorldAdapter
+
+class MyCustomWA(WorldAdapter):
+    def __init__(self, world, uid=None, config={}, **data):
+        super().__init__(world, uid=uid, config=config, **data)
+        self.datasources = {'foo': 1}
+        self.datatargets = {'bar': 0}
+        self.datatarget_feedback = {'bar': 0}
+
+    def update_data_sources_and_targets(self):
+        self.datasources['foo'] = self.datatargets['bar'] * 2
+
+class SecondWA(WorldAdapter):
+    def update_data_sources_and_targets(self):
+        pass
+
+""")
+
+    runtime.reload_code()
+
+    assert 'MyCustomWA' in runtime.get_worldadapters(world_uid)
+    assert 'SecondWA' in runtime.get_worldadapters(world_uid)
+
+    assert default_nodenet in runtime.worlds[world_uid].data['agents']
+    wa = runtime.nodenets[default_nodenet].worldadapter_instance
+    assert wa.get_available_datasources() == ['foo']
+
+    runtime.set_nodenet_properties(default_nodenet, world_uid=world_uid, worldadapter='SecondWA')
+    wa = runtime.nodenets[default_nodenet].worldadapter_instance
+    assert wa.get_available_datasources() == []

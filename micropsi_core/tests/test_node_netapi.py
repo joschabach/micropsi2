@@ -631,36 +631,36 @@ def test_node_netapi_unlink_gate(runtime, test_nodenet):
     assert len(n_d.get_slot('por').get_links()) == 3
 
 
-def test_node_netapi_import_actuators(runtime, test_nodenet, test_world):
+def test_node_netapi_import_actuators(runtime, test_nodenet, default_world):
     # test importing data targets as actuators
     net, netapi, source = prepare(runtime, test_nodenet)
-    runtime.set_nodenet_properties(test_nodenet, world_uid=test_world, worldadapter='Braitenberg')
+    runtime.set_nodenet_properties(test_nodenet, world_uid=default_world, worldadapter='Default')
     root_ns = netapi.get_nodespace(None)
     netapi.import_actuators(root_ns.uid)
     actuators = netapi.get_nodes(root_ns.uid, nodetype="Actuator")
-    assert len(actuators) == 2
+    assert len(actuators) == 1
     assert set([a.get_parameter('datatarget') for a in actuators]) == set(net.worldadapter_instance.datatargets.keys())
 
     # do it again, make sure we can call import multiple times
     netapi.import_actuators(root_ns.uid)
     actuators = netapi.get_nodes(root_ns.uid, nodetype="Actuator")
-    assert len(actuators) == 2
+    assert len(actuators) == 1
 
 
-def test_node_netapi_import_sensors(runtime, test_nodenet, test_world):
+def test_node_netapi_import_sensors(runtime, test_nodenet, default_world):
     # test importing data sources as sensors
     net, netapi, source = prepare(runtime, test_nodenet)
-    runtime.set_nodenet_properties(test_nodenet, world_uid=test_world, worldadapter='Braitenberg')
+    runtime.set_nodenet_properties(test_nodenet, world_uid=default_world, worldadapter='Default')
     root_ns = netapi.get_nodespace(None)
     netapi.import_sensors(root_ns.uid)
     sensors = netapi.get_nodes(root_ns.uid, nodetype="Sensor")
-    assert len(sensors) == 2
+    assert len(sensors) == 3
     assert set([s.get_parameter('datasource') for s in sensors]) == set(net.worldadapter_instance.datasources.keys())
 
     # do it again, make sure we can call import multiple times
     netapi.import_sensors(root_ns.uid)
     sensors = netapi.get_nodes(root_ns.uid, nodetype="Sensor")
-    assert len(sensors) == 2
+    assert len(sensors) == 3
 
 
 def test_autoalign(runtime, test_nodenet):

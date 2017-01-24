@@ -1725,14 +1725,21 @@ def reload_nodefunctions_file(path):
 
 
 def reload_code():
-    from micropsi_core.world.world import DefaultWorld
     global native_modules, custom_recipes, custom_operations, world_classes, worldadapter_classes
+    from micropsi_core.world.world import DefaultWorld
+    from micropsi_core.world.worldadapter import Default
+    world_classes['DefaultWorld'] = DefaultWorld
+    worldadapter_classes['Default'] = Default
+    try:
+        from micropsi_core.world.worldadapter import DefaultArray
+        worldadapter_classes['DefaultArray'] = DefaultArray
+    except ImportError:
+        pass
     native_modules = {}
     custom_recipes = {}
     custom_operations = {}
     runners = {}
     errors = []
-    world_classes['DefaultWorld'] = DefaultWorld
 
     # load builtins:
     from micropsi_core.nodenet.native_modules import nodetypes

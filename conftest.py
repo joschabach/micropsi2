@@ -132,28 +132,17 @@ def runtime():
 
 
 @pytest.yield_fixture(scope="function")
-def test_world(request):
+def default_world(request):
     """
     Fixture: A test world of type Island
     """
     global world_uid
-    success, world_uid = micropsi_runtime.new_world("World of Pain", "Island", "Pytest User")
+    success, world_uid = micropsi_runtime.new_world("World of Pain", "DefaultWorld", "Pytest User")
     yield world_uid
     try:
         micropsi_runtime.delete_world(world_uid)
     except:
         pass
-
-
-@pytest.fixture(scope="function")
-def default_world(request):
-    """
-    Fixture: A test world of type default
-    """
-    for uid in micropsi_runtime.world_data:
-        if micropsi_runtime.world_data[uid].get('world_type', 'DefaultWorld') == 'DefaultWorld':
-            micropsi_runtime.load_world(uid)
-            return uid
 
 
 @pytest.yield_fixture(scope="function")
@@ -172,7 +161,7 @@ def default_nodenet(request):
 
 
 @pytest.yield_fixture(scope="function")
-def test_nodenet(request, test_world, engine):
+def test_nodenet(request, default_world, engine):
     """
     An empty nodenet, with the currently tested engine.
     Use this for tests that should run in both engines

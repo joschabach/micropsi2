@@ -181,7 +181,7 @@ def trpoinpython(X, Y, netapi, node, parameters):
     runtime.set_nodenet_properties(test_nodenet, worldadapter=wa_class.__name__, world_uid=wuid)
     worldadapter = nodenet.worldadapter_instance
 
-    runtime.reload_native_modules()
+    runtime.reload_code()
     return nodenet, netapi, worldadapter
 
 

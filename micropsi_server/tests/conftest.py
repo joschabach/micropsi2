@@ -51,7 +51,7 @@ def pytest_runtest_teardown(item, nextitem):
 
 
 @pytest.fixture()
-def app(test_world):
+def app(default_world):
     return testapp
 
 

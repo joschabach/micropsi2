@@ -412,9 +412,9 @@ def test_get_world_objects(app, default_world):
 def test_add_worldobject(app, default_world):
     response = app.post_json('/rpc/add_worldobject', params={
         'world_uid': default_world,
-        'type': 'Braintree',
+        'type': 'TestObject',
         'position': [10, 10],
-        'name': 'Testtree'
+        'name': 'TestObject'
     })
     assert_success(response)
     uid = response.json_body['data']
@@ -426,9 +426,9 @@ def test_add_worldobject(app, default_world):
 def test_delete_worldobject(app, default_world):
     response = app.post_json('/rpc/add_worldobject', params={
         'world_uid': default_world,
-        'type': 'Braintree',
+        'type': 'TestObject',
         'position': [10, 10],
-        'name': 'Testtree'
+        'name': 'TestObject'
     })
     uid = response.json_body['data']
     response = app.post_json('/rpc/delete_worldobject', params={
@@ -443,9 +443,9 @@ def test_delete_worldobject(app, default_world):
 def test_set_worldobject_properties(app, default_world):
     response = app.post_json('/rpc/add_worldobject', params={
         'world_uid': default_world,
-        'type': 'Braintree',
+        'type': 'TestObject',
         'position': [10, 10],
-        'name': 'Testtree'
+        'name': 'TestObject'
     })
     uid = response.json_body['data']
     response = app.post_json('/rpc/set_worldobject_properties', params={
@@ -534,7 +534,7 @@ def test_revert_world(app, default_world):
     app.set_auth()
     response = app.post_json('/rpc/add_worldobject', params={
         'world_uid': default_world,
-        'type': 'Braintree',
+        'type': 'TestObject',
         'position': [10, 10],
         'name': 'Testtree'
     })
@@ -549,7 +549,7 @@ def test_save_world(app, default_world):
     app.set_auth()
     response = app.post_json('/rpc/add_worldobject', params={
         'world_uid': default_world,
-        'type': 'Braintree',
+        'type': 'TestObject',
         'position': [10, 10],
         'name': 'Testtree'
     })

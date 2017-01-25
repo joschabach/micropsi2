@@ -55,6 +55,7 @@ custom_recipes = {}
 custom_operations = {}
 world_classes = {}
 worldadapter_classes = {}
+worldobject_classes = {}
 
 netapi_consoles = {}
 
@@ -1563,19 +1564,20 @@ def load_user_files(path, reload_nodefunctions=False, errors=[]):
 def parse_world_definitions(path):
     import importlib
     import inspect
-    global world_classes, worldadapter_classes
+    global world_classes, worldadapter_classes, worldobject_classes
     from micropsi_core.world.world import World
+    from micropsi_core.world.worldobject import WorldObject
     from micropsi_core.world.worldadapter import WorldAdapter
     base_path = os.path.dirname(path)
     errors = []
-    reload_worlds = []
     with open(path) as fp:
         try:
             data = json.load(fp)
         except ValueError:
             return "World data in %s/worlds.json not well formed" % path
-        worldfiles = data['worlds']
-        worldadapterfiles = data['worldadapters']
+        worldfiles = data.get('worlds', [])
+        worldadapterfiles = data.get('worldadapters', [])
+        worldobjectfiles = data.get('worldobjects', [])
         dependencies = data.get('dependencies', [])
         for dep in dependencies:
             sys.path.append(dep)
@@ -1609,6 +1611,23 @@ def parse_world_definitions(path):
                 for name, cls in inspect.getmembers(wmodule, inspect.isclass):
                     if WorldAdapter in inspect.getmro(cls) and not inspect.isabstract(cls):
                         worldadapter_classes[name] = cls
+                        # errors.append("Name collision in worldadapters: %s defined more than once" % name)
+            except SyntaxError as e:
+                errors.append("%s in worldadapter file %s, line %d" % (e.__class__.__name__, relpath, e.lineno))
+            except (ImportError, SystemError) as e:
+                errors.append("%s in worldadapter file %s: %s" % (e.__class__.__name__, relpath, str(e)))
+        for w in worldobjectfiles:
+            relpath = os.path.relpath(os.path.join(base_path, w), start=RESOURCE_PATH)
+            name = w[:-3]
+            try:
+                if name in sys.modules:
+                    wmodule = importlib.reload(sys.modules[name])
+                else:
+                    loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
+                    wmodule = loader.load_module()
+                for name, cls in inspect.getmembers(wmodule, inspect.isclass):
+                    if WorldObject in inspect.getmro(cls) and WorldAdapter not in inspect.getmro(cls):
+                        worldobject_classes[name] = cls
                         # errors.append("Name collision in worldadapters: %s defined more than once" % name)
             except SyntaxError as e:
                 errors.append("%s in worldadapter file %s, line %d" % (e.__class__.__name__, relpath, e.lineno))
@@ -1728,8 +1747,10 @@ def reload_code():
     global native_modules, custom_recipes, custom_operations, world_classes, worldadapter_classes
     from micropsi_core.world.world import DefaultWorld
     from micropsi_core.world.worldadapter import Default
+    from micropsi_core.world.worldobject import TestObject
     world_classes['DefaultWorld'] = DefaultWorld
     worldadapter_classes['Default'] = Default
+    worldobject_classes['TestObject'] = TestObject
     try:
         from micropsi_core.world.worldadapter import DefaultArray
         worldadapter_classes['DefaultArray'] = DefaultArray

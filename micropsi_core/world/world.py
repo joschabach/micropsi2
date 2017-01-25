@@ -82,7 +82,8 @@ class World(object):
         folder = '.'.join(folder)
         return {wacls.__name__: wacls for wacls in tools.itersubclasses(worldadapter.WorldAdapter, folder=folder) if wacls.__name__ in cls.supported_worldadapters}
 
-    supported_worldadapters = ['Default']
+    supported_worldadapters = []
+    supported_worldobjects = []
 
     def __init__(self, filename, world_type="", name="", owner="", uid=None, engine=None, version=WORLD_VERSION, config={}):
         """Create a new MicroPsi world environment.
@@ -110,12 +111,7 @@ class World(object):
         folder = '.'.join(folder)
 
         self.supported_worldadapters = {name: cls for name, cls in micropsi_core.runtime.worldadapter_classes.items() if name in self.supported_worldadapters}
-
-        self.supported_worldobjects = { cls.__name__:cls for cls in tools.itersubclasses(worldobject.WorldObject, folder=folder)
-                                        if cls.__name__ not in self.supported_worldadapters}
-        # freaky hack.
-        self.supported_worldobjects.pop('WorldAdapter', None)
-        self.supported_worldobjects['Default'] = worldobject.WorldObject
+        self.supported_worldobjects = {name: cls for name, cls in micropsi_core.runtime.worldobject_classes.items() if name in self.supported_worldobjects}
 
         self.uid = uid or generate_uid()
         self.owner = owner
@@ -333,3 +329,4 @@ class World(object):
 
 class DefaultWorld(World):
     supported_worldadapters = ['Default', 'DefaultArray']
+    supported_worldobjects = ['TestObject']

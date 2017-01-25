@@ -69,3 +69,7 @@ class WorldObject(object):
     def update(self):
         """ Called by the world at each world iteration """
         pass
+
+
+class TestObject(WorldObject):
+    pass

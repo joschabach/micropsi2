@@ -1691,23 +1691,35 @@ def test_get_recorders(app, test_nodenet):
 
 @pytest.mark.engine("theano_engine")
 def test_flow_modules(app, runtime, test_nodenet, resourcepath):
-    import numpy as np
-    from micropsi_core.world.worldadapter import ArrayWorldAdapter
-
-    class SimpleArrayWA(ArrayWorldAdapter):
-        def __init__(self, world, **kwargs):
-            super().__init__(world, **kwargs)
-            self.add_flow_datasource("foo", shape=(2, 3))
-            self.add_flow_datatarget("bar", shape=(2, 3))
-            self.update_data_sources_and_targets()
-
-        def update_data_sources_and_targets(self):
-            for key in self.flow_datatargets:
-                self.flow_datatarget_feedbacks[key] = np.copy(self.flow_datatargets[key])
-            for key in self.flow_datasources:
-                self.flow_datasources[key][:] = np.random.rand(*self.flow_datasources[key].shape)
-
     import os
+    import numpy as np
+    with open(os.path.join(resourcepath, 'worlds.json'), 'w') as fp:
+        fp.write("""{"worlds":["flowworld.py"],"worldadapters":["flowworld.py"]}""")
+
+    with open(os.path.join(resourcepath, 'flowworld.py'), 'w') as fp:
+        fp.write("""
+import numpy as np
+from micropsi_core.world.world import World
+from micropsi_core.world.worldadapter import ArrayWorldAdapter
+
+class FlowWorld(World):
+    supported_worldadapters = ["SimpleArrayWA"]
+
+class SimpleArrayWA(ArrayWorldAdapter):
+    def __init__(self, world, **kwargs):
+        super().__init__(world, **kwargs)
+        self.add_flow_datasource("foo", shape=(2,3))
+        self.add_flow_datatarget("bar", shape=(2,3))
+
+        self.update_data_sources_and_targets()
+
+    def update_data_sources_and_targets(self):
+        for key in self.flow_datatargets:
+            self.flow_datatarget_feedbacks[key] = np.copy(self.flow_datatargets[key])
+        for key in self.flow_datasources:
+            self.flow_datasources[key][:] = np.random.rand(*self.flow_datasources[key].shape)
+""")
+
     with open(os.path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
         fp.write("""
     {"Double": {
@@ -1728,14 +1740,11 @@ def double(inputs, netapi, node, parameters):
     app.set_auth()
     nodenet = runtime.nodenets[test_nodenet]
     netapi = nodenet.netapi
+    runtime.reload_code()
 
-    res, wuid = runtime.new_world("FlowWorld", "DefaultWorld")
-    worldobj = runtime.load_world(wuid)
-    worldobj.supported_worldadapters["SimpleArrayWA"] = SimpleArrayWA
+    res, wuid = runtime.new_world("FlowWorld", "FlowWorld")
     runtime.set_nodenet_properties(test_nodenet, worldadapter="SimpleArrayWA", world_uid=wuid)
     worldadapter = nodenet.worldadapter_instance
-
-    runtime.reload_code()
 
     # create one flow_module, wire to sources & targets
     result = app.post_json('/rpc/add_node', {
@@ -1776,8 +1785,7 @@ def double(inputs, netapi, node, parameters):
 
     assert data['nodenet']['nodes'][flow_uid]
 
-    sources = np.zeros((2, 3), dtype=nodenet.numpyfloatX)
-    sources[:] = np.random.randn(*sources.shape)
+    sources = np.array(np.random.randn(2, 3), dtype=nodenet.numpyfloatX)
     worldadapter.flow_datasources['foo'][:] = sources
 
     runtime.step_nodenet(test_nodenet)

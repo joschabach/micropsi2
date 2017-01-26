@@ -1580,7 +1580,9 @@ def parse_world_definitions(path):
         worldobjectfiles = data.get('worldobjects', [])
         dependencies = data.get('dependencies', [])
         for dep in dependencies:
-            sys.path.append(dep)
+            dep_path = os.path.join(base_path, dep)
+            sys.path.append(dep_path)
+
         for w in worldfiles:
             relpath = os.path.relpath(os.path.join(base_path, w), start=RESOURCE_PATH)
             sys.path.append(base_path)

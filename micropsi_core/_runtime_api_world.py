@@ -125,6 +125,13 @@ def new_world(world_name, world_type, owner="", config={}):
             if micropsi_core.runtime.worlds[uid].__class__.__name__.startswith('Minecraft'):
                 raise RuntimeError("Only one instance of a minecraft environment is supported right now")
 
+    world_class = get_world_class_from_name(world_type)
+
+    # default missing config values
+    for item in world_class.get_config_options():
+        if item['name'] not in config:
+            config[item['name']] = item.get('default')
+
     filename = os.path.join(micropsi_core.runtime.PERSISTENCY_PATH, micropsi_core.runtime.WORLD_DIRECTORY, uid + ".json")
     micropsi_core.runtime.world_data[uid] = Bunch(uid=uid, name=world_name, world_type=world_type, filename=filename,
                     version=world.WORLD_VERSION, owner=owner, config=config)
@@ -132,7 +139,7 @@ def new_world(world_name, world_type, owner="", config={}):
         fp.write(json.dumps(micropsi_core.runtime.world_data[uid], sort_keys=True, indent=4))
     try:
         kwargs = micropsi_core.runtime.world_data[uid]
-        micropsi_core.runtime.worlds[uid] = get_world_class_from_name(world_type)(**kwargs)
+        micropsi_core.runtime.worlds[uid] = world_class(**kwargs)
     except Exception as e:
         os.remove(filename)
         raise e

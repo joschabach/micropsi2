@@ -181,17 +181,12 @@ class Default(WorldAdapter):
 
 
 try:
+    # Only available if numpy is installed
     import numpy as np
 
     # configure dtype for value arrays.
     # TODO: Move this and the config in theano_nodenet to one central point
     from configuration import config as settings
-    precision = settings['theano']['precision']
-    floatX = np.float32
-    if precision == "64":
-        floatX = np.float64
-
-    # Only available if numpy is installed
 
     class ArrayWorldAdapter(WorldAdapter, metaclass=ABCMeta):
         """
@@ -208,34 +203,39 @@ try:
         def __init__(self, world, uid=None, **data):
             WorldAdapter.__init__(self, world, uid=uid, **data)
 
+            precision = settings['theano']['precision']
+            self.floatX = np.float32
+            if precision == "64":
+                self.floatX = np.float64
+
             self.datasource_names = []
             self.datatarget_names = []
             self.flow_datasources = OrderedDict()
             self.flow_datatargets = OrderedDict()
             self.flow_datatarget_feedbacks = OrderedDict()
-            self.datasource_values = np.zeros(0, dtype=floatX)
-            self.datatarget_values = np.zeros(0, dtype=floatX)
-            self.datatarget_feedback_values = np.zeros(0, dtype=floatX)
+            self.datasource_values = np.zeros(0, dtype=self.floatX)
+            self.datatarget_values = np.zeros(0, dtype=self.floatX)
+            self.datatarget_feedback_values = np.zeros(0, dtype=self.floatX)
 
         def add_datasource(self, name, initial_value=0.):
             """ Adds a datasource, and returns the index
             where they were added"""
             self.datasource_names.append(name)
-            self.datasource_values = np.concatenate((self.datasource_values, np.asarray([initial_value], dtype=floatX)))
+            self.datasource_values = np.concatenate((self.datasource_values, np.asarray([initial_value], dtype=self.floatX)))
             return len(self.datasource_names) - 1
 
         def add_datatarget(self, name, initial_value=0.):
             """ Adds a datatarget, and returns the index
             where they were added"""
             self.datatarget_names.append(name)
-            self.datatarget_values = np.concatenate((self.datatarget_values, np.asarray([initial_value], dtype=floatX)))
-            self.datatarget_feedback_values = np.concatenate((self.datatarget_feedback_values, np.asarray([initial_value], dtype=floatX)))
+            self.datatarget_values = np.concatenate((self.datatarget_values, np.asarray([initial_value], dtype=self.floatX)))
+            self.datatarget_feedback_values = np.concatenate((self.datatarget_feedback_values, np.asarray([initial_value], dtype=self.floatX)))
             return len(self.datatarget_names) - 1
 
         def add_flow_datasource(self, name, shape, initial_values=None):
             """ Add a high-dimensional datasource for flowmodules."""
             if initial_values is None:
-                initial_values = np.zeros(shape, dtype=floatX)
+                initial_values = np.zeros(shape, dtype=self.floatX)
 
             self.flow_datasources[name] = initial_values
             return self.flow_datasources[name]
@@ -243,7 +243,7 @@ try:
         def add_flow_datatarget(self, name, shape, initial_values=None):
             """ Add a high-dimensional datatarget for flowmodules"""
             if initial_values is None:
-                initial_values = np.zeros(shape, dtype=floatX)
+                initial_values = np.zeros(shape, dtype=self.floatX)
 
             self.flow_datatargets[name] = initial_values
             self.flow_datatarget_feedbacks[name] = np.zeros_like(initial_values)
@@ -332,17 +332,17 @@ try:
 
         def set_flow_datasource(self, name, values):
             """Set the values of the given flow_datasource """
-            values = np.array(np.reshape(values, self.flow_datasources[name].shape), dtype=floatX)
+            values = np.array(np.reshape(values, self.flow_datasources[name].shape), dtype=self.floatX)
             self.flow_datasources[name] = values
 
         def add_to_flow_datatarget(self, name, values):
             """Add the given values to the given flow_datatarget """
-            values = np.array(np.reshape(values, self.flow_datatargets[name].shape), dtype=floatX)
+            values = np.array(np.reshape(values, self.flow_datatargets[name].shape), dtype=self.floatX)
             self.flow_datatargets[name] += values
 
         def set_flow_datatarget_feedback(self, name, values):
             """Set the values of the given flow_datatarget_feedback """
-            values = np.array(np.reshape(values, self.flow_datatarget_feedbacks[name].shape), dtype=floatX)
+            values = np.array(np.reshape(values, self.flow_datatarget_feedbacks[name].shape), dtype=self.floatX)
             self.flow_datatarget_feedbacks[name] = values
 
         def set_datasource_values(self, values):

@@ -426,10 +426,10 @@ class VrepGreyscaleVisionMixin(WorldAdapterMixin):
     def read_from_world(self):
         super().read_from_world()
         resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_buffer])
-        rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (resolution[0] * resolution[1], 3)).astype(np.float32)
+        rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (resolution[0] * resolution[1], 3)).astype(self.floatX)
 
         luminance = np.sum(rgb_image * np.asarray([.2126, .7152, .0722]), axis=1)
-        y_image = luminance.astype(np.float32).reshape((resolution[0], resolution[1]))[::-1, :]   # todo: npyify and make faster
+        y_image = luminance.astype(self.floatX).reshape((resolution[0], resolution[1]))[::-1, :]   # todo: npyify and make faster
 
         if self.downscale != 0:
             y_image = imresize(y_image*255, size=1./(2**self.downscale), interp='bilinear')  # for greyscale images, scipy.misc.imresize is enough.
@@ -471,7 +471,7 @@ class VrepRGBVisionMixin(WorldAdapterMixin):
         super().read_from_world()
         resolution, image = self.call_vrep(vrep.simxGetVisionSensorImage, [self.clientID, self.observer_handle, 0, vrep.simx_opmode_buffer])
         rgb_image = np.reshape(np.asarray(image, dtype=np.uint8), (
-                               self.vision_resolution[0]*self.downscale_factor, self.vision_resolution[1]*self.downscale_factor, 3)).astype(np.float32)
+                               self.vision_resolution[0]*self.downscale_factor, self.vision_resolution[1]*self.downscale_factor, 3)).astype(self.floatX)
         # rgb_image /= 255.
 
         # smooth & resize the image.

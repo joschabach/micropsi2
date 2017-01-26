@@ -1198,7 +1198,8 @@ class TheanoNodenet(Nodenet):
                 if out:
                     all_outputs.append(out)
                     for idx in thunk['dangling_outputs']:
-                        final_outputs.append(out[idx])
+                        if requested_outputs is None or thunk['outputs'][idx] in requested_outputs:
+                            final_outputs.append(out[idx])
             return final_outputs
 
         compiled.__doc__ = """Compiled subgraph of nodes %s

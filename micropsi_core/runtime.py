@@ -1594,7 +1594,7 @@ def parse_world_definitions(path):
                 for name, cls in inspect.getmembers(wmodule, inspect.isclass):
                     if World in inspect.getmro(cls) and name != "World":
                         world_classes[name] = cls
-                logging.getLogger("system").debug("Found world %s " % name)
+                        logging.getLogger("system").debug("Found world %s " % name)
             except SyntaxError as e:
                 errors.append("%s in world file %s, line %d" % (e.__class__.__name__, relpath, e.lineno))
             except (ImportError, SystemError) as e:

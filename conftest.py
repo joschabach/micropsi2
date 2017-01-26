@@ -56,6 +56,7 @@ def pytest_cmdline_main(config):
         usermanager.start_session('Pytest User', 'test', True)
 
     set_logging_levels()
+    micropsi_runtime.set_runner_properties(1, 1)
 
 
 def pytest_configure(config):

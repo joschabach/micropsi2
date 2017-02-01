@@ -1841,7 +1841,7 @@ def initialize(persistency_path=None, resource_path=None, world_path=None):
 
     PERSISTENCY_PATH = persistency_path or cfg['paths']['persistency_directory']
     RESOURCE_PATH = resource_path or cfg['paths']['agent_directory']
-    WORLD_PATH = resource_path or cfg['paths']['world_directory']
+    WORLD_PATH = world_path or cfg['paths']['world_directory']
 
     sys.path.insert(0, RESOURCE_PATH)
 

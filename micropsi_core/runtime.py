@@ -1555,13 +1555,22 @@ def load_user_files(path, reload_nodefunctions=False, errors=[]):
                 err = reload_nodefunctions_file(abspath)
             elif f == 'operations.py':
                 err = parse_recipe_or_operations_file(abspath, reload_nodefunctions)
-            elif f == 'worlds.json' and abspath.startswith(WORLD_PATH):
+            if err:
+                errors.append(err)
+    return errors
+
+
+def load_world_files(path, errors=[]):
+    for f in os.listdir(path):
+        if not f.startswith('.') and f != '__pycache__':
+            abspath = os.path.join(path, f)
+            err = None
+            if os.path.isdir(abspath):
+                errors.extend(load_world_files(path=abspath, errors=[]))
+            elif f == 'worlds.json':
                 err = parse_world_definitions(abspath)
             if err:
-                if type(err) == list:
-                    errors.extend(err)
-                else:
-                    errors.append(err)
+                errors.extend(err)
     return errors
 
 
@@ -1786,6 +1795,7 @@ def reload_code():
 
     # load code-directory
     errors.extend(load_user_files(RESOURCE_PATH, reload_nodefunctions=True, errors=[]))
+    errors.extend(load_world_files(WORLD_PATH, errors=[]))
 
     # reload native modules in nodenets
     for nodenet_uid in nodenets:
@@ -1833,7 +1843,7 @@ def initialize(persistency_path=None, resource_path=None, world_path=None):
     RESOURCE_PATH = resource_path or cfg['paths']['agent_directory']
     WORLD_PATH = resource_path or cfg['paths']['world_directory']
 
-    sys.path.insert(0, resource_path)
+    sys.path.insert(0, RESOURCE_PATH)
 
     configs = config.ConfigurationManager(cfg['paths']['server_settings_path'])
 

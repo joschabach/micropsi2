@@ -277,7 +277,7 @@ def error_page_500(error):
 @micropsi_app.route("/about")
 def about():
     user_id, permissions, token = get_request_data()
-    return template("about", version=VERSION, user_id=user_id, permissions=permissions)
+    return template("about", version=VERSION, user_id=user_id, permissions=permissions, config=runtime.runtime_info())
 
 
 @micropsi_app.route("/logout")

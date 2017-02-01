@@ -10,7 +10,7 @@ from micropsi_server import usermanagement
 from micropsi_server.micropsi_app import usermanager
 
 user_token = list(usermanager.users['Pytest User']['sessions'].keys())[0]
-test_path = os.path.join(config['paths']['data_directory'], 'user-test-db.json')
+test_path = os.path.join(config['paths']['persistency_directory'], 'user-test-db.json')
 
 
 class MicropsiTestApp(TestApp):

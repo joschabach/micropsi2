@@ -204,8 +204,8 @@ class Nodenet(metaclass=ABCMeta):
             os.mkdir(self.get_persistency_path())
 
     def get_persistency_path(self):
-        from micropsi_core.runtime import RESOURCE_PATH, NODENET_DIRECTORY
-        return os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, self.uid)
+        from micropsi_core.runtime import PERSISTENCY_PATH, NODENET_DIRECTORY
+        return os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, self.uid)
 
     def get_data(self, complete=False, include_links=True):
         """

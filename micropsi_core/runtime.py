@@ -43,6 +43,7 @@ nodenet_lock = threading.Lock()
 # global variables set by intialize()
 RESOURCE_PATH = None
 PERSISTENCY_PATH = None
+WORLD_PATH = None
 
 configs = None
 logger = None
@@ -572,7 +573,7 @@ def delete_nodenet(nodenet_uid):
     if nodenet_uid in nodenets:
         unload_nodenet(nodenet_uid)
     del nodenet_data[nodenet_uid]
-    nodenet_directory = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid)
+    nodenet_directory = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid)
     shutil.rmtree(nodenet_directory)
     return True
 
@@ -1531,7 +1532,10 @@ def load_definitions():
         with open(filename, 'w+', encoding="utf-8") as fp:
             fp.write(json.dumps(world_data[uid], sort_keys=True, indent=4))
     for uid in world_data:
-        world_data[uid].supported_worldadapters = get_world_class_from_name(world_data[uid].get('world_type', "DefaultWorld")).get_supported_worldadapters()
+        try:
+            world_data[uid].supported_worldadapters = get_world_class_from_name(world_data[uid].get('world_type', "DefaultWorld")).get_supported_worldadapters()
+        except KeyError:
+            pass
     return nodenet_data, world_data
 
 
@@ -1551,7 +1555,7 @@ def load_user_files(path, reload_nodefunctions=False, errors=[]):
                 err = reload_nodefunctions_file(abspath)
             elif f == 'operations.py':
                 err = parse_recipe_or_operations_file(abspath, reload_nodefunctions)
-            elif f == 'worlds.json':
+            elif f == 'worlds.json' and abspath.startswith(WORLD_PATH):
                 err = parse_world_definitions(abspath)
             if err:
                 if type(err) == list:
@@ -1584,7 +1588,7 @@ def parse_world_definitions(path):
             sys.path.append(dep_path)
 
         for w in worldfiles:
-            relpath = os.path.relpath(os.path.join(base_path, w), start=RESOURCE_PATH)
+            relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
             sys.path.append(base_path)
             name = w[:-3]
             try:
@@ -1602,7 +1606,7 @@ def parse_world_definitions(path):
             except (ImportError, SystemError) as e:
                 errors.append("%s in world file %s: %s" % (e.__class__.__name__, relpath, str(e)))
         for w in worldadapterfiles:
-            relpath = os.path.relpath(os.path.join(base_path, w), start=RESOURCE_PATH)
+            relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
             name = w[:-3]
             try:
                 if name in sys.modules:
@@ -1619,7 +1623,7 @@ def parse_world_definitions(path):
             except (ImportError, SystemError) as e:
                 errors.append("%s in worldadapter file %s: %s" % (e.__class__.__name__, relpath, str(e)))
         for w in worldobjectfiles:
-            relpath = os.path.relpath(os.path.join(base_path, w), start=RESOURCE_PATH)
+            relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
             name = w[:-3]
             try:
                 if name in sys.modules:
@@ -1816,21 +1820,18 @@ def reload_code():
 def runtime_info():
     return {
         "version": cfg['micropsi2']['version'],
-        "data_directory": cfg['paths']['data_directory']
+        "persistency_directory": cfg['paths']['persistency_directory'],
+        "agent_directory": cfg['paths']['agent_directory'],
+        "world_directory": cfg['paths']['world_directory']
     }
 
 
-def initialize(persistency_path=None, resource_path=None):
-    global PERSISTENCY_PATH, RESOURCE_PATH, configs, logger, runner, initialized
+def initialize(persistency_path=None, resource_path=None, world_path=None):
+    global PERSISTENCY_PATH, RESOURCE_PATH, WORLD_PATH, configs, logger, runner, initialized
 
-    if persistency_path is None:
-        persistency_path = cfg['paths']['data_directory']
-
-    if resource_path is None:
-        resource_path = persistency_path
-
-    PERSISTENCY_PATH = persistency_path
-    RESOURCE_PATH = resource_path
+    PERSISTENCY_PATH = persistency_path or cfg['paths']['persistency_directory']
+    RESOURCE_PATH = resource_path or cfg['paths']['agent_directory']
+    WORLD_PATH = resource_path or cfg['paths']['world_directory']
 
     sys.path.insert(0, resource_path)
 

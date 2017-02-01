@@ -67,6 +67,7 @@ def test_get_available_nodenets(app, test_nodenet):
 
 
 def test_delete_nodenet(app, test_nodenet):
+    app.set_auth()
     response = app.get_json('/rpc/delete_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
     response = app.get_json('/rpc/get_available_nodenets(user_id="Pytest User")')

@@ -12,7 +12,9 @@ import numpy as np
 def prepare(runtime, test_nodenet, default_world, resourcepath, wa_class=None):
     """ Create a bunch of available flowmodules for the following tests """
     import os
-    with open(os.path.join(resourcepath, "Double.py"), 'w') as fp:
+    foodir = os.path.join(resourcepath, 'foobar')
+    os.makedirs(foodir)
+    with open(os.path.join(foodir, "Double.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
     "implementation": "theano",
@@ -224,7 +226,7 @@ def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepat
     assert 'Double' not in metadata['native_modules']
     assert metadata['flow_modules']['Double']['inputs'] == ["inputs"]
     assert metadata['flow_modules']['Double']['outputs'] == ["outputs"]
-
+    assert metadata['flow_modules']['Double']['category'] == 'foobar'
     flowmodule = netapi.create_node("Double", None, "Double")
     assert not hasattr(flowmodule, 'initfunction_ran')
 

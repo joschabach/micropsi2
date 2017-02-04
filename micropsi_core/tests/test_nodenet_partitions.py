@@ -173,16 +173,15 @@ def test_delete_partition_unlinks_native_module(runtime, test_nodenet, resourcep
     netapi = nodenet.netapi
     nodespace, source, register = prepare(netapi)
     import os
-    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
-    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
-    with open(nodetype_file, 'w') as fp:
-        fp.write("""{"Testnode": {
-            "name": "Testnode",
-            "slottypes": ["gen", "foo", "bar"],
-            "nodefunction_name": "testnodefunc",
-            "gatetypes": ["gen", "foo", "bar"]}}""")
-    with open(nodefunc_file, 'w') as fp:
-        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+    with open(os.path.join(resourcepath, 'Test', 'Testnode.py'), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "name": "Testnode",
+    "slottypes": ["gen", "foo", "bar"],
+    "nodefunction_name": "testnodefunc",
+    "gatetypes": ["gen", "foo", "bar"]}
+
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+""")
     runtime.reload_code()
     testnode = netapi.create_node("Testnode", None, "test")
     netapi.link(testnode, 'foo', register, 'gen')
@@ -199,16 +198,15 @@ def test_delete_nodespace_unlinks_native_module(runtime, test_nodenet, resourcep
     nodespace = netapi.create_nodespace(None, "foo")
     foopipe = netapi.create_node("Pipe", nodespace.uid, 'foopipe')
     import os
-    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
-    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
-    with open(nodetype_file, 'w') as fp:
-        fp.write("""{"Testnode": {
-            "name": "Testnode",
-            "slottypes": ["gen", "foo", "bar"],
-            "nodefunction_name": "testnodefunc",
-            "gatetypes": ["gen", "foo", "bar"]}}""")
-    with open(nodefunc_file, 'w') as fp:
-        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+    with open(os.path.join(resourcepath, 'Test', 'foo.py'), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "name": "Testnode",
+    "slottypes": ["gen", "foo", "bar"],
+    "nodefunction_name": "testnodefunc",
+    "gatetypes": ["gen", "foo", "bar"]
+}
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+""")
     runtime.reload_code()
     testnode = netapi.create_node("Testnode", None, "test")
     netapi.link(testnode, 'foo', foopipe, 'sub')

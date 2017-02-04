@@ -63,17 +63,15 @@ def test_plot_from_nodefunc(runtime, test_nodenet, resourcepath):
     assert os.path.isfile(filepath)
     os.remove(filepath)
     os.mkdir(os.path.join(resourcepath, 'plotter'))
-    nodetype_file = os.path.join(resourcepath, "plotter", "nodetypes.json")
-    nodefunc_file = os.path.join(resourcepath, "plotter", "nodefunctions.py")
+    nodetype_file = os.path.join(resourcepath, "plotter", "plotter.py")
     with open(nodetype_file, 'w') as fp:
-        fp.write("""{"Plotter": {
+        fp.write("""nodetype_definition = {
             "name": "Plotter",
             "slottypes": [],
             "nodefunction_name": "plotfunc",
             "gatetypes": [],
-            "parameters": ["plotpath"]}}""")
-    with open(nodefunc_file, 'w') as fp:
-        fp.write("""
+            "parameters": ["plotpath"]}
+
 def plotfunc(netapi, node=None, **params):
     import os
     from random import random

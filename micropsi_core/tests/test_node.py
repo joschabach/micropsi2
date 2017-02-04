@@ -57,29 +57,29 @@ def test_node_positions_as_tuples(runtime, test_nodenet):
 def test_fat_native_modules(runtime, test_nodenet, resourcepath):
     import os
     import numpy as np
-    with open(os.path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
+    with open(os.path.join(resourcepath, 'PhatNM.py'), 'w') as fp:
         fp.write("""
-    {"PhatNM": {
-        "name": "PhatNM",
-        "slottypes": ["gen", "sub", "sur", "A_in", "B_in"],
-        "gatetypes": ["gen", "sub", "sur", "A_out", "B_out"],
-        "nodefunction_name": "phatNM",
-        "symbol": "F",
-        "dimensionality": {
-            "gates": {
-                "A_out": 768,
-                "B_out": 13
-            },
-            "slots": {
-                "A_in": 1024,
-                "B_in": 62
-            }
+nodetype_definition = {
+    "name": "PhatNM",
+    "slottypes": ["gen", "sub", "sur", "A_in", "B_in"],
+    "gatetypes": ["gen", "sub", "sur", "A_out", "B_out"],
+    "nodefunction_name": "phatNM",
+    "symbol": "F",
+    "dimensionality": {
+        "gates": {
+            "A_out": 768,
+            "B_out": 13
+        },
+        "slots": {
+            "A_in": 1024,
+            "B_in": 62
         }
-    }}""")
-    with open(os.path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
-        fp.write("""
+    }
+}
+
 def phatNM(netapi, node, **_):
-    pass""")
+    pass
+""")
 
     runtime.reload_code()
     netapi = runtime.nodenets[test_nodenet].netapi

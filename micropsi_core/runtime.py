@@ -1547,14 +1547,12 @@ def load_user_files(path, reload_nodefunctions=False, errors=[]):
             err = None
             if os.path.isdir(abspath):
                 errors.extend(load_user_files(path=abspath, reload_nodefunctions=reload_nodefunctions, errors=[]))
-            elif f == 'nodetypes.json':
-                err = parse_native_module_file(abspath)
             elif f == 'recipes.py':
                 err = parse_recipe_or_operations_file(abspath, reload_nodefunctions)
-            elif f == 'nodefunctions.py' and reload_nodefunctions:
-                err = reload_nodefunctions_file(abspath)
             elif f == 'operations.py':
                 err = parse_recipe_or_operations_file(abspath, reload_nodefunctions)
+            elif f.endswith(".py") and reload_nodefunctions:
+                err = parse_native_module_file(abspath)
             if err:
                 errors.append(err)
     return errors
@@ -1652,20 +1650,26 @@ def parse_world_definitions(path):
 
 
 def parse_native_module_file(path):
-
+    import importlib
     global native_modules
-    with open(path, encoding="utf-8") as fp:
-        category = os.path.relpath(os.path.dirname(path), start=RESOURCE_PATH)
-        try:
-            modules = json.load(fp)
-        except ValueError:
-            return "Nodetype data in %s/nodetypes.json not well-formed." % category
-        for key in modules:
-            modules[key]['path'] = os.path.join(os.path.dirname(path), 'nodefunctions.py')
-            modules[key]['category'] = category
-            if key in native_modules:
-                logging.getLogger("system").warning("Native module names must be unique. %s is not." % key)
-            native_modules[key] = modules[key]
+    try:
+        relpath = os.path.relpath(path, start=RESOURCE_PATH)
+        loader = importlib.machinery.SourceFileLoader(relpath, path)
+        module = loader.load_module()
+        if hasattr(module, 'nodetype_definition') and type(module.nodetype_definition) == dict:
+            category = os.path.relpath(os.path.dirname(path), start=RESOURCE_PATH)
+            moduledef = module.nodetype_definition
+            moduledef['path'] = path
+            moduledef['category'] = category
+            if moduledef['name'] in native_modules:
+                logging.getLogger("system").warning("Native module names must be unique. %s is not." % moduledef['name'])
+            native_modules[moduledef['name']] = moduledef
+    except SyntaxError as e:
+        return "%s in file %s, line %d" % (e.__class__.__name__, relpath, e.lineno)
+    except (ImportError, SystemError) as e:
+        return "%s in file %s: %s" % (e.__class__.__name__, relpath, str(e))
+    except Exception as e:
+        return "File %s ignored, because %s: %s" % (relpath, e.__class__.__name__, str(e))
 
 
 def parse_recipe_or_operations_file(path, reload=False, category_overwrite=False):
@@ -1738,24 +1742,6 @@ def parse_recipe_or_operations_file(path, reload=False, category_overwrite=False
             if hasattr(func, 'selectioninfo'):
                 data['selectioninfo'] = func.selectioninfo
                 custom_operations[name] = data
-
-
-def reload_nodefunctions_file(path):
-    import importlib
-    import inspect
-    try:
-        loader = importlib.machinery.SourceFileLoader("nodefunctions", path)
-        nodefuncs = loader.load_module()
-        for name, module in inspect.getmembers(nodefuncs, inspect.ismodule):
-            if hasattr(module, '__file__') and module.__file__.startswith(RESOURCE_PATH):
-                loader = importlib.machinery.SourceFileLoader(name, module.__file__)
-                loader.load_module()
-    except SyntaxError as e:
-        relpath = os.path.relpath(path, start=RESOURCE_PATH)
-        return "%s in nodefunction file %s, line %d" % (e.__class__.__name__, relpath, e.lineno)
-    except (ImportError, SystemError) as e:
-        relpath = os.path.relpath(path, start=RESOURCE_PATH)
-        return "%s in nodefunction file %s: %s" % (e.__class__.__name__, relpath, str(e))
 
 
 def reload_code():

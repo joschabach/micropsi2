@@ -89,7 +89,7 @@ def test_set_node_state(app, test_nodenet, resourcepath):
     app.set_auth()
     # create a native module:
 
-    nodetype_file = os.path.join(resourcepath, 'Test', 'testnode.py')
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     with open(nodetype_file, 'w') as fp:
         fp.write("""nodetype_definition = {
             "name": "Testnode",
@@ -1145,7 +1145,7 @@ def test_reload_code(app, test_nodenet, resourcepath):
     app.set_auth()
     # create a native module:
     import os
-    nodetype_file = os.path.join(resourcepath, 'Test', 'testnode.py')
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     with open(nodetype_file, 'w') as fp:
         fp.write("""nodetype_definition = {
             "name": "Testnode",
@@ -1170,7 +1170,7 @@ def test_user_prompt_response(app, test_nodenet, resourcepath):
     app.set_auth()
     # create a native module:
     import os
-    nodetype_file = os.path.join(resourcepath, 'Test', 'testnode.py')
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     with open(nodetype_file, 'w') as fp:
         fp.write("""nodetype_definition = {
             "name": "Testnode",
@@ -1290,7 +1290,8 @@ def test_500(app):
 def test_get_recipes(app, default_nodenet, resourcepath):
     app.set_auth()
     import os
-    recipe_file = os.path.join(resourcepath, 'Test', 'recipes.py')
+    os.mkdir(os.path.join(resourcepath, 'recipes', 'Test'))
+    recipe_file = os.path.join(resourcepath, 'recipes', 'Test', 'recipes.py')
     with open(recipe_file, 'w') as fp:
         fp.write("""
 def foobar(netapi, quatsch=23):
@@ -1308,7 +1309,8 @@ def foobar(netapi, quatsch=23):
 def test_run_recipes(app, test_nodenet, resourcepath):
     app.set_auth()
     import os
-    recipe_file = os.path.join(resourcepath, 'Test', 'recipes.py')
+    os.mkdir(os.path.join(resourcepath, 'recipes', 'Test'))
+    recipe_file = os.path.join(resourcepath, 'recipes', 'Test', 'recipes.py')
     with open(recipe_file, 'w') as fp:
         fp.write("""
 def foobar(netapi, quatsch=23):
@@ -1337,7 +1339,7 @@ def test_get_agent_dashboard(app, test_nodenet, node, default_world):
 def test_nodenet_data_structure(app, test_nodenet, resourcepath, node):
     app.set_auth()
     import os
-    nodetype_file = os.path.join(resourcepath, 'Test', 'testnode.py')
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     with open(nodetype_file, 'w') as fp:
         fp.write("""nodetype_definition = {
             "name": "Testnode",
@@ -1547,7 +1549,7 @@ def test_run_operation(app, test_nodenet, node):
 
 
 @pytest.mark.engine("theano_engine")
-def test_add_gate_activation_recorder(app, test_nodenet, resourcepath):
+def test_add_gate_activation_recorder(app, test_nodenet):
     from micropsi_core import runtime
     app.set_auth()
     nodenet = runtime.nodenets[test_nodenet]
@@ -1570,7 +1572,7 @@ def test_add_gate_activation_recorder(app, test_nodenet, resourcepath):
 
 
 @pytest.mark.engine("theano_engine")
-def test_add_node_activation_recorder(app, test_nodenet, resourcepath):
+def test_add_node_activation_recorder(app, test_nodenet):
     from micropsi_core import runtime
     app.set_auth()
     nodenet = runtime.nodenets[test_nodenet]
@@ -1593,7 +1595,7 @@ def test_add_node_activation_recorder(app, test_nodenet, resourcepath):
 
 
 @pytest.mark.engine("theano_engine")
-def test_add_linkweight_recorder(app, test_nodenet, resourcepath):
+def test_add_linkweight_recorder(app, test_nodenet):
     from micropsi_core import runtime
     app.set_auth()
     nodenet = runtime.nodenets[test_nodenet]
@@ -1624,7 +1626,7 @@ def test_add_linkweight_recorder(app, test_nodenet, resourcepath):
 
 
 @pytest.mark.engine("theano_engine")
-def test_clear_recorder(app, test_nodenet, resourcepath):
+def test_clear_recorder(app, test_nodenet):
     from micropsi_core import runtime
     app.set_auth()
     nodenet = runtime.nodenets[test_nodenet]
@@ -1645,7 +1647,7 @@ def test_clear_recorder(app, test_nodenet, resourcepath):
 
 
 @pytest.mark.engine("theano_engine")
-def test_remove_recorder(app, test_nodenet, resourcepath):
+def test_remove_recorder(app, test_nodenet):
     from micropsi_core import runtime
     app.set_auth()
     nodenet = runtime.nodenets[test_nodenet]
@@ -1721,7 +1723,7 @@ class SimpleArrayWA(ArrayWorldAdapter):
             self.flow_datasources[key][:] = np.random.rand(*self.flow_datasources[key].shape)
 """)
 
-    with open(os.path.join(resourcepath, 'double.py'), 'w') as fp:
+    with open(os.path.join(resourcepath, 'nodetypes', 'double.py'), 'w') as fp:
         fp.write("""
 nodetype_definition = {
         "flow_module": True,

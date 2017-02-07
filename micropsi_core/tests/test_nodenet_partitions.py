@@ -173,7 +173,7 @@ def test_delete_partition_unlinks_native_module(runtime, test_nodenet, resourcep
     netapi = nodenet.netapi
     nodespace, source, register = prepare(netapi)
     import os
-    with open(os.path.join(resourcepath, 'Test', 'Testnode.py'), 'w') as fp:
+    with open(os.path.join(resourcepath, 'nodetypes', 'Test', 'Testnode.py'), 'w') as fp:
         fp.write("""nodetype_definition = {
     "name": "Testnode",
     "slottypes": ["gen", "foo", "bar"],
@@ -198,7 +198,7 @@ def test_delete_nodespace_unlinks_native_module(runtime, test_nodenet, resourcep
     nodespace = netapi.create_nodespace(None, "foo")
     foopipe = netapi.create_node("Pipe", nodespace.uid, 'foopipe')
     import os
-    with open(os.path.join(resourcepath, 'Test', 'foo.py'), 'w') as fp:
+    with open(os.path.join(resourcepath, 'nodetypes', 'Test', 'foo.py'), 'w') as fp:
         fp.write("""nodetype_definition = {
     "name": "Testnode",
     "slottypes": ["gen", "foo", "bar"],
@@ -220,7 +220,7 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
 
 
 @pytest.mark.engine("theano_engine")
-def test_delete_subnodespace_removes_x_partition_links(runtime, test_nodenet, resourcepath):
+def test_delete_subnodespace_removes_x_partition_links(runtime, test_nodenet):
     nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
     nodespace = netapi.create_nodespace(None, "partition", options={'new_partition': True})

@@ -12,7 +12,7 @@ import numpy as np
 def prepare(runtime, test_nodenet, default_world, resourcepath, wa_class=None):
     """ Create a bunch of available flowmodules for the following tests """
     import os
-    foodir = os.path.join(resourcepath, 'foobar')
+    foodir = os.path.join(resourcepath, "nodetypes", 'foobar')
     os.makedirs(foodir)
     with open(os.path.join(foodir, "Double.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
@@ -32,7 +32,7 @@ def double_init(netapi, node, parameters):
 def double(inputs, netapi, node, parameters):
     return inputs * 2
 """)
-    with open(os.path.join(resourcepath, "Add.py"), 'w') as fp:
+    with open(os.path.join(resourcepath, "nodetypes", "Add.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
     "implementation": "theano",
@@ -46,7 +46,7 @@ def double(inputs, netapi, node, parameters):
 def add(input1, input2, netapi, node, parameters):
     return input1 + input2
 """)
-    with open(os.path.join(resourcepath, "Bisect.py"), 'w') as fp:
+    with open(os.path.join(resourcepath, "nodetypes", "Bisect.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
     "implementation": "theano",
@@ -60,7 +60,7 @@ def add(input1, input2, netapi, node, parameters):
 def bisect(inputs, netapi, node, parameters):
     return inputs / 2
 """)
-    with open(os.path.join(resourcepath, "Numpy.py"), 'w') as fp:
+    with open(os.path.join(resourcepath, "nodetypes", "Numpy.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
     "implementation": "python",
@@ -84,7 +84,7 @@ def numpyfunc(inputs, netapi, node, parameters):
         ones[:] = 1.0
         return inputs + ones
 """)
-    with open(os.path.join(resourcepath, "Thetas.py"), 'w') as fp:
+    with open(os.path.join(resourcepath, "nodetypes", "Thetas.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
     "implementation": "theano",
@@ -111,7 +111,7 @@ def thetas(X, netapi, node, parameters):
     else:
         return X
 """)
-    with open(os.path.join(resourcepath, "TwoOutputs.py"), 'w') as fp:
+    with open(os.path.join(resourcepath, "nodetypes", "TwoOutputs.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
     "implementation": "theano",
@@ -125,7 +125,7 @@ def thetas(X, netapi, node, parameters):
 def two_outputs(X, netapi, node, parameters):
     return X, X+1
 """)
-    with open(os.path.join(resourcepath, "TRPOOut.py"), 'w') as fp:
+    with open(os.path.join(resourcepath, "nodetypes", "TRPOOut.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
     "implementation": "theano",
@@ -140,7 +140,7 @@ def trpoout(X, netapi, node, parameters):
     from theano import tensor as T
     return [X, X+1, X*2], T.exp(X)
 """)
-    with open(os.path.join(resourcepath, "TRPOIn.py"), 'w') as fp:
+    with open(os.path.join(resourcepath, "nodetypes", "TRPOIn.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
     "implementation": "theano",
@@ -156,7 +156,7 @@ def trpoin(X, Y, netapi, node, parameters):
         Y += thing
     return Y
 """)
-    with open(os.path.join(resourcepath, "TRPOInPython.py"), 'w') as fp:
+    with open(os.path.join(resourcepath, "nodetypes", "TRPOInPython.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
     "implementation": "python",

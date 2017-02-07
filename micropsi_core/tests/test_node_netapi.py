@@ -1114,7 +1114,7 @@ def test_nodespace_properties(runtime, test_nodenet):
 def test_group_highdim_elements(runtime, test_nodenet, resourcepath):
     import numpy as np
     import os
-    with open(os.path.join(resourcepath, 'testnode.py'), 'w') as fp:
+    with open(os.path.join(resourcepath, 'nodetypes', 'testnode.py'), 'w') as fp:
         fp.write("""
 nodetype_definition = {
     "name": "PhatNM",

@@ -62,8 +62,8 @@ def test_plot_from_nodefunc(runtime, test_nodenet, resourcepath):
     assert os.path.abspath(returnpath) == os.path.abspath(filepath)
     assert os.path.isfile(filepath)
     os.remove(filepath)
-    os.mkdir(os.path.join(resourcepath, 'plotter'))
-    nodetype_file = os.path.join(resourcepath, "plotter", "plotter.py")
+    os.mkdir(os.path.join(resourcepath, 'nodetypes', 'plotter'))
+    nodetype_file = os.path.join(resourcepath, "nodetypes", "plotter", "plotter.py")
     with open(nodetype_file, 'w') as fp:
         fp.write("""nodetype_definition = {
             "name": "Plotter",

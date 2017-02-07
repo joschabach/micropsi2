@@ -57,7 +57,7 @@ def test_node_positions_as_tuples(runtime, test_nodenet):
 def test_fat_native_modules(runtime, test_nodenet, resourcepath):
     import os
     import numpy as np
-    with open(os.path.join(resourcepath, 'PhatNM.py'), 'w') as fp:
+    with open(os.path.join(resourcepath, 'nodetypes', 'PhatNM.py'), 'w') as fp:
         fp.write("""
 nodetype_definition = {
     "name": "PhatNM",

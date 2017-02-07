@@ -45,7 +45,7 @@ def test_new_nodenet(runtime, test_nodenet, resourcepath, engine):
 
 def test_user_prompt(runtime, test_nodenet, resourcepath):
     import os
-    nodetype_file = os.path.join(resourcepath, 'Test', 'testnode.py')
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     nodenet = runtime.nodenets[test_nodenet]
     with open(nodetype_file, 'w') as fp:
         fp.write("""nodetype_definition = {
@@ -279,7 +279,7 @@ def test_modulators_sensor_actuator_connection(runtime, test_nodenet, default_wo
 
 def test_node_parameters(runtime, test_nodenet, resourcepath):
     import os
-    nodetype_file = os.path.join(resourcepath, 'Test', 'testnode.py')
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     with open(nodetype_file, 'w') as fp:
         fp.write("""nodetype_definition = {
     "name": "Testnode",
@@ -337,7 +337,7 @@ def test_delete_linked_nodes(runtime, test_nodenet):
 
 def test_multiple_nodenet_interference(runtime, engine, resourcepath):
     import os
-    nodetype_file = os.path.join(resourcepath, 'Test', 'testnode.py')
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     with open(nodetype_file, 'w') as fp:
         fp.write("""nodetype_definition = {
     "name": "Testnode",
@@ -443,7 +443,7 @@ def test_nodespace_properties(runtime, test_nodenet):
 
 def test_native_module_reload_changes_gates(runtime, test_nodenet, resourcepath):
     import os
-    nodetype_file = os.path.join(resourcepath, 'Test', 'testnode.py')
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     with open(nodetype_file, 'w') as fp:
         fp.write("""nodetype_definition = {
     "name": "Testnode",

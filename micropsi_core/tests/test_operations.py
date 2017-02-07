@@ -4,8 +4,8 @@ from micropsi_core import runtime
 
 def test_user_operation(test_nodenet, resourcepath):
     import os
-    os.makedirs(os.path.join(resourcepath, 'foobar'))
-    with open(os.path.join(resourcepath, 'foobar', 'operations.py'), 'w+') as fp:
+    os.makedirs(os.path.join(resourcepath, 'operations', 'foobar'))
+    with open(os.path.join(resourcepath, 'operations', 'foobar', 'somoperation.py'), 'w+') as fp:
         fp.write("""
 def delete_nodes(netapi, selection):
     for uid in selection:

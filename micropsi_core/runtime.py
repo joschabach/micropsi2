@@ -1546,8 +1546,6 @@ def load_user_files(path, resourcetype, errors=[]):
             if not f.startswith('.') and f != '__pycache__':
                 abspath = os.path.join(path, f)
                 err = None
-                if resourcetype == 'nodetypes':
-                    print(f)
                 if os.path.isdir(abspath):
                     errors.extend(load_user_files(abspath, resourcetype, errors=[]))
                 elif f.endswith(".py"):
@@ -1601,9 +1599,9 @@ def parse_world_definitions(path):
             sys.path.append(base_path)
             name = w[:-3]
             try:
-                if name in sys.modules:
+                try:
                     wmodule = importlib.reload(sys.modules[name])
-                else:
+                except:
                     loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
                     wmodule = loader.load_module()
                 for name, cls in inspect.getmembers(wmodule, inspect.isclass):
@@ -1618,9 +1616,9 @@ def parse_world_definitions(path):
             relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
             name = w[:-3]
             try:
-                if name in sys.modules:
+                try:
                     wmodule = importlib.reload(sys.modules[name])
-                else:
+                except:
                     loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
                     wmodule = loader.load_module()
                 for name, cls in inspect.getmembers(wmodule, inspect.isclass):
@@ -1635,9 +1633,9 @@ def parse_world_definitions(path):
             relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
             name = w[:-3]
             try:
-                if name in sys.modules:
+                try:
                     wmodule = importlib.reload(sys.modules[name])
-                else:
+                except:
                     loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
                     wmodule = loader.load_module()
                 for name, cls in inspect.getmembers(wmodule, inspect.isclass):

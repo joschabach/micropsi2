@@ -152,17 +152,16 @@ def test_reload_code(runtime, test_nodenet, resourcepath):
         return "%s:%s:%s:%s" % (l['source_node_uid'], l['source_gate_name'], l['target_node_uid'], l['target_slot_name'])
     import os
     netapi = runtime.nodenets[test_nodenet].netapi
-    nodetype_file = os.path.join(resourcepath, 'nodetypes.json')
-    nodefunc_file = os.path.join(resourcepath, 'nodefunctions.py')
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'testnode.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write("""{"Testnode": {
+        fp.write("""nodetype_definition = {
             "name": "Testnode",
             "slottypes": ["gen", "foo", "bar"],
             "nodefunction_name": "testnodefunc",
             "gatetypes": ["gen", "foo", "bar"]
-            }}""")
-    with open(nodefunc_file, 'w') as fp:
-        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+            }
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+""")
     runtime.reload_code()
     reg = netapi.create_node("Neuron", None, "reg")
     test = netapi.create_node("Testnode", None, "test")
@@ -179,25 +178,25 @@ def test_reload_code(runtime, test_nodenet, resourcepath):
 
 def test_native_module_and_recipe_categories(runtime, test_nodenet, resourcepath):
     import os
-    os.mkdir(os.path.join(resourcepath, 'Test', 'Test2'))
-    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
-    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
-    recipe_file = os.path.join(resourcepath, 'Test', 'Test2', 'recipes.py')
+    os.makedirs(os.path.join(resourcepath, 'nodetypes', 'Test', 'Test2'))
+    os.makedirs(os.path.join(resourcepath, 'recipes', 'Test', 'Test2'))
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
+    recipe_file = os.path.join(resourcepath, 'recipes', 'Test', 'Test2', 'recipes.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write("""{"Testnode": {
+        fp.write("""nodetype_definition = {
             "name": "Testnode",
             "slottypes": ["gen", "foo", "bar"],
             "nodefunction_name": "testnodefunc",
             "gatetypes": ["gen", "foo", "bar"]
-            }}""")
-    with open(nodefunc_file, 'w') as fp:
-        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+            }
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+""")
     with open(recipe_file, 'w') as fp:
         fp.write("def testrecipe(netapi):\r\n    pass")
     runtime.reload_code()
     res = runtime.get_available_native_module_types(test_nodenet)
     assert res['Testnode']['category'] == 'Test'
-    assert res['Testnode']['line_number'] == 1
+    assert res['Testnode']['line_number'] == 7
     res = runtime.get_available_recipes()
     assert res['testrecipe']['category'] == 'Test/Test2'
 
@@ -217,23 +216,21 @@ def test_ignore_links(runtime, test_nodenet):
 
 def test_remove_and_reload_native_module(runtime, test_nodenet, resourcepath):
     import os
-    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
-    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write("""{"Testnode": {
+        fp.write("""nodetype_definition = {
             "name": "Testnode",
             "slottypes": ["gen", "foo", "bar"],
             "nodefunction_name": "testnodefunc",
             "gatetypes": ["gen", "foo", "bar"],
             "symbol": "t"
-            }}""")
-    with open(nodefunc_file, 'w') as fp:
-        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+            }
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+""")
 
     runtime.reload_code()
     res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10, 10], name="Testnode")
     os.remove(nodetype_file)
-    os.remove(nodefunc_file)
     runtime.reload_code()
     assert 'Testnode' not in runtime.get_available_native_module_types(test_nodenet)
 
@@ -241,19 +238,18 @@ def test_remove_and_reload_native_module(runtime, test_nodenet, resourcepath):
 @pytest.mark.engine("dict_engine")
 def test_engine_specific_nodetype_dict(runtime, test_nodenet, resourcepath):
     import os
-    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
-    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write("""{"Testnode": {
+        fp.write("""nodetype_definition = {
             "engine": "theano_engine",
             "name": "Testnode",
             "slottypes": ["gen", "foo", "bar"],
             "nodefunction_name": "testnodefunc",
             "gatetypes": ["gen", "foo", "bar"],
             "symbol": "t"
-            }}""")
-    with open(nodefunc_file, 'w') as fp:
-        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+            }
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+""")
 
     runtime.reload_code()
     res, data = runtime.get_nodenet_metadata(test_nodenet)
@@ -263,19 +259,18 @@ def test_engine_specific_nodetype_dict(runtime, test_nodenet, resourcepath):
 @pytest.mark.engine("theano_engine")
 def test_engine_specific_nodetype_theano(runtime, test_nodenet, resourcepath):
     import os
-    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
-    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write("""{"Testnode": {
+        fp.write("""nodetype_definition = {
             "engine": "dict_engine",
             "name": "Testnode",
             "slottypes": ["gen", "foo", "bar"],
             "nodefunction_name": "testnodefunc",
             "gatetypes": ["gen", "foo", "bar"],
             "symbol": "t"
-            }}""")
-    with open(nodefunc_file, 'w') as fp:
-        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+            }
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+""")
 
     runtime.reload_code()
     res, data = runtime.get_nodenet_metadata(test_nodenet)
@@ -293,7 +288,8 @@ def test_node_parameters_none_resets_to_default(runtime, test_nodenet):
 
 def test_get_recipes(runtime, test_nodenet, resourcepath):
     import os
-    recipe_file = os.path.join(resourcepath, 'Test', 'recipes.py')
+    os.makedirs(os.path.join(resourcepath, 'recipes', 'Test'))
+    recipe_file = os.path.join(resourcepath, 'recipes', 'Test', 'recipes.py')
     with open(recipe_file, 'w') as fp:
         fp.write("""
 def testfoo(netapi, count=23):
@@ -309,7 +305,8 @@ def testfoo(netapi, count=23):
 
 def test_run_recipe(runtime, test_nodenet, resourcepath):
     import os
-    recipe_file = os.path.join(resourcepath, 'Test', 'recipes.py')
+    os.makedirs(os.path.join(resourcepath, 'recipes', 'Test'))
+    recipe_file = os.path.join(resourcepath, 'recipes', 'Test', 'recipes.py')
     with open(recipe_file, 'w') as fp:
         fp.write("""
 def testfoo(netapi, count=23):
@@ -323,10 +320,9 @@ def testfoo(netapi, count=23):
 
 def test_node_parameter_defaults(runtime, test_nodenet, resourcepath):
     import os
-    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
-    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write("""{"Testnode": {
+        fp.write("""nodetype_definition = {
             "name": "Testnode",
             "slottypes": ["gen", "foo", "bar"],
             "gatetypes": ["gen", "foo", "bar"],
@@ -335,9 +331,9 @@ def test_node_parameter_defaults(runtime, test_nodenet, resourcepath):
             "parameter_defaults": {
                 "testparam": 13
               }
-            }}""")
-    with open(nodefunc_file, 'w') as fp:
-        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+            }
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+""")
 
     runtime.reload_code()
     res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10, 10], name="Test")
@@ -347,10 +343,9 @@ def test_node_parameter_defaults(runtime, test_nodenet, resourcepath):
 
 def test_node_parameters_from_persistence(runtime, test_nodenet, resourcepath):
     import os
-    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
-    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write("""{"Testnode": {
+        fp.write("""nodetype_definition = {
             "name": "Testnode",
             "slottypes": ["gen", "foo", "bar"],
             "gatetypes": ["gen", "foo", "bar"],
@@ -359,9 +354,9 @@ def test_node_parameters_from_persistence(runtime, test_nodenet, resourcepath):
             "parameter_defaults": {
                 "testparam": 13
               }
-            }}""")
-    with open(nodefunc_file, 'w') as fp:
-        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+            }
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+""")
     runtime.reload_code()
     res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10, 10], name="Test")
     node = runtime.nodenets[test_nodenet].get_node(uid)

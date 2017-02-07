@@ -12,107 +12,66 @@ import numpy as np
 def prepare(runtime, test_nodenet, default_world, resourcepath, wa_class=None):
     """ Create a bunch of available flowmodules for the following tests """
     import os
-    with open(os.path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
-        fp.write("""
-    {"Double": {
-        "flow_module": true,
-        "implementation": "theano",
-        "name": "Double",
-        "build_function_name": "double",
-        "init_function_name": "double_init",
-        "inputs": ["inputs"],
-        "outputs": ["outputs"],
-        "inputdims": [1]
-    },
-    "Add": {
-        "flow_module": true,
-        "implementation": "theano",
-        "name": "Add",
-        "build_function_name": "add",
-        "inputs": ["input1", "input2"],
-        "outputs": ["outputs"],
-        "inputdims": [1, 1]
-    },
-    "Bisect": {
-        "flow_module": true,
-        "implementation": "theano",
-        "name": "Bisect",
-        "build_function_name": "bisect",
-        "inputs": ["inputs"],
-        "outputs": ["outputs"],
-        "inputdims": [1]
-    },
-    "Numpy": {
-        "flow_module": true,
-        "implementation": "python",
-        "name": "Numpy",
-        "init_function_name": "numpyfunc_init",
-        "run_function_name": "numpyfunc",
-        "inputs": ["inputs"],
-        "outputs": ["outputs"],
-        "inputdims": [1],
-        "parameters": ["no_return_flag"]
-    },
-    "Thetas": {
-        "flow_module": true,
-        "implementation": "theano",
-        "name": "Thetas",
-        "init_function_name": "thetas_init",
-        "build_function_name": "thetas",
-        "parameters": ["weights_shape", "use_thetas"],
-        "inputs": ["X"],
-        "outputs": ["Y"],
-        "inputdims": [1]
-    },
-    "TwoOutputs":{
-        "flow_module": true,
-        "implementation": "theano",
-        "name": "TwoOutputs",
-        "build_function_name": "two_outputs",
-        "inputs": ["X"],
-        "outputs": ["A", "B"],
-        "inputdims": [1]
-    },
-    "TRPOOut":{
-        "flow_module": true,
-        "implementation": "theano",
-        "name": "TRPOOut",
-        "build_function_name": "trpoout",
-        "inputs": ["X"],
-        "outputs": ["Y", "Z"],
-        "inputdims": [1]
-    },
-    "TRPOIn":{
-        "flow_module": true,
-        "implementation": "theano",
-        "name": "TRPOIn",
-        "build_function_name": "trpoin",
-        "inputs": ["Y", "Z"],
-        "outputs": ["A"],
-        "inputdims": ["list", 1]
-    },
-    "TRPOInPython":{
-        "flow_module": true,
-        "implementation": "python",
-        "name": "TRPOIn",
-        "run_function_name": "trpoinpython",
-        "inputs": ["Y", "Z"],
-        "outputs": ["A"],
-        "inputdims": ["list", 1]
-    }}""")
-    with open(os.path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
-        fp.write("""
+    foodir = os.path.join(resourcepath, "nodetypes", 'foobar')
+    os.makedirs(foodir)
+    with open(os.path.join(foodir, "Double.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "theano",
+    "name": "Double",
+    "build_function_name": "double",
+    "init_function_name": "double_init",
+    "inputs": ["inputs"],
+    "outputs": ["outputs"],
+    "inputdims": [1]
+}
+
 def double_init(netapi, node, parameters):
     node.initfunction_ran = True
 
 def double(inputs, netapi, node, parameters):
     return inputs * 2
+""")
+    with open(os.path.join(resourcepath, "nodetypes", "Add.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "theano",
+    "name": "Add",
+    "build_function_name": "add",
+    "inputs": ["input1", "input2"],
+    "outputs": ["outputs"],
+    "inputdims": [1, 1]
+}
 
 def add(input1, input2, netapi, node, parameters):
     return input1 + input2
+""")
+    with open(os.path.join(resourcepath, "nodetypes", "Bisect.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "theano",
+    "name": "Bisect",
+    "build_function_name": "bisect",
+    "inputs": ["inputs"],
+    "outputs": ["outputs"],
+    "inputdims": [1]
+}
 
 def bisect(inputs, netapi, node, parameters):
     return inputs / 2
+""")
+    with open(os.path.join(resourcepath, "nodetypes", "Numpy.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "python",
+    "name": "Numpy",
+    "init_function_name": "numpyfunc_init",
+    "run_function_name": "numpyfunc",
+    "inputs": ["inputs"],
+    "outputs": ["outputs"],
+    "inputdims": [1],
+    "parameters": ["no_return_flag"]
+}
 
 def numpyfunc_init(netapi, node, parameters):
     node.initfunction_ran = True
@@ -124,6 +83,19 @@ def numpyfunc(inputs, netapi, node, parameters):
         ones = np.zeros_like(inputs)
         ones[:] = 1.0
         return inputs + ones
+""")
+    with open(os.path.join(resourcepath, "nodetypes", "Thetas.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "theano",
+    "name": "Thetas",
+    "init_function_name": "thetas_init",
+    "build_function_name": "thetas",
+    "parameters": ["weights_shape", "use_thetas"],
+    "inputs": ["X"],
+    "outputs": ["Y"],
+    "inputdims": [1]
+}
 
 def thetas_init(netapi, node, parameters):
     import numpy as np
@@ -138,18 +110,62 @@ def thetas(X, netapi, node, parameters):
         return X * node.get_theta('weights') + node.get_theta('bias')
     else:
         return X
+""")
+    with open(os.path.join(resourcepath, "nodetypes", "TwoOutputs.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "theano",
+    "name": "TwoOutputs",
+    "build_function_name": "two_outputs",
+    "inputs": ["X"],
+    "outputs": ["A", "B"],
+    "inputdims": [1]
+}
 
 def two_outputs(X, netapi, node, parameters):
     return X, X+1
+""")
+    with open(os.path.join(resourcepath, "nodetypes", "TRPOOut.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "theano",
+    "name": "TRPOOut",
+    "build_function_name": "trpoout",
+    "inputs": ["X"],
+    "outputs": ["Y", "Z"],
+    "inputdims": [1]
+}
 
 def trpoout(X, netapi, node, parameters):
     from theano import tensor as T
     return [X, X+1, X*2], T.exp(X)
+""")
+    with open(os.path.join(resourcepath, "nodetypes", "TRPOIn.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "theano",
+    "name": "TRPOIn",
+    "build_function_name": "trpoin",
+    "inputs": ["Y", "Z"],
+    "outputs": ["A"],
+    "inputdims": ["list", 1]
+}
 
 def trpoin(X, Y, netapi, node, parameters):
     for thing in X:
         Y += thing
     return Y
+""")
+    with open(os.path.join(resourcepath, "nodetypes", "TRPOInPython.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "python",
+    "name": "TRPOInPython",
+    "run_function_name": "trpoinpython",
+    "inputs": ["Y", "Z"],
+    "outputs": ["A"],
+    "inputdims": ["list", 1]
+}
 
 def trpoinpython(X, Y, netapi, node, parameters):
     for thing in X:
@@ -210,7 +226,7 @@ def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepat
     assert 'Double' not in metadata['native_modules']
     assert metadata['flow_modules']['Double']['inputs'] == ["inputs"]
     assert metadata['flow_modules']['Double']['outputs'] == ["outputs"]
-
+    assert metadata['flow_modules']['Double']['category'] == 'foobar'
     flowmodule = netapi.create_node("Double", None, "Double")
     assert not hasattr(flowmodule, 'initfunction_ran')
 

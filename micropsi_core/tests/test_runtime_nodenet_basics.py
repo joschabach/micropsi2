@@ -45,22 +45,21 @@ def test_new_nodenet(runtime, test_nodenet, resourcepath, engine):
 
 def test_user_prompt(runtime, test_nodenet, resourcepath):
     import os
-    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
-    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     nodenet = runtime.nodenets[test_nodenet]
     with open(nodetype_file, 'w') as fp:
-        fp.write("""{"Testnode": {
-            "name": "Testnode",
-            "slottypes": ["gen", "foo", "bar"],
-            "gatetypes": ["gen", "foo", "bar"],
-            "nodefunction_name": "testnodefunc",
-            "parameters": ["testparam"],
-            "parameter_defaults": {
-                "testparam": 13
-              }
-            }}""")
-    with open(nodefunc_file, 'w') as fp:
-        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+        fp.write("""nodetype_definition = {
+    "name": "Testnode",
+    "slottypes": ["gen", "foo", "bar"],
+    "gatetypes": ["gen", "foo", "bar"],
+    "nodefunction_name": "testnodefunc",
+    "parameters": ["testparam"],
+    "parameter_defaults": {
+        "testparam": 13
+      }
+    }
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+""")
 
     runtime.reload_code()
     res, node_uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test")
@@ -280,26 +279,25 @@ def test_modulators_sensor_actuator_connection(runtime, test_nodenet, default_wo
 
 def test_node_parameters(runtime, test_nodenet, resourcepath):
     import os
-    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
-    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write("""{"Testnode": {
-            "name": "Testnode",
-            "slottypes": ["gen", "foo", "bar"],
-            "gatetypes": ["gen", "foo", "bar"],
-            "nodefunction_name": "testnodefunc",
-            "parameters": ["linktype", "threshold", "protocol_mode"],
-            "parameter_values": {
-                "linktype": ["catexp", "subsur"],
-                "protocol_mode": ["all_active", "most_active_one"]
-            },
-            "parameter_defaults": {
-                "linktype": "catexp",
-                "protocol_mode": "all_active"
-            }}
-        }""")
-    with open(nodefunc_file, 'w') as fp:
-        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+        fp.write("""nodetype_definition = {
+    "name": "Testnode",
+    "slottypes": ["gen", "foo", "bar"],
+    "gatetypes": ["gen", "foo", "bar"],
+    "nodefunction_name": "testnodefunc",
+    "parameters": ["linktype", "threshold", "protocol_mode"],
+    "parameter_values": {
+        "linktype": ["catexp", "subsur"],
+        "protocol_mode": ["all_active", "most_active_one"]
+    },
+    "parameter_defaults": {
+        "linktype": "catexp",
+        "protocol_mode": "all_active"
+    }
+}
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+""")
 
     assert runtime.reload_code()
     res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test", parameters={"threshold": "", "protocol_mode": "most_active_one"})
@@ -339,18 +337,16 @@ def test_delete_linked_nodes(runtime, test_nodenet):
 
 def test_multiple_nodenet_interference(runtime, engine, resourcepath):
     import os
-    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
-    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write("""{"Testnode": {
-            "name": "Testnode",
-            "slottypes": ["gen", "foo", "bar"],
-            "gatetypes": ["gen", "foo", "bar"],
-            "nodefunction_name": "testnodefunc"
-        }}""")
-    with open(nodefunc_file, 'w') as fp:
-        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    node.get_gate('gen').gate_function(17)")
-
+        fp.write("""nodetype_definition = {
+    "name": "Testnode",
+    "slottypes": ["gen", "foo", "bar"],
+    "gatetypes": ["gen", "foo", "bar"],
+    "nodefunction_name": "testnodefunc"
+}
+def testnodefunc(netapi, node=None, **prams):\r\n    node.get_gate('gen').gate_function(17)
+""")
     runtime.reload_code()
 
     result, n1_uid = runtime.new_nodenet('Net1', engine=engine, owner='Pytest User')
@@ -447,17 +443,16 @@ def test_nodespace_properties(runtime, test_nodenet):
 
 def test_native_module_reload_changes_gates(runtime, test_nodenet, resourcepath):
     import os
-    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
-    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write("""{"Testnode": {
-            "name": "Testnode",
-            "slottypes": ["gen", "foo", "bar"],
-            "gatetypes": ["gen", "foo", "bar"],
-            "nodefunction_name": "testnodefunc"
-            }}""")
-    with open(nodefunc_file, 'w') as fp:
-        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+        fp.write("""nodetype_definition = {
+    "name": "Testnode",
+    "slottypes": ["gen", "foo", "bar"],
+    "gatetypes": ["gen", "foo", "bar"],
+    "nodefunction_name": "testnodefunc"
+}
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+""")
 
     assert runtime.reload_code()
     res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test", parameters={"threshold": "", "protocol_mode": "most_active_one"})
@@ -465,12 +460,14 @@ def test_native_module_reload_changes_gates(runtime, test_nodenet, resourcepath)
     runtime.add_link(test_nodenet, neuron_uid, 'gen', uid, 'gen')
     runtime.add_link(test_nodenet, uid, 'gen', neuron_uid, 'gen')
     with open(nodetype_file, 'w') as fp:
-        fp.write("""{"Testnode": {
-            "name": "Testnode",
-            "slottypes": ["foo", "bar"],
-            "gatetypes": ["foo", "bar"],
-            "nodefunction_name": "testnodefunc"
-            }}""")
+        fp.write("""nodetype_definition = {
+    "name": "Testnode",
+    "slottypes": ["foo", "bar"],
+    "gatetypes": ["foo", "bar"],
+    "nodefunction_name": "testnodefunc"
+}
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+""")
     assert runtime.reload_code()
     nativemodule = runtime.nodenets[test_nodenet].get_node(uid)
     assert nativemodule.get_gate_types() == ["foo", "bar"]

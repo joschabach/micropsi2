@@ -89,18 +89,18 @@ def test_set_node_state(app, test_nodenet, resourcepath):
     app.set_auth()
     # create a native module:
 
-    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
-    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write("""{"Testnode": {
+        fp.write("""nodetype_definition = {
             "name": "Testnode",
             "slottypes": ["gen", "foo", "bar"],
             "nodefunction_name": "testnodefunc",
             "gatetypes": ["gen", "foo", "bar"],
-            "symbol": "t"}}""")
+            "symbol": "t"}
 
-    with open(nodefunc_file, 'w') as fp:
-        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+def testnodefunc(netapi, node=None, **prams):
+    return 17
+""")
 
     response = app.get_json('/rpc/reload_code()')
     assert_success(response)
@@ -1145,17 +1145,17 @@ def test_reload_code(app, test_nodenet, resourcepath):
     app.set_auth()
     # create a native module:
     import os
-    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
-    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write("""{"Testnode": {
+        fp.write("""nodetype_definition = {
             "name": "Testnode",
             "slottypes": ["gen", "foo", "bar"],
             "nodefunction_name": "testnodefunc",
             "gatetypes": ["gen", "foo", "bar"],
-            "symbol": "t"}}""")
-    with open(nodefunc_file, 'w') as fp:
-        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+            "symbol": "t"}
+
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+""")
     response = app.get_json('/rpc/reload_code()')
     assert_success(response)
     response = app.get_json('/rpc/get_available_node_types(nodenet_uid="%s")' % test_nodenet)
@@ -1170,17 +1170,17 @@ def test_user_prompt_response(app, test_nodenet, resourcepath):
     app.set_auth()
     # create a native module:
     import os
-    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
-    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write("""{"Testnode": {
+        fp.write("""nodetype_definition = {
             "name": "Testnode",
             "slottypes": ["gen", "foo", "bar"],
             "nodefunction_name": "testnodefunc",
             "gatetypes": ["gen", "foo", "bar"],
-            "symbol": "t"}}""")
-    with open(nodefunc_file, 'w') as fp:
-        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+            "symbol": "t"}
+
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+""")
     response = app.get_json('/rpc/reload_code()')
     assert_success(response)
 
@@ -1290,7 +1290,8 @@ def test_500(app):
 def test_get_recipes(app, default_nodenet, resourcepath):
     app.set_auth()
     import os
-    recipe_file = os.path.join(resourcepath, 'Test', 'recipes.py')
+    os.mkdir(os.path.join(resourcepath, 'recipes', 'Test'))
+    recipe_file = os.path.join(resourcepath, 'recipes', 'Test', 'recipes.py')
     with open(recipe_file, 'w') as fp:
         fp.write("""
 def foobar(netapi, quatsch=23):
@@ -1308,7 +1309,8 @@ def foobar(netapi, quatsch=23):
 def test_run_recipes(app, test_nodenet, resourcepath):
     app.set_auth()
     import os
-    recipe_file = os.path.join(resourcepath, 'Test', 'recipes.py')
+    os.mkdir(os.path.join(resourcepath, 'recipes', 'Test'))
+    recipe_file = os.path.join(resourcepath, 'recipes', 'Test', 'recipes.py')
     with open(recipe_file, 'w') as fp:
         fp.write("""
 def foobar(netapi, quatsch=23):
@@ -1337,17 +1339,17 @@ def test_get_agent_dashboard(app, test_nodenet, node, default_world):
 def test_nodenet_data_structure(app, test_nodenet, resourcepath, node):
     app.set_auth()
     import os
-    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
-    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     with open(nodetype_file, 'w') as fp:
-        fp.write("""{"Testnode": {
+        fp.write("""nodetype_definition = {
             "name": "Testnode",
             "slottypes": ["gen", "foo", "bar"],
             "nodefunction_name": "testnodefunc",
             "gatetypes": ["gen", "foo", "bar"],
-            "symbol": "t"}}""")
-    with open(nodefunc_file, 'w') as fp:
-        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+            "symbol": "t"}
+
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+""")
     response = app.get_json('/rpc/reload_code()')
     response = app.post_json('/rpc/add_nodespace', params={
         'nodenet_uid': test_nodenet,
@@ -1547,7 +1549,7 @@ def test_run_operation(app, test_nodenet, node):
 
 
 @pytest.mark.engine("theano_engine")
-def test_add_gate_activation_recorder(app, test_nodenet, resourcepath):
+def test_add_gate_activation_recorder(app, test_nodenet):
     from micropsi_core import runtime
     app.set_auth()
     nodenet = runtime.nodenets[test_nodenet]
@@ -1570,7 +1572,7 @@ def test_add_gate_activation_recorder(app, test_nodenet, resourcepath):
 
 
 @pytest.mark.engine("theano_engine")
-def test_add_node_activation_recorder(app, test_nodenet, resourcepath):
+def test_add_node_activation_recorder(app, test_nodenet):
     from micropsi_core import runtime
     app.set_auth()
     nodenet = runtime.nodenets[test_nodenet]
@@ -1593,7 +1595,7 @@ def test_add_node_activation_recorder(app, test_nodenet, resourcepath):
 
 
 @pytest.mark.engine("theano_engine")
-def test_add_linkweight_recorder(app, test_nodenet, resourcepath):
+def test_add_linkweight_recorder(app, test_nodenet):
     from micropsi_core import runtime
     app.set_auth()
     nodenet = runtime.nodenets[test_nodenet]
@@ -1624,7 +1626,7 @@ def test_add_linkweight_recorder(app, test_nodenet, resourcepath):
 
 
 @pytest.mark.engine("theano_engine")
-def test_clear_recorder(app, test_nodenet, resourcepath):
+def test_clear_recorder(app, test_nodenet):
     from micropsi_core import runtime
     app.set_auth()
     nodenet = runtime.nodenets[test_nodenet]
@@ -1645,7 +1647,7 @@ def test_clear_recorder(app, test_nodenet, resourcepath):
 
 
 @pytest.mark.engine("theano_engine")
-def test_remove_recorder(app, test_nodenet, resourcepath):
+def test_remove_recorder(app, test_nodenet):
     from micropsi_core import runtime
     app.set_auth()
     nodenet = runtime.nodenets[test_nodenet]
@@ -1721,19 +1723,18 @@ class SimpleArrayWA(ArrayWorldAdapter):
             self.flow_datasources[key][:] = np.random.rand(*self.flow_datasources[key].shape)
 """)
 
-    with open(os.path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
+    with open(os.path.join(resourcepath, 'nodetypes', 'double.py'), 'w') as fp:
         fp.write("""
-    {"Double": {
-        "flow_module": true,
+nodetype_definition = {
+        "flow_module": True,
         "implementation": "theano",
         "name": "Double",
         "build_function_name" : "double",
         "inputs": ["inputs"],
         "outputs": ["outputs"],
         "inputdims": [2]
-    }}""")
-    with open(os.path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
-        fp.write("""
+    }
+
 def double(inputs, netapi, node, parameters):
     return inputs * 2
 """)

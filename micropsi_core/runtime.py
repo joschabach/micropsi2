@@ -1539,24 +1539,22 @@ def load_definitions():
     return nodenet_data, world_data
 
 
-def load_user_files(path, reload_nodefunctions=False, errors=[]):
+def load_user_files(path, resourcetype, errors=[]):
     global native_modules, custom_recipes
-    for f in os.listdir(path):
-        if not f.startswith('.') and f != '__pycache__':
-            abspath = os.path.join(path, f)
-            err = None
-            if os.path.isdir(abspath):
-                errors.extend(load_user_files(path=abspath, reload_nodefunctions=reload_nodefunctions, errors=[]))
-            elif f == 'nodetypes.json':
-                err = parse_native_module_file(abspath)
-            elif f == 'recipes.py':
-                err = parse_recipe_or_operations_file(abspath, reload_nodefunctions)
-            elif f == 'nodefunctions.py' and reload_nodefunctions:
-                err = reload_nodefunctions_file(abspath)
-            elif f == 'operations.py':
-                err = parse_recipe_or_operations_file(abspath, reload_nodefunctions)
-            if err:
-                errors.append(err)
+    if os.path.isdir(path):
+        for f in os.listdir(path):
+            if not f.startswith('.') and f != '__pycache__':
+                abspath = os.path.join(path, f)
+                err = None
+                if os.path.isdir(abspath):
+                    errors.extend(load_user_files(abspath, resourcetype, errors=[]))
+                elif f.endswith(".py"):
+                    if resourcetype == 'recipes' or resourcetype == 'operations':
+                        err = parse_recipe_or_operations_file(abspath, resourcetype)
+                    elif resourcetype == 'nodetypes':
+                        err = parse_native_module_file(abspath)
+                if err:
+                    errors.append(err)
     return errors
 
 
@@ -1652,34 +1650,40 @@ def parse_world_definitions(path):
 
 
 def parse_native_module_file(path):
-
+    import importlib
     global native_modules
-    with open(path, encoding="utf-8") as fp:
-        category = os.path.relpath(os.path.dirname(path), start=RESOURCE_PATH)
-        try:
-            modules = json.load(fp)
-        except ValueError:
-            return "Nodetype data in %s/nodetypes.json not well-formed." % category
-        for key in modules:
-            modules[key]['path'] = os.path.join(os.path.dirname(path), 'nodefunctions.py')
-            modules[key]['category'] = category
-            if key in native_modules:
-                logging.getLogger("system").warning("Native module names must be unique. %s is not." % key)
-            native_modules[key] = modules[key]
+    try:
+        base_path = os.path.join(RESOURCE_PATH, 'nodetypes')
+        relpath = os.path.relpath(path, start=base_path)
+        loader = importlib.machinery.SourceFileLoader(relpath, path)
+        module = loader.load_module()
+        if hasattr(module, 'nodetype_definition') and type(module.nodetype_definition) == dict:
+            category = os.path.relpath(os.path.dirname(path), start=base_path)
+            moduledef = module.nodetype_definition
+            moduledef['path'] = path
+            moduledef['category'] = category
+            if moduledef['name'] in native_modules:
+                logging.getLogger("system").warning("Native module names must be unique. %s is not." % moduledef['name'])
+            native_modules[moduledef['name']] = moduledef
+    except SyntaxError as e:
+        return "%s in file %s, line %d" % (e.__class__.__name__, relpath, e.lineno)
+    except (ImportError, SystemError) as e:
+        return "%s in file %s: %s" % (e.__class__.__name__, relpath, str(e))
+    except Exception as e:
+        return "File %s ignored, because %s: %s" % (relpath, e.__class__.__name__, str(e))
 
 
-def parse_recipe_or_operations_file(path, reload=False, category_overwrite=False):
+def parse_recipe_or_operations_file(path, mode, category_overwrite=False):
     global custom_recipes
     import importlib
     import inspect
 
-    category = category_overwrite or os.path.relpath(os.path.dirname(path), start=RESOURCE_PATH)
+    base_path = os.path.join(RESOURCE_PATH, mode)
+    category = category_overwrite or os.path.relpath(os.path.dirname(path), start=base_path)
     if category == '.':
         category == ''  # relapth in rootfolder
-    relpath = os.path.relpath(path, start=RESOURCE_PATH)
+    relpath = os.path.relpath(path, start=base_path)
     name = os.path.basename(path)[:-3]
-
-    mode = 'recipes' if os.path.basename(path).startswith('recipes') else 'operations'
 
     try:
         loader = importlib.machinery.SourceFileLoader(name, path)
@@ -1740,24 +1744,6 @@ def parse_recipe_or_operations_file(path, reload=False, category_overwrite=False
                 custom_operations[name] = data
 
 
-def reload_nodefunctions_file(path):
-    import importlib
-    import inspect
-    try:
-        loader = importlib.machinery.SourceFileLoader("nodefunctions", path)
-        nodefuncs = loader.load_module()
-        for name, module in inspect.getmembers(nodefuncs, inspect.ismodule):
-            if hasattr(module, '__file__') and module.__file__.startswith(RESOURCE_PATH):
-                loader = importlib.machinery.SourceFileLoader(name, module.__file__)
-                loader.load_module()
-    except SyntaxError as e:
-        relpath = os.path.relpath(path, start=RESOURCE_PATH)
-        return "%s in nodefunction file %s, line %d" % (e.__class__.__name__, relpath, e.lineno)
-    except (ImportError, SystemError) as e:
-        relpath = os.path.relpath(path, start=RESOURCE_PATH)
-        return "%s in nodefunction file %s: %s" % (e.__class__.__name__, relpath, str(e))
-
-
 def reload_code():
     global native_modules, custom_recipes, custom_operations, world_classes, worldadapter_classes
     from micropsi_core.world.world import DefaultWorld
@@ -1784,7 +1770,7 @@ def reload_code():
     for file in os.listdir(operationspath):
         import micropsi_core.nodenet.operations
         if file != '__init__.py' and not file.startswith('.') and os.path.isfile(os.path.join(operationspath, file)):
-            err = parse_recipe_or_operations_file(os.path.join(operationspath, file), category_overwrite=file[:-3])
+            err = parse_recipe_or_operations_file(os.path.join(operationspath, file), 'operations', category_overwrite=file[:-3])
             if err:
                 errors.append(err)
     # stop nodenets
@@ -1794,7 +1780,14 @@ def reload_code():
             nodenets[uid].is_active = False
 
     # load code-directory
-    errors.extend(load_user_files(RESOURCE_PATH, reload_nodefunctions=True, errors=[]))
+    if RESOURCE_PATH not in sys.path:
+        sys.path.insert(0, RESOURCE_PATH)
+
+    for key in ['nodetypes', 'recipes', 'operations']:
+        basedir = os.path.join(RESOURCE_PATH, key)
+        if os.path.isdir(basedir):
+            errors.extend(load_user_files(basedir, key, errors=[]))
+
     errors.extend(load_world_files(WORLD_PATH, errors=[]))
 
     # reload native modules in nodenets
@@ -1842,8 +1835,6 @@ def initialize(persistency_path=None, resource_path=None, world_path=None):
     PERSISTENCY_PATH = persistency_path or cfg['paths']['persistency_directory']
     RESOURCE_PATH = resource_path or cfg['paths']['agent_directory']
     WORLD_PATH = world_path or cfg['paths']['world_directory']
-
-    sys.path.insert(0, RESOURCE_PATH)
 
     configs = config.ConfigurationManager(cfg['paths']['server_settings_path'])
 

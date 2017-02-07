@@ -191,7 +191,7 @@ def test_generate_netapi_fragment(runtime, test_nodenet, engine, resourcepath):
     res, pastenet = runtime.new_nodenet('pastnet', engine)
     code = "def foo(netapi):\n    " + "\n    ".join(fragment.split('\n'))
     # save the fragment as recipe & run
-    with open(os.path.join(resourcepath, 'recipes.py'), 'w+') as fp:
+    with open(os.path.join(resourcepath, 'recipes', 'test.py'), 'w+') as fp:
         fp.write(code)
     runtime.reload_code()
     runtime.run_recipe(pastenet, 'foo', {})

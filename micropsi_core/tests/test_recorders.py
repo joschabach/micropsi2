@@ -37,7 +37,7 @@ def test_activation_recorder(runtime, test_nodenet, resourcepath):
 
 
 @pytest.mark.engine("theano_engine")
-def test_nodeactivation_recorder(runtime, test_nodenet, resourcepath):
+def test_nodeactivation_recorder(runtime, test_nodenet):
     import numpy as np
     nodenet = runtime.nodenets[test_nodenet]
     netapi = nodenet.netapi
@@ -62,7 +62,7 @@ def test_nodeactivation_recorder(runtime, test_nodenet, resourcepath):
 
 
 @pytest.mark.engine("theano_engine")
-def test_linkweight_recorder(runtime, test_nodenet, resourcepath):
+def test_linkweight_recorder(runtime, test_nodenet):
     nodenet = runtime.nodenets[test_nodenet]
     netapi = nodenet.netapi
     nodespace = netapi.get_nodespace(None)
@@ -94,7 +94,7 @@ def test_linkweight_recorder(runtime, test_nodenet, resourcepath):
 
 
 @pytest.mark.engine("theano_engine")
-def test_clear_recorder(runtime, test_nodenet, resourcepath):
+def test_clear_recorder(runtime, test_nodenet):
     nodenet = runtime.nodenets[test_nodenet]
     netapi = nodenet.netapi
     nodespace = netapi.get_nodespace(None)
@@ -109,7 +109,7 @@ def test_clear_recorder(runtime, test_nodenet, resourcepath):
 
 
 @pytest.mark.engine("theano_engine")
-def test_remove_recorder(runtime, test_nodenet, resourcepath):
+def test_remove_recorder(runtime, test_nodenet):
     nodenet = runtime.nodenets[test_nodenet]
     netapi = nodenet.netapi
     nodespace = netapi.get_nodespace(None)
@@ -123,7 +123,7 @@ def test_remove_recorder(runtime, test_nodenet, resourcepath):
 
 
 @pytest.mark.engine("theano_engine")
-def test_grow_recorder_values(runtime, test_nodenet, resourcepath):
+def test_grow_recorder_values(runtime, test_nodenet):
     from micropsi_core.nodenet.recorder import Recorder
     nodenet = runtime.nodenets[test_nodenet]
     netapi = nodenet.netapi

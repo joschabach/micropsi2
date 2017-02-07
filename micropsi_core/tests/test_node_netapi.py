@@ -1114,27 +1114,26 @@ def test_nodespace_properties(runtime, test_nodenet):
 def test_group_highdim_elements(runtime, test_nodenet, resourcepath):
     import numpy as np
     import os
-    with open(os.path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
+    with open(os.path.join(resourcepath, 'nodetypes', 'testnode.py'), 'w') as fp:
         fp.write("""
-    {"PhatNM": {
-        "name": "PhatNM",
-        "slottypes": ["gen", "sub", "sur", "inbound"],
-        "gatetypes": ["gen", "sub", "sur", "outbound"],
-        "nodefunction_name": "phatNM",
-        "symbol": "F",
-        "dimensionality": {
-            "gates": {
-                "outbound": 2
-            },
-            "slots": {
-                "inbound": 10
-            }
+nodetype_definition = {
+    "name": "PhatNM",
+    "slottypes": ["gen", "sub", "sur", "inbound"],
+    "gatetypes": ["gen", "sub", "sur", "outbound"],
+    "nodefunction_name": "phatNM",
+    "symbol": "F",
+    "dimensionality": {
+        "gates": {
+            "outbound": 2
+        },
+        "slots": {
+            "inbound": 10
         }
-    }}""")
-    with open(os.path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
-        fp.write("""
+    }
+}
 def phatNM(netapi, node, **_):
-    pass""")
+    pass
+""")
 
     runtime.reload_code()
     nodenet = runtime.get_nodenet(test_nodenet)

@@ -280,18 +280,14 @@ def import_world(worlddata, owner=None):
 def get_world_class_from_name(world_type):
     """Returns the class from a world type, if it is known"""
     from micropsi_core.world.world import World
-
-    worldclasses = {cls.__name__: cls for cls in tools.itersubclasses(World)}
-    return worldclasses.get(world_type, World)
+    return micropsi_core.runtime.world_classes[world_type]
 
 
 def get_available_world_types():
     """Returns a mapping of the available world type names to their classes"""
-    import importlib
-    from micropsi_core.world.world import World
     data = {}
-    for cls in tools.itersubclasses(World):
-        data[cls.__name__] = {
+    for name, cls in micropsi_core.runtime.world_classes.items():
+        data[name] = {
             'class': cls,
             'config': cls.get_config_options(),
         }

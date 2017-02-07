@@ -193,7 +193,7 @@ def test_generate_netapi_fragment(runtime, test_nodenet, engine, resourcepath):
     # save the fragment as recipe & run
     with open(os.path.join(resourcepath, 'recipes.py'), 'w+') as fp:
         fp.write(code)
-    runtime.reload_native_modules()
+    runtime.reload_code()
     runtime.run_recipe(pastenet, 'foo', {})
     pastnetapi = runtime.get_nodenet(pastenet).netapi
     # assert that all the nodes are there again

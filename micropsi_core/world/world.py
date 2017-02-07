@@ -82,7 +82,8 @@ class World(object):
         folder = '.'.join(folder)
         return {wacls.__name__: wacls for wacls in tools.itersubclasses(worldadapter.WorldAdapter, folder=folder) if wacls.__name__ in cls.supported_worldadapters}
 
-    supported_worldadapters = ['Default']
+    supported_worldadapters = []
+    supported_worldobjects = []
 
     def __init__(self, filename, world_type="", name="", owner="", uid=None, engine=None, version=WORLD_VERSION, config={}):
         """Create a new MicroPsi world environment.
@@ -108,13 +109,9 @@ class World(object):
         folder = self.__module__.split('.')
         folder.pop()
         folder = '.'.join(folder)
-        self.supported_worldadapters = { cls.__name__:cls for cls in tools.itersubclasses(worldadapter.WorldAdapter, folder=folder) if cls.__name__ in self.supported_worldadapters }
 
-        self.supported_worldobjects = { cls.__name__:cls for cls in tools.itersubclasses(worldobject.WorldObject, folder=folder)
-                                        if cls.__name__ not in self.supported_worldadapters}
-        # freaky hack.
-        self.supported_worldobjects.pop('WorldAdapter', None)
-        self.supported_worldobjects['Default'] = worldobject.WorldObject
+        self.supported_worldadapters = {name: cls for name, cls in micropsi_core.runtime.worldadapter_classes.items() if name in self.supported_worldadapters}
+        self.supported_worldobjects = {name: cls for name, cls in micropsi_core.runtime.worldobject_classes.items() if name in self.supported_worldobjects}
 
         self.uid = uid or generate_uid()
         self.owner = owner
@@ -150,18 +147,20 @@ class World(object):
         """ return the list of instantiated worldadapters """
         return self.supported_worldadapters
 
-    def initialize_world(self):
+    def initialize_world(self, data=None):
         """Called after reading new world data.
 
         Parses the nodenet data and set up the non-persistent data structures necessary for efficient
         computation of the world
         """
-        for uid, object_data in self.data['objects'].copy().items():
+        if data is None:
+            data = self.data
+        for uid, object_data in data['objects'].copy().items():
             if object_data['type'] in self.supported_worldobjects:
                 self.objects[uid] = self.supported_worldobjects[object_data['type']](self, **object_data)
             else:
                 self.logger.warning('Worldobject of type %s not supported anymore. Deleting object of this type.' % object_data['type'])
-                del self.data['objects'][uid]
+                del data['objects'][uid]
 
     def step(self):
         """ advance the simluation """
@@ -267,6 +266,7 @@ class World(object):
             self.agents[nodenet_uid] = self.supported_worldadapters[worldadapter_name](
                 self,
                 uid=nodenet_uid,
+                type=worldadapter_name,
                 name=nodenet_name or worldadapter_name,
                 config=config)
             return True, self.agents[nodenet_uid]
@@ -329,3 +329,4 @@ class World(object):
 
 class DefaultWorld(World):
     supported_worldadapters = ['Default', 'DefaultArray']
+    supported_worldobjects = ['TestObject']

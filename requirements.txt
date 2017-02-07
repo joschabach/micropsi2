@@ -23,4 +23,3 @@ WebTest==2.0.21
 Pillow==3.2.0
 networkx==1.11
 git+https://github.com/micropsi-industries/spock.git
-git+https://github.com/Kriskras99/appdirs

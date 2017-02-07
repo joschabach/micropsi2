@@ -18,9 +18,11 @@ print("test data directory:", testpath)
 
 from micropsi_core import runtime as micropsi_runtime
 from micropsi_core.runtime import cfg
-original_ini_data_directory = cfg['paths']['data_directory']
 
-cfg['paths']['data_directory'] = testpath
+orig_agent_dir = cfg['paths']['agent_directory']
+orig_world_dir = cfg['paths']['world_directory']
+
+cfg['paths']['persistency_directory'] = testpath
 cfg['paths']['server_settings_path'] = os.path.join(testpath, 'server_cfg.json')
 cfg['paths']['usermanager_path'] = os.path.join(testpath, 'user-db.json')
 cfg['micropsi2']['single_agent_mode'] = ''
@@ -39,23 +41,29 @@ def pytest_addoption(parser):
     parser.addoption("--engine", action="store", default=engine_defaults,
         help="The engine that should be used for this testrun.")
     parser.addoption("--agents", action="store_true",
-        help="Only test agents-code from the data_directory")
+        help="Only runt tests from the agent_directory")
+    parser.addoption("--worlds", action="store_true",
+        help="Only runt tests from the world_directory")
 
 
 def pytest_cmdline_main(config):
     """ called for performing the main command line action. The default
     implementation will invoke the configure hooks and runtest_mainloop. """
     if config.getoption('agents'):
-        config.args = [original_ini_data_directory]
-        micropsi_runtime.initialize(persistency_path=testpath, resource_path=original_ini_data_directory)
+        config.args = [orig_agent_dir]
+        micropsi_runtime.initialize(persistency_path=testpath, resource_path=orig_agent_dir, world_path=testpath)
+    elif config.getoption('worlds'):
+        config.args = [orig_world_dir]
+        micropsi_runtime.initialize(persistency_path=testpath, world_path=orig_world_dir, resource_path=testpath)
     else:
-        micropsi_runtime.initialize(persistency_path=testpath)
-        from micropsi_server.micropsi_app import usermanager
+        micropsi_runtime.initialize(persistency_path=testpath, world_path=testpath, resource_path=testpath)
 
-        usermanager.create_user('Pytest User', 'test', 'Administrator', uid='Pytest User')
-        usermanager.start_session('Pytest User', 'test', True)
+    from micropsi_server.micropsi_app import usermanager
+    usermanager.create_user('Pytest User', 'test', 'Administrator', uid='Pytest User')
+    usermanager.start_session('Pytest User', 'test', True)
 
     set_logging_levels()
+    micropsi_runtime.set_runner_properties(1, 1)
 
 
 def pytest_configure(config):
@@ -94,7 +102,7 @@ def pytest_runtest_setup(item):
                 os.remove(path)
     os.mkdir(os.path.join(testpath, 'Test'))
     open(os.path.join(testpath, 'Test', '__init__.py'), 'w').close()
-    micropsi_runtime.reload_native_modules()
+    micropsi_runtime.reload_code()
     micropsi_runtime.logger.clear_logs()
     micropsi_runtime.set_runner_properties(1, 1)
     set_logging_levels()
@@ -132,28 +140,17 @@ def runtime():
 
 
 @pytest.yield_fixture(scope="function")
-def test_world(request):
+def default_world(request):
     """
     Fixture: A test world of type Island
     """
     global world_uid
-    success, world_uid = micropsi_runtime.new_world("World of Pain", "Island", "Pytest User")
+    success, world_uid = micropsi_runtime.new_world("World of Pain", "DefaultWorld", "Pytest User")
     yield world_uid
     try:
         micropsi_runtime.delete_world(world_uid)
     except:
         pass
-
-
-@pytest.fixture(scope="function")
-def default_world(request):
-    """
-    Fixture: A test world of type default
-    """
-    for uid in micropsi_runtime.world_data:
-        if micropsi_runtime.world_data[uid].get('world_type', 'DefaultWorld') == 'DefaultWorld':
-            micropsi_runtime.load_world(uid)
-            return uid
 
 
 @pytest.yield_fixture(scope="function")
@@ -172,7 +169,7 @@ def default_nodenet(request):
 
 
 @pytest.yield_fixture(scope="function")
-def test_nodenet(request, test_world, engine):
+def test_nodenet(request, default_world, engine):
     """
     An empty nodenet, with the currently tested engine.
     Use this for tests that should run in both engines

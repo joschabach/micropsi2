@@ -43,15 +43,20 @@ nodenet_lock = threading.Lock()
 # global variables set by intialize()
 RESOURCE_PATH = None
 PERSISTENCY_PATH = None
+WORLD_PATH = None
 
 configs = None
 logger = None
 
 worlds = {}
 nodenets = {}
+
 native_modules = {}
 custom_recipes = {}
 custom_operations = {}
+world_classes = {}
+worldadapter_classes = {}
+worldobject_classes = {}
 
 netapi_consoles = {}
 
@@ -568,7 +573,7 @@ def delete_nodenet(nodenet_uid):
     if nodenet_uid in nodenets:
         unload_nodenet(nodenet_uid)
     del nodenet_data[nodenet_uid]
-    nodenet_directory = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid)
+    nodenet_directory = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid)
     shutil.rmtree(nodenet_directory)
     return True
 
@@ -1527,7 +1532,10 @@ def load_definitions():
         with open(filename, 'w+', encoding="utf-8") as fp:
             fp.write(json.dumps(world_data[uid], sort_keys=True, indent=4))
     for uid in world_data:
-        world_data[uid].supported_worldadapters = get_world_class_from_name(world_data[uid].get('world_type', "DefaultWorld")).get_supported_worldadapters()
+        try:
+            world_data[uid].supported_worldadapters = get_world_class_from_name(world_data[uid].get('world_type', "DefaultWorld")).get_supported_worldadapters()
+        except KeyError:
+            pass
     return nodenet_data, world_data
 
 
@@ -1550,6 +1558,97 @@ def load_user_files(path, reload_nodefunctions=False, errors=[]):
             if err:
                 errors.append(err)
     return errors
+
+
+def load_world_files(path, errors=[]):
+    for f in os.listdir(path):
+        if not f.startswith('.') and f != '__pycache__':
+            abspath = os.path.join(path, f)
+            err = None
+            if os.path.isdir(abspath):
+                errors.extend(load_world_files(path=abspath, errors=[]))
+            elif f == 'worlds.json':
+                err = parse_world_definitions(abspath)
+            if err:
+                errors.extend(err)
+    return errors
+
+
+def parse_world_definitions(path):
+    import importlib
+    import inspect
+    global world_classes, worldadapter_classes, worldobject_classes
+    from micropsi_core.world.world import World
+    from micropsi_core.world.worldobject import WorldObject
+    from micropsi_core.world.worldadapter import WorldAdapter
+    base_path = os.path.dirname(path)
+    errors = []
+    with open(path) as fp:
+        try:
+            data = json.load(fp)
+        except ValueError:
+            return "World data in %s/worlds.json not well formed" % path
+        worldfiles = data.get('worlds', [])
+        worldadapterfiles = data.get('worldadapters', [])
+        worldobjectfiles = data.get('worldobjects', [])
+        dependencies = data.get('dependencies', [])
+        for dep in dependencies:
+            dep_path = os.path.join(base_path, dep)
+            sys.path.append(dep_path)
+
+        for w in worldfiles:
+            relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
+            sys.path.append(base_path)
+            name = w[:-3]
+            try:
+                try:
+                    wmodule = importlib.reload(sys.modules[name])
+                except:
+                    loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
+                    wmodule = loader.load_module()
+                for name, cls in inspect.getmembers(wmodule, inspect.isclass):
+                    if World in inspect.getmro(cls) and name != "World":
+                        world_classes[name] = cls
+                        logging.getLogger("system").debug("Found world %s " % name)
+            except SyntaxError as e:
+                errors.append("%s in world file %s, line %d" % (e.__class__.__name__, relpath, e.lineno))
+            except (ImportError, SystemError) as e:
+                errors.append("%s in world file %s: %s" % (e.__class__.__name__, relpath, str(e)))
+        for w in worldadapterfiles:
+            relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
+            name = w[:-3]
+            try:
+                try:
+                    wmodule = importlib.reload(sys.modules[name])
+                except:
+                    loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
+                    wmodule = loader.load_module()
+                for name, cls in inspect.getmembers(wmodule, inspect.isclass):
+                    if WorldAdapter in inspect.getmro(cls) and not inspect.isabstract(cls):
+                        worldadapter_classes[name] = cls
+                        # errors.append("Name collision in worldadapters: %s defined more than once" % name)
+            except SyntaxError as e:
+                errors.append("%s in worldadapter file %s, line %d" % (e.__class__.__name__, relpath, e.lineno))
+            except (ImportError, SystemError) as e:
+                errors.append("%s in worldadapter file %s: %s" % (e.__class__.__name__, relpath, str(e)))
+        for w in worldobjectfiles:
+            relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
+            name = w[:-3]
+            try:
+                try:
+                    wmodule = importlib.reload(sys.modules[name])
+                except:
+                    loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
+                    wmodule = loader.load_module()
+                for name, cls in inspect.getmembers(wmodule, inspect.isclass):
+                    if WorldObject in inspect.getmro(cls) and WorldAdapter not in inspect.getmro(cls):
+                        worldobject_classes[name] = cls
+                        # errors.append("Name collision in worldadapters: %s defined more than once" % name)
+            except SyntaxError as e:
+                errors.append("%s in worldadapter file %s, line %d" % (e.__class__.__name__, relpath, e.lineno))
+            except (ImportError, SystemError) as e:
+                errors.append("%s in worldadapter file %s: %s" % (e.__class__.__name__, relpath, str(e)))
+    return errors or None
 
 
 def parse_native_module_file(path):
@@ -1659,14 +1758,25 @@ def reload_nodefunctions_file(path):
         return "%s in nodefunction file %s: %s" % (e.__class__.__name__, relpath, str(e))
 
 
-def reload_native_modules():
-    # stop nodenets, save state
-    global native_modules, custom_recipes, custom_operations
+def reload_code():
+    global native_modules, custom_recipes, custom_operations, world_classes, worldadapter_classes
+    from micropsi_core.world.world import DefaultWorld
+    from micropsi_core.world.worldadapter import Default
+    from micropsi_core.world.worldobject import TestObject
+    world_classes['DefaultWorld'] = DefaultWorld
+    worldadapter_classes['Default'] = Default
+    worldobject_classes['TestObject'] = TestObject
+    try:
+        from micropsi_core.world.worldadapter import DefaultArray
+        worldadapter_classes['DefaultArray'] = DefaultArray
+    except ImportError:
+        pass
     native_modules = {}
     custom_recipes = {}
     custom_operations = {}
     runners = {}
     errors = []
+
     # load builtins:
     from micropsi_core.nodenet.native_modules import nodetypes
     native_modules.update(nodetypes)
@@ -1677,14 +1787,36 @@ def reload_native_modules():
             err = parse_recipe_or_operations_file(os.path.join(operationspath, file), category_overwrite=file[:-3])
             if err:
                 errors.append(err)
-
+    # stop nodenets
     for uid in nodenets:
         if nodenets[uid].is_active:
             runners[uid] = True
             nodenets[uid].is_active = False
+
+    # load code-directory
     errors.extend(load_user_files(RESOURCE_PATH, reload_nodefunctions=True, errors=[]))
+    errors.extend(load_world_files(WORLD_PATH, errors=[]))
+
+    # reload native modules in nodenets
     for nodenet_uid in nodenets:
         nodenets[nodenet_uid].reload_native_modules(native_modules)
+
+    # reload worlds:
+    for world_uid in worlds:
+        wtype = worlds[world_uid].__class__.__name__
+        if wtype in world_classes:
+            data = worlds[world_uid].data.copy()
+            agents = data.pop('agents')
+            worlds[world_uid].__del__()
+            del micropsi_core.runtime.worlds[world_uid]
+            worlds[world_uid] = world_classes[wtype](**world_data[world_uid])
+            worlds[world_uid].initialize_world(data)
+            for uid in agents:
+                worlds[world_uid].register_nodenet(agents[uid]['type'], uid, agents[uid]['name'], nodenets[uid].metadata['worldadapter_config'])
+                nodenets[uid].worldadapter_instance = worlds[world_uid].agents[uid]
+        else:
+            worlds[world_uid].logger.warning("World definition for world %s gone, destroying." % str(worlds[world_uid]))
+
     # restart previously active nodenets
     for uid in runners:
         nodenets[uid].is_active = True
@@ -1698,23 +1830,20 @@ def reload_native_modules():
 def runtime_info():
     return {
         "version": cfg['micropsi2']['version'],
-        "data_directory": cfg['paths']['data_directory']
+        "persistency_directory": cfg['paths']['persistency_directory'],
+        "agent_directory": cfg['paths']['agent_directory'],
+        "world_directory": cfg['paths']['world_directory']
     }
 
 
-def initialize(persistency_path=None, resource_path=None):
-    global PERSISTENCY_PATH, RESOURCE_PATH, configs, logger, runner, initialized
+def initialize(persistency_path=None, resource_path=None, world_path=None):
+    global PERSISTENCY_PATH, RESOURCE_PATH, WORLD_PATH, configs, logger, runner, initialized
 
-    if persistency_path is None:
-        persistency_path = cfg['paths']['data_directory']
+    PERSISTENCY_PATH = persistency_path or cfg['paths']['persistency_directory']
+    RESOURCE_PATH = resource_path or cfg['paths']['agent_directory']
+    WORLD_PATH = world_path or cfg['paths']['world_directory']
 
-    if resource_path is None:
-        resource_path = persistency_path
-
-    PERSISTENCY_PATH = persistency_path
-    RESOURCE_PATH = resource_path
-
-    sys.path.insert(0, resource_path)
+    sys.path.insert(0, RESOURCE_PATH)
 
     configs = config.ConfigurationManager(cfg['paths']['server_settings_path'])
 
@@ -1724,28 +1853,10 @@ def initialize(persistency_path=None, resource_path=None):
             'world': cfg['logging']['level_world']
         }, cfg['logging'].get('logfile'))
 
+    result, errors = reload_code()
     load_definitions()
-    result, errors = reload_native_modules()
     for e in errors:
         logging.getLogger("system").error(e)
-
-    # discover available worlds:
-    import importlib
-    basedir = os.path.join(os.path.dirname(__file__), 'world')
-    dirs = os.listdir(basedir)
-    #  look into each folder in world/
-    for d in dirs:
-        worlddir = os.path.join(basedir, d)
-        if os.path.isdir(worlddir) and not d.startswith('__'):
-            try:
-                init = importlib.import_module(".%s" % d, package='micropsi_core.world')
-                # import all modules defined in __init__.__all__
-                if init and hasattr(init, '__all__'):
-                    for world in init.__all__:
-                        importlib.import_module(".%s" % world, package='micropsi_core.world.%s' % d)
-                        logging.getLogger("system").debug("Found %s world" % world)
-            except ImportError as err:
-                logging.getLogger("system").debug("Error importing %s world (%s)" % (world, str(err)))
 
     # initialize runners
     # Initialize the threads for the continuous calculation of nodenets and worlds

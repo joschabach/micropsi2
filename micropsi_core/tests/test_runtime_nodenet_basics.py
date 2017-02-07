@@ -62,7 +62,7 @@ def test_user_prompt(runtime, test_nodenet, resourcepath):
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
-    runtime.reload_native_modules()
+    runtime.reload_code()
     res, node_uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test")
     nativemodule = nodenet.get_node(node_uid)
 
@@ -244,12 +244,12 @@ def test_modulators(runtime, test_nodenet, engine):
         assert 'Emotional' not in item.__class__.__name__
 
 
-def test_modulators_sensor_actuator_connection(runtime, test_nodenet, test_world):
+def test_modulators_sensor_actuator_connection(runtime, test_nodenet, default_world):
     nodenet = runtime.get_nodenet(test_nodenet)
-    runtime.set_nodenet_properties(test_nodenet, worldadapter="Braitenberg", world_uid=test_world)
-    res, s1_id = runtime.add_node(test_nodenet, "Sensor", [10, 10], None, name="brightness_l", parameters={'datasource': 'brightness_l'})
+    runtime.set_nodenet_properties(test_nodenet, worldadapter="Default", world_uid=default_world)
+    res, s1_id = runtime.add_node(test_nodenet, "Sensor", [10, 10], None, name="static_on", parameters={'datasource': 'static_on'})
     res, s2_id = runtime.add_node(test_nodenet, "Sensor", [20, 20], None, name="emo_activation", parameters={'datasource': 'emo_activation'})
-    res, a1_id = runtime.add_node(test_nodenet, "Actuator", [30, 30], None, name="engine_l", parameters={'datatarget': 'engine_l'})
+    res, a1_id = runtime.add_node(test_nodenet, "Actuator", [30, 30], None, name="echo", parameters={'datatarget': 'echo'})
     res, a2_id = runtime.add_node(test_nodenet, "Actuator", [40, 40], None, name="base_importance_of_intention", parameters={'datatarget': 'base_importance_of_intention'})
     res, r1_id = runtime.add_node(test_nodenet, "Neuron", [10, 30], None, name="r1")
     res, r2_id = runtime.add_node(test_nodenet, "Neuron", [10, 30], None, name="r2")
@@ -269,11 +269,10 @@ def test_modulators_sensor_actuator_connection(runtime, test_nodenet, test_world
     nodenet.worldadapter_instance.reset_datatargets = nothing
 
     nodenet.step()
-    assert round(nodenet.worldadapter_instance.datatargets['engine_l'], 3) == 0.3
-    assert round(s1.activation, 3) == round(nodenet.worldadapter_instance.get_datasource_value('brightness_l'), 3)
+    assert round(nodenet.worldadapter_instance.datatargets['echo'], 3) == 0.3
+    assert round(s1.activation, 3) == round(nodenet.worldadapter_instance.get_datasource_value('static_on'), 3)
     assert round(s2.activation, 3) == round(emo_val, 3)
     assert round(nodenet.get_modulator('base_importance_of_intention'), 3) == 0.7
-    assert round(nodenet.worldadapter_instance.datatargets['engine_l'], 3) == 0.3
     emo_val = nodenet.get_modulator("emo_activation")
     nodenet.step()
     assert round(s2.activation, 3) == round(emo_val, 3)
@@ -302,7 +301,7 @@ def test_node_parameters(runtime, test_nodenet, resourcepath):
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
-    assert runtime.reload_native_modules()
+    assert runtime.reload_code()
     res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test", parameters={"threshold": "", "protocol_mode": "most_active_one"})
     # nativemodule = runtime.nodenets[test_nodenet].get_node(uid)
     assert runtime.save_nodenet(test_nodenet)
@@ -352,7 +351,7 @@ def test_multiple_nodenet_interference(runtime, engine, resourcepath):
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    node.get_gate('gen').gate_function(17)")
 
-    runtime.reload_native_modules()
+    runtime.reload_code()
 
     result, n1_uid = runtime.new_nodenet('Net1', engine=engine, owner='Pytest User')
     result, n2_uid = runtime.new_nodenet('Net2', engine=engine, owner='Pytest User')
@@ -460,7 +459,7 @@ def test_native_module_reload_changes_gates(runtime, test_nodenet, resourcepath)
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
-    assert runtime.reload_native_modules()
+    assert runtime.reload_code()
     res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test", parameters={"threshold": "", "protocol_mode": "most_active_one"})
     res, neuron_uid = runtime.add_node(test_nodenet, 'Neuron', [10, 10])
     runtime.add_link(test_nodenet, neuron_uid, 'gen', uid, 'gen')
@@ -472,7 +471,7 @@ def test_native_module_reload_changes_gates(runtime, test_nodenet, resourcepath)
             "gatetypes": ["foo", "bar"],
             "nodefunction_name": "testnodefunc"
             }}""")
-    assert runtime.reload_native_modules()
+    assert runtime.reload_code()
     nativemodule = runtime.nodenets[test_nodenet].get_node(uid)
     assert nativemodule.get_gate_types() == ["foo", "bar"]
     neuron = runtime.nodenets[test_nodenet].get_node(neuron_uid)

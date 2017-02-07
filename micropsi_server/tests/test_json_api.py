@@ -67,20 +67,21 @@ def test_get_available_nodenets(app, test_nodenet):
 
 
 def test_delete_nodenet(app, test_nodenet):
+    app.set_auth()
     response = app.get_json('/rpc/delete_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
     response = app.get_json('/rpc/get_available_nodenets(user_id="Pytest User")')
     assert test_nodenet not in response.json_body['data']
 
 
-def test_set_nodenet_properties(app, test_nodenet, test_world):
+def test_set_nodenet_properties(app, test_nodenet, default_world):
     app.set_auth()
-    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, nodenet_name="new_name", worldadapter="Braitenberg", world_uid=test_world))
+    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, nodenet_name="new_name", worldadapter="Default", world_uid=default_world))
     assert_success(response)
     response = app.get_json('/rpc/get_nodenet_metadata(nodenet_uid="%s")' % test_nodenet)
     data = response.json_body['data']
     assert data['name'] == 'new_name'
-    assert data['worldadapter'] == 'Braitenberg'
+    assert data['worldadapter'] == 'Default'
 
 
 def test_set_node_state(app, test_nodenet, resourcepath):
@@ -101,7 +102,7 @@ def test_set_node_state(app, test_nodenet, resourcepath):
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
-    response = app.get_json('/rpc/reload_native_modules()')
+    response = app.get_json('/rpc/reload_code()')
     assert_success(response)
 
     response = app.post_json('/rpc/add_node', params={
@@ -217,12 +218,12 @@ def test_step_calculation(app, default_nodenet):
     assert response.json_body['data']['current_step'] == 1
 
 
-def test_get_calculation_state(app, test_nodenet, test_world, node):
+def test_get_calculation_state(app, test_nodenet, default_world, node):
     from time import sleep
     app.set_auth()
     response = app.get_json('/rpc/get_nodenet_metadata(nodenet_uid="%s")' % test_nodenet)
     assert response.json_body['data']['current_step'] == 0
-    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, nodenet_name="new_name", worldadapter="Braitenberg", world_uid=test_world))
+    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, nodenet_name="new_name", worldadapter="Default", world_uid=default_world))
 
     response = app.post_json('/rpc/add_gate_monitor', params={
         'nodenet_uid': test_nodenet,
@@ -269,9 +270,9 @@ def test_get_calculation_state(app, test_nodenet, test_world, node):
     assert data['world']['current_step'] > 0
 
 
-def test_revert_nodenet(app, test_nodenet, test_world):
+def test_revert_nodenet(app, test_nodenet, default_world):
     app.set_auth()
-    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, nodenet_name="new_name", worldadapter="Braitenberg", world_uid=test_world))
+    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, nodenet_name="new_name", worldadapter="Default", world_uid=default_world))
     assert_success(response)
     response = app.get_json('/rpc/revert_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
@@ -281,9 +282,9 @@ def test_revert_nodenet(app, test_nodenet, test_world):
     assert data['worldadapter'] is None
 
 
-def test_revert_both(app, test_nodenet, test_world):
+def test_revert_both(app, test_nodenet, default_world):
     app.set_auth()
-    app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, worldadapter="Braitenberg", world_uid=test_world))
+    app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, worldadapter="Default", world_uid=default_world))
     for i in range(5):
         app.get_json('/rpc/step_calculation(nodenet_uid="%s")' % test_nodenet)
     res = app.get_json('/rpc/get_calculation_state(nodenet_uid="%s")' % test_nodenet)
@@ -295,9 +296,9 @@ def test_revert_both(app, test_nodenet, test_world):
     assert res.json_body['data']['current_world_step'] == 0
 
 
-def test_save_nodenet(app, test_nodenet, test_world):
+def test_save_nodenet(app, test_nodenet, default_world):
     app.set_auth()
-    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, nodenet_name="new_name", worldadapter="Braitenberg", world_uid=test_world))
+    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, nodenet_name="new_name", worldadapter="Default", world_uid=default_world))
     assert_success(response)
     response = app.get_json('/rpc/save_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
@@ -306,7 +307,7 @@ def test_save_nodenet(app, test_nodenet, test_world):
     response = app.get_json('/rpc/get_nodenet_metadata(nodenet_uid="%s")' % test_nodenet)
     data = response.json_body['data']
     assert data['name'] == 'new_name'
-    assert data['worldadapter'] == 'Braitenberg'
+    assert data['worldadapter'] == 'Default'
 
     # now delete the nodenet, to get default state back.
     app.get_json('/rpc/delete_nodenet(nodenet_uid="%s")' % test_nodenet)
@@ -348,7 +349,7 @@ def test_merge_nodenet(app, test_nodenet, engine, node):
     response = app.post_json('/rpc/new_nodenet', params={
         'name': 'ImporterNet',
         'engine': engine,
-        'worldadapter': 'Braitenberg',
+        'worldadapter': 'Default',
         'owner': 'Pytest User'
     })
     uid = response.json_body['data']
@@ -374,97 +375,97 @@ def test_merge_nodenet(app, test_nodenet, engine, node):
 ##
 ###################################################
 
-def test_get_available_worlds(app, test_world):
+def test_get_available_worlds(app, default_world):
     response = app.get_json('/rpc/get_available_worlds()')
     assert_success(response)
-    assert test_world in response.json_body['data']
+    assert default_world in response.json_body['data']
 
 
-def test_get_available_worlds_for_user(app, test_world):
+def test_get_available_worlds_for_user(app, default_world):
     response = app.get_json('/rpc/get_available_worlds(user_id="Pytest User")')
     assert_success(response)
-    assert test_world in response.json_body['data']
+    assert default_world in response.json_body['data']
 
 
 # TODO: get_nodenet_properties is missing.
-def test_get_world_properties(app, test_world):
-    response = app.get_json('/rpc/get_world_properties(world_uid="%s")' % test_world)
+def test_get_world_properties(app, default_world):
+    response = app.get_json('/rpc/get_world_properties(world_uid="%s")' % default_world)
     assert_success(response)
     data = response.json_body['data']
-    assert data['uid'] == test_world
+    assert data['uid'] == default_world
     assert data['name'] == "World of Pain"
     assert 'available_worldadapters' in data
     assert 'available_worldobjects' in data
 
 
-def test_get_worldadapters(app, test_world):
-    response = app.get_json('/rpc/get_worldadapters(world_uid="%s")' % test_world)
+def test_get_worldadapters(app, default_world):
+    response = app.get_json('/rpc/get_worldadapters(world_uid="%s")' % default_world)
     assert_success(response)
-    assert 'Braitenberg' in response.json_body['data']
+    assert 'Default' in response.json_body['data']
 
 
-def test_get_world_objects(app, test_world):
-    response = app.get_json('/rpc/get_world_objects(world_uid="%s")' % test_world)
+def test_get_world_objects(app, default_world):
+    response = app.get_json('/rpc/get_world_objects(world_uid="%s")' % default_world)
     assert_success(response)
     assert response.json_body['data'] == {}
 
 
-def test_add_worldobject(app, test_world):
+def test_add_worldobject(app, default_world):
     response = app.post_json('/rpc/add_worldobject', params={
-        'world_uid': test_world,
-        'type': 'Braintree',
+        'world_uid': default_world,
+        'type': 'TestObject',
         'position': [10, 10],
-        'name': 'Testtree'
+        'name': 'TestObject'
     })
     assert_success(response)
     uid = response.json_body['data']
     assert uid is not None
-    response = app.get_json('/rpc/get_world_objects(world_uid="%s")' % test_world)
+    response = app.get_json('/rpc/get_world_objects(world_uid="%s")' % default_world)
     assert uid in response.json_body['data']
 
 
-def test_delete_worldobject(app, test_world):
+def test_delete_worldobject(app, default_world):
     response = app.post_json('/rpc/add_worldobject', params={
-        'world_uid': test_world,
-        'type': 'Braintree',
+        'world_uid': default_world,
+        'type': 'TestObject',
         'position': [10, 10],
-        'name': 'Testtree'
+        'name': 'TestObject'
     })
     uid = response.json_body['data']
     response = app.post_json('/rpc/delete_worldobject', params={
-        'world_uid': test_world,
+        'world_uid': default_world,
         'object_uid': uid
     })
     assert_success(response)
-    response = app.get_json('/rpc/get_world_objects(world_uid="%s")' % test_world)
+    response = app.get_json('/rpc/get_world_objects(world_uid="%s")' % default_world)
     assert uid not in response.json_body['data']
 
 
-def test_set_worldobject_properties(app, test_world):
+def test_set_worldobject_properties(app, default_world):
     response = app.post_json('/rpc/add_worldobject', params={
-        'world_uid': test_world,
-        'type': 'Braintree',
+        'world_uid': default_world,
+        'type': 'TestObject',
         'position': [10, 10],
-        'name': 'Testtree'
+        'name': 'TestObject'
     })
     uid = response.json_body['data']
     response = app.post_json('/rpc/set_worldobject_properties', params={
-        'world_uid': test_world,
+        'world_uid': default_world,
         'uid': uid,
         'position': [20, 20],
         'orientation': 27,
         'name': 'edited'
     })
     assert_success(response)
-    response = app.get_json('/rpc/get_world_objects(world_uid="%s")' % test_world)
+    response = app.get_json('/rpc/get_world_objects(world_uid="%s")' % default_world)
     data = response.json_body['data']
     assert data[uid]['position'] == [20, 20]
     assert data[uid]['orientation'] == 27
     assert data[uid]['name'] == 'edited'
 
 
-def test_get_world_view(app, test_world):
-    response = app.get_json('/rpc/get_world_view(world_uid="%s", step=0)' % test_world)
+def test_get_world_view(app, default_world):
+    response = app.get_json('/rpc/get_world_view(world_uid="%s", step=0)' % default_world)
     assert_success(response)
     assert 'agents' in response.json_body['data']
     assert 'objects' in response.json_body['data']
@@ -472,19 +473,19 @@ def test_get_world_view(app, test_world):
     assert 'step' not in response.json_body['data']
 
 
-def test_set_worldagent_properties(app, test_world, default_nodenet):
+def test_set_worldagent_properties(app, default_world, default_nodenet):
     # create agent.
     app.set_auth()
-    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=default_nodenet, worldadapter="Braitenberg", world_uid=test_world))
+    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=default_nodenet, worldadapter="Default", world_uid=default_world))
     response = app.post_json('/rpc/set_worldagent_properties', params={
-        'world_uid': test_world,
+        'world_uid': default_world,
         'uid': default_nodenet,
         'position': [23, 23],
         'orientation': 37,
         'name': 'Sepp'
     })
     assert_success(response)
-    response = app.get_json('/rpc/get_world_view(world_uid="%s", step=0)' % test_world)
+    response = app.get_json('/rpc/get_world_view(world_uid="%s", step=0)' % default_world)
     data = response.json_body['data']['agents'][default_nodenet]
     assert data['position'] == [23, 23]
     assert data['orientation'] == 37
@@ -495,7 +496,7 @@ def test_new_world(app):
     app.set_auth()
     response = app.post_json('/rpc/new_world', params={
         'world_name': 'FooBarTestWorld',
-        'world_type': 'Island'
+        'world_type': 'DefaultWorld'
     })
     assert_success(response)
     uid = response.json_body['data']
@@ -507,78 +508,78 @@ def test_get_available_world_types(app):
     response = app.get_json('/rpc/get_available_world_types()')
     assert_success(response)
     data = response.json_body['data']
-    assert 'Island' in data
-    assert data['Island']['config'] == []
+    assert 'DefaultWorld' in data
+    assert data['DefaultWorld']['config'] == []
 
 
-def test_delete_world(app, test_world):
-    response = app.get_json('/rpc/delete_world(world_uid="%s")' % test_world)
+def test_delete_world(app, default_world):
+    response = app.get_json('/rpc/delete_world(world_uid="%s")' % default_world)
     assert_success(response)
     response = app.get_json('/rpc/get_available_worlds(user_id="Pytest User")')
-    assert test_world not in response.json_body['data']
+    assert default_world not in response.json_body['data']
 
 
-def test_set_world_properties(app, test_world):
+def test_set_world_properties(app, default_world):
     app.set_auth()
     response = app.post_json('/rpc/set_world_properties', params={
-        'world_uid': test_world,
+        'world_uid': default_world,
         'world_name': 'asdf',
         'owner': 'Pytest User'
     })
     assert_success(response)
-    response = app.get_json('/rpc/get_world_properties(world_uid="%s")' % test_world)
+    response = app.get_json('/rpc/get_world_properties(world_uid="%s")' % default_world)
     assert response.json_body['data']['name'] == "asdf"
 
 
-def test_revert_world(app, test_world):
+def test_revert_world(app, default_world):
     app.set_auth()
     response = app.post_json('/rpc/add_worldobject', params={
-        'world_uid': test_world,
-        'type': 'Braintree',
+        'world_uid': default_world,
+        'type': 'TestObject',
         'position': [10, 10],
         'name': 'Testtree'
     })
-    response = app.get_json('/rpc/revert_world(world_uid="%s")' % test_world)
+    response = app.get_json('/rpc/revert_world(world_uid="%s")' % default_world)
     assert_success(response)
-    response = app.get_json('/rpc/get_world_view(world_uid="%s",step=0)' % test_world)
+    response = app.get_json('/rpc/get_world_view(world_uid="%s",step=0)' % default_world)
     data = response.json_body['data']
     assert data['objects'] == {}
 
 
-def test_save_world(app, test_world):
+def test_save_world(app, default_world):
     app.set_auth()
     response = app.post_json('/rpc/add_worldobject', params={
-        'world_uid': test_world,
-        'type': 'Braintree',
+        'world_uid': default_world,
+        'type': 'TestObject',
         'position': [10, 10],
         'name': 'Testtree'
     })
     uid = response.json_body['data']
-    response = app.get_json('/rpc/save_world(world_uid="%s")' % test_world)
+    response = app.get_json('/rpc/save_world(world_uid="%s")' % default_world)
     assert_success(response)
-    response = app.get_json('/rpc/revert_world(world_uid="%s")' % test_world)
-    response = app.get_json('/rpc/get_world_view(world_uid="%s",step=0)' % test_world)
+    response = app.get_json('/rpc/revert_world(world_uid="%s")' % default_world)
+    response = app.get_json('/rpc/get_world_view(world_uid="%s",step=0)' % default_world)
     data = response.json_body['data']
     assert uid in data['objects']
     # delete the world, to get the default state back
-    app.get_json('/rpc/delete_world(world_uid="%s")' % test_world)
+    app.get_json('/rpc/delete_world(world_uid="%s")' % default_world)
 
 
-def test_export_world(app, test_world):
-    response = app.get_json('/rpc/export_world(world_uid="%s")' % test_world)
+def test_export_world(app, default_world):
+    response = app.get_json('/rpc/export_world(world_uid="%s")' % default_world)
     assert_success(response)
     export_data = json.loads(response.json_body['data'])
-    assert export_data['uid'] == test_world
+    assert export_data['uid'] == default_world
     assert export_data['name'] == 'World of Pain'
     assert export_data['objects'] == {}
     assert export_data['agents'] == {}
     assert export_data['owner'] == 'Pytest User'
     assert export_data['current_step'] == 0
-    assert export_data['world_type'] == 'Island'
+    assert export_data['world_type'] == 'DefaultWorld'
 
 
-def test_import_world(app, test_world):
-    response = app.get_json('/rpc/export_world(world_uid="%s")' % test_world)
+def test_import_world(app, default_world):
+    response = app.get_json('/rpc/export_world(world_uid="%s")' % default_world)
     data = json.loads(response.json_body['data'])
     del data['uid']
     data['name'] = 'Copied Pain'
@@ -593,7 +594,7 @@ def test_import_world(app, test_world):
     assert data['name'] == 'Copied Pain'
     assert data['objects'] == {}
     assert data['agents'] == {}
-    assert uid != test_world
+    assert uid != default_world
 
 
 ###################################################
@@ -1022,28 +1023,27 @@ def test_get_available_gatefunctions(app, test_nodenet):
     }
 
 
-def test_get_available_datasources(app, test_nodenet, test_world):
+def test_get_available_datasources(app, test_nodenet, default_world):
     app.set_auth()
     # set worldadapter
-    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, world_uid=test_world, worldadapter="Braitenberg"))
+    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, world_uid=default_world, worldadapter="Default"))
     response = app.get_json('/rpc/get_available_datasources(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
-    assert 'brightness_l' in response.json_body['data']
-    assert 'brightness_l' in response.json_body['data']
+    assert 'static_on' in response.json_body['data']
+    assert 'static_off' in response.json_body['data']
 
 
-def test_get_available_datatargets(app, test_nodenet, test_world):
+def test_get_available_datatargets(app, test_nodenet, default_world):
     app.set_auth()
-    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, world_uid=test_world, worldadapter="Braitenberg"))
+    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, world_uid=default_world, worldadapter="Default"))
     response = app.get_json('/rpc/get_available_datatargets(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
-    assert 'engine_l' in response.json_body['data']
-    assert 'engine_r' in response.json_body['data']
+    assert 'echo' in response.json_body['data']
 
 
-def test_bind_datasource_to_sensor(app, test_nodenet, test_world):
+def test_bind_datasource_to_sensor(app, test_nodenet, default_world):
     app.set_auth()
-    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, world_uid=test_world, worldadapter="Braitenberg"))
+    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, world_uid=default_world, worldadapter="Default"))
     response = app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
         'type': 'Sensor',
@@ -1054,16 +1054,16 @@ def test_bind_datasource_to_sensor(app, test_nodenet, test_world):
     response = app.post_json('/rpc/bind_datasource_to_sensor', params={
         'nodenet_uid': test_nodenet,
         'sensor_uid': uid,
-        'datasource': 'brightness_l'
+        'datasource': 'static_on'
     })
     assert_success(response)
     response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="%s")' % (test_nodenet, uid))
-    assert response.json_body['data']['parameters']['datasource'] == 'brightness_l'
+    assert response.json_body['data']['parameters']['datasource'] == 'static_on'
 
 
-def test_bind_datatarget_to_actuator(app, test_nodenet, test_world):
+def test_bind_datatarget_to_actuator(app, test_nodenet, default_world):
     app.set_auth()
-    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, world_uid=test_world, worldadapter="Braitenberg"))
+    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, world_uid=default_world, worldadapter="Default"))
     response = app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
         'type': 'Actuator',
@@ -1074,11 +1074,11 @@ def test_bind_datatarget_to_actuator(app, test_nodenet, test_world):
     response = app.post_json('/rpc/bind_datatarget_to_actuator', params={
         'nodenet_uid': test_nodenet,
         'actuator_uid': uid,
-        'datatarget': 'engine_l'
+        'datatarget': 'echo'
     })
     assert_success(response)
     response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="%s")' % (test_nodenet, uid))
-    assert response.json_body['data']['parameters']['datatarget'] == 'engine_l'
+    assert response.json_body['data']['parameters']['datatarget'] == 'echo'
 
 
 def test_add_link(app, test_nodenet, node):
@@ -1141,7 +1141,7 @@ def test_delete_link(app, test_nodenet, node):
     data['nodes'][node]['links'] == {}
 
 
-def test_reload_native_modules(app, test_nodenet, resourcepath):
+def test_reload_code(app, test_nodenet, resourcepath):
     app.set_auth()
     # create a native module:
     import os
@@ -1156,7 +1156,7 @@ def test_reload_native_modules(app, test_nodenet, resourcepath):
             "symbol": "t"}}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
-    response = app.get_json('/rpc/reload_native_modules()')
+    response = app.get_json('/rpc/reload_code()')
     assert_success(response)
     response = app.get_json('/rpc/get_available_node_types(nodenet_uid="%s")' % test_nodenet)
     data = response.json_body['data']['native_modules']['Testnode']
@@ -1181,7 +1181,7 @@ def test_user_prompt_response(app, test_nodenet, resourcepath):
             "symbol": "t"}}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
-    response = app.get_json('/rpc/reload_native_modules()')
+    response = app.get_json('/rpc/reload_code()')
     assert_success(response)
 
     response = app.post_json('/rpc/add_node', params={
@@ -1296,7 +1296,7 @@ def test_get_recipes(app, default_nodenet, resourcepath):
 def foobar(netapi, quatsch=23):
     return {'quatsch': quatsch}
 """)
-    response = app.get_json('/rpc/reload_native_modules()')
+    response = app.get_json('/rpc/reload_code()')
     response = app.get_json('/rpc/get_available_recipes()')
     data = response.json_body['data']
     assert 'foobar' in data
@@ -1314,7 +1314,7 @@ def test_run_recipes(app, test_nodenet, resourcepath):
 def foobar(netapi, quatsch=23):
     return {'quatsch': quatsch}
 """)
-    response = app.get_json('/rpc/reload_native_modules()')
+    response = app.get_json('/rpc/reload_code()')
     response = app.post_json('/rpc/run_recipe', {
         'nodenet_uid': test_nodenet,
         'name': 'foobar',
@@ -1348,7 +1348,7 @@ def test_nodenet_data_structure(app, test_nodenet, resourcepath, node):
             "symbol": "t"}}""")
     with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
-    response = app.get_json('/rpc/reload_native_modules()')
+    response = app.get_json('/rpc/reload_code()')
     response = app.post_json('/rpc/add_nodespace', params={
         'nodenet_uid': test_nodenet,
         'nodespace': None,
@@ -1692,23 +1692,35 @@ def test_get_recorders(app, test_nodenet):
 
 @pytest.mark.engine("theano_engine")
 def test_flow_modules(app, runtime, test_nodenet, resourcepath):
-    import numpy as np
-    from micropsi_core.world.worldadapter import ArrayWorldAdapter
-
-    class SimpleArrayWA(ArrayWorldAdapter):
-        def __init__(self, world, **kwargs):
-            super().__init__(world, **kwargs)
-            self.add_flow_datasource("foo", shape=(2, 3))
-            self.add_flow_datatarget("bar", shape=(2, 3))
-            self.update_data_sources_and_targets()
-
-        def update_data_sources_and_targets(self):
-            for key in self.flow_datatargets:
-                self.flow_datatarget_feedbacks[key] = np.copy(self.flow_datatargets[key])
-            for key in self.flow_datasources:
-                self.flow_datasources[key][:] = np.random.rand(*self.flow_datasources[key].shape)
-
     import os
+    import numpy as np
+    with open(os.path.join(resourcepath, 'worlds.json'), 'w') as fp:
+        fp.write("""{"worlds":["flowworld.py"],"worldadapters":["flowworld.py"]}""")
+
+    with open(os.path.join(resourcepath, 'flowworld.py'), 'w') as fp:
+        fp.write("""
+import numpy as np
+from micropsi_core.world.world import World
+from micropsi_core.world.worldadapter import ArrayWorldAdapter
+
+class FlowWorld(World):
+    supported_worldadapters = ["SimpleArrayWA"]
+
+class SimpleArrayWA(ArrayWorldAdapter):
+    def __init__(self, world, **kwargs):
+        super().__init__(world, **kwargs)
+        self.add_flow_datasource("foo", shape=(2,3))
+        self.add_flow_datatarget("bar", shape=(2,3))
+
+        self.update_data_sources_and_targets()
+
+    def update_data_sources_and_targets(self):
+        for key in self.flow_datatargets:
+            self.flow_datatarget_feedbacks[key] = np.copy(self.flow_datatargets[key])
+        for key in self.flow_datasources:
+            self.flow_datasources[key][:] = np.random.rand(*self.flow_datasources[key].shape)
+""")
+
     with open(os.path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
         fp.write("""
     {"Double": {
@@ -1729,14 +1741,11 @@ def double(inputs, netapi, node, parameters):
     app.set_auth()
     nodenet = runtime.nodenets[test_nodenet]
     netapi = nodenet.netapi
+    runtime.reload_code()
 
-    res, wuid = runtime.new_world("FlowWorld", "DefaultWorld")
-    worldobj = runtime.load_world(wuid)
-    worldobj.supported_worldadapters["SimpleArrayWA"] = SimpleArrayWA
+    res, wuid = runtime.new_world("FlowWorld", "FlowWorld")
     runtime.set_nodenet_properties(test_nodenet, worldadapter="SimpleArrayWA", world_uid=wuid)
     worldadapter = nodenet.worldadapter_instance
-
-    runtime.reload_native_modules()
 
     # create one flow_module, wire to sources & targets
     result = app.post_json('/rpc/add_node', {
@@ -1777,8 +1786,7 @@ def double(inputs, netapi, node, parameters):
 
     assert data['nodenet']['nodes'][flow_uid]
 
-    sources = np.zeros((2, 3), dtype=nodenet.numpyfloatX)
-    sources[:] = np.random.randn(*sources.shape)
+    sources = np.array(np.random.randn(2, 3), dtype=nodenet.numpyfloatX)
     worldadapter.flow_datasources['foo'][:] = sources
 
     runtime.step_nodenet(test_nodenet)

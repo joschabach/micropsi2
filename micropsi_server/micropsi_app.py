@@ -277,7 +277,7 @@ def error_page_500(error):
 @micropsi_app.route("/about")
 def about():
     user_id, permissions, token = get_request_data()
-    return template("about", version=VERSION, user_id=user_id, permissions=permissions)
+    return template("about", version=VERSION, user_id=user_id, permissions=permissions, config=runtime.runtime_info())
 
 
 @micropsi_app.route("/logout")
@@ -1397,10 +1397,10 @@ def delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_t
     return runtime.delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type)
 
 
-@rpc("reload_native_modules", permission_required="manage nodenets")
-def reload_native_modules():
-    """ Reload the native-module definitions, nodefunctions, and recipes """
-    return runtime.reload_native_modules()
+@rpc("reload_code", permission_required="manage nodenets")
+def reload_code():
+    """ Reload the contents of the code-folder """
+    return runtime.reload_code()
 
 
 @rpc("user_prompt_response")

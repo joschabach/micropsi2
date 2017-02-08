@@ -991,3 +991,39 @@ class SimpleArrayWA(ArrayWorldAdapter):
     assert nodenet.get_node(double.uid).inputmap['inputs'] == (sources.uid, 'vision')
     assert (double.uid, 'inputs') in nodenet.get_node(sources.uid).outputmap['vision']
     assert (targets.uid, 'motor') in nodenet.get_node(double.uid).outputmap['outputs']
+
+
+@pytest.mark.engine("theano_engine")
+def test_flownode_generate_netapi_fragment(runtime, test_nodenet, default_world, resourcepath):
+    """ Takes the above-tested edgecase, creates a recipe via generate_netapi_fragment
+    and runs the result"""
+    import os
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+
+    twoout = netapi.create_node("TwoOutputs", None, "twoout")
+    double = netapi.create_node("Double", None, "double")
+    numpy = netapi.create_node("Numpy", None, "numpy")
+    add = netapi.create_node("Add", None, "add")
+    nodes = [twoout, double, numpy, add]
+
+    netapi.flow(twoout, "A", double, "inputs")
+    netapi.flow(twoout, "B", numpy, "inputs")
+    netapi.flow(double, "outputs", add, "input1")
+    netapi.flow(numpy, "outputs", add, "input2")
+
+    fragment = runtime.generate_netapi_fragment(test_nodenet, [n.uid for n in nodes])
+
+    res, pastenet = runtime.new_nodenet('pastnet', "theano_engine")
+    code = "def foo(netapi):\n    " + "\n    ".join(fragment.split('\n'))
+    # save the fragment as recipe & run
+    with open(os.path.join(resourcepath, 'recipes', 'test.py'), 'w+') as fp:
+        fp.write(code)
+    runtime.reload_code()
+    runtime.run_recipe(pastenet, 'foo', {})
+    pastnetapi = runtime.get_nodenet(pastenet).netapi
+
+    function = pastnetapi.get_callable_flowgraph(netapi.get_nodes())
+
+    x = np.array([1, 2, 3], dtype=netapi.floatX)
+    result = np.array([5, 8, 11], dtype=netapi.floatX)
+    assert np.all(function(X=x) == result)

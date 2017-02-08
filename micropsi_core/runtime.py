@@ -1005,6 +1005,8 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     #    ypos.append(nodespace.position[1])
     #    zpos.append(nodespace.position[2])
 
+    flow_nodetypes = nodenet.get_flow_module_definitions()
+
     # nodes and gates
     for i, node in enumerate(nodes):
         name = node.name.strip() if node.name != node.uid else None
@@ -1043,6 +1045,15 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
 
     # links
     for node in nodes:
+        if node.type in flow_nodetypes:
+            source_id = idmap[node.uid]
+            for name in node.outputmap:
+                for uid, target in node.outputmap[name]:
+                    if uid not in idmap:
+                        continue
+                    target_id = idmap[uid]
+                    lines.append("netapi.flow(%s, \"%s\", %s, \"%s\")" % (source_id, name, target_id, target))
+
         for gatetype in node.get_gate_types():
             gate = node.get_gate(gatetype)
             for link in gate.get_links():

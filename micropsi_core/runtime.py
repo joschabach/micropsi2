@@ -1608,10 +1608,8 @@ def parse_world_definitions(path):
                     if World in inspect.getmro(cls) and name != "World":
                         world_classes[name] = cls
                         logging.getLogger("system").debug("Found world %s " % name)
-            except SyntaxError as e:
-                errors.append("%s when importing world file %s: %s," % (e.__class__.__name__, relpath, str(e)))
-            except (ImportError, SystemError) as e:
-                errors.append("%s in world file %s: %s" % (e.__class__.__name__, relpath, str(e)))
+            except (SyntaxError, ImportError, SystemError) as e:
+                errors.append("%s when importing world file %s: %s" % (e.__class__.__name__, relpath, str(e)))
         for w in worldadapterfiles:
             relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
             name = w[:-3]
@@ -1625,10 +1623,8 @@ def parse_world_definitions(path):
                     if WorldAdapter in inspect.getmro(cls) and not inspect.isabstract(cls):
                         worldadapter_classes[name] = cls
                         # errors.append("Name collision in worldadapters: %s defined more than once" % name)
-            except SyntaxError as e:
+            except (SyntaxError, ImportError, SystemError) as e:
                 errors.append("%s when importing worldadapter file %s: %s" % (e.__class__.__name__, relpath, str(e)))
-            except (ImportError, SystemError) as e:
-                errors.append("%s in worldadapter file %s: %s" % (e.__class__.__name__, relpath, str(e)))
         for w in worldobjectfiles:
             relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
             name = w[:-3]
@@ -1642,10 +1638,8 @@ def parse_world_definitions(path):
                     if WorldObject in inspect.getmro(cls) and WorldAdapter not in inspect.getmro(cls):
                         worldobject_classes[name] = cls
                         # errors.append("Name collision in worldadapters: %s defined more than once" % name)
-            except SyntaxError as e:
-                errors.append("%s when importing worldadapter file %s: %s" % (e.__class__.__name__, relpath, str(e)))
-            except (ImportError, SystemError) as e:
-                errors.append("%s in worldadapter file %s: %s" % (e.__class__.__name__, relpath, str(e)))
+            except (SyntaxError, ImportError, SystemError) as e:
+                errors.append("%s when importing worldobject file %s: %s" % (e.__class__.__name__, relpath, str(e)))
     return errors or None
 
 
@@ -1665,12 +1659,8 @@ def parse_native_module_file(path):
             if moduledef['name'] in native_modules:
                 logging.getLogger("system").warning("Native module names must be unique. %s is not." % moduledef['name'])
             native_modules[moduledef['name']] = moduledef
-    except SyntaxError as e:
-        return "%s in file %s, line %d" % (e.__class__.__name__, relpath, e.lineno)
-    except (ImportError, SystemError) as e:
-        return "%s in file %s: %s" % (e.__class__.__name__, relpath, str(e))
     except Exception as e:
-        return "File %s ignored, because %s: %s" % (relpath, e.__class__.__name__, str(e))
+        return "%s when importing nodetype file %s: %s" % (e.__class__.__name__, relpath, str(e))
 
 
 def parse_recipe_or_operations_file(path, mode, category_overwrite=False):
@@ -1690,10 +1680,8 @@ def parse_recipe_or_operations_file(path, mode, category_overwrite=False):
         recipes = loader.load_module()
         # recipes = __import__(pyname, fromlist=['recipes'])
         # importlib.reload(sys.modules[pyname])
-    except SyntaxError as e:
-        return "%s in %s file %s, line %d" % (e.__class__.__name__, mode, relpath, e.lineno)
-    except (ImportError, SystemError) as e:
-        return "%s in %s file %s: %s" % (e.__class__.__name__, mode, relpath, str(e))
+    except (SyntaxError, ImportError, SystemError) as e:
+        return "%s when importing %s file %s: %s" % (e.__class__.__name__, mode, relpath, str(e))
 
     for name, module in inspect.getmembers(recipes, inspect.ismodule):
         if hasattr(module, '__file__') and module.__file__.startswith(RESOURCE_PATH):

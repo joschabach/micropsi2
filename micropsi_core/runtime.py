@@ -1028,9 +1028,11 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
 
             if parameter not in node.nodetype.parameter_defaults or node.nodetype.parameter_defaults[parameter] != value:
                 if isinstance(value, str):
-                    lines.append("%s.set_parameter(\"%s\", \"%s\")" % (varname, parameter, value))
-                else:
+                    lines.append("%s.set_parameter(\"%s\", \"\"\"%s\"\"\")" % (varname, parameter, value))
+                elif isinstance(value, (float, int)):
                     lines.append("%s.set_parameter(\"%s\", %.2f)" % (varname, parameter, value))
+                elif isinstance(value, list):
+                    lines.append("%s.set_parameter(\"%s\", \"\"\"%s\"\"\")" % (varname, parameter, ','.join([str(v) for v in value])))
 
         idmap[node.uid] = varname
         xpos.append(node.position[0])

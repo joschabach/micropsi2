@@ -1609,7 +1609,7 @@ def parse_world_definitions(path):
                         world_classes[name] = cls
                         logging.getLogger("system").debug("Found world %s " % name)
             except SyntaxError as e:
-                errors.append("%s in world file %s, line %d" % (e.__class__.__name__, relpath, e.lineno))
+                errors.append("%s when importing world file %s: %s," % (e.__class__.__name__, relpath, str(e)))
             except (ImportError, SystemError) as e:
                 errors.append("%s in world file %s: %s" % (e.__class__.__name__, relpath, str(e)))
         for w in worldadapterfiles:
@@ -1626,7 +1626,7 @@ def parse_world_definitions(path):
                         worldadapter_classes[name] = cls
                         # errors.append("Name collision in worldadapters: %s defined more than once" % name)
             except SyntaxError as e:
-                errors.append("%s in worldadapter file %s, line %d" % (e.__class__.__name__, relpath, e.lineno))
+                errors.append("%s when importing worldadapter file %s: %s" % (e.__class__.__name__, relpath, str(e)))
             except (ImportError, SystemError) as e:
                 errors.append("%s in worldadapter file %s: %s" % (e.__class__.__name__, relpath, str(e)))
         for w in worldobjectfiles:
@@ -1643,7 +1643,7 @@ def parse_world_definitions(path):
                         worldobject_classes[name] = cls
                         # errors.append("Name collision in worldadapters: %s defined more than once" % name)
             except SyntaxError as e:
-                errors.append("%s in worldadapter file %s, line %d" % (e.__class__.__name__, relpath, e.lineno))
+                errors.append("%s when importing worldadapter file %s: %s" % (e.__class__.__name__, relpath, str(e)))
             except (ImportError, SystemError) as e:
                 errors.append("%s in worldadapter file %s: %s" % (e.__class__.__name__, relpath, str(e)))
     return errors or None

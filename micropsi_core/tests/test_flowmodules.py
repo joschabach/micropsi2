@@ -467,10 +467,57 @@ def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepa
     assert np.all(thetas.get_theta("weights").get_value() == custom_theta)
     nodenet.step()
     assert np.all(worldadapter.get_flow_datatarget('bar') == result)
-
+    assert netapi.get_node(double.uid).initfunction_ran
     # also assert, that the edge-keys are preserved:
     # this would raise an exception otherwise
     netapi.unflow(netapi.get_node(double.uid), 'outputs', netapi.get_node(thetas.uid), 'X')
+
+    # assert that custom thetas survive reloadCode:
+    runtime.reload_code()
+    assert np.all(netapi.get_node(thetas.uid).get_theta('weights').get_value() == custom_theta)
+
+
+@pytest.mark.engine("theano_engine")
+def test_flowmodule_reload_code_behaviour(runtime, test_nodenet, default_world, resourcepath):
+    import os
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+    node = netapi.create_node("Thetas", None, "Thetas", weights_shape=5)
+    node.ensure_initialized()
+    weights = node.get_theta('weights').get_value()
+    with open(os.path.join(resourcepath, "nodetypes", "Thetas.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "theano",
+    "name": "Thetas",
+    "init_function_name": "thetas_init",
+    "build_function_name": "thetas",
+    "parameters": ["weights_shape", "use_thetas"],
+    "inputs": ["Y"],
+    "outputs": ["Z"],
+    "inputdims": [1]
+}
+
+def thetas_init(netapi, node, parameters):
+    import numpy as np
+    w_array = np.random.rand(parameters['weights_shape']).astype(netapi.floatX)
+    b_array = np.random.rand(parameters['weights_shape']).astype(netapi.floatX)
+    node.initfunction_ran = 'yep'
+    node.set_theta('weights', w_array)
+    node.set_theta('bias', theano.shared(b_array))
+
+def thetas(Y, netapi, node, parameters):
+    if parameters.get('use_thetas'):
+        return Y * node.get_theta('weights') + node.get_theta('bias')
+    else:
+        return Y
+""")
+    runtime.reload_code()
+    node = netapi.get_node(node.uid)
+    assert node.inputs == ["Y"]
+    assert node.outputs == ["Z"]
+    assert not np.all(weights == node.get_theta('weights').get_value())
+    assert weights.shape == node.get_theta('weights').get_value().shape
+    assert node.initfunction_ran == 'yep'
 
 
 @pytest.mark.engine("theano_engine")

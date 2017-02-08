@@ -578,6 +578,7 @@ class TheanoNodenet(Nodenet):
                 self.flowgraph = nx.read_gpickle(flowfile)
 
             for node_uid in self.flow_module_instances:
+                self.flow_module_instances[node_uid].ensure_initialized()
                 theta_file = os.path.join(self.get_persistency_path(), "%s_thetas.npz" % node_uid)
                 if os.path.isfile(theta_file):
                     data = np.load(theta_file)
@@ -691,8 +692,8 @@ class TheanoNodenet(Nodenet):
                         parameters=data.get('parameters', {}),
                         inputmap=data['inputmap'],
                         outputmap=data['outputmap'],
-                        is_copy_of=data.get('is_copy_of'),
-                        initialized=data.get('initialized'))
+                        is_copy_of=data.get('is_copy_of'))
+
                     self.flow_module_instances[node.uid] = node
                 else:
                     node = TheanoNode(self, self.get_partition(uid), parent_uid, uid, get_numerical_node_type(data['type'], nativemodules=self.native_modules), parameters=data.get('parameters'))
@@ -1251,8 +1252,10 @@ class TheanoNodenet(Nodenet):
                 val = theano.shared(value=val.astype(T.config.floatX), name=name, borrow=True)
             self.thetas[node_uid]['variables'].insert(index, val)
         else:
+            if not isinstance(val, T.sharedvar.TensorSharedVariable):
+                val = theano.shared(value=val.astype(T.config.floatX), name=name, borrow=True)
             index = self.thetas[node_uid]['names'].index(name)
-            self.thetas[node_uid]['variables'][index].set_value(val, borrow=True)
+            self.thetas[node_uid]['variables'][index].set_value(val.get_value(), borrow=True)
 
     def get_theta(self, node_uid, name):
         data = self.thetas[node_uid]
@@ -1735,12 +1738,19 @@ class TheanoNodenet(Nodenet):
                     continue
 
                 numeric_id = node_from_id(uid)
-                number_of_elements = len(np.where(partition.allocated_elements_to_nodes == numeric_id)[0])
-                new_number_of_elements = max(len(newnative_modules[instance.type].slottypes), len(newnative_modules[instance.type].gatetypes))
-                if number_of_elements != new_number_of_elements:
-                    self.logger.warning("Number of elements changed for node type %s from %d to %d, recreating instance %s" %
-                                    (instance.type, number_of_elements, new_number_of_elements, uid))
-                    instances_to_recreate[uid] = instance.get_data(complete=True, include_links=False)
+                if uid in self.flow_module_instances:
+                    if newnative_modules[instance.type].inputs != instance.inputs or newnative_modules[instance.type].outputs != instance.outputs:
+                        self.logger.warning("Inputs or Outputs of flow node type %s changed, recreating instance %s" %
+                                        (instance.type, uid))
+                        instances_to_recreate[uid] = instance.get_data(complete=True, include_links=False)
+
+                else:
+                    number_of_elements = len(np.where(partition.allocated_elements_to_nodes == numeric_id)[0])
+                    new_number_of_elements = max(len(newnative_modules[instance.type].slottypes), len(newnative_modules[instance.type].gatetypes))
+                    if number_of_elements != new_number_of_elements:
+                        self.logger.warning("Number of elements changed for node type %s from %d to %d, recreating instance %s" %
+                                        (instance.type, number_of_elements, new_number_of_elements, uid))
+                        instances_to_recreate[uid] = instance.get_data(complete=True, include_links=False)
 
             # actually remove the instances
             for uid in instances_to_delete.keys():
@@ -1759,17 +1769,18 @@ class TheanoNodenet(Nodenet):
                 name = instance.name
                 partition = self.get_partition(uid)
                 if uid in self.flow_module_instances:
-                    data = instance.get_flow_data(complete=True)
+                    flowdata = instance.get_flow_data(complete=True)
                     new_instance = FlowModule(
                         self,
                         partition,
                         instance.parent_nodespace,
                         uid,
                         get_numerical_node_type(instance.type, self.native_modules),
-                        inputmap=data['inputmap'],
-                        outputmap=data['outputmap']
+                        inputmap=flowdata['inputmap'],
+                        outputmap=flowdata['outputmap'],
+                        parameters=parameters,
+                        initialized=True
                     )
-
                 else:
                     new_instance = TheanoNode(self, partition, instance.parent_nodespace, uid, partition.allocated_nodes[node_from_id(uid)])
                 new_native_module_instances[uid] = new_instance
@@ -1798,6 +1809,8 @@ class TheanoNodenet(Nodenet):
                 name=data['name'],
                 uid=uid,
                 parameters=data['parameters'])
+            if data.get('flow_module'):
+                self.get_node(new_uid).ensure_initialized()
 
         # recompile flow_graphs:
         self.update_flow_graphs()

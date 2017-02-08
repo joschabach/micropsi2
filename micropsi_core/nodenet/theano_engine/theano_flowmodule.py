@@ -72,7 +72,7 @@ class FlowModule(TheanoNode):
             'inputmap': inmap,
             'outputmap': outmap,
             'is_copy_of': self.is_copy_of,
-            'initialized': self.__initialized
+            # 'initialized': self.__initialized
         }
         return data
 

@@ -1824,9 +1824,9 @@ def reload_code():
 def runtime_info():
     return {
         "version": cfg['micropsi2']['version'],
-        "persistency_directory": cfg['paths']['persistency_directory'],
-        "agent_directory": cfg['paths']['agent_directory'],
-        "world_directory": cfg['paths']['world_directory']
+        "persistency_directory": PERSISTENCY_PATH,
+        "agent_directory": RESOURCE_PATH,
+        "world_directory": WORLD_PATH
     }
 
 

@@ -1554,10 +1554,12 @@ def main(host=None, port=None):
     try:
         from cherrypy import wsgiserver
         server = 'cherrypy'
+        kwargs = {'numthreads': 30}
     except ImportError:
         server = 'wsgiref'
+        kwargs = {}
 
-    run(micropsi_app, host=host, port=port, quiet=True, server=server)
+    run(micropsi_app, host=host, port=port, quiet=True, server=server, **kwargs)
 
 
 if __name__ == "__main__":

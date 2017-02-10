@@ -1,10 +1,12 @@
 
 0.9-alpha7 (unreleased)
 ==========
- 
+ * New structure for native module / recipe discovery
+ * Live reloading of World and worldadapter code
+ * Outsourced world and worldadapter definitions
+ * Flowmodules for theano_engine
  * Recorders for theano_engine
  * High-dimensional native modules for theano_engine
- * VREP world
  * Configurable Worldadapters
 
 

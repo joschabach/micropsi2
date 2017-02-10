@@ -1545,13 +1545,20 @@ def runtime_info():
 
 # -----------------------------------------------------------------------------------------------
 
+
 def main(host=None, port=None):
     host = host or cfg['micropsi2']['host']
     port = port or cfg['micropsi2']['port']
-    server = cfg['micropsi2']['server']
     print("Starting App on Port " + str(port))
     runtime.initialize()
+    try:
+        from cherrypy import wsgiserver
+        server = 'cherrypy'
+    except ImportError:
+        server = 'wsgiref'
+
     run(micropsi_app, host=host, port=port, quiet=True, server=server)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Start the %s server." % APPTITLE)

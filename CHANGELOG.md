@@ -1,5 +1,5 @@
 
-0.9-alpha7 (unreleased)
+0.9-alpha7 (2017-02-13)
 ==========
  * New structure for native module / recipe discovery
  * Live reloading of World and worldadapter code

@@ -1667,7 +1667,7 @@ def parse_native_module_file(path):
         if hasattr(module, 'nodetype_definition') and type(module.nodetype_definition) == dict:
             category = os.path.relpath(os.path.dirname(path), start=base_path)
             if category == '.':
-                category = None
+                category = ''
             moduledef = module.nodetype_definition
             moduledef['path'] = path
             moduledef['category'] = category
@@ -1686,7 +1686,7 @@ def parse_recipe_or_operations_file(path, mode, category_overwrite=False):
     base_path = os.path.join(RESOURCE_PATH, mode)
     category = category_overwrite or os.path.relpath(os.path.dirname(path), start=base_path)
     if category == '.':
-        category = None  # relapth in rootfolder
+        category = ''  # relapth in rootfolder
     relpath = os.path.relpath(path, start=base_path)
     name = os.path.basename(path)[:-3]
 

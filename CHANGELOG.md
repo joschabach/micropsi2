@@ -1,4 +1,15 @@
 
+0.9-alpha7 (2017-02-13)
+==========
+ * New structure for native module / recipe discovery
+ * Live reloading of World and worldadapter code
+ * Outsourced world and worldadapter definitions
+ * Flowmodules for theano_engine
+ * Recorders for theano_engine
+ * High-dimensional native modules for theano_engine
+ * Configurable Worldadapters
+
+
 0.8-alpha6 (2016-04-22)
 ==========
 

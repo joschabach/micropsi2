@@ -19,9 +19,6 @@ __author__ = 'joscha'
 __date__ = '09.05.12'
 
 
-emptySheafElement = dict(uid="default", name="default", activation=0)
-
-
 class Node(metaclass=ABCMeta):
     """
     Abstract base class for node implementations.
@@ -105,23 +102,7 @@ class Node(metaclass=ABCMeta):
     @abstractmethod
     def activation(self):
         """
-        This node's activation property ('default' sheaf) as calculated once per step by its node function
-        """
-        pass  # pragma: no cover
-
-    # @property
-    # @abstractmethod
-    # def activations(self):
-    #     """
-    #     This node's activation properties (dict of all sheaves) as calculated once per step by its node function
-    #     """
-
-    @property
-    @abstractmethod
-    def activations(self):
-        """
-        Returns a copy of the nodes's activations (all sheaves)
-        Changes to the returned dict will not affect the node
+        This node's activation property as calculated once per step by its node function
         """
         pass  # pragma: no cover
 
@@ -129,7 +110,7 @@ class Node(metaclass=ABCMeta):
     @abstractmethod
     def activation(self, activation):
         """
-        Sets this node's activation property ('default' sheaf), overriding what has been calculated by the node function
+        Sets this node's activation property, overriding what has been calculated by the node function
         """
         pass  # pragma: no cover
 
@@ -156,6 +137,9 @@ class Node(metaclass=ABCMeta):
         self.logger = nodetype.logger
 
     def get_data(self, complete=False, include_links=True):
+        """
+        Return this node's json data for the frontend
+        """
         data = {
             "name": self.name,
             "position": self.position,
@@ -163,11 +147,9 @@ class Node(metaclass=ABCMeta):
             "type": self.type,
             "parameters": self.clone_parameters(),
             "state": self.clone_state(),
-            "gate_parameters": self.clone_non_default_gate_parameters(),
-            "sheaves": self.clone_sheaves(),
             "activation": self.activation,
             "gate_activations": self.construct_gates_dict(),
-            "gate_functions": self.get_gatefunction_names()
+            "gate_configuration": self.get_gate_configuration()
         }
         data["uid"] = self.uid
         if complete:
@@ -177,6 +159,9 @@ class Node(metaclass=ABCMeta):
         return data
 
     def construct_links_dict(self):
+        """
+        Return a dict of links originating at this node
+        """
         links = {}
         for key in self.get_gate_types():
             gatelinks = self.get_gate(key).get_links()
@@ -192,40 +177,20 @@ class Node(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def set_gate_parameter(self, gate_type, parameter, value):
+    def set_gate_configuration(self, gate_type, gatefunction, gatefunction_parameters={}):
         """
-        Sets the given gate parameter to the given value
+        Configures the given gate to use the gatefunction of the given name, with the given parameters
+        if gatefunction_name is None, the default "identity" gatefunction is set for the gate
         """
-        pass  # pragma: no cover
+        pass
 
     @abstractmethod
-    def clone_non_default_gate_parameters(self, gate_type):
+    def get_gate_configuration(self, gate_type=None):
         """
-        Returns a copy of all gate parameters set to a non-default value.
-        Write access to this dict will not affect the node.
+        Returns a dict specifying the gatefunction and parameters configured for the given gate,
+        or all gates if None
         """
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def set_gatefunction_name(self, gate_type, gatefunction_name):
-        """
-        sets the gatefunction of the given gate to the one with the given name
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def get_gatefunction_name(self, gate_type):
-        """
-        returns the name of the gatefunction configured for this gate
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def get_gatefunction_names(self):
-        """
-        Returns a map of gates and their gatefunctions
-        """
-        pass  # pragma: no cover
+        pass
 
     @abstractmethod
     def get_slot(self, type):
@@ -304,15 +269,6 @@ class Node(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def clone_sheaves(self):
-        """
-        Returns a copy of the activation values present in the node.
-        Note that this is about node activation, not gate activation (gates have their own sheaves).
-        Write access to this dict will not affect the node.
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
     def node_function(self):
         """
         The node function of the node, called after activation has been propagated to the node's slots.
@@ -356,6 +312,9 @@ class Node(metaclass=ABCMeta):
         return list(self.nodetype.slottypes)
 
     def get_associated_links(self):
+        """
+        Return a list of all links originating or terminating at this node
+        """
         links = []
         for key in self.get_gate_types():
             links.extend(self.get_gate(key).get_links())
@@ -364,6 +323,9 @@ class Node(metaclass=ABCMeta):
         return links
 
     def get_associated_node_uids(self):
+        """
+        Return a list of all node_uids that are linked to this node
+        """
         nodes = []
         for link in self.get_associated_links():
             if link.source_node.uid != self.uid:
@@ -373,9 +335,12 @@ class Node(metaclass=ABCMeta):
         return nodes
 
     def construct_gates_dict(self):
+        """
+        Return a dict mapping gate-names to gate-activations
+        """
         data = {}
         for gate_name in self.get_gate_types():
-            data[gate_name] = self.get_gate(gate_name).clone_sheaves()
+            data[gate_name] = self.get_gate(gate_name).activation
         return data
 
     def __repr__(self):
@@ -416,16 +381,7 @@ class Gate(metaclass=ABCMeta):
     @abstractmethod
     def activation(self):
         """
-        Returns the gate's activation ('default' sheaf)
-        """
-        pass  # pragma: no cover
-
-    @property
-    @abstractmethod
-    def activations(self):
-        """
-        Returns a copy of the gate's activations (all sheaves)
-        Changes to the returned dict will not affect the gate
+        Returns the gate's activation
         """
         pass  # pragma: no cover
 
@@ -437,23 +393,7 @@ class Gate(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_parameter(self, parameter):
-        """
-        Returns the value of the given parameter or none if the parameter is not set.
-        Note that the returned value may be a default inherited from gate parameter defaults as defined in Nodetype
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def clone_sheaves(self):
-        """
-        Returns a copy of the activation values present in the gate.
-        Write access to this dict will not affect the gate.
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def gate_function(self, input_activation, sheaf="default"):
+    def gate_function(self, input_activation):
         """
         This function sets the activation of the gate.
         This only needs to be implemented if the reference implementation for the node functions from
@@ -467,18 +407,6 @@ class Gate(metaclass=ABCMeta):
 
         Implementations should allow to define alternative gate functions on a per-nodespace basis, i.e. all
         gates of nodes in a given nodespace should use the same gate function.
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def open_sheaf(self, input_activation, sheaf="default"):
-        """
-        This function opens a new sheaf and calls gate_function function for the newly opened sheaf.
-        This only needs to be implemented if the reference implementation for the node functions from
-        nodefunctions.py is being used.
-
-        Alternative implementations are free to handle sheaves in the node functions directly and
-        can pass on the implementation of this method.
         """
         pass  # pragma: no cover
 
@@ -521,25 +449,15 @@ class Slot(metaclass=ABCMeta):
     @abstractmethod
     def activation(self):
         """
-        Returns the activation in this slot ('default' sheaf)
+        Returns the activation in this slot
         """
         pass  # pragma: no cover
 
     @property
     @abstractmethod
-    def activations(self):
+    def get_activation(self):
         """
-        Returns a copy of the slots's activations (all sheaves)
-        Changes to the returned dict will not affect the gate
-        """
-        pass  # pragma: no cover
-
-    @property
-    @abstractmethod
-    def get_activation(self, sheaf="default"):
-        """
-        Returns the activation in this slot for the given sheaf.
-        Will return the activation in the 'default' sheaf if the sheaf does not exist
+        Returns the activation in this slot.
         """
         pass  # pragma: no cover
 
@@ -557,17 +475,6 @@ class Slot(metaclass=ABCMeta):
 class Nodetype(object):
     """Every node has a type, which is defined by its slot types, gate types, its node function and a list of
     node parameteres."""
-
-    GATE_DEFAULTS = {
-        "minimum": -1,
-        "maximum": 1,
-        "certainty": 1,
-        "amplification": 1,
-        "threshold": -1,
-        "theta": 0,
-        "rho": 0,
-        "spreadsheaves": 0
-    }
 
     @property
     def parameters(self):
@@ -590,7 +497,7 @@ class Nodetype(object):
             self.nodefunction = micropsi_core.tools.create_function(nodefunction_definition,
                 parameters="nodenet, node, " + args)
         except SyntaxError as err:
-            self.logger.warn("Syntax error while compiling node function: %s", str(err))
+            self.logger.warning("Syntax error while compiling node function: %s", str(err))
             raise err
 
     @property
@@ -601,11 +508,13 @@ class Nodetype(object):
     def nodefunction_name(self, nodefunction_name):
         import os
         from importlib.machinery import SourceFileLoader
+        import inspect
         self._nodefunction_name = nodefunction_name
         try:
             if self.path:
                 module = SourceFileLoader("nodefunctions", self.path).load_module()
                 self.nodefunction = getattr(module, nodefunction_name)
+                self.line_number = inspect.getsourcelines(self.nodefunction)[1]
             else:
                 from micropsi_core.nodenet import nodefunctions
                 if hasattr(nodefunctions, nodefunction_name):
@@ -618,8 +527,8 @@ class Nodetype(object):
             raise err
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
-                 nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None,
-                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category=''):
+                 nodefunction_definition=None, nodefunction_name=None, parameter_values=None,
+                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', **_):
         """Initializes or creates a nodetype.
 
         Arguments:
@@ -633,28 +542,20 @@ class Nodetype(object):
         self._parameters = []
         self._nodefunction_definition = None
         self._nodefunction_name = None
+        self.line_number = -1
 
         self.name = name
-        self.slottypes = slottypes or {}
-        self.gatetypes = gatetypes or {}
+
+        self.slottypes = slottypes or []
+        self.gatetypes = gatetypes or []
 
         self.path = path
         self.category = category
-
+        self.shape = shape
+        self.symbol = symbol
         self.logger = nodenet.logger
 
-        self.gate_defaults = {}
-        for g in self.gatetypes:
-            self.gate_defaults[g] = Nodetype.GATE_DEFAULTS.copy()
-
-        if gate_defaults is not None:
-            for g in gate_defaults:
-                for key in gate_defaults[g]:
-                    if g not in self.gate_defaults:
-                        raise Exception("Invalid gate default value for nodetype %s: Gate %s not found" % (name, g))
-                    self.gate_defaults[g][key] = gate_defaults[g][key]
-
-        self.parameters = parameters or {}
+        self.parameters = parameters or []
         self.parameter_values = parameter_values or {}
         self.parameter_defaults = parameter_defaults or {}
 
@@ -664,3 +565,121 @@ class Nodetype(object):
             self.nodefunction_name = nodefunction_name
         else:
             self.nodefunction = None
+
+    def get_gate_dimensionality(self, gate):
+        return 1
+
+    def get_slot_dimensionality(self, slot):
+        return 1
+
+    def get_data(self):
+        data = {
+            'name': self.name,
+            'parameters': self.parameters,
+            'parameter_values': self.parameter_values,
+            'parameter_defaults': self.parameter_defaults,
+            'symbol': self.symbol,
+            'shape': self.shape,
+            'nodefunction_definition': self.nodefunction_definition,
+            'nodefunction_name': self.nodefunction_name,
+            'path': self.path,
+            'category': self.category,
+            'line_number': self.line_number,
+            'gatetypes': self.gatetypes,
+            'slottypes': self.slottypes
+        }
+        return data
+
+
+class FlowNodetype(Nodetype):
+    def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
+                 nodefunction_definition=None, nodefunction_name=None, parameter_values=None,
+                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='',
+                 flow_module=True, inputs=None, outputs=None, implementation=None, is_autogenerated=False, **_):
+        super().__init__(name, nodenet, slottypes=slottypes, gatetypes=gatetypes, parameters=parameters,
+                 nodefunction_definition=nodefunction_definition, nodefunction_name=nodefunction_name, parameter_values=parameter_values,
+                 symbol=symbol, shape=shape, engine=engine, parameter_defaults=parameter_defaults, path=path, category=category)
+        if is_autogenerated:
+            self.slottypes = []
+            self.gatetypes = []
+        else:
+            self.slottypes = ['sub']
+            self.gatetypes = ['sur']
+        self.is_autogenerated = is_autogenerated
+        self.is_flow_module = True
+        self.implementation = implementation
+        self.inputs = inputs
+        self.outputs = outputs
+
+    def get_data(self):
+        data = super().get_data()
+        data.update({
+            'inputs': self.inputs,
+            'outputs': self.outputs,
+            'implementation': self.implementation,
+            'is_autogenerated': self.is_autogenerated
+        })
+        return data
+
+
+class HighdimensionalNodetype(Nodetype):
+    def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
+                 nodefunction_definition=None, nodefunction_name=None, parameter_values=None,
+                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', dimensionality={}, **_):
+        super().__init__(name, nodenet, slottypes=slottypes, gatetypes=gatetypes, parameters=parameters,
+                 nodefunction_definition=nodefunction_definition, nodefunction_name=nodefunction_name, parameter_values=parameter_values,
+                 symbol=symbol, shape=shape, engine=engine, parameter_defaults=parameter_defaults, path=path, category=category)
+
+        self.is_highdimensional = bool(dimensionality)
+        if nodenet.engine == "dict_engine" and self.is_highdimensional:
+            nodenet.logger.warning("Dict engine does not support high dimensional native_modules")
+            self.is_highdimensional = False
+            self.dimensionality = {}
+
+        self.gategroups = [("%s0" % g) if dimensionality['gates'].get(g, 1) > 1 else g for g in gatetypes]
+        self.slotgroups = [("%s0" % s) if dimensionality['slots'].get(s, 1) > 1 else s for s in slottypes]
+        self.dimensionality = dimensionality
+        gates = []
+        slots = []
+        index = 0
+        self.slotindexes = {}
+        self.gateindexes = {}
+        for g in self.gatetypes:
+            self.gateindexes[g] = index
+            if dimensionality['gates'].get(g, 1) > 1:
+                group = ["%s%d" % (g, i) for i in range(dimensionality['gates'][g])]
+                gates.extend(group)
+                index += dimensionality['gates'][g]
+            else:
+                gates.append(g)
+                index += 1
+
+        index = 0
+        for s in self.slottypes:
+            self.slotindexes[s] = index
+            if dimensionality['slots'].get(s, 1) > 1:
+                group = ["%s%d" % (s, i) for i in range(dimensionality['slots'][s])]
+                slots.extend(group)
+                index += dimensionality['slots'][s]
+            else:
+                slots.append(s)
+                index += 1
+        self.gatetypes = gates
+        self.slottypes = slots
+
+    def get_gate_dimensionality(self, gate):
+        return self.dimensionality.get('gates', {}).get(gate, 1)
+
+    def get_slot_dimensionality(self, slot):
+        return self.dimensionality.get('slots', {}).get(slot, 1)
+
+    def get_data(self):
+        data = super().get_data()
+        data['gatetypes'] = self.gategroups
+        data['slottypes'] = self.slotgroups
+        data['is_highdimensional'] = True
+        data['dimensionality'] = {
+            'gates': dict(("%s0" % g, self.dimensionality['gates'][g]) for g in self.dimensionality['gates']),
+            'slots': dict(("%s0" % s, self.dimensionality['slots'][s]) for s in self.dimensionality['slots']),
+        }
+        return data

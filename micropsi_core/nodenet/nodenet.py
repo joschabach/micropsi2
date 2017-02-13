@@ -4,8 +4,9 @@
 Nodenet definition
 """
 
-
+import os
 import logging
+
 from datetime import datetime
 from threading import Lock
 from abc import ABCMeta, abstractmethod
@@ -13,11 +14,14 @@ from abc import ABCMeta, abstractmethod
 import micropsi_core.tools
 from .netapi import NetAPI
 from . import monitor
+from . import recorder
+from .node import Nodetype, FlowNodetype, HighdimensionalNodetype
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
 
-NODENET_VERSION = 1
+
+NODENET_VERSION = 2
 
 
 class NodenetLockException(Exception):
@@ -64,10 +68,11 @@ class Nodenet(metaclass=ABCMeta):
             'current_step': self.current_step,
             'world': self._world_uid,
             'worldadapter': self._worldadapter_uid,
-            'version': NODENET_VERSION,
+            'version': self._version,
             'runner_condition': self._runner_condition,
             'use_modulators': self.use_modulators,
-            'nodespace_ui_properties': self._nodespace_ui_properties
+            'nodespace_ui_properties': self._nodespace_ui_properties,
+            'worldadapter_config': {} if not self.worldadapter_instance else self.worldadapter_instance.config
         }
         return data
 
@@ -136,8 +141,10 @@ class Nodenet(metaclass=ABCMeta):
         Connects the node net to the given world adapter uid, or disconnects if None is given
         """
         self._worldadapter_instance = _worldadapter_instance
+        if self._worldadapter_instance:
+            self._worldadapter_instance.nodenet = self
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, use_modulators=True, worldadapter_instance=None):
+    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None):
         """
         Constructor for the abstract base class, must be called by implementations
         """
@@ -146,15 +153,19 @@ class Nodenet(metaclass=ABCMeta):
         self._world_uid = world
         self._worldadapter_uid = worldadapter if world else None
         self._worldadapter_instance = worldadapter_instance
+        if self._worldadapter_instance:
+            self._worldadapter_instance.nodenet = self
         self.is_active = False
+        self.frequency = 0.0
         self.use_modulators = use_modulators
 
-        self._version = NODENET_VERSION  # used to check compatibility of the node net data
+        self._version = version or NODENET_VERSION  # used to check compatibility of the node net data
         self._uid = uid
         self._runner_condition = None
 
         self.owner = owner
         self._monitors = {}
+        self._recorders = {}
         self._nodespace_ui_properties = {}
 
         self.netlock = Lock()
@@ -170,11 +181,31 @@ class Nodenet(metaclass=ABCMeta):
         self.stepping_rate = []
         self.dashboard_values = {}
 
+        self.native_modules = {}
+        for type, data in native_modules.items():
+            if data.get('engine', self.engine) == self.engine:
+                try:
+                    if data.get('flow_module'):
+                        self.native_modules[type] = FlowNodetype(nodenet=self, **data)
+                    elif data.get('dimensionality'):
+                        self.native_modules[type] = HighdimensionalNodetype(nodenet=self, **data)
+                    else:
+                        self.native_modules[type] = Nodetype(nodenet=self, **data)
+                except Exception as err:
+                    self.logger.error("Can not instantiate node type %s: %s: %s" % (type, err.__class__.__name__, str(err)))
+
         self._modulators = {}
         if use_modulators:
             from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators as emo
             for modulator in emo.writeable_modulators + emo.readable_modulators:
                 self._modulators[modulator] = 1
+
+        if not os.path.isdir(self.get_persistency_path()):
+            os.mkdir(self.get_persistency_path())
+
+    def get_persistency_path(self):
+        from micropsi_core.runtime import PERSISTENCY_PATH, NODENET_DIRECTORY
+        return os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, self.uid)
 
     def get_data(self, complete=False, include_links=True):
         """
@@ -197,31 +228,31 @@ class Nodenet(metaclass=ABCMeta):
         return data
 
     @abstractmethod
-    def get_nodes(self, nodespaces=[], include_links=True):
+    def get_nodes(self, nodespaces=[], node_uids=[], include_links=True, links_to_nodespaces=[]):
         """
         Returns a dict with contents for the given nodespaces
         """
         pass  # pragma: no cover
 
     @abstractmethod
-    def save(self, filename):
+    def get_links_for_nodes(self, node_uids):
+        """
+        Returns a tuple consisting of links from/to the given node
+        and the nodes that are connected via these links
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def save(self):
         """
         Saves the nodenet to the given main metadata json file.
         """
         pass  # pragma: no cover
 
     @abstractmethod
-    def load(self, filename):
+    def load(self):
         """
         Loads the node net from the given main metadata json file.
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def remove(self, filename):
-        """
-        Removes the node net's given main metadata json file, plus any additional files the node net may
-        have created for persistency
         """
         pass  # pragma: no cover
 
@@ -262,9 +293,9 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
+    def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_configuration=None):
         """
-        Creates a new node of the given node type (string), in the nodespace with the given UID, at the given
+        Creates a new node of the given node type (string), in the given nodespace, at the given
         position and returns the uid of the new node
         """
         pass  # pragma: no cover
@@ -317,15 +348,15 @@ class Nodenet(metaclass=ABCMeta):
             return self._nodespace_ui_properties
 
     @abstractmethod
-    def set_entity_positions(self, positions):
-        """ Sets the position of nodes or nodespaces.
+    def set_node_positions(self, positions):
+        """ Sets the position of nodes.
         Parameters: a hash of uids to their positions """
         pass   # pragma: no cover
 
     @abstractmethod
-    def create_nodespace(self, parent_uid, position, name="", uid=None):
+    def create_nodespace(self, parent_uid, name="", uid=None):
         """
-        Creates a new nodespace  in the nodespace with the given UID, at the given position.
+        Creates a new nodespace within the given parent-nodespace
         """
         pass  # pragma: no cover
 
@@ -344,21 +375,21 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_actors(self, nodespace=None, datatarget=None):
+    def get_actuators(self, nodespace=None, datatarget=None):
         """
-        Returns a dict of all actor nodes. Optionally filtered by the given nodespace and data target
+        Returns a dict of all actuator nodes. Optionally filtered by the given nodespace and data target
         """
         pass  # pragma: no cover
 
     @abstractmethod
-    def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
+    def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1):
         """
         Creates a new link between the given node/gate and node/slot
         """
         pass  # pragma: no cover
 
     @abstractmethod
-    def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
+    def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1):
         """
         Set weight of the link between the given node/gate and node/slot
         """
@@ -383,30 +414,9 @@ class Nodenet(metaclass=ABCMeta):
             "name": "Name of the Native Module",
             "slottypes": ["trigger"],
             "nodefunction_name": "native_module_function",
-            "gatetypes": ["done"],
-            "gate_defaults": {
-                "done": {
-                    "minimum": -100,
-                    "maximum": 100,
-                    "threshold": -100
-                }
-            }
+            "gatetypes": ["done"]
         }
 
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def get_nodespace_data(self, nodespace_uid, include_links):
-        """
-        Returns a data dict of the nodenet state for the given nodespace.
-
-        Implementations are expected to fill the following keys:
-        'nodes' - map of nodes it the given rectangle
-        'links' - map of links ending or originating in the given rectangle
-        'nodespaces' - map of nodespaces positioned in the given rectangle
-        'monitors' - result of self.construct_monitors_dict()
-        'user_prompt' - self.user_prompt if set, should be cleared then
         """
         pass  # pragma: no cover
 
@@ -450,6 +460,26 @@ class Nodenet(metaclass=ABCMeta):
         Returns the standard node types supported by this nodenet
         """
         pass  # pragma: no cover
+
+    def get_native_module_definitions(self):
+        """
+        Returns the native modules supported by this nodenet
+        """
+        data = {}
+        for key in self.native_modules:
+            if type(self.native_modules[key]) != FlowNodetype:
+                data[key] = self.native_modules[key].get_data()
+        return data
+
+    def get_flow_module_definitions(self):
+        """
+        Returns the flow modules supported by this nodenet
+        """
+        data = {}
+        for key in self.native_modules:
+            if type(self.native_modules[key]) == FlowNodetype:
+                data[key] = self.native_modules[key].get_data()
+        return data
 
     @abstractmethod
     def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id', group_name=None):
@@ -496,18 +526,23 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_thetas(self, nodespace_uid, group):
+    def get_gate_configurations(self, nodespace_uid, group, gatefunction_parameter=None):
         """
-        Returns a list of theta values for the given group.
-        For multi-gate nodes, the thetas of the gen gates will be returned
+        Returns a dictionary containing a list of gatefunction names, and a list of the values
+        of the given gatefunction_parameter (if given)
         """
         pass  # pragma: no cover
 
     @abstractmethod
-    def set_thetas(self, nodespace_uid, group, thetas):
+    def set_gate_configurations(self, nodespace_uid, group, gatefunction, gatefunction_parameter=None, parameter_values=None):
         """
-        Bulk-sets thetas for the given group.
-        new_thetas dimensionality has to match the group length
+        Bulk-sets gatefunctions and a gatefunction_parameter for the given group.
+        Arguments:
+            nodespace_uid (string) - id of the parent nodespace
+            group (string) - name of the group
+            gatefunction (string) - name of the gatefunction to set
+            gatefunction_parameter (optinoal) - name of the gatefunction_paramr to set
+            parameter_values (optional) - values to set for the gatefunction_parameetr
         """
         pass  # pragma: no cover
 
@@ -532,7 +567,7 @@ class Nodenet(metaclass=ABCMeta):
     @abstractmethod
     def get_available_gatefunctions(self):
         """
-        Returns a list of available gate functions
+        Returns a dict of the available gatefunctions and their parameters and parameter-defaults
         """
         pass  # pragma: no cover
 
@@ -545,7 +580,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_nodespace_changes(self, nodespace_uids=[], since_step=0):
+    def get_nodespace_changes(self, nodespace_uids=[], since_step=0, include_links=True):
         """
         Returns a dictionary of structural changes that happened in the given nodespace
         since the given step
@@ -575,27 +610,27 @@ class Nodenet(metaclass=ABCMeta):
     def clear(self):
         self._monitors = {}
 
-    def add_gate_monitor(self, node_uid, gate, sheaf=None, name=None, color=None):
+    def add_gate_monitor(self, node_uid, gate, name=None, color=None):
         """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation
         value in every calculation step.
         Returns the uid of the new monitor."""
-        mon = monitor.NodeMonitor(self, node_uid, 'gate', gate, sheaf=sheaf, name=name, color=color)
+        mon = monitor.NodeMonitor(self, node_uid, 'gate', gate, name=name, color=color)
         self._monitors[mon.uid] = mon
         return mon.uid
 
-    def add_slot_monitor(self, node_uid, slot, sheaf=None, name=None, color=None):
+    def add_slot_monitor(self, node_uid, slot, name=None, color=None):
         """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
         value in every calculation step.
         Returns the uid of the new monitor."""
-        mon = monitor.NodeMonitor(self, node_uid, 'slot', slot, sheaf=sheaf, name=name, color=color)
+        mon = monitor.NodeMonitor(self, node_uid, 'slot', slot, name=name, color=color)
         self._monitors[mon.uid] = mon
         return mon.uid
 
-    def add_link_monitor(self, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, color=None):
-        """Adds a continuous monitor to a link. You can choose to monitor either weight (default) or certainty
-        The monitor will collect respective value in every calculation step.
+    def add_link_monitor(self, source_node_uid, gate_type, target_node_uid, slot_type, name=None, color=None):
+        """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
+        value in every calculation step.
         Returns the uid of the new monitor."""
-        mon = monitor.LinkMonitor(self, source_node_uid, gate_type, target_node_uid, slot_type, property=property, name=name, color=color)
+        mon = monitor.LinkMonitor(self, source_node_uid, gate_type, target_node_uid, slot_type, name=name, color=color)
         self._monitors[mon.uid] = mon
         return mon.uid
 
@@ -615,12 +650,25 @@ class Nodenet(metaclass=ABCMeta):
         self._monitors[mon.uid] = mon
         return mon.uid
 
+    def add_group_monitor(self, nodespace, name, node_name_prefix='', node_uids=[], gate='gen', color=None):
+        """Adds a continuous monitor, that tracks the activations of the given group
+        return-value for every calculation step.
+        Returns the uid of the new monitor."""
+        mon = monitor.GroupMonitor(self, nodespace, name, node_name_prefix, node_uids, gate, color=color)
+        self._monitors[mon.uid] = mon
+        return mon.uid
+
     def get_monitor(self, uid):
         return self._monitors.get(uid)
 
-    def update_monitors(self):
+    def get_recorder(self, uid):
+        return self._recorders.get(uid)
+
+    def update_monitors_and_recorders(self):
         for uid in self._monitors:
             self._monitors[uid].step(self.current_step)
+        for uid in self._recorders:
+            self._recorders[uid].step(self.current_step)
 
     def construct_monitors_dict(self):
         data = {}
@@ -628,8 +676,32 @@ class Nodenet(metaclass=ABCMeta):
             data[monitor_uid] = self._monitors[monitor_uid].get_data()
         return data
 
+    def construct_recorders_dict(self):
+        data = {}
+        for uid in self._recorders:
+            data[uid] = self._recorders[uid].get_data()
+        return data
+
     def remove_monitor(self, monitor_uid):
         del self._monitors[monitor_uid]
+
+    def add_gate_activation_recorder(self, group_definition, name, interval=1):
+        """ Adds an activation recorder to a group of nodes."""
+        raise NotImplementedError("Recorders are not implemented in the this engine")
+
+    def add_node_activation_recorder(self, group_definition, name, interval=1):
+        """ Adds an activation recorder to a group of nodes."""
+        raise NotImplementedError("Recorders are not implemented in the this engine")
+
+    def add_linkweight_recorder(self, from_group_definition, to_group_definition, name, interval=1):
+        """ Adds a linkweight recorder to links between to groups."""
+        raise NotImplementedError("Recorders are not implemented in the this engine")
+
+    def remove_recorder(self, recorder_uid):
+        filename = self._recorders[recorder_uid].filename
+        if os.path.isfile(filename):
+            os.remove(filename)
+        del self._recorders[recorder_uid]
 
     def get_dashboard(self):
         data = self.dashboard_values.copy()

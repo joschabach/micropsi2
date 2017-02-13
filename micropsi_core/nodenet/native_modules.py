@@ -125,15 +125,15 @@ def gradient_descent(netapi, node=None, **params):
             len_output = len(a_o_array)
 
             if len_input == 0:
-                netapi.logger.warn("Node net has no input nodes whose names start with '%s'", input_)
+                netapi.logger.warning("Node net has no input nodes whose names start with '%s'", input_)
                 node.set_parameter('ctr', 0)
                 return
             elif len_hidden == 0:
-                netapi.logger.warn("Node net has no hidden nodes whose names start with '%s'.", hidden)
+                netapi.logger.warning("Node net has no hidden nodes whose names start with '%s'.", hidden)
                 node.set_parameter('ctr', 0)
                 return
             elif len_output == 0:
-                netapi.logger.warn("Node net has no output names whose names start with '%s'.", output)
+                netapi.logger.warning("Node net has no output names whose names start with '%s'.", output)
                 node.set_parameter('ctr', 0)
                 return
             else:

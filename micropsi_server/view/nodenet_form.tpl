@@ -1,6 +1,6 @@
 <div class="dialogform modal">
 
-    <form class="form-horizontal" action="/nodenet/edit" method="POST">
+    <form class="form-horizontal" action="/agent/edit" method="POST">
 
     <div class="modal-header">
       <button type="button" class="close" data-dismiss="modal">×</button>
@@ -50,8 +50,8 @@
                 <div class="control-group">
                     <label class="control-label" for="nn_modulators">Emotional Modulators</label>
                     <div class="controls">
-                        <input class="input-xlarge" id="nn_modulators" name="nn_modulators" type="checkbox" checked="checked" />
-                        <!-- <span class="help-inline">Deselect if this nodenet does not use the emotional model of the PSI Theory</span> -->
+                        <input class="input-xlarge" id="nn_modulators" name="nn_modulators" type="checkbox" />
+                        <!-- <span class="help-inline">Deselect if this agent does not use the emotional model of the PSI Theory</span> -->
                     </div>
                 </div>
 
@@ -81,7 +81,7 @@
                 </div>
 
                 <div class="control-group">
-                    <label class="control-label" for="nn_world">World</label>
+                    <label class="control-label" for="nn_world">Environment</label>
                     <div class="controls">
                         <select class="input-xlarge" id="nn_world" name="nn_world" onchange="updateWorldAdapterSelector();">
                             <option value="">None</option>
@@ -108,7 +108,7 @@
                 </div>
 
                 <div class="control-group">
-                    <label class="control-label" for="nn_worldadapter">World adapter</label>
+                    <label class="control-label" for="nn_worldadapter">Worldadapter</label>
                     <div class="controls">
                         <select class="input-xlarge" id="nn_worldadapter" name="nn_worldadapter">
                             % if not defined("nodenet") or not defined ("nodenet.world") or not nodenet.world in worlds:
@@ -123,6 +123,37 @@
                     </div>
                 </div>
 
+                %for type, data in worldtypes.items():
+                    % for name, adapter in data['class'].get_supported_worldadapters().items():
+                        % for param in adapter.get_config_options():
+                            <div class="control-group worldadapter-config worldadapter-{{name}}" style="display:none">
+                                <label class="control-label" for="worldadapter_config_{{name}}_{{param['name']}}">{{param['name']}}</label>
+                                <div class="controls">
+                                    % if param.get('options'):
+                                    <select class="input-xlarge" id="worldadapter_config_{{name}}_{{param['name']}}" name="worldadapter_{{name}}_{{param['name']}}">
+                                        % for val in param['options']:
+                                            <option value="{{val}}"
+                                            %if param.get('default') and param['default'] == val:
+                                                selected="selected"
+                                            %end
+                                            >{{val}}</option>
+                                        %end
+                                    </select>
+                                    %else:
+                                    <input class="input-xlarge" id="world_config_{{name}}_{{param['name']}}" name="worldadapter_{{name}}_{{param['name']}}"
+                                        type="text" value="{{param.get('default', '')}}" />
+                                    %end
+                                    %if param.get('description'):
+                                        <div class="hint small">{{param['description']}}</div>
+
+                                    %end
+                                </div>
+                            </div>
+                        % end
+                    %end
+                %end
+
+
             </fieldset>
     </div>
 
@@ -134,4 +165,3 @@
     </form>
 
 </div>
-

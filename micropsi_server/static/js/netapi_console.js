@@ -353,7 +353,15 @@ $(function(){
 
     function autocomplete_select(event){
         if(event && $(event.target).attr('id') == 'console_input'){
-            var el = $('a.selected', autocomplete_container)
+            var el = $('a.selected', autocomplete_container);
+            if(el.length == 0){
+                var els = $('a', autocomplete_container);
+                if(els.length){
+                    el = $(els[0]);
+                } else {
+                    return
+                }
+            }
         } else {
             if(event){
                 var el = $(event.target);

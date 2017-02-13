@@ -9,6 +9,7 @@ import scipy.sparse as sp
 import theano.sparse as ST
 from theano.tensor import nnet as N
 
+from micropsi_core.nodenet.node import FlowNodetype, HighdimensionalNodetype
 from micropsi_core.nodenet.theano_engine.theano_definitions import *
 
 
@@ -91,24 +92,14 @@ class TheanoPartition():
             self.__has_gatefunction_sigmoid = value
 
     @property
-    def has_gatefunction_tanh(self):
-        return self.__has_gatefunction_tanh
+    def has_gatefunction_relu(self):
+        return self.__has_gatefunction_relu
 
-    @has_gatefunction_tanh.setter
-    def has_gatefunction_tanh(self, value):
-        if value != self.__has_gatefunction_tanh:
+    @has_gatefunction_relu.setter
+    def has_gatefunction_relu(self, value):
+        if value != self.__has_gatefunction_relu:
             self.__has_new_usages = True
-            self.__has_gatefunction_tanh = value
-
-    @property
-    def has_gatefunction_rect(self):
-        return self.__has_gatefunction_rect
-
-    @has_gatefunction_rect.setter
-    def has_gatefunction_rect(self, value):
-        if value != self.__has_gatefunction_rect:
-            self.__has_new_usages = True
-            self.__has_gatefunction_rect = value
+            self.__has_gatefunction_relu = value
 
     @property
     def has_gatefunction_one_over_x(self):
@@ -119,6 +110,26 @@ class TheanoPartition():
         if value != self.__has_gatefunction_one_over_x:
             self.__has_new_usages = True
             self.__has_gatefunction_one_over_x = value
+
+    @property
+    def has_gatefunction_elu(self):
+        return self.__has_gatefunction_elu
+
+    @has_gatefunction_elu.setter
+    def has_gatefunction_elu(self, value):
+        if value != self.__has_gatefunction_elu:
+            self.__has_new_usages = True
+            self.__has_gatefunction_elu = value
+
+    @property
+    def has_gatefunction_threshold(self):
+        return self.__has_gatefunction_threshold
+
+    @has_gatefunction_threshold.setter
+    def has_gatefunction_threshold(self, value):
+        if value != self.__has_gatefunction_threshold:
+            self.__has_new_usages = True
+            self.__has_gatefunction_threshold = value
 
     def __init__(self, nodenet, pid, sparse=True, initial_number_of_nodes=2000, average_elements_per_node_assumption=5, initial_number_of_nodespaces=10):
 
@@ -199,14 +210,15 @@ class TheanoPartition():
         self.a_prev = None       # vector of output activations at t-1 (not all gate types maintain this)
 
         self.g_factor = None     # vector of gate factors, controlled by activators, semantics differ by node type
-        self.g_threshold = None  # vector of thresholds (gate parameters)
+
+        # gatefunction parameters
+        self.g_bias = None      # vector of biases
+        self.g_threshold = None  # vector of thresholds
         self.g_amplification = None  # vector of amplification factors
         self.g_min = None        # vector of lower bounds
         self.g_max = None        # vector of upper bounds
 
-        self.g_function_selector = None # vector of gate function selectors
-
-        self.g_theta = None      # vector of thetas (i.e. biases, use depending on gate function)
+        self.g_function_selector = None  # vector of gate function selectors
 
         self.g_expect = None     # vector of expectations
         self.g_countdown = None  # vector of number of steps until expectation needs to be met
@@ -237,8 +249,8 @@ class TheanoPartition():
 
         self.allocated_elements_to_activators = np.zeros(self.NoE, dtype=np.int32)
 
-        self.sensor_indices = np.zeros(0, dtype=np.int32)  # index := datasource, value:=node_id
-        self.actuator_indices = np.zeros(0, dtype=np.int32)  # index := datatarget, value:=node_id
+        self.sensor_indices = np.zeros(0, dtype=np.int32)  # index := datasource, value:=element index
+        self.actuator_indices = np.zeros(0, dtype=np.int32)  # index := datatarget, value:=element index
 
         self.inlinks = {}
 
@@ -265,11 +277,11 @@ class TheanoPartition():
         a_prev_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
         self.a_prev = theano.shared(value=a_prev_array.astype(T.config.floatX), name="a_prev", borrow=True)
 
-        g_theta_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
-        self.g_theta = theano.shared(value=g_theta_array.astype(T.config.floatX), name="theta", borrow=True)
+        g_bias_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
+        self.g_bias = theano.shared(value=g_bias_array.astype(T.config.floatX), name="bias", borrow=True)
 
-        g_theta_shifted_matrix = np.lib.stride_tricks.as_strided(g_theta_array, shape=(self.NoE, 7), strides=(nodenet.byte_per_float, nodenet.byte_per_float))
-        self.g_theta_shifted = theano.shared(value=g_theta_shifted_matrix.astype(T.config.floatX), name="g_theta_shifted_shifted", borrow=True)
+        g_bias_shifted_matrix = np.lib.stride_tricks.as_strided(g_bias_array, shape=(self.NoE, 7), strides=(nodenet.byte_per_float, nodenet.byte_per_float))
+        self.g_bias_shifted = theano.shared(value=g_bias_shifted_matrix.astype(T.config.floatX), name="g_bias_shifted_shifted", borrow=True)
 
         g_factor_array = np.ones(self.NoE, dtype=nodenet.numpyfloatX)
         self.g_factor = theano.shared(value=g_factor_array.astype(T.config.floatX), name="g_factor", borrow=True)
@@ -315,8 +327,10 @@ class TheanoPartition():
         self.__has_gatefunction_absolute = False
         self.__has_gatefunction_sigmoid = False
         self.__has_gatefunction_tanh = False
-        self.__has_gatefunction_rect = False
         self.__has_gatefunction_one_over_x = False
+        self.__has_gatefunction_elu = False
+        self.__has_gatefunction_relu = False
+        self.__has_gatefunction_threshold = False
         self.por_ret_dirty = True
 
         self.last_allocated_node = 0
@@ -335,7 +349,7 @@ class TheanoPartition():
 
     def compile_calculate_nodes(self):
         slots = self.a_shifted
-        biases = self.g_theta_shifted
+        biases = self.g_bias_shifted
         countdown = self.g_countdown
         por_linked = self.n_node_porlinked
         ret_linked = self.n_node_retlinked
@@ -363,10 +377,9 @@ class TheanoPartition():
         #
 
         ### gen plumbing
-        pipe_gen_sur_exp = slots[:, 11] + slots[:, 13]                              # sum of sur and exp as default
+        pipe_gen_sur_exp = (slots[:, 11] + slots[:, 13]) * slots[:, 10]             # sum of sur and exp as default
                                                                                     # drop to 0 if < expectation
         pipe_gen_sur_exp = T.switch(T.lt(pipe_gen_sur_exp, self.g_expect) * T.gt(pipe_gen_sur_exp, 0), 0, pipe_gen_sur_exp)
-
 
         pipe_gen = slots[:, 7] * slots[:, 10]                                       # gen * sub
         pipe_gen = T.switch(abs(pipe_gen) > 0.1, pipe_gen, pipe_gen_sur_exp)        # drop to def. if below 0.1
@@ -412,11 +425,12 @@ class TheanoPartition():
         countdown_sur = T.switch(cd_reset_cond, self.g_wait, T.maximum(countdown - 1, -1))
 
         pipe_sur_cond = T.eq(por_linked, 0) + T.gt(slots[:, 4], 0)                  # not por-linked or por > 0
+        pipe_sur_cond *= slots[:, 6]                                                # and sub > 0
         pipe_sur_cond = T.gt(pipe_sur_cond, 0)
 
         pipe_sur = slots[:, 7]                                                      # start with sur
         pipe_sur = pipe_sur + T.gt(slots[:, 3], 0.2)                                # add gen-loop 1
-        pipe_sur = pipe_sur + (slots[:, 9] * slots[:, 6])                           # add exp * sub
+        pipe_sur = pipe_sur + slots[:, 9]                                           # add exp
                                                                                     # drop to zero if < expectation
         pipe_sur = T.switch(T.lt(pipe_sur, self.g_expect) * T.gt(pipe_sur, 0), 0, pipe_sur)
                                                                                     # check if we're in timeout
@@ -431,12 +445,11 @@ class TheanoPartition():
         pipe_cat_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 3], 0), 1)      # (if linked, por must be > 0)
         pipe_cat_cond = pipe_cat_cond * T.eq(slots[:, 2], 0)                        # and (gen == 0)
 
-        pipe_cat = T.clip(slots[:, 6], 0, 1)                                        # bubble: start with sur if sur > 0
-        pipe_cat = pipe_cat + slots[:, 5]                                           # add sub
+        pipe_cat = slots[:, 5]                                                      # start with sub
         pipe_cat = pipe_cat + slots[:, 7]                                           # add cat
         pipe_cat = pipe_cat * pipe_cat_cond                                         # apply conditions
                                                                                     # add cat (for search) if sub=sur=0
-        pipe_cat = pipe_cat + (slots[:, 7] * T.eq(slots[:, 5], 0) * T.eq(slots[:, 6], 0))
+        pipe_cat = pipe_cat + (slots[:, 7] * T.eq(slots[:, 5], 0) * T.eq(slots[:, 6], 0) * T.eq(pipe_cat, 0))
 
         ### exp plumbing
         pipe_exp = slots[:, 5]                                                      # start with sur
@@ -537,28 +550,37 @@ class TheanoPartition():
             gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_ABSOLUTE), abs(gate_function_output), gate_function_output)
         # apply GATE_FUNCTION_SIGMOID to masked gates
         if self.has_gatefunction_sigmoid:
-            gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_SIGMOID), N.sigmoid(gate_function_output + self.g_theta), gate_function_output)
-        # apply GATE_FUNCTION_TANH to masked gates
-        if self.has_gatefunction_tanh:
-            gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_TANH), T.tanh(gate_function_output + self.g_theta), gate_function_output)
-        # apply GATE_FUNCTION_RECT to masked gates
-        if self.has_gatefunction_rect:
-            gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_RECT), T.switch(gate_function_output + self.g_theta > 0, gate_function_output - self.g_theta, 0), gate_function_output)
+            x = gate_function_output + self.g_bias
+            gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_SIGMOID), N.sigmoid(x), gate_function_output)
+        # apply GATE_FUNCTION_ELU to masked gates
+        if self.has_gatefunction_elu:
+            x = gate_function_output + self.g_bias
+            gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_ELU), T.switch(gate_function_output > 0., x, T.exp(x) - 1.), gate_function_output)
+        # apply GATE_FUNCTION_RELU to masked gates
+        if self.has_gatefunction_relu:
+            x = gate_function_output + self.g_bias
+            gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_RELU), T.maximum(x, 0.), gate_function_output)
+            # wait for theano 0.7.1 for this to work
+            #gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_RELU), T.nnet.relu(x), gate_function_output)
         # apply GATE_FUNCTION_DIST to masked gates
         if self.has_gatefunction_one_over_x:
             gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_DIST), T.switch(T.neq(0, gate_function_output), 1 / gate_function_output, 0), gate_function_output)
 
-        # apply threshold
-        thresholded_gate_function_output = \
-            T.switch(T.ge(gate_function_output, self.g_threshold), gate_function_output, 0)
+        if self.has_gatefunction_threshold:
 
-        # apply amplification
-        amplified_gate_function_output = thresholded_gate_function_output * self.g_amplification
+            # apply threshold
+            thresholded_gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_THRESHOLD), \
+                T.switch(T.ge(gate_function_output, self.g_threshold), gate_function_output, 0), gate_function_output)
 
-        # apply minimum and maximum
-        limited_gate_function_output = T.clip(amplified_gate_function_output, self.g_min, self.g_max)
+            # apply amplification
+            amplified_gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_THRESHOLD), thresholded_gate_function_output * self.g_amplification, thresholded_gate_function_output)
 
-        gatefunctions = limited_gate_function_output
+            # apply minimum and maximum
+            limited_gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_THRESHOLD), T.clip(amplified_gate_function_output, self.g_min, self.g_max), amplified_gate_function_output)
+
+            gatefunctions = limited_gate_function_output
+        else:
+            gatefunctions = gate_function_output
 
         # put the theano graph into a callable function to be executed
         if self.has_pipes:
@@ -569,6 +591,10 @@ class TheanoPartition():
     def get_compiled_propagate_inlinks(self, from_partition, from_elements, to_elements, weights):
         propagated_a = T.dot(weights, from_partition.a[from_elements])
         a_in = T.inc_subtensor(self.a_in[to_elements], propagated_a, inplace=True, tolerate_inplace_aliasing=True)
+        return theano.function([], None, updates=[(self.a_in, a_in)], accept_inplace=True)
+
+    def get_compiled_propagate_identity_inlinks(self, from_partition, from_elements, to_elements):
+        a_in = T.inc_subtensor(self.a_in[to_elements], from_partition.a[from_elements], inplace=True, tolerate_inplace_aliasing=True)
         return theano.function([], None, updates=[(self.a_in, a_in)], accept_inplace=True)
 
     def calculate(self):
@@ -590,12 +616,18 @@ class TheanoPartition():
             self.__rebuild_shifted()
         if self.has_directional_activators or self.__has_sampling_activators:
             self.__calculate_g_factors()
+        self.__clean_native_module_gates()
         self.calculate_nodes()
         self.__calculate_native_modules()
 
     def __take_native_module_slot_snapshots(self):
         for uid, instance in self.native_module_instances.items():
             instance.take_slot_activation_snapshot()
+
+    def __clean_native_module_gates(self):
+        for uid, instance in self.native_module_instances.items():
+            for gate_type in instance.get_gate_types():
+                instance.get_gate(gate_type).activation = 0
 
     def __calculate_native_modules(self):
         for uid, instance in self.native_module_instances.items():
@@ -613,10 +645,10 @@ class TheanoPartition():
         a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(self.NoE, 14), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
         self.a_shifted.set_value(a_shifted_matrix, borrow=True)
 
-        g_theta_array = self.g_theta.get_value(borrow=True)
-        g_theta_rolled_array = np.roll(g_theta_array, 7)
-        g_theta_shifted_matrix = np.lib.stride_tricks.as_strided(g_theta_rolled_array, shape=(self.NoE, 14), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
-        self.g_theta_shifted.set_value(g_theta_shifted_matrix, borrow=True)
+        g_bias_array = self.g_bias.get_value(borrow=True)
+        g_bias_rolled_array = np.roll(g_bias_array, 7)
+        g_bias_shifted_matrix = np.lib.stride_tricks.as_strided(g_bias_rolled_array, shape=(self.NoE, 14), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
+        self.g_bias_shifted.set_value(g_bias_shifted_matrix, borrow=True)
 
     def rebuild_por_linked(self):
 
@@ -692,7 +724,8 @@ class TheanoPartition():
         self.NoN = new_NoN
         self.has_new_usages = True
 
-    def save(self, datafilename):
+    def save(self):
+        base_path = self.nodenet.get_persistency_path()
 
         allocated_nodes = self.allocated_nodes
         allocated_node_offsets = self.allocated_node_offsets
@@ -717,7 +750,7 @@ class TheanoPartition():
             w = sp.csr_matrix(w)
 
         a = self.a.get_value(borrow=True)
-        g_theta = self.g_theta.get_value(borrow=True)
+        g_bias = self.g_bias.get_value(borrow=True)
         g_factor = self.g_factor.get_value(borrow=True)
         g_threshold = self.g_threshold.get_value(borrow=True)
         g_amplification = self.g_amplification.get_value(borrow=True)
@@ -731,40 +764,19 @@ class TheanoPartition():
 
         sizeinformation = [self.NoN, self.NoE, self.NoNS]
 
-        inlink_from_element_count = 0
-        inlink_to_element_count = 0
-        weight_count = 0
         for spid, inlinks in self.inlinks.items():
-            inlink_from_element_count += len(inlinks[0].get_value(borrow=True))
-            inlink_to_element_count += len(inlinks[1].get_value(borrow=True))
-            weight_count += len(inlinks[0].get_value(borrow=True)) * len(inlinks[1].get_value(borrow=True))
-        inlinks_pids = np.zeros(len(self.inlinks), dtype=np.int16)
-        inlink_from_lengths = np.zeros(len(self.inlinks), dtype=np.int32)
-        inlink_to_lengths = np.zeros(len(self.inlinks), dtype=np.int32)
-        inlink_from_elements = np.zeros(inlink_from_element_count, dtype=np.int32)
-        inlink_to_elements = np.zeros(inlink_to_element_count, dtype=np.int32)
-        inlink_weights = np.zeros(weight_count, dtype=self.nodenet.numpyfloatX)
+            filename = os.path.join(base_path, "inlinks-%s-from-%s.npz" % (self.spid, spid))
+            from_ids = inlinks[0].get_value(borrow=True)
+            to_ids = inlinks[1].get_value(borrow=True)
+            weights = inlinks[2].get_value(borrow=True) if inlinks[2] else None
+            np.savez(filename,
+                from_partition_id=spid,
+                from_ids=from_ids,
+                to_ids=to_ids,
+                weights=weights,
+                inlink_type=inlinks[4])
 
-        from_offset = 0
-        to_offset = 0
-        weight_offset = 0
-        for i, spid in enumerate(self.inlinks.keys()):
-            inlinks_pids[i] = int(spid)
-            from_elements = self.inlinks[spid][0].get_value(borrow=True)
-            to_elements = self.inlinks[spid][1].get_value(borrow=True)
-            weights = self.inlinks[spid][2].get_value(borrow=True)
-            from_length = len(from_elements)
-            to_length = len(to_elements)
-            inlink_from_lengths[i] = from_length
-            inlink_to_lengths[i] = to_length
-            inlink_from_elements[from_offset:from_offset+from_length] = from_elements
-            inlink_to_elements[to_offset:to_offset+to_length] = to_elements
-            inlink_weights[weight_offset:weight_offset+(from_length*to_length)] = np.ravel(weights)
-            weight_offset += from_length * to_length
-            from_offset += from_length
-            to_offset += to_length
-
-        np.savez(datafilename,
+        np.savez(os.path.join(base_path, "partition-%s.npz" % self.spid),
                  allocated_nodes=allocated_nodes,
                  allocated_node_offsets=allocated_node_offsets,
                  allocated_elements_to_nodes=allocated_elements_to_nodes,
@@ -774,7 +786,7 @@ class TheanoPartition():
                  w_indices=w.indices,
                  w_indptr=w.indptr,
                  a=a,
-                 g_theta=g_theta,
+                 g_bias=g_bias,
                  g_factor=g_factor,
                  g_threshold=g_threshold,
                  g_amplification=g_amplification,
@@ -793,28 +805,24 @@ class TheanoPartition():
                  allocated_nodespaces_sur_activators=allocated_nodespaces_sur_activators,
                  allocated_nodespaces_cat_activators=allocated_nodespaces_cat_activators,
                  allocated_nodespaces_exp_activators=allocated_nodespaces_exp_activators,
-                 allocated_nodespaces_sampling_activators=allocated_nodespaces_sampling_activators,
-                 inlink_pids=inlinks_pids,
-                 inlink_from_lengths=inlink_from_lengths,
-                 inlink_to_lengths=inlink_to_lengths,
-                 inlink_from_elements=inlink_from_elements,
-                 inlink_to_elements=inlink_to_elements,
-                 inlink_weights=inlink_weights)
+                 allocated_nodespaces_sampling_activators=allocated_nodespaces_sampling_activators)
 
-    def load_data(self, datafilename, nodes_data):
+    def load_data(self, nodes_data):
         """Load the node net from a file"""
         # try to access file
 
+        base_path = self.nodenet.get_persistency_path()
+        filename = os.path.join(base_path, "partition-%s.npz" % self.spid)
         datafile = None
-        if os.path.isfile(datafilename):
+        if os.path.isfile(filename):
             try:
-                self.logger.info("Loading nodenet %s partition %i bulk data from file %s" % (self.nodenet.name, self.pid, datafilename))
-                datafile = np.load(datafilename)
+                self.logger.info("Loading nodenet %s partition %i bulk data from file %s" % (self.nodenet.name, self.pid, filename))
+                datafile = np.load(filename)
             except ValueError:  # pragma: no cover
-                self.logger.warn("Could not read nodenet data from file %s" % datafile)
+                self.logger.warning("Could not read partition data from file %s" % filename)
                 return False
             except IOError:  # pragma: no cover
-                self.logger.warn("Could not open nodenet file %s" % datafile)
+                self.logger.warning("Could not open partition file %s" % filename)
                 return False
 
         if not datafile:
@@ -834,73 +842,73 @@ class TheanoPartition():
             self.a_prev = theano.shared(value=a_prev_array.astype(T.config.floatX), name="a_prev", borrow=True)
 
         else:
-            self.logger.warn("no sizeinformation in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no sizeinformation in file, falling back to defaults")  # pragma: no cover
 
         # the load bulk data into numpy arrays
         if 'allocated_nodes' in datafile:
             self.allocated_nodes = datafile['allocated_nodes']
         else:
-            self.logger.warn("no allocated_nodes in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_nodes in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_node_offsets' in datafile:
             self.allocated_node_offsets = datafile['allocated_node_offsets']
         else:
-            self.logger.warn("no allocated_node_offsets in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_node_offsets in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_elements_to_nodes' in datafile:
             self.allocated_elements_to_nodes = datafile['allocated_elements_to_nodes']
         else:
-            self.logger.warn("no allocated_elements_to_nodes in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_elements_to_nodes in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces' in datafile:
             self.allocated_nodespaces = datafile['allocated_nodespaces']
         else:
-            self.logger.warn("no allocated_nodespaces in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_nodespaces in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_node_parents' in datafile:
             self.allocated_node_parents = datafile['allocated_node_parents']
         else:
-            self.logger.warn("no allocated_node_parents in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_node_parents in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_elements_to_activators' in datafile:
             self.allocated_elements_to_activators = datafile['allocated_elements_to_activators']
         else:
-            self.logger.warn("no allocated_elements_to_activators in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_elements_to_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces_por_activators' in datafile:
             self.allocated_nodespaces_por_activators = datafile['allocated_nodespaces_por_activators']
         else:
-            self.logger.warn("no allocated_nodespaces_por_activators in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_nodespaces_por_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces_ret_activators' in datafile:
             self.allocated_nodespaces_ret_activators = datafile['allocated_nodespaces_ret_activators']
         else:
-            self.logger.warn("no allocated_nodespaces_ret_activators in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_nodespaces_ret_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces_sub_activators' in datafile:
             self.allocated_nodespaces_sub_activators = datafile['allocated_nodespaces_sub_activators']
         else:
-            self.logger.warn("no allocated_nodespaces_sub_activators in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_nodespaces_sub_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces_sur_activators' in datafile:
             self.allocated_nodespaces_sur_activators = datafile['allocated_nodespaces_sur_activators']
         else:
-            self.logger.warn("no allocated_nodespaces_sur_activators in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_nodespaces_sur_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces_cat_activators' in datafile:
             self.allocated_nodespaces_cat_activators = datafile['allocated_nodespaces_cat_activators']
         else:
-            self.logger.warn("no allocated_nodespaces_cat_activators in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_nodespaces_cat_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces_exp_activators' in datafile:
             self.allocated_nodespaces_exp_activators = datafile['allocated_nodespaces_exp_activators']
         else:
-            self.logger.warn("no allocated_nodespaces_exp_activators in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_nodespaces_exp_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'allocated_nodespaces_sampling_activators' in datafile:
             self.allocated_nodespaces_sampling_activators = datafile['allocated_nodespaces_sampling_activators']
         else:
-            self.logger.warn("no allocated_nodespaces_por_activators in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no allocated_nodespaces_por_activators in file, falling back to defaults")  # pragma: no cover
 
         if 'w_data' in datafile and 'w_indices' in datafile and 'w_indptr' in datafile:
             w = sp.csr_matrix((datafile['w_data'], datafile['w_indices'], datafile['w_indptr']), shape = (self.NoE, self.NoE))
@@ -911,62 +919,62 @@ class TheanoPartition():
             self.a = theano.shared(value=datafile['a'].astype(T.config.floatX), name="a", borrow=False)
             self.a_in = theano.shared(value=np.zeros_like(datafile['a']).astype(T.config.floatX), name="a_in", borrow=False)
         else:
-            self.logger.warn("no w_data, w_indices or w_indptr in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no w_data, w_indices or w_indptr in file, falling back to defaults")  # pragma: no cover
 
-        if 'g_theta' in datafile:
-            self.g_theta = theano.shared(value=datafile['g_theta'].astype(T.config.floatX), name="theta", borrow=False)
+        if 'g_bias' in datafile:
+            self.g_bias = theano.shared(value=datafile['g_bias'].astype(T.config.floatX), name="bias", borrow=False)
         else:
-            self.logger.warn("no g_theta in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no g_bias in file, falling back to defaults")  # pragma: no cover
 
         if 'g_factor' in datafile:
             self.g_factor = theano.shared(value=datafile['g_factor'].astype(T.config.floatX), name="g_factor", borrow=False)
         else:
-            self.logger.warn("no g_factor in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no g_factor in file, falling back to defaults")  # pragma: no cover
 
         if 'g_threshold' in datafile:
             self.g_threshold = theano.shared(value=datafile['g_threshold'].astype(T.config.floatX), name="g_threshold", borrow=False)
         else:
-            self.logger.warn("no g_threshold in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no g_threshold in file, falling back to defaults")  # pragma: no cover
 
         if 'g_amplification' in datafile:
             self.g_amplification = theano.shared(value=datafile['g_amplification'].astype(T.config.floatX), name="g_amplification", borrow=False)
         else:
-            self.logger.warn("no g_amplification in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no g_amplification in file, falling back to defaults")  # pragma: no cover
 
         if 'g_min' in datafile:
             self.g_min = theano.shared(value=datafile['g_min'].astype(T.config.floatX), name="g_min", borrow=False)
         else:
-            self.logger.warn("no g_min in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no g_min in file, falling back to defaults")  # pragma: no cover
 
         if 'g_max' in datafile:
             self.g_max = theano.shared(value=datafile['g_max'].astype(T.config.floatX), name="g_max", borrow=False)
         else:
-            self.logger.warn("no g_max in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no g_max in file, falling back to defaults")  # pragma: no cover
 
         if 'g_function_selector' in datafile:
             self.g_function_selector = theano.shared(value=datafile['g_function_selector'], name="gatefunction", borrow=False)
         else:
-            self.logger.warn("no g_function_selector in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no g_function_selector in file, falling back to defaults")  # pragma: no cover
 
         if 'g_expect' in datafile:
             self.g_expect = theano.shared(value=datafile['g_expect'], name="expectation", borrow=False)
         else:
-            self.logger.warn("no g_expect in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no g_expect in file, falling back to defaults")  # pragma: no cover
 
         if 'g_countdown' in datafile:
             self.g_countdown = theano.shared(value=datafile['g_countdown'], name="countdown", borrow=False)
         else:
-            self.logger.warn("no g_countdown in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no g_countdown in file, falling back to defaults")  # pragma: no cover
 
         if 'g_wait' in datafile:
             self.g_wait = theano.shared(value=datafile['g_wait'], name="wait", borrow=False)
         else:
-            self.logger.warn("no g_wait in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no g_wait in file, falling back to defaults")  # pragma: no cover
 
         if 'n_function_selector' in datafile:
             self.n_function_selector = theano.shared(value=datafile['n_function_selector'], name="nodefunction_per_gate", borrow=False)
         else:
-            self.logger.warn("no n_function_selector in file, falling back to defaults")  # pragma: no cover
+            self.logger.warning("no n_function_selector in file, falling back to defaults")  # pragma: no cover
 
         # reconstruct other states
         self.por_ret_dirty = True
@@ -987,11 +995,12 @@ class TheanoPartition():
             self.has_sampling_activators = np.sum(self.allocated_nodespaces_sampling_activators) > 0
             self.has_gatefunction_absolute = GATE_FUNCTION_ABSOLUTE in g_function_selector
             self.has_gatefunction_sigmoid = GATE_FUNCTION_SIGMOID in g_function_selector
-            self.has_gatefunction_tanh = GATE_FUNCTION_TANH in g_function_selector
-            self.has_gatefunction_rect = GATE_FUNCTION_RECT in g_function_selector
+            self.has_gatefunction_relu = GATE_FUNCTION_RELU in g_function_selector
             self.has_gatefunction_one_over_x = GATE_FUNCTION_DIST in g_function_selector
+            self.has_gatefunction_elu = GATE_FUNCTION_ELU in g_function_selector
+            self.has_gatefunction_elu = GATE_FUNCTION_THRESHOLD in g_function_selector
         else:
-            self.logger.warn("no g_function_selector in file, falling back to defaults")
+            self.logger.warning("no g_function_selector in file, falling back to defaults")
 
         for id in np.nonzero(self.allocated_nodes)[0]:
             if self.allocated_nodes[id] > MAX_STD_NODETYPE:
@@ -1023,54 +1032,23 @@ class TheanoPartition():
         if self.has_directional_activators or self.__has_sampling_activators:
             self.__calculate_g_factors()
 
-    def load_inlinks(self, datafilename):
-        datafile = None
-        if os.path.isfile(datafilename):
-            try:
-                datafile = np.load(datafilename)
-            except ValueError:  # pragma: no cover
-                self.logger.warn("Could not read nodenet data from file %s" % datafile)
-                return False
-            except IOError:  # pragma: no cover
-                self.logger.warn("Could not open nodenet file %s" % datafile)
-                return False
+    def load_inlinks(self):
+        base_path = self.nodenet.get_persistency_path()
+        for spid in self.nodenet.partitions:
+            filename = os.path.join(base_path, "inlinks-%s-from-%s.npz" % (self.spid, spid))
+            if os.path.isfile(filename):
+                datafile = np.load(filename)
 
-        if not datafile:
-            return
-
-        if 'inlink_pids' in datafile and \
-            'inlink_from_lengths' in datafile and \
-            'inlink_to_lengths' in datafile and \
-            'inlink_from_elements' in datafile and \
-            'inlink_to_elements' in datafile and \
-            'inlink_weights' in datafile:
-
-            inlink_pids = datafile['inlink_pids']
-            inlink_from_lengths = datafile['inlink_from_lengths']
-            inlink_to_lengths = datafile['inlink_to_lengths']
-
-            inlink_from_offset = 0
-            inlink_to_offset = 0
-            weight_offset = 0
-
-            for i, pid in enumerate(inlink_pids):
-
-                inlink_from_elements = datafile['inlink_from_elements'][inlink_from_offset:inlink_from_offset+inlink_from_lengths[i]]
-                inlink_to_elements = datafile['inlink_to_elements'][inlink_to_offset:inlink_to_offset+inlink_to_lengths[i]]
-                inlink_weights = datafile['inlink_weights'][weight_offset:weight_offset+(inlink_from_lengths[i]*inlink_to_lengths[i])]
+                if str(datafile['inlink_type']) == 'identity':
+                    weights = 1
+                else:
+                    weights = datafile['weights']
 
                 self.set_inlink_weights(
-                    "%03i" % pid,
-                    inlink_from_elements.astype(np.int32),
-                    inlink_to_elements.astype(np.int32),
-                    np.reshape(inlink_weights, (inlink_to_lengths[i], inlink_from_lengths[i]))
-                )
-
-                weight_offset += inlink_from_lengths[i]*inlink_to_lengths[i]
-                inlink_from_offset += inlink_from_lengths[i]
-                inlink_to_offset += inlink_to_lengths[i]
-        else:
-            self.logger.warn("no or incomplete inlink information in file, no inter-partition links will be loaded")  # pragma: no cover
+                    str(datafile['from_partition_id']),
+                    datafile['from_ids'],
+                    datafile['to_ids'],
+                    weights)
 
     def grow_number_of_nodespaces(self, growby):
 
@@ -1153,12 +1131,12 @@ class TheanoPartition():
         new_a_prev[0:self.NoE] = self.a_prev.get_value(borrow=True)
         self.a_prev.set_value(new_a_prev, borrow=True)
 
-        new_g_theta = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
-        new_g_theta[0:self.NoE] = self.g_theta.get_value(borrow=True)
-        self.g_theta.set_value(new_g_theta, borrow=True)
+        new_g_bias = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_bias[0:self.NoE] = self.g_bias.get_value(borrow=True)
+        self.g_bias.set_value(new_g_bias, borrow=True)
 
-        new_g_theta_shifted = np.lib.stride_tricks.as_strided(new_g_theta, shape=(self.NoE, 7), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
-        self.g_theta_shifted.set_value(new_g_theta_shifted, borrow=True)
+        new_g_bias_shifted = np.lib.stride_tricks.as_strided(new_g_bias, shape=(self.NoE, 7), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
+        self.g_bias_shifted.set_value(new_g_bias_shifted, borrow=True)
 
         new_g_factor = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
         new_g_factor[0:self.NoE] = self.g_factor.get_value(borrow=True)
@@ -1230,7 +1208,7 @@ class TheanoPartition():
             self.logger.info("Per announcement in partition %i, growing elements vectors by %d elements" % (self.pid, growby))
             self.grow_number_of_elements(gap + (gap //3))
 
-    def create_node(self, nodetype, nodespace_id, id=None, parameters=None, gate_parameters=None, gate_functions=None):
+    def create_node(self, nodetype, nodespace_id, id=None, parameters=None, gate_configuration=None):
 
         # find a free ID / index in the allocated_nodes vector to hold the node type
         if id is None:
@@ -1298,11 +1276,14 @@ class TheanoPartition():
             # due to the order of initializing, nodespaces might just not be here yet.
             self.nodespaces_contents_last_changed[nodespace_id] = self.nodenet.current_step
 
-        for element in range (0, get_elements_per_type(self.allocated_nodes[id], self.nodenet.native_modules)):
-            self.allocated_elements_to_nodes[offset + element] = id
+        if number_of_elements > 0:
+            elrange = np.asarray(range(offset, offset + number_of_elements))
+            self.allocated_elements_to_nodes[elrange] = id
 
         if parameters is None:
             parameters = {}
+        if gate_configuration is None:
+            gate_configuration = {}
 
         nto = self.nodenet.get_nodetype(nodetype)
 
@@ -1331,7 +1312,7 @@ class TheanoPartition():
                 self.allocated_node_offsets[self.allocated_nodespaces_exp_activators[nodespace_id]]
 
             if nto.parameter_defaults.get('expectation'):
-                value = nto.parameter_defaults['expectation']
+                value = int(parameters.get('expectation', nto.parameter_defaults['expectation']))
                 g_expect_array = self.g_expect.get_value(borrow=True)
                 g_expect_array[offset + GEN] = float(value)
                 g_expect_array[offset + SUR] = float(value)
@@ -1339,7 +1320,7 @@ class TheanoPartition():
                 self.g_expect.set_value(g_expect_array, borrow=True)
 
             if nto.parameter_defaults.get('wait'):
-                value = nto.parameter_defaults['wait']
+                value = int(parameters.get('wait', nto.parameter_defaults['wait']))
                 g_wait_array = self.g_wait.get_value(borrow=True)
                 g_wait_array[offset + SUR] = int(min(value, 128))
                 g_wait_array[offset + POR] = int(min(value, 128))
@@ -1385,20 +1366,10 @@ class TheanoPartition():
             for key in self.nodenet.get_standard_nodetype_definitions()[nodetype]['parameters']:
                 node_proxy.set_parameter(key, parameters.get(key, ''))
 
-        for gate, parameters in nto.gate_defaults.items():
-            if gate in nto.gatetypes:
-                for gate_parameter in parameters:
-                    self.set_node_gate_parameter(id, gate, gate_parameter, parameters[gate_parameter])
-        if gate_parameters is not None:
-            for gate, parameters in gate_parameters.items():
-                if gate in nto.gatetypes:
-                    for gate_parameter in parameters:
-                        self.set_node_gate_parameter(id, gate, gate_parameter, parameters[gate_parameter])
-
-        if gate_functions is not None:
-            for gate, gate_function in gate_functions.items():
-                if gate in nto.gatetypes:
-                    self.set_node_gatefunction_name(id, gate, gate_function)
+        for gate, conf in gate_configuration.items():
+            idx = offset + get_numerical_gate_type(gate)
+            for param, value in conf['gatefunction_parameters'].items():
+                self._set_gate_config_for_elements([idx], conf['gatefunction'], param, [value])
 
         # initialize activation to zero
         a_array = self.a.get_value(borrow=True)
@@ -1423,19 +1394,22 @@ class TheanoPartition():
         self.allocated_node_offsets[node_id] = 0
         self.allocated_node_parents[node_id] = 0
         g_function_selector_array = self.g_function_selector.get_value(borrow=True)
-        for element in range (0, get_elements_per_type(type, self.nodenet.native_modules)):
+
+        element = 0
+        while self.allocated_elements_to_nodes[offset + element] == node_id:
             self.allocated_elements_to_nodes[offset + element] = 0
             g_function_selector_array[offset + element] = 0
+            element += 1
+
         self.g_function_selector.set_value(g_function_selector_array, borrow=True)
-        self.allocated_elements_to_nodes[np.where(self.allocated_elements_to_nodes == node_id)[0]] = 0
 
         if type == SENSOR:
-            sensor_index = np.where(self.sensor_indices == node_id)[0]
-            self.sensor_indices[sensor_index] = 0
+            sensor_index = np.where(self.sensor_indices == offset)[0]
+            self.sensor_indices[sensor_index] = -1
 
         if type == ACTUATOR:
-            actuator_index = np.where(self.actuator_indices == node_id)[0]
-            self.actuator_indices[actuator_index] = 0
+            actuator_index = np.where(self.actuator_indices == offset)[0]
+            self.actuator_indices[actuator_index] = -1
 
         if type == PIPE:
             n_function_selector_array = self.n_function_selector.get_value(borrow=True)
@@ -1571,55 +1545,6 @@ class TheanoPartition():
         self.nodenet._track_deletion('nodespaces', nodespace_to_id(nodespace_id, self.pid))
         self.nodespaces_contents_last_changed[self.allocated_nodespaces[nodespace_id]] = self.nodenet.current_step
 
-    def set_node_gate_parameter(self, id, gate_type, parameter, value):
-        numerical_node_type = self.allocated_nodes[id]
-        nodetype = None
-        if numerical_node_type > MAX_STD_NODETYPE:
-            nodetype = self.nodenet.get_nodetype(get_string_node_type(numerical_node_type, self.nodenet.native_modules))
-
-        elementindex = self.allocated_node_offsets[id] + get_numerical_gate_type(gate_type, nodetype)
-        if parameter == 'threshold':
-            g_threshold_array = self.g_threshold.get_value(borrow=True)
-            g_threshold_array[elementindex] = value
-            self.g_threshold.set_value(g_threshold_array, borrow=True)
-        elif parameter == 'amplification':
-            g_amplification_array = self.g_amplification.get_value(borrow=True)
-            g_amplification_array[elementindex] = value
-            self.g_amplification.set_value(g_amplification_array, borrow=True)
-        elif parameter == 'minimum':
-            g_min_array = self.g_min.get_value(borrow=True)
-            g_min_array[elementindex] = value
-            self.g_min.set_value(g_min_array, borrow=True)
-        elif parameter == 'maximum':
-            g_max_array = self.g_max.get_value(borrow=True)
-            g_max_array[elementindex] = value
-            self.g_max.set_value(g_max_array, borrow=True)
-        elif parameter == 'theta':
-            g_theta_array = self.g_theta.get_value(borrow=True)
-            g_theta_array[elementindex] = value
-            self.g_theta.set_value(g_theta_array, borrow=True)
-
-    def set_node_gatefunction_name(self, id, gate_type, gatefunction_name):
-        numerical_node_type = self.allocated_nodes[id]
-        nodetype = None
-        if numerical_node_type > MAX_STD_NODETYPE:
-            nodetype = self.nodenet.get_nodetype(get_string_node_type(numerical_node_type, self.nodenet.native_modules))
-
-        elementindex = self.allocated_node_offsets[id] + get_numerical_gate_type(gate_type, nodetype)
-        g_function_selector = self.g_function_selector.get_value(borrow=True)
-        g_function_selector[elementindex] = get_numerical_gatefunction_type(gatefunction_name)
-        self.g_function_selector.set_value(g_function_selector, borrow=True)
-        if g_function_selector[elementindex] == GATE_FUNCTION_ABSOLUTE:
-            self.has_gatefunction_absolute = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_SIGMOID:
-            self.has_gatefunction_sigmoid = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_TANH:
-            self.has_gatefunction_tanh = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_RECT:
-            self.has_gatefunction_rect = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_DIST:
-            self.has_gatefunction_one_over_x = True
-
     def set_nodespace_gatetype_activator(self, nodespace_id, gate_type, activator_id):
         if gate_type == "por":
             self.allocated_nodespaces_por_activators[nodespace_id] = activator_id
@@ -1725,6 +1650,24 @@ class TheanoPartition():
         gate = get_numerical_gate_type(gatetype)
         self.nodegroups[nodespace_uid][group_name] = self.allocated_node_offsets[ids] + gate
 
+    def group_highdimensional_elements(self, node_uid, gate=None, slot=None, group_name=None):
+        node_id = node_from_id(node_uid)
+        nodespace_id = self.allocated_node_parents[node_id]
+        nodespace_uid = nodespace_to_id(nodespace_id, self.pid)
+        if nodespace_uid not in self.nodegroups:
+            self.nodegroups[nodespace_uid] = {}
+        strnodetype = get_string_node_type(self.allocated_nodes[node_id], self.nodenet.native_modules)
+        nodetype = self.nodenet.get_nodetype(strnodetype)
+        if gate:
+            element = get_numerical_gate_type("%s0" % gate, nodetype)
+            dimensionality = nodetype.get_gate_dimensionality(gate)
+        elif slot:
+            element = get_numerical_slot_type("%s0" % slot, nodetype)
+            dimensionality = nodetype.get_slot_dimensionality(slot)
+        start = self.allocated_node_offsets[node_id] + element
+        stop = start + dimensionality
+        self.nodegroups[nodespace_uid][group_name] = np.arange(start, stop)
+
     def ungroup_nodes(self, nodespace_uid, group):
         if nodespace_uid in self.nodegroups and group in self.nodegroups[nodespace_uid]:
             del self.nodegroups[nodespace_uid][group]
@@ -1742,18 +1685,88 @@ class TheanoPartition():
         a_array[self.nodegroups[nodespace_uid][group]] = new_activations
         self.a.set_value(a_array, borrow=True)
 
-    def get_thetas(self, nodespace_uid, group):
+    def get_gate_configurations(self, nodespace_uid, group, gatefunction_parameter=None):
         if nodespace_uid not in self.nodegroups or group not in self.nodegroups[nodespace_uid]:
             raise ValueError("Group %s does not exist in nodespace %s." % (group, nodespace_uid))
-        g_theta_array = self.g_theta.get_value(borrow=True)
-        return g_theta_array[self.nodegroups[nodespace_uid][group]]
 
-    def set_thetas(self, nodespace_uid, group, thetas):
+        groupindexes = self.nodegroups[nodespace_uid][group]
+        g_function_selector = self.g_function_selector.get_value(borrow=True)
+        num_gatefunc = g_function_selector[groupindexes]
+        if len(np.unique(num_gatefunc)) > 1:
+            raise("Heterogenous gatefunction configuration") 
+        data = {'gatefunction': get_string_gatefunction_type(np.unique(num_gatefunc)[0])}
+        if gatefunction_parameter == 'bias':
+            g_bias = self.g_bias.get_value(borrow=True)
+            data['parameter_values'] = g_bias[groupindexes]
+        if gatefunction_parameter == 'minimum':
+            g_min = self.g_min.get_value(borrow=True)
+            data['parameter_values'] = g_min[groupindexes]
+        if gatefunction_parameter == 'maximum':
+            g_max = self.g_max.get_value(borrow=True)
+            data['parameter_values'] = g_max[groupindexes]
+        if gatefunction_parameter == 'amplification':
+            g_amplification = self.g_amplification.get_value(borrow=True)
+            data['parameter_values'] = g_amplification[groupindexes]
+        if gatefunction_parameter == 'threshold':
+            g_threshold = self.g_threshold.get_value(borrow=True)
+            data['parameter_values'] = g_threshold[groupindexes]
+        return data
+
+    def set_gate_configurations(self, nodespace_uid, group, gatefunction, gatefunction_parameter=None, parameter_values=None):
         if nodespace_uid not in self.nodegroups or group not in self.nodegroups[nodespace_uid]:
             raise ValueError("Group %s does not exist in nodespace %s." % (group, nodespace_uid))
-        g_theta_array = self.g_theta.get_value(borrow=True)
-        g_theta_array[self.nodegroups[nodespace_uid][group]] = thetas
-        self.g_theta.set_value(g_theta_array, borrow=True)
+
+        groupindexes = self.nodegroups[nodespace_uid][group]
+        self._set_gate_config_for_elements(groupindexes, gatefunction, gatefunction_parameter, parameter_values)
+
+    def _set_gate_config_for_elements(self, elements, gatefunction, gatefunction_parameter=None, parameter_values=None):
+        g_function_selector = self.g_function_selector.get_value(borrow=True)
+        g_bias = self.g_bias.get_value(borrow=True)
+        g_threshold = self.g_threshold.get_value(borrow=True)
+        g_amplification = self.g_amplification.get_value(borrow=True)
+        g_min = self.g_min.get_value(borrow=True)
+        g_max = self.g_max.get_value(borrow=True)
+
+        # set gatefunction
+        num_gatefunc = get_numerical_gatefunction_type(gatefunction)
+        g_function_selector[elements] = num_gatefunc
+        self.g_function_selector.set_value(g_function_selector, borrow=True)
+
+        # first, unset any old values
+        g_bias[elements] = 0
+        if num_gatefunc != GATE_FUNCTION_THRESHOLD:
+            g_threshold[elements] = 0
+            g_amplification[elements] = 1
+            g_min[elements] = 0
+            g_max[elements] = 1
+
+        if num_gatefunc == GATE_FUNCTION_SIGMOID or num_gatefunc == GATE_FUNCTION_ELU or num_gatefunc == GATE_FUNCTION_RELU:
+            if gatefunction_parameter == 'bias':
+                g_bias[elements] = parameter_values
+            if num_gatefunc == GATE_FUNCTION_ELU:
+                self.has_gatefunction_elu = True
+            elif num_gatefunc == GATE_FUNCTION_RELU:
+                self.has_gatefunction_relu = True
+            elif num_gatefunc == GATE_FUNCTION_SIGMOID:
+                self.has_gatefunction_sigmoid = True
+
+        elif num_gatefunc == GATE_FUNCTION_THRESHOLD:
+            self.has_gatefunction_threshold = True
+            if gatefunction_parameter == 'threshold':
+                g_threshold[elements] = parameter_values
+            if gatefunction_parameter == 'amplification':
+                g_amplification[elements] = parameter_values
+            if gatefunction_parameter == 'minimum':
+                g_min[elements] = parameter_values
+            if gatefunction_parameter == 'maximum':
+                g_max[elements] = parameter_values
+
+        self.g_function_selector.set_value(g_function_selector, borrow=True)
+        self.g_bias.set_value(g_bias, borrow=True)
+        self.g_threshold.set_value(g_threshold, borrow=True)
+        self.g_amplification.set_value(g_amplification, borrow=True)
+        self.g_min.set_value(g_min, borrow=True)
+        self.g_max.set_value(g_max, borrow=True)
 
     def get_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to):
         if nodespace_from_uid not in self.nodegroups or group_from not in self.nodegroups[nodespace_from_uid]:
@@ -1777,9 +1790,13 @@ class TheanoPartition():
         #if len(self.nodegroups[nodespace_to_uid][group_to]) != new_w.shape[0]:
         #    raise ValueError("group_to %s has length %i, but new_w.shape[0] is %i" % (group_to, len(self.nodegroups[nodespace_to_uid][group_to]), new_w.shape[0]))
 
-        w_matrix = self.w.get_value(borrow=True)
         grp_from = self.nodegroups[nodespace_from_uid][group_from]
         grp_to = self.nodegroups[nodespace_to_uid][group_to]
+        if np.isscalar(new_w) and new_w == 1:
+            if len(grp_from) != len(grp_to):
+                raise ValueError("from_elements and to_elements need to have equal lengths for identity links")
+            new_w = np.eye(len(grp_from))
+        w_matrix = self.w.get_value(borrow=True)
         cols, rows = np.meshgrid(grp_from, grp_to)
         w_matrix[rows, cols] = new_w
         self.w.set_value(w_matrix, borrow=True)
@@ -1793,50 +1810,66 @@ class TheanoPartition():
         self.por_ret_dirty = self.has_pipes
 
     def set_inlink_weights(self, partition_from_spid, new_from_elements, new_to_elements, new_weights):
+
+        inlink_type = None
+
         from_partition = self.nodenet.partitions[partition_from_spid]
         if partition_from_spid in self.inlinks:
+            inlink_type = self.inlinks[partition_from_spid][4]
+            if inlink_type != "dense":
+                raise NotImplementedError("Update of non-dense partition connections not yet implemented: "+inlink_type)
+
             theano_from_elements = self.inlinks[partition_from_spid][0]
             theano_to_elements = self.inlinks[partition_from_spid][1]
             theano_weights = self.inlinks[partition_from_spid][2]
+
             old_from_elements = theano_from_elements.get_value(borrow=True)
             old_to_elements = theano_to_elements.get_value(borrow=True)
             old_weights = theano_weights.get_value(borrow=True)
             propagation_function = self.inlinks[partition_from_spid][3]
-        else:
-            old_from_elements = np.zeros(0, dtype=np.int32)
-            old_to_elements = np.zeros(0, dtype=np.int32)
-            old_weights = np.eye(0, dtype=T.config.floatX)
 
+            from_elements = np.union1d(old_from_elements, new_from_elements)
+            to_elements = np.union1d(old_to_elements, new_to_elements)
+            weights = np.zeros((len(to_elements), len(from_elements)), dtype=T.config.floatX)
+
+            old_from_indices = np.searchsorted(from_elements, old_from_elements)
+            old_to_indices = np.searchsorted(to_elements, old_to_elements)
+            oldcols, oldrows = np.meshgrid(old_from_indices, old_to_indices)
+            weights[oldrows, oldcols] = old_weights
+
+            new_from_indices = np.searchsorted(from_elements, new_from_elements)
+            new_to_indices = np.searchsorted(to_elements, new_to_elements)
+            newcols, newrows = np.meshgrid(new_from_indices, new_to_indices)
+            weights[newrows, newcols] = new_weights
+
+            theano_from_elements.set_value(from_elements, borrow=True)
+            theano_to_elements.set_value(to_elements, borrow=True)
+            theano_weights.set_value(weights, borrow=True)
+
+        else:
             weightsname = "w_%s_%s" % (partition_from_spid, self.spid)
             fromname = "in_from_%s_%s" % (partition_from_spid, self.spid)
             toname = "in_to_%s_%s" % (partition_from_spid, self.spid)
-            theano_from_elements = theano.shared(value=old_from_elements, name=fromname, borrow=True)
-            theano_to_elements = theano.shared(value=old_to_elements, name=toname, borrow=True)
-            theano_weights = theano.shared(value=old_weights.astype(T.config.floatX), name=weightsname, borrow=True)
+            theano_from_elements = theano.shared(value=new_from_elements, name=fromname, borrow=True)
+            theano_to_elements = theano.shared(value=new_to_elements, name=toname, borrow=True)
 
-            propagation_function = self.get_compiled_propagate_inlinks(
-                from_partition,
-                theano_from_elements,
-                theano_to_elements,
-                theano_weights)
-
-        from_elements = np.union1d(old_from_elements, new_from_elements)
-        to_elements = np.union1d(old_to_elements, new_to_elements)
-        weights = np.zeros((len(to_elements), len(from_elements)), dtype=T.config.floatX)
-
-        old_from_indices = np.searchsorted(from_elements, old_from_elements)
-        old_to_indices = np.searchsorted(to_elements, old_to_elements)
-        oldcols, oldrows = np.meshgrid(old_from_indices, old_to_indices)
-        weights[oldrows, oldcols] = old_weights
-
-        new_from_indices = np.searchsorted(from_elements, new_from_elements)
-        new_to_indices = np.searchsorted(to_elements, new_to_elements)
-        newcols, newrows = np.meshgrid(new_from_indices, new_to_indices)
-        weights[newrows, newcols] = new_weights
-
-        theano_from_elements.set_value(from_elements, borrow=True)
-        theano_to_elements.set_value(to_elements, borrow=True)
-        theano_weights.set_value(weights, borrow=True)
+            if np.isscalar(new_weights) and new_weights == 1:
+                if len(new_from_elements) != len(new_to_elements):
+                    raise ValueError("from_elements and to_elements need to have equal lengths for identity links")
+                inlink_type = "identity"
+                theano_weights = None
+                propagation_function = self.get_compiled_propagate_identity_inlinks(
+                    from_partition,
+                    theano_from_elements,
+                    theano_to_elements)
+            else:
+                inlink_type = "dense"
+                theano_weights = theano.shared(value=new_weights.astype(T.config.floatX), name=weightsname, borrow=True)
+                propagation_function = self.get_compiled_propagate_inlinks(
+                    from_partition,
+                    theano_from_elements,
+                    theano_to_elements,
+                    theano_weights)
 
         for id in from_partition.allocated_elements_to_nodes[theano_from_elements.get_value()]:
             from_partition.nodes_last_changed[id] = self.nodenet.current_step
@@ -1849,7 +1882,8 @@ class TheanoPartition():
             theano_from_elements,
             theano_to_elements,
             theano_weights,
-            propagation_function)
+            propagation_function,
+            inlink_type)
 
     def has_nodespace_changes(self, nodespace_uid, since_step):
         ns_id = nodespace_from_id(nodespace_uid)
@@ -1863,73 +1897,71 @@ class TheanoPartition():
         nodespace_ids = nodespace_ids[np.where(self.allocated_nodespaces[nodespace_ids] == ns_id)[0]]
         return node_ids, nodespace_ids
 
-    def get_node_data(self, ids=None, nodespace_ids=None, complete=False, include_links=True, include_followupnodes=True):
-
+    def get_node_data(self, ids=None, nodespaces_by_partition=None, complete=False, include_links=True, linked_nodespaces_by_partition={}):
         a = self.a.get_value(borrow=True)
-        g_threshold_array = self.g_threshold.get_value(borrow=True)
-        g_amplification_array = self.g_amplification.get_value(borrow=True)
-        g_min_array = self.g_min.get_value(borrow=True)
-        g_max_array = self.g_max.get_value(borrow=True)
-        g_theta = self.g_theta.get_value(borrow=True)
+        g_threshold = self.g_threshold.get_value(borrow=True)
+        g_amplification = self.g_amplification.get_value(borrow=True)
+        g_min = self.g_min.get_value(borrow=True)
+        g_max = self.g_max.get_value(borrow=True)
+        g_bias = self.g_bias.get_value(borrow=True)
         g_function_selector = self.g_function_selector.get_value(borrow=True)
         w = self.w.get_value(borrow=True)
 
-        if nodespace_ids is not None:
-            node_ids = np.where(self.allocated_node_parents == nodespace_ids)[0]
+        if nodespaces_by_partition is not None:
+            fetchall = False
+            node_ids = np.where(self.allocated_node_parents == nodespaces_by_partition[self.spid])[0]
         else:
+            fetchall = True
             node_ids = np.nonzero(self.allocated_nodes)[0]
 
         if ids is not None:
+            fetchall = False
             node_ids = np.intersect1d(node_ids, ids)
+            if len(node_ids) and linked_nodespaces_by_partition == {}:
+                linked_nodespaces_by_partition[self.spid] = self.allocated_node_parents[node_ids]
 
         nodes = {}
-        followupuids = set()
+        highdim_nodes = []
+        additional_links = []
+
         for id in node_ids:
             uid = node_to_id(id, self.pid)
             strtype = get_string_node_type(self.allocated_nodes[id], self.nodenet.native_modules)
             nodetype = self.nodenet.get_nodetype(strtype)
 
-            gate_functions = {}
-            gate_parameters = {}
+            gate_configurations = {}
             gate_activations = {}
-            links = {}
-            for gate in self.nodenet.get_nodetype(strtype).gatetypes:
-                numericalgate = get_numerical_gate_type(gate, self.nodenet.get_nodetype(strtype))
+
+            if type(nodetype) == HighdimensionalNodetype:
+                gates = nodetype.gategroups
+                highdim_nodes.append(uid)
+            else:
+                gates = nodetype.gatetypes
+
+            for gate in gates:
+                numericalgate = get_numerical_gate_type(gate, nodetype)
                 element = self.allocated_node_offsets[id] + numericalgate
-                gate_functions[gate] = get_string_gatefunction_type(g_function_selector[element])
+                num_gatefunc = g_function_selector[element]
+                if num_gatefunc != GATE_FUNCTION_IDENTITY:
+                    gate_configurations[gate] = {
+                        'gatefunction': get_string_gatefunction_type(num_gatefunc),
+                        'gatefunction_parameters': {}
+                    }
+                    if num_gatefunc == GATE_FUNCTION_SIGMOID or num_gatefunc == GATE_FUNCTION_ELU or num_gatefunc == GATE_FUNCTION_RELU:
+                        gate_configurations[gate]['gatefunction_parameters'] = {'bias': float(g_bias[element])}
+                    elif num_gatefunc == GATE_FUNCTION_THRESHOLD:
+                        gate_configurations[gate]['gatefunction_parameters'] = {
+                            'minimum': float(g_min[element]),
+                            'maximum': float(g_max[element]),
+                            'threshold': float(g_threshold[element]),
+                            'amplification': float(g_amplification[element])
+                        }
 
-                parameters = {}
-                threshold = g_threshold_array[element].item()
-                if 'threshold' not in nodetype.gate_defaults[gate] or threshold != nodetype.gate_defaults[gate]['threshold']:
-                    parameters['threshold'] = float(threshold)
-
-                amplification = g_amplification_array[element].item()
-                if 'amplification' not in nodetype.gate_defaults[gate] or amplification != nodetype.gate_defaults[gate]['amplification']:
-                    parameters['amplification'] = float(amplification)
-
-                minimum = g_min_array[element].item()
-                if 'minimum' not in nodetype.gate_defaults[gate] or minimum != nodetype.gate_defaults[gate]['minimum']:
-                    parameters['minimum'] = float(minimum)
-
-                maximum = g_max_array[element].item()
-                if 'maximum' not in nodetype.gate_defaults[gate] or maximum != nodetype.gate_defaults[gate]['maximum']:
-                    parameters['maximum'] = float(maximum)
-
-                theta = g_theta[element].item()
-                if 'theta' not in nodetype.gate_defaults[gate] or theta != nodetype.gate_defaults[gate]['theta']:
-                    parameters['theta'] = float(theta)
-
-                if not len(parameters) == 0:
-                    gate_parameters[gate] = parameters
-
-                gate_activations[gate] = {"default": {
-                    "name": "default",
-                    "uid": "default",
-                    "activation": float(a[element])}}
+                gate_activations[gate] = float(a[element])
 
             state = None
             if uid in self.native_module_instances:
-                state = self.native_module_instances.get(uid).clone_state()
+                state = self.native_module_instances[uid].clone_state()
 
             parameters = {}
             if strtype == "Sensor":
@@ -1939,7 +1971,7 @@ class TheanoPartition():
                     parameters['datasource'] = None
                 else:
                     parameters['datasource'] = self.nodenet.get_datasources()[datasource_index[0]]
-            elif strtype == "Actor":
+            elif strtype == "Actuator":
                 actuator_element = self.allocated_node_offsets[id] + GEN
                 datatarget_index = np.where(self.actuator_indices == actuator_element)[0]
                 if len(datatarget_index) == 0:
@@ -1970,9 +2002,9 @@ class TheanoPartition():
                 g_wait_array = self.g_wait.get_value(borrow=True)
                 parameters['wait'] = g_wait_array[self.allocated_node_offsets[id] + get_numerical_gate_type("sur")].item()
             elif strtype == "Comment":
-                parameters = self.comment_instances.get(uid).clone_parameters()
+                parameters = self.comment_instances[uid].clone_parameters()
             elif strtype in self.nodenet.native_modules:
-                parameters = self.native_module_instances.get(uid).clone_parameters()
+                parameters = self.native_module_instances[uid].clone_parameters()
 
             data = {"uid": uid,
                     "name": self.nodenet.names.get(uid, uid),
@@ -1981,17 +2013,18 @@ class TheanoPartition():
                     "type": strtype,
                     "parameters": parameters,
                     "state": state,
-                    "gate_parameters": gate_parameters,
-                    "sheaves": {"default": {"name": "default",
-                                "uid": "default",
-                                "activation": float(a[self.allocated_node_offsets[id] + GEN])}},
                     "activation": float(a[self.allocated_node_offsets[id] + GEN]),
                     "gate_activations": gate_activations,
-                    "gate_functions": gate_functions}
+                    "gate_configuration": gate_configurations,
+                    "is_highdimensional": type(nodetype) == HighdimensionalNodetype}
+            if type(nodetype) == FlowNodetype:
+                data.update(self.nodenet.flow_module_instances[uid].get_flow_data())
             if complete:
-                data['index'] = id
+                data['index'] = int(id)
             if include_links:
                 data['links'] = {}
+                data['outlinks'] = 0
+                data['inlinks'] = 0
 
             nodes[uid] = data
 
@@ -2001,38 +2034,85 @@ class TheanoPartition():
             for index, gate_index in enumerate(gates):
                 source_id = self.allocated_elements_to_nodes[gate_index]
                 source_uid = node_to_id(source_id, self.pid)
-                if source_uid not in nodes:
-                    continue
+                slot_index = slots[index]
+                target_id = self.allocated_elements_to_nodes[slot_index]
+                target_uid = node_to_id(target_id, self.pid)
+
+                if not fetchall:
+                    if source_uid not in nodes and target_uid in nodes:
+                        if self.allocated_node_parents[source_id] not in linked_nodespaces_by_partition.get(self.spid, []):
+                            nodes[target_uid]['inlinks'] += 1
+                            continue
+                    elif target_uid not in nodes and source_uid in nodes:
+                        if self.allocated_node_parents[target_id] not in linked_nodespaces_by_partition.get(self.spid, []):
+                            nodes[source_uid]['outlinks'] += 1
+                            continue
+                    elif source_uid not in nodes or target_uid not in nodes:
+                        # links between two nodes outside this nodespace.
+                        continue
 
                 source_type = self.allocated_nodes[source_id]
                 source_nodetype = self.nodenet.get_nodetype(get_string_node_type(source_type, self.nodenet.native_modules))
                 source_gate_numerical = gate_index - self.allocated_node_offsets[source_id]
                 source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
+                if source_uid in highdim_nodes:
+                    if source_gate_type.rstrip('0123456789') in source_nodetype.dimensionality['gates']:
+                        source_gate_type = source_gate_type.rstrip('0123456789') + '0'
 
-                slot_index = slots[index]
-                target_id = self.allocated_elements_to_nodes[slot_index]
-                target_uid = node_to_id(target_id, self.pid)
                 target_type = self.allocated_nodes[target_id]
                 target_nodetype = self.nodenet.get_nodetype(get_string_node_type(target_type, self.nodenet.native_modules))
                 target_slot_numerical = slot_index - self.allocated_node_offsets[target_id]
                 target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
+                if target_uid in highdim_nodes:
+                    if target_slot_type.rstrip('0123456789') in target_nodetype.dimensionality['slots']:
+                        target_slot_type = target_slot_type.rstrip('0123456789') + '0'
                 linkdict = {"weight": float(w[slot_index, gate_index]),
-                            "certainty": 1,
                             "target_slot_name": target_slot_type,
                             "target_node_uid": target_uid}
-                if source_gate_type not in nodes[source_uid]["links"]:
-                    nodes[source_uid]["links"][source_gate_type] = []
-                nodes[source_uid]["links"][source_gate_type].append(linkdict)
-                followupuids.add(target_uid)
+
+                if source_uid in nodes:
+                    if source_gate_type not in nodes[source_uid]["links"]:
+                        nodes[source_uid]["links"][source_gate_type] = []
+                    if source_uid in highdim_nodes:
+                        if linkdict not in nodes[source_uid]['links'][source_gate_type]:
+                            nodes[source_uid]["links"][source_gate_type].append(linkdict)  # Doik: why is this check needed? possibly expensive. /Doik
+                    else:
+                        nodes[source_uid]["links"][source_gate_type].append(linkdict)
+                elif target_uid in nodes:
+                    linkdict['source_node_uid'] = source_uid
+                    linkdict['source_gate_name'] = source_gate_type
+                    additional_links.append(linkdict)
 
             # outgoing cross-partition links
             for partition_to_spid, to_partition in self.nodenet.partitions.items():
                 if self.spid in to_partition.inlinks:
                     inlinks = to_partition.inlinks[self.spid]
                     from_elements = inlinks[0].get_value(borrow=True)
+
+                    if not fetchall and partition_to_spid not in nodespaces_by_partition and linked_nodespaces_by_partition.get(partition_to_spid, []) == []:
+                        nids = self.allocated_elements_to_nodes[from_elements]
+                        if inlinks[4] == 'identity':
+                            for nid in nids:
+                                uid = node_to_id(nid, self.pid)
+                                if uid in nodes:
+                                    nodes[uid]['outlinks'] += 1
+                        elif inlinks[4] == 'dense':
+                            w = inlinks[2].get_value(borrow=True).transpose()
+                            for idx, el in enumerate(from_elements):
+                                uid = node_to_id(self.allocated_elements_to_nodes[el], self.pid)
+                                if uid in nodes:
+                                    nodes[uid]['outlinks'] += np.count_nonzero(w[idx])
+                        continue
+
                     to_elements = inlinks[1].get_value(borrow=True)
-                    w = inlinks[2].get_value(borrow=True)
-                    slots, gates = np.nonzero(w)
+                    inlink_type = inlinks[4]
+                    if inlink_type == "dense":
+                        w = inlinks[2].get_value(borrow=True)
+                        slots, gates = np.nonzero(w)
+                    elif inlink_type == "identity":
+                        slots = np.arange(len(from_elements))
+                        gates = np.arange(len(from_elements))
+
                     for index, gate_index in enumerate(gates):
                         source_id = self.allocated_elements_to_nodes[from_elements[gate_index]]
                         source_uid = node_to_id(source_id, self.pid)
@@ -2043,6 +2123,9 @@ class TheanoPartition():
                         source_nodetype = self.nodenet.get_nodetype(get_string_node_type(source_type, self.nodenet.native_modules))
                         source_gate_numerical = from_elements[gate_index] - self.allocated_node_offsets[source_id]
                         source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
+                        if source_uid in highdim_nodes:
+                            if source_gate_type.rstrip('0123456789') in source_nodetype.dimensionality['gates']:
+                                source_gate_type = source_gate_type.rstrip('0123456789') + '0'
 
                         slot_index = slots[index]
                         target_id = to_partition.allocated_elements_to_nodes[to_elements[slot_index]]
@@ -2051,36 +2134,95 @@ class TheanoPartition():
                         target_nodetype = to_partition.nodenet.get_nodetype(get_string_node_type(target_type, to_partition.nodenet.native_modules))
                         target_slot_numerical = to_elements[slot_index] - to_partition.allocated_node_offsets[target_id]
                         target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
-                        linkdict = {"weight": float(w[slot_index, gate_index]),
-                                    "certainty": 1,
+                        if target_uid in highdim_nodes:
+                            if target_slot_type.rstrip('0123456789') in target_nodetype.dimensionality['slots']:
+                                target_slot_type = target_slot_type.rstrip('0123456789') + '0'
+
+                        if inlink_type == "dense":
+                            weight = float(w[slot_index, gate_index])
+                        elif inlink_type == "identity":
+                            weight = 1.
+
+                        linkdict = {"weight": weight,
                                     "target_slot_name": target_slot_type,
                                     "target_node_uid": target_uid}
                         if source_gate_type not in nodes[source_uid]["links"]:
                             nodes[source_uid]["links"][source_gate_type] = []
+                        if type(target_nodetype) == HighdimensionalNodetype:
+                            target_slot_type = target_slot_type.rstrip('0123456789')
+                            if target_slot_type.rstrip('0123456789') in target_nodetype.dimensionality['slots']:
+                                target_slot_type = target_slot_type + '0'
+
                         nodes[source_uid]["links"][source_gate_type].append(linkdict)
-                        followupuids.add(target_uid)
 
-            # incoming cross-partition links need to be checked for followup nodes in the other partition
-            # even though we're not interested in the links themselves as they will be delivered with the nodes
-            # in the other partition.
-            # having to deliver followupnodes for links that aren't even our business is really annoying.
-            for from_partition_id, inlinks in self.inlinks.items():
-                from_partition = self.nodenet.partitions[from_partition_id]
-                from_elements = inlinks[0].get_value(borrow=True)
-                to_elements = inlinks[1].get_value(borrow=True)
-                w = inlinks[2].get_value(borrow=True)
-                slots, gates = np.nonzero(w)
-                for index, gate_index in enumerate(gates):
-                    source_id = from_partition.allocated_elements_to_nodes[from_elements[gate_index]]
-                    source_uid = node_to_id(source_id, from_partition.pid)
+            # incoming cross-partition-links:
+            if not fetchall:
+                # incoming cross-partition links
+                for from_partition_id, inlinks in self.inlinks.items():
+                    if from_partition_id not in nodespaces_by_partition and linked_nodespaces_by_partition.get(from_partition_id, []) == []:
+                        to_elements = inlinks[1].get_value(borrow=True)
+                        nids = self.allocated_elements_to_nodes[to_elements]
+                        if inlinks[4] == 'identity':
+                            for nid in nids:
+                                uid = node_to_id(nid, self.pid)
+                                if uid in nodes:
+                                    nodes[uid]['inlinks'] += 1
+                        elif inlinks[4] == 'dense':
+                            w = inlinks[2].get_value(borrow=True)
+                            for idx, el in enumerate(to_elements):
+                                uid = node_to_id(self.allocated_elements_to_nodes[el], self.pid)
+                                if uid in nodes:
+                                    nodes[uid]['inlinks'] += np.count_nonzero(w[idx])
+                    else:
+                        from_partition = self.nodenet.partitions[from_partition_id]
+                        from_elements = inlinks[0].get_value(borrow=True)
+                        to_elements = inlinks[1].get_value(borrow=True)
 
-                    slot_index = slots[index]
-                    target_id = self.allocated_elements_to_nodes[to_elements[slot_index]]
-                    target_uid = node_to_id(target_id, self.pid)
-                    if target_uid in nodes:
-                        followupuids.add(source_uid)
+                        inlink_type = inlinks[4]
+                        if inlink_type == "dense":
+                            w = inlinks[2].get_value(borrow=True)
+                            slots, gates = np.nonzero(w)
+                        elif inlink_type == "identity":
+                            slots = np.arange(len(from_elements))
+                            gates = np.arange(len(from_elements))
 
-        return nodes, followupuids
+                        for index, gate_index in enumerate(gates):
+                            source_id = from_partition.allocated_elements_to_nodes[from_elements[gate_index]]
+                            source_uid = node_to_id(source_id, from_partition.pid)
+
+                            source_type = from_partition.allocated_nodes[source_id]
+                            source_nodetype = from_partition.nodenet.get_nodetype(get_string_node_type(source_type, from_partition.nodenet.native_modules))
+                            source_gate_numerical = from_elements[gate_index] - from_partition.allocated_node_offsets[source_id]
+                            source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
+
+                            slot_index = slots[index]
+                            target_id = self.allocated_elements_to_nodes[to_elements[slot_index]]
+                            target_uid = node_to_id(target_id, self.pid)
+
+                            target_type = self.allocated_nodes[target_id]
+                            target_nodetype = self.nodenet.get_nodetype(get_string_node_type(target_type, self.nodenet.native_modules))
+                            target_slot_numerical = to_elements[slot_index] - self.allocated_node_offsets[target_id]
+                            target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
+
+                            if inlink_type == 'dense':
+                                weight = float(w[slot_index][gate_index])
+                            elif inlink_type == 'identity':
+                                weight = 1
+
+                            if type(target_nodetype) == HighdimensionalNodetype:
+                                if target_slot_type.rstrip('0123456789') in target_nodetype.dimensionality['slots']:
+                                    target_slot_type = target_slot_type.rstrip('0123456789') + '0'
+                            if type(source_nodetype) == HighdimensionalNodetype:
+                                if source_gate_type.rstrip('0123456789') in source_nodetype.dimensionality['gates']:
+                                    source_gate_type = source_gate_type.rstrip('0123456789') + '0'
+
+                            additional_links.append({"weight": weight,
+                                        "target_slot_name": target_slot_type,
+                                        "target_node_uid": target_uid,
+                                        "source_node_uid": source_uid,
+                                        "source_gate_name": source_gate_type})
+
+        return nodes, additional_links
 
     def integrity_check(self):
 

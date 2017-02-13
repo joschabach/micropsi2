@@ -12,11 +12,16 @@
                             <td>
                                 <div class="btn-group nodenet_list">
                                     <a class="btn" href="#">
-                                        (no nodenet selected)
+                                        (no agent selected)
                                     </a>
                                 </div>
                             </td>
                             <td> &nbsp; &nbsp; Nodespace:
+                            </td>
+                            <td>
+                                <a href="#" id="nodespace_add" title="Add new nodespace" class="btn" data-nodenet-control>
+                                    <i class="icon-plus-sign"></i>
+                                </a>
                             </td>
                             <td style="white-space:nowrap;">
                                 <div id="nodespace_control" class="btn-group">
@@ -30,7 +35,7 @@
                             </td>
                             <td>
                                 <a href="#" id="nodespace_up" title="Go to parent nodespace" class="btn" data-nodenet-control>
-                                    <i class="icon-share"></i>
+                                    <i class="icon-eject"></i>
                                 </a>
                             </td>
                             <td> &nbsp; &nbsp; Zoom:</td>
@@ -57,27 +62,30 @@
         <div class="editor_field " id="nodenet_forms">
 
             <form class="form-horizontal default_form hide" id="edit_nodenet_form">
-                <h4>Nodenet</h4>
+                <h4>Agent</h4>
                 <table>
                     <tr>
                         <td><label for="nodenet_uid">UID</label></td>
                         <td><input type="text" name="nodenet_uid" disabled="disabled" id="nodenet_uid"></td>
                     </tr>
                     <tr>
-                        <td><label for="nodenet_name">Name</label></td>
-                        <td><input type="text" name="nodenet_name" id="nodenet_name"></td>
+                        <td><label for="nodenet_nodenet_name">Name</label></td>
+                        <td><input type="text" name="nodenet_nodenet_name" id="nodenet_nodenet_name"></td>
                     </tr>
                     <tr>
-                        <td><label for="nodenet_world">World</label></td>
-                        <td><select name="nodenet_world" id="nodenet_world"></select></td>
+                        <td><label for="nodenet_world_uid">Environment</label></td>
+                        <td><select name="nodenet_world_uid" id="nodenet_world_uid"></select></td>
                     </tr>
                     <tr>
                         <td><label for="nodenet_worldadapter">Worldadapter</label></td>
                         <td><select name="nodenet_worldadapter" id="nodenet_worldadapter"></select></td>
                     </tr>
                     <tr>
-                        <td><label for="nodenet_snap">Snap to grid</label></td>
-                        <td><input type="checkbox" name="nodenet_snap" id="nodenet_snap" /></td>
+                        <td colspan="2" class="worldadapter_config">
+                    </tr>
+                    <tr>
+                        <td><label for="ui_snap">Snap to grid</label></td>
+                        <td><input type="checkbox" name="ui_snap" id="ui_snap" /></td>
                     </tr>
                 </table>
                 <div class="controls">
@@ -120,6 +128,7 @@
                 </table>
                 <div class="controls">
                     <button type="submit" class="btn btn-primary">Apply</button>
+                    <button type="button" id="delete_nodespace" class="btn btn-danger">Delete</button>
                 </div>
             </form>
 
@@ -129,10 +138,6 @@
                     <tr>
                         <td><label for="link_weight_input">Weight</label></td>
                         <td><input type="text" class="" name="link_weight" id="link_weight_input"></td>
-                    </tr>
-                    <tr style="display:none">
-                        <td><label for="link_certainty_input">Certainty</label></td>
-                        <td><input type="text" class="" name="link_certainty" id="link_certainty_input"></td>
                     </tr>
                     <tr>
                         <td><label>Source</label></td>
@@ -151,49 +156,23 @@
 
             <form class="form-horizontal hide" id="edit_gate_form">
                 <h4>Gate <span class="gate_gatetype"></span></h4>
+                <p class="highdim"></p>
                 <table>
-                    <tr>
-                        <td><label for="gate_activation">Activation</label></td>
-                        <td><input type="text" class="" name="activation" id="gate_activation" disabled="disabled"></td>
-                    </tr>
-                    <tr>
-                        <td><label for="gate_minimum">Minimum</label></td>
-                        <td><input type="text" class="" name="minimum" id="gate_minimum"></td>
-                    </tr>
-                    <tr>
-                        <td><label for="gate_maximum">Maximum</label></td>
-                        <td><input type="text" class="" name="maximum" id="gate_maximum"></td>
-                    </tr>
-                    <tr style="display:none">
-                        <td><label for="gate_certainty">Certainty</label></td>
-                        <td><input type="text" class="" name="certainty" id="gate_certainty"></td>
-                    </tr>
-                    <tr>
-                        <td><label for="gate_amplification">Amplification</label></td>
-                        <td><input type="text" class="" name="amplification" id="gate_amplification"></td>
-                    </tr>
-                    <tr>
-                        <td><label for="gate_threshold">Threshold</label></td>
-                        <td><input type="text" class="" name="threshold" id="gate_threshold"></td>
-                    </tr>
-                    <tr>
-                        <td colspan="2"><a href="#" class="gate_additional_trigger">Show additional parameters</a> (for gatefunction)</td>
-                    </tr>
-                    <tr class="gate_additional hide">
-                        <td><label for="gate_rho">Rho</label></td>
-                        <td><input type="text" class="" name="rho" id="gate_rho"></td>
-                    </tr>
-                    <tr class="gate_additional hide">
-                        <td><label for="gate_theta">Theta</label></td>
-                        <td><input type="text" class="" name="theta" id="gate_theta"></td>
-                    </tr>
-                    <tr>
-                        <td><label for="">Gatefunction</label></td>
-                        <td>
-                           <select name="gate_gatefunction" id="gate_gatefunction">
-                           </select>
-                        </td>
-                    </tr>
+                    <tbody>
+                        <tr>
+                            <td><label for="gate_activation">Activation</label></td>
+                            <td><input type="text" class="" name="activation" id="gate_activation" disabled="disabled"></td>
+                        </tr>
+                        <tr>
+                            <td><label for="">Gatefunction</label></td>
+                            <td>
+                               <select name="gate_gatefunction" id="gate_gatefunction">
+                               </select>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tbody id="gatefunction_param_container">
+                    </tbody>
                 </table>
                 <div class="controls">
                     <button type="submit" class="btn btn-primary">Apply</button>

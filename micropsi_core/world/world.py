@@ -19,7 +19,7 @@ from micropsi_core.tools import generate_uid
 import logging
 
 
-WORLD_VERSION = 1.0
+WORLD_VERSION = 1
 
 
 class World(object):
@@ -58,15 +58,11 @@ class World(object):
         self.data['current_step'] = current_step
 
     @property
-    def is_active(self):
-        return self.data.get("is_active", False)
+    def config(self):
+        return self.data['config']
 
-    @is_active.setter
-    def is_active(self, is_active):
-        self.data['is_active'] = is_active
-
-    @staticmethod
-    def get_config_options():
+    @classmethod
+    def get_config_options(cls):
         """ Returns a list of configuration-options for this world.
         Expected format:
         [{
@@ -79,7 +75,15 @@ class World(object):
         """
         return []
 
-    supported_worldadapters = ['Default']
+    @classmethod
+    def get_supported_worldadapters(cls):
+        folder = cls.__module__.split('.')
+        folder.pop()
+        folder = '.'.join(folder)
+        return {wacls.__name__: wacls for wacls in tools.itersubclasses(worldadapter.WorldAdapter, folder=folder) if wacls.__name__ in cls.supported_worldadapters}
+
+    supported_worldadapters = []
+    supported_worldobjects = []
 
     def __init__(self, filename, world_type="", name="", owner="", uid=None, engine=None, version=WORLD_VERSION, config={}):
         """Create a new MicroPsi world environment.
@@ -91,11 +95,11 @@ class World(object):
             uid (optional): unique handle of the world; if none is given, it will be generated
         """
 
-        self.logger = logging.getLogger('world_logger')
+        self.logger = logging.getLogger('world')
 
         # persistent data
         self.data = {
-            "version": WORLD_VERSION,  # used to check compatibility of the world data
+            "version": version,  # used to check compatibility of the world data
             "objects": {},
             "agents": {},
             "current_step": 0,
@@ -105,13 +109,9 @@ class World(object):
         folder = self.__module__.split('.')
         folder.pop()
         folder = '.'.join(folder)
-        self.supported_worldadapters = { cls.__name__:cls for cls in tools.itersubclasses(worldadapter.WorldAdapter, folder=folder) if cls.__name__ in self.supported_worldadapters }
 
-        self.supported_worldobjects = { cls.__name__:cls for cls in tools.itersubclasses(worldobject.WorldObject, folder=folder)
-                                        if cls.__name__ not in self.supported_worldadapters}
-        # freaky hack.
-        self.supported_worldobjects.pop('WorldAdapter', None)
-        self.supported_worldobjects['Default'] = worldobject.WorldObject
+        self.supported_worldadapters = {name: cls for name, cls in micropsi_core.runtime.worldadapter_classes.items() if name in self.supported_worldadapters}
+        self.supported_worldobjects = {name: cls for name, cls in micropsi_core.runtime.worldobject_classes.items() if name in self.supported_worldobjects}
 
         self.uid = uid or generate_uid()
         self.owner = owner
@@ -124,52 +124,43 @@ class World(object):
 
         self.load()
 
-    def load(self, string=None):
-        """Load the world state from a file
-
-        Arguments:
-            string (optional): if given, the world state is taken from the string instead.
-        """
+    def load(self):
+        """ Load the world state from persistance """
         # try to access file
-        if string:
-            try:
-                self.data.update(json.loads(string))
-            except ValueError:
-                self.logger.warn("Could not read world data from string")
-                return False
-        else:
-            try:
-                with open(self.filename) as file:
-                    self.data.update(json.load(file))
-            except ValueError:
-                self.logger.warn("Could not read world data")
-                return False
-            except IOError:
-                self.logger.warn("Could not open world file: " + self.filename)
+        try:
+            with open(self.filename, encoding="utf-8") as file:
+                self.data.update(json.load(file))
+        except ValueError:
+            self.logger.warning("Could not read world data")
+            return False
+        except IOError:
+            self.logger.warning("Could not open world file: " + self.filename)
         self.data['world_type'] = self.__class__.__name__
         if "version" in self.data and self.data["version"] == WORLD_VERSION:
             self.initialize_world()
             return True
         else:
-            self.logger.warn("Wrong version of the world data")
+            self.logger.warning("Wrong version of the world data")
             return False
 
     def get_available_worldadapters(self):
         """ return the list of instantiated worldadapters """
         return self.supported_worldadapters
 
-    def initialize_world(self):
+    def initialize_world(self, data=None):
         """Called after reading new world data.
 
         Parses the nodenet data and set up the non-persistent data structures necessary for efficient
         computation of the world
         """
-        for uid, object_data in self.data['objects'].copy().items():
+        if data is None:
+            data = self.data
+        for uid, object_data in data['objects'].copy().items():
             if object_data['type'] in self.supported_worldobjects:
                 self.objects[uid] = self.supported_worldobjects[object_data['type']](self, **object_data)
             else:
-                self.logger.warn('Worldobject of type %s not supported anymore. Deleting object of this type.' % object_data['type'])
-                del self.data['objects'][uid]
+                self.logger.warning('Worldobject of type %s not supported anymore. Deleting object of this type.' % object_data['type'])
+                del data['objects'][uid]
 
     def step(self):
         """ advance the simluation """
@@ -234,7 +225,7 @@ class World(object):
                     objects[uid] = obj
         return objects
 
-    def register_nodenet(self, worldadapter, nodenet_uid, nodenet_name=None):
+    def register_nodenet(self, worldadapter, nodenet_uid, nodenet_name=None, config={}):
         """Attempts to register a nodenet at this world.
 
         Returns True, spawned_agent_instance if successful,
@@ -252,7 +243,7 @@ class World(object):
                 return True, self.agents[nodenet_uid]
             else:
                 return False, "Nodenet agent already exists in this world, but has the wrong type"
-        return self.spawn_agent(worldadapter, nodenet_uid, nodenet_name=nodenet_name)
+        return self.spawn_agent(worldadapter, nodenet_uid, nodenet_name=nodenet_name, config=config)
 
     def unregister_nodenet(self, nodenet_uid):
         """Removes the connection between a nodenet and its incarnation in this world; may remove the corresponding
@@ -265,7 +256,7 @@ class World(object):
         if nodenet_uid in self.data['agents']:
             del self.data['agents'][nodenet_uid]
 
-    def spawn_agent(self, worldadapter_name, nodenet_uid, **options):
+    def spawn_agent(self, worldadapter_name, nodenet_uid, nodenet_name=None, config={}):
         """Creates an agent object,
 
         Returns True, spawned_agent_instance if successful,
@@ -275,8 +266,9 @@ class World(object):
             self.agents[nodenet_uid] = self.supported_worldadapters[worldadapter_name](
                 self,
                 uid=nodenet_uid,
-                name=options.get('nodenet_name', worldadapter_name),
-                **options)
+                type=worldadapter_name,
+                name=nodenet_name or worldadapter_name,
+                config=config)
             return True, self.agents[nodenet_uid]
         else:
             self.logger.error("World %s does not support Worldadapter %s" % (self.name, worldadapter_name))
@@ -324,38 +316,17 @@ class World(object):
     def set_user_data(self, data):
         """ Sets some data from the user. Implement this in your worldclass to allow
         the user to set certain properties of this world"""
-        pass
+        pass  # pragma: no cover
+
+    def signal_handler(self, *args):
+        """ stuff to do on sigint, sigabrt, etc"""
+        pass  # pragma: no cover
 
     def __del__(self):
-        """Empty destructor"""
+        """ Empty destructor """
         pass
 
 
-# imports of individual world types:
-try:
-    from micropsi_core.world.island import island
-except ImportError as e:
-    sys.stdout.write("Could not import island world.\nError: %s \n\n" % e.msg)
-
-try:
-    from micropsi_core.world.island.structured_objects import structured_objects
-except ImportError as e:
-    sys.stdout.write("Could not import island world / structured objects.\nError: %s \n\n" % e.msg)
-
-try:
-    from micropsi_core.world.minecraft import minecraft
-except ImportError as e:
-    if e.msg == "No module named 'spock'":
-        # ignore silently
-        pass
-    else:
-        sys.stdout.write("Could not import minecraft world.\nError: %s \n\n" % e.msg)
-
-try:
-    from micropsi_core.world.timeseries import timeseries
-except ImportError as e:
-    if e.msg == "No module named 'numpy'":
-        # ignore silently
-        pass
-    else:
-        sys.stdout.write("Could not import timeseries world.\nError: %s \n\n" % e.msg)
+class DefaultWorld(World):
+    supported_worldadapters = ['Default', 'DefaultArray']
+    supported_worldobjects = ['TestObject']

@@ -29,16 +29,6 @@ class Link(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def certainty(self):
-        """
-        Returns the certainty value of this link.
-        Note that this is not being used right now and defined/reserved for future use.
-        Implementations can always return 1 for the time being
-        """
-        pass  # pragma: no cover
-
-    @property
-    @abstractmethod
     def source_node(self):
         """
         Returns the Node (object) from which this link originates
@@ -72,7 +62,6 @@ class Link(metaclass=ABCMeta):
     def get_data(self, complete=False, **_):
         data = {
             "weight": self.weight,
-            "certainty": self.certainty,
             "target_slot_name": self.target_slot.type,
             "target_node_uid": self.target_node.uid,
         }

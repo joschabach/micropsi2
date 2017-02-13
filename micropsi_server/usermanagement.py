@@ -89,19 +89,23 @@ class UserManager(object):
         # set up persistence
         if userfile_path is None:
             userfile_path = cfg['paths']['usermanager_path']
-        os.makedirs(os.path.dirname(userfile_path), exist_ok=True)
+
+        dirpath = os.path.dirname(userfile_path)
+        if not os.path.isdir(dirpath):
+            os.makedirs(dirpath, exist_ok=True)
 
         self.user_file_name = userfile_path  # todo: make this work without a file system
         try:
-            with open(self.user_file_name) as file:
+            with open(self.user_file_name, encoding="utf-8") as file:
                 self.users = json.load(file)
         except ValueError:
-            logging.getLogger('system').warn("Invalid user data")
+            logging.getLogger('system').warning("Invalid user data")
         except IOError:
             logging.getLogger('system').info("No readable userdata file, attempting to create one.")
 
         if not self.users:
             self.users = {}
+            self.create_user('admin', role="Administrator")
 
         # set up sessions
         for name in self.users:
@@ -154,7 +158,7 @@ class UserManager(object):
 
     def save_users(self):
         """stores the user data to a file"""
-        with open(self.user_file_name, mode='w+') as file:
+        with open(self.user_file_name, mode='w+', encoding="utf-8") as file:
             json.dump(self.users, file, indent=4)
 
     def list_users(self):

@@ -1855,10 +1855,10 @@ def initialize(persistency_path=None, resource_path=None, world_path=None):
     # initialize runners
     # Initialize the threads for the continuous calculation of nodenets and worlds
     if 'runner_timestep' not in configs:
-        configs['runner_timestep'] = 200
+        configs['runner_timestep'] = 10
         configs.save_configs()
     if 'runner_factor' not in configs:
-        configs['runner_factor'] = 2
+        configs['runner_factor'] = 1
         configs.save_configs()
 
     set_runner_properties(configs['runner_timestep'], configs['runner_factor'])

@@ -52,7 +52,7 @@ def pytest_cmdline_main(config):
     if config.getoption('agents'):
         config.args = [orig_agent_dir]
         config.addinivalue_line('python_files', '*.py')
-        config.addinivalue_line('python_functions', '__test_*')
+        config.addinivalue_line('python_functions', '_test*')
         config.addinivalue_line('norecursedirs', 'experiments')
         micropsi_runtime.initialize(persistency_path=testpath, resource_path=orig_agent_dir, world_path=orig_world_dir)
     elif config.getoption('worlds'):

@@ -51,17 +51,21 @@ def pytest_cmdline_main(config):
     implementation will invoke the configure hooks and runtest_mainloop. """
     if config.getoption('agents'):
         config.args = [orig_agent_dir]
-        micropsi_runtime.initialize(persistency_path=testpath, resource_path=orig_agent_dir, world_path=testpath)
+        config.addinivalue_line('python_files', '*.py')
+        config.addinivalue_line('python_functions', '__test_*')
+        config.addinivalue_line('norecursedirs', 'experiments')
+        micropsi_runtime.initialize(persistency_path=testpath, resource_path=orig_agent_dir, world_path=orig_world_dir)
     elif config.getoption('worlds'):
         config.args = [orig_world_dir]
+        config.addinivalue_line('python_functions', 'test_*')
         micropsi_runtime.initialize(persistency_path=testpath, world_path=orig_world_dir, resource_path=testpath)
     else:
+        config.addinivalue_line('python_functions', 'test_*')
         micropsi_runtime.initialize(persistency_path=testpath, world_path=testpath, resource_path=testpath)
 
     from micropsi_server.micropsi_app import usermanager
     usermanager.create_user('Pytest User', 'test', 'Administrator', uid='Pytest User')
     usermanager.start_session('Pytest User', 'test', True)
-
     set_logging_levels()
     micropsi_runtime.set_runner_properties(1, 1)
 

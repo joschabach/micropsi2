@@ -14,6 +14,22 @@ def prepare(runtime, test_nodenet, default_world, resourcepath, wa_class=None):
     import os
     foodir = os.path.join(resourcepath, "nodetypes", 'foobar')
     os.makedirs(foodir)
+    with open(os.path.join(resourcepath, "nodetypes", "out12345.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "python",
+    "name": "out12345",
+    "run_function_name": "out12345",
+    "inputs": [],
+    "outputs": ["out"],
+    "inputdims": []
+}
+
+def out12345(netapi, node, parameters):
+    import numpy as np
+    return np.asarray([1,2,3,4,5])
+""")
+
     with open(os.path.join(foodir, "Double.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
@@ -991,6 +1007,19 @@ class SimpleArrayWA(ArrayWorldAdapter):
     assert nodenet.get_node(double.uid).inputmap['inputs'] == (sources.uid, 'vision')
     assert (double.uid, 'inputs') in nodenet.get_node(sources.uid).outputmap['vision']
     assert (targets.uid, 'motor') in nodenet.get_node(double.uid).outputmap['outputs']
+
+
+@pytest.mark.engine("theano_engine")
+def test_flownode_output_only(runtime, test_nodenet, default_world, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+    out = netapi.create_node("out12345")
+    source = netapi.create_node("Neuron")
+    source.activation = 1
+    netapi.link(source, 'gen', source, 'gen')
+    netapi.link(source, 'gen', out, 'sub')
+    netapi.flow(out, 'out', 'worldadapter', 'bar')
+    nodenet.step()
+    assert np.all(worldadapter.get_flow_datatarget('bar') == [1, 2, 3, 4, 5])
 
 
 @pytest.mark.engine("theano_engine")

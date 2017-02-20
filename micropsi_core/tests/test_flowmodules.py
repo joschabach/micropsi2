@@ -498,8 +498,15 @@ def test_flowmodule_reload_code_behaviour(runtime, test_nodenet, default_world, 
     import os
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
     node = netapi.create_node("Thetas", None, "Thetas", weights_shape=5)
+    double = netapi.create_node("Double", None, "Double")
+    netapi.flow('worldadapter', 'foo', double, 'inputs')
+    netapi.flow(double, 'outputs', 'worldadapter', 'bar')
     node.ensure_initialized()
     weights = node.get_theta('weights').get_value()
+    source = netapi.create_node("Neuron", None)
+    netapi.link(source, 'gen', source, 'gen')
+    netapi.link(source, 'gen', double, 'sub')
+    source.activation = 1
     with open(os.path.join(resourcepath, "nodetypes", "Thetas.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
@@ -527,6 +534,24 @@ def thetas(Y, netapi, node, parameters):
     else:
         return Y
 """)
+    with open(os.path.join(resourcepath, "nodetypes", "foobar", "Double.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "theano",
+    "name": "Double",
+    "build_function_name": "double",
+    "init_function_name": "double_init",
+    "inputs": ["inputs"],
+    "outputs": ["outputs"],
+    "inputdims": [1]
+}
+
+def double_init(netapi, node, parameters):
+    node.initfunction_ran = True
+
+def double(inputs, netapi, node, parameters):
+    return inputs * 4
+""")
     runtime.reload_code()
     node = netapi.get_node(node.uid)
     assert node.inputs == ["Y"]
@@ -534,6 +559,12 @@ def thetas(Y, netapi, node, parameters):
     assert not np.all(weights == node.get_theta('weights').get_value())
     assert weights.shape == node.get_theta('weights').get_value().shape
     assert node.initfunction_ran == 'yep'
+    worldadapter = nodenet.worldadapter_instance
+    sources = np.zeros((5), dtype=worldadapter.floatX)
+    sources[:] = np.random.randn(*sources.shape)
+    worldadapter.set_flow_datasource('foo', sources)
+    nodenet.step()
+    assert np.all(worldadapter.get_flow_datatarget("bar") == sources * 4)
 
 
 @pytest.mark.engine("theano_engine")

@@ -113,6 +113,8 @@ def numpyfunc(inputs, netapi, node, parameters):
     "inputdims": [1]
 }
 
+import theano
+
 def thetas_init(netapi, node, parameters):
     import numpy as np
     w_array = np.random.rand(parameters['weights_shape']).astype(netapi.floatX)
@@ -461,6 +463,8 @@ def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepa
     custom_theta = np.random.rand(5).astype(netapi.floatX)
     thetas.set_theta("weights", custom_theta)
 
+    assert double.initfunction_ran
+
     sources = np.zeros((5), dtype=netapi.floatX)
     sources[:] = np.random.randn(*sources.shape)
     worldadapter.set_flow_datasource('foo', sources)
@@ -519,6 +523,8 @@ def test_flowmodule_reload_code_behaviour(runtime, test_nodenet, default_world, 
     "outputs": ["Z"],
     "inputdims": [1]
 }
+
+import theano
 
 def thetas_init(netapi, node, parameters):
     import numpy as np

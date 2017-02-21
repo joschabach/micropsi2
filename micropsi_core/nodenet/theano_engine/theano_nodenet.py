@@ -1779,9 +1779,9 @@ class TheanoNodenet(Nodenet):
                         get_numerical_node_type(instance.type, self.native_modules),
                         inputmap=flowdata['inputmap'],
                         outputmap=flowdata['outputmap'],
-                        parameters=parameters,
-                        initialized=True
+                        parameters=parameters
                     )
+                    self.flow_module_instances[uid] = new_instance
                 else:
                     new_instance = TheanoNode(self, partition, instance.parent_nodespace, uid, partition.allocated_nodes[node_from_id(uid)])
                 new_native_module_instances[uid] = new_instance

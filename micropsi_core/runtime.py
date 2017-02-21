@@ -1653,6 +1653,7 @@ def parse_world_definitions(path):
 def parse_native_module_file(path):
     import importlib
     global native_modules
+    import os
     try:
         base_path = os.path.join(RESOURCE_PATH, 'nodetypes')
         relpath = os.path.relpath(path, start=base_path)

@@ -1554,10 +1554,13 @@ def load_definitions():
 
 def load_user_files(path, resourcetype, errors=[]):
     global native_modules, custom_recipes
+    import shutil
     if os.path.isdir(path):
         for f in os.listdir(path):
-            if not f.startswith('.') and f != '__pycache__':
+            if not f.startswith('.'):
                 abspath = os.path.join(path, f)
+                if f == "__pycache__":
+                    shutil.rmtree(abspath)
                 err = None
                 if os.path.isdir(abspath):
                     errors.extend(load_user_files(abspath, resourcetype, errors=[]))
@@ -1612,11 +1615,8 @@ def parse_world_definitions(path):
             sys.path.append(base_path)
             name = w[:-3]
             try:
-                try:
-                    wmodule = importlib.reload(sys.modules[name])
-                except:
-                    loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
-                    wmodule = loader.load_module()
+                loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
+                wmodule = loader.load_module()
                 for name, cls in inspect.getmembers(wmodule, inspect.isclass):
                     if World in inspect.getmro(cls) and name != "World":
                         world_classes[name] = cls
@@ -1627,11 +1627,8 @@ def parse_world_definitions(path):
             relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
             name = w[:-3]
             try:
-                try:
-                    wmodule = importlib.reload(sys.modules[name])
-                except:
-                    loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
-                    wmodule = loader.load_module()
+                loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
+                wmodule = loader.load_module()
                 for name, cls in inspect.getmembers(wmodule, inspect.isclass):
                     if WorldAdapter in inspect.getmro(cls) and not inspect.isabstract(cls):
                         worldadapter_classes[name] = cls
@@ -1642,11 +1639,8 @@ def parse_world_definitions(path):
             relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
             name = w[:-3]
             try:
-                try:
-                    wmodule = importlib.reload(sys.modules[name])
-                except:
-                    loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
-                    wmodule = loader.load_module()
+                loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
+                wmodule = loader.load_module()
                 for name, cls in inspect.getmembers(wmodule, inspect.isclass):
                     if WorldObject in inspect.getmro(cls) and WorldAdapter not in inspect.getmro(cls):
                         worldobject_classes[name] = cls

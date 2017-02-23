@@ -178,15 +178,26 @@ def _add_world_list(template_name, **params):
         response.set_cookie('selected_world', current_world)
     else:
         current_world = request.get_cookie('selected_world')
+    world_type = ""
     world_assets = {}
+    world_template = ""
     if current_world:
         world_obj = runtime.load_world(current_world)
+        world_type = world_obj.__class__.__name__
         if hasattr(world_obj, 'assets'):
             world_assets = world_obj.assets
+        if 'template' in world_assets:
+            import inspect
+            basedir = os.path.dirname(inspect.getfile(world_obj.__class__))
+            with open(os.path.join(basedir, world_assets['template'])) as fp:
+                world_template = template(fp.read(), world_assets=world_assets)
     return template(template_name, current=current_world,
         mine=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].get('owner') == params['user_id']),
         others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].get('owner') != params['user_id']),
-        world_assets=world_assets, **params)
+        world_type=world_type,
+        world_assets=world_assets,
+        world_template=world_template,
+        **params)
 
 
 @micropsi_app.route('/static/<filepath:path>')
@@ -194,11 +205,25 @@ def server_static(filepath):
     return static_file(filepath, root=os.path.join(APP_PATH, 'static'))
 
 
+@micropsi_app.route('/world_assets/<wtype>/<filepath:path>')
+def server_static_world_asset(wtype, filepath):
+    import inspect
+    world = runtime.get_world_class_from_name(wtype)
+    return static_file(filepath, root=os.path.dirname(inspect.getfile(world)))
+
+
 @micropsi_app.route("/")
 def index():
     first_user = usermanager.users == {}
     user_id, permissions, token = get_request_data()
-    return _add_world_list("viewer", mode="all", first_user=first_user, logging_levels=runtime.get_logging_levels(), version=VERSION, user_id=user_id, permissions=permissions, console=INCLUDE_CONSOLE)
+    return _add_world_list("viewer",
+        mode="all",
+        first_user=first_user,
+        logging_levels=runtime.get_logging_levels(),
+        version=VERSION,
+        user_id=user_id,
+        permissions=permissions,
+        console=INCLUDE_CONSOLE)
 
 
 @micropsi_app.route("/agent")

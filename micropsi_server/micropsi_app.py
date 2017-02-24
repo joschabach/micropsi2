@@ -208,7 +208,7 @@ def server_static(filepath):
 @micropsi_app.route('/world_assets/<wtype>/<filepath:path>')
 def server_static_world_asset(wtype, filepath):
     import inspect
-    world = runtime.get_world_class_from_name(wtype)
+    world = runtime.get_world_class_from_name(wtype, case_sensitive=False)
     return static_file(filepath, root=os.path.dirname(inspect.getfile(world)))
 
 

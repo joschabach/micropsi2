@@ -277,10 +277,15 @@ def import_world(worlddata, owner=None):
     return data['uid']
 
 
-def get_world_class_from_name(world_type):
+def get_world_class_from_name(world_type, case_sensitive=True):
     """Returns the class from a world type, if it is known"""
     from micropsi_core.world.world import World
-    return micropsi_core.runtime.world_classes[world_type]
+    if case_sensitive:
+        return micropsi_core.runtime.world_classes[world_type]
+    else:
+        for key in micropsi_core.runtime.world_classes:
+            if key.lower() == world_type.lower():
+                return micropsi_core.runtime.world_classes[key]
 
 
 def get_available_world_types():

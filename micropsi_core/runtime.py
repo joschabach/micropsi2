@@ -433,6 +433,8 @@ def get_nodenet_metadata(nodenet_uid):
         'rootnodespace': nodenet.get_nodespace(None).uid,
         'resource_path': RESOURCE_PATH
     })
+    if nodenet.world:
+        data['current_world_step'] = worlds[nodenet.world].current_step
     return True, data
 
 

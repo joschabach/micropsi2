@@ -161,7 +161,8 @@ class MicropsiRunner(threading.Thread):
                     nodenet = nodenets[uid]
                     if nodenet.is_active:
                         if nodenet.check_stop_runner_condition():
-                            nodenet.is_active = False
+                            stop_nodenetrunner(uid)
+                            # nodenet.is_active = False
                             continue
                         log = True
                         if self.profiler:
@@ -170,14 +171,16 @@ class MicropsiRunner(threading.Thread):
                             nodenet.timed_step()
                             nodenet.update_monitors_and_recorders()
                         except:
-                            nodenet.is_active = False
+                            stop_nodenetrunner(uid)
+                            # nodenet.is_active = False
                             logging.getLogger("agent.%s" % uid).error("Exception in Agent:", exc_info=1)
                             MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
                         if nodenet.world and nodenet.current_step % runner['factor'] == 0:
                             try:
                                 worlds[nodenet.world].step()
                             except:
-                                nodenet.is_active = False
+                                stop_nodenetrunner(uid)
+                                # nodenet.is_active = False
                                 logging.getLogger("world").error("Exception in Environment:", exc_info=1)
                                 MicropsiRunner.last_world_exception[nodenets[uid].world] = sys.exc_info()
                         if self.profiler:
@@ -241,7 +244,8 @@ MicropsiRunner.last_nodenet_exception = {}
 def kill_runners(signal=None, frame=None):
     for uid in nodenets:
         if nodenets[uid].is_active:
-            nodenets[uid].is_active = False
+            stop_nodenetrunner(uid)
+            # nodenets[uid].is_active = False
     runner['runner'].resume()
     runner['running'] = False
     runner['runner'].join()
@@ -609,8 +613,11 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
 
 def start_nodenetrunner(nodenet_uid):
     """Starts a thread that regularly advances the given nodenet by one step."""
-
-    nodenets[nodenet_uid].is_active = True
+    nodenet = get_nodenet(nodenet_uid)
+    nodenet.simulation_started()
+    # nodenets[nodenet_uid].is_active = True
+    if nodenet.world:
+        worlds[nodenet.world].simulation_started()
     if runner['runner'].paused:
         runner['runner'].resume()
     return True
@@ -668,8 +675,12 @@ def get_is_nodenet_running(nodenet_uid):
 def stop_nodenetrunner(nodenet_uid):
     """Stops the thread for the given nodenet."""
     nodenet = get_nodenet(nodenet_uid)
-    nodenet.is_active = False
+    nodenet.simulation_stopped()
     test = {nodenets[uid].is_active for uid in nodenets}
+    if nodenet.world:
+        test_world = {nodenets[uid].is_active and nodenets[uid].world == nodenet.world for uid in nodenets}
+        if True not in test_world:
+            worlds[nodenet.world].simulation_stopped()
     if True not in test:
         runner['runner'].pause()
     return True
@@ -1294,7 +1305,9 @@ def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
     nodenet = get_nodenet(nodenet_uid)
     for key, value in values.items():
         nodenet.get_node(node_uid).set_parameter(key, value)
-    nodenet.is_active = resume_nodenet
+    if resume_nodenet:
+        start_nodenetrunner(nodenet_uid)
+    # nodenet.is_active = resume_nodenet
     nodenet.user_prompt = None
 
 
@@ -1777,7 +1790,8 @@ def reload_code():
     for uid in nodenets:
         if nodenets[uid].is_active:
             runners[uid] = True
-            nodenets[uid].is_active = False
+            stop_nodenetrunner(uid)
+            # nodenets[uid].is_active = False
 
     # load code-directory
     if RESOURCE_PATH not in sys.path:
@@ -1812,7 +1826,8 @@ def reload_code():
 
     # restart previously active nodenets
     for uid in runners:
-        nodenets[uid].is_active = True
+        start_nodenetrunner(uid)
+        # nodenets[uid].is_active = True
 
     if len(errors) == 0:
         return True, []

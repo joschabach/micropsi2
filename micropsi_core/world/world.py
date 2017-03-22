@@ -105,7 +105,7 @@ class World(object):
             "current_step": 0,
             "config": config
         }
-
+        self.is_active = False
         folder = self.__module__.split('.')
         folder.pop()
         folder = '.'.join(folder)
@@ -142,6 +142,12 @@ class World(object):
         else:
             self.logger.warning("Wrong version of the world data")
             return False
+
+    def simulation_started(self):
+        self.is_active = True
+
+    def simulation_stopped(self):
+        self.is_active = False
 
     def get_available_worldadapters(self):
         """ return the list of instantiated worldadapters """

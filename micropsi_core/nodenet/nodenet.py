@@ -227,6 +227,12 @@ class Nodenet(metaclass=ABCMeta):
         })
         return data
 
+    def simulation_started(self):
+        self.is_active = True
+
+    def simulation_stopped(self):
+        self.is_active = False
+
     @abstractmethod
     def get_nodes(self, nodespaces=[], node_uids=[], include_links=True, links_to_nodespaces=[]):
         """

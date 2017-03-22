@@ -47,6 +47,18 @@ def test_get_world_properties(runtime, default_world):
     assert default_world == wp["uid"]
 
 
+def test_start_stop_simulation(runtime, default_world, default_nodenet):
+    nodenet = runtime.get_nodenet(default_nodenet)
+    world = runtime.load_world(default_world)
+    runtime.set_nodenet_properties(default_nodenet, worldadapter="Default", world_uid=default_world)
+    runtime.start_nodenetrunner(default_nodenet)
+    assert world.is_active
+    assert nodenet.is_active
+    runtime.stop_nodenetrunner(default_nodenet)
+    assert not world.is_active
+    assert not nodenet.is_active
+
+
 def test_get_worldadapters(runtime, default_world, default_nodenet):
     wa = runtime.get_worldadapters(default_world)
     assert 'Default' in wa

@@ -4020,8 +4020,8 @@ function handleEditNodenet(event){
             if(reload){
                 window.location.reload();
             } else {
-                // setCurrentNodenet(currentNodenet, currentNodeSpace);
-                refreshNodespace();
+                setCurrentNodenet(currentNodenet, currentNodeSpace, true);
+                // refreshNodespace();
             }
         }
     );

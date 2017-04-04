@@ -1835,6 +1835,14 @@ class TheanoNodenet(Nodenet):
 
             self.worldadapter_flow_nodes = {}
 
+        # update native modules numeric types, as these may have been set with a different native module
+        # node types list
+        for key, partition in self.partitions.items():
+            native_module_ids = np.where(partition.allocated_nodes > MAX_STD_NODETYPE)[0]
+            for id in native_module_ids:
+                instance = self.get_node(node_to_id(id, partition.pid))
+                partition.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
+
         data = {}
         if self.worldadapter_instance and self.worldadapter_instance.generate_flow_modules:
             if self.worldadapter_instance.get_available_flow_datasources():

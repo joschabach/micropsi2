@@ -112,6 +112,7 @@ class TheanoNodenet(Nodenet):
             self.native_module_definitions.update(flow_io_types)
             for key in flow_io_types:
                 self.native_modules[key] = FlowNodetype(nodenet=self, **flow_io_types[key])
+            self.update_numeric_native_module_types()
             self.generate_worldadapter_flow_instances()
         if self._worldadapter_instance:
             self._worldadapter_instance.nodenet = self
@@ -1794,12 +1795,7 @@ class TheanoNodenet(Nodenet):
 
             partition.native_module_instances = new_native_module_instances
 
-            # update native modules numeric types, as these may have been set with a different native module
-            # node types list
-            native_module_ids = np.where(partition.allocated_nodes > MAX_STD_NODETYPE)[0]
-            for id in native_module_ids:
-                instance = self.get_node(node_to_id(id, partition.pid))
-                partition.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
+        self.update_numeric_native_module_types()
 
         # recreate the deleted ones. Gate configurations and links will not be transferred.
         for uid, data in instances_to_recreate.items():
@@ -1815,6 +1811,18 @@ class TheanoNodenet(Nodenet):
 
         # recompile flow_graphs:
         self.update_flow_graphs()
+
+    def update_numeric_native_module_types(self):
+        """
+        update native modules numeric types if the types have been updated
+        either due to reload_native_modules, or due to changing the worldadapter
+        """
+        import pdb; pdb.set_trace()
+        for key, partition in self.partitions.items():
+            native_module_ids = np.where(partition.allocated_nodes > MAX_STD_NODETYPE)[0]
+            for id in native_module_ids:
+                instance = self.get_node(node_to_id(id, partition.pid))
+                partition.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
 
     def generate_worldadapter_flow_types(self, delete_existing=False):
         """ returns native_module_definitions for datasources and targets from the configured worldadapter"""
@@ -1834,14 +1842,6 @@ class TheanoNodenet(Nodenet):
                 del self.native_module_definitions[key]
 
             self.worldadapter_flow_nodes = {}
-
-        # update native modules numeric types, as these may have been set with a different native module
-        # node types list
-        for key, partition in self.partitions.items():
-            native_module_ids = np.where(partition.allocated_nodes > MAX_STD_NODETYPE)[0]
-            for id in native_module_ids:
-                instance = self.get_node(node_to_id(id, partition.pid))
-                partition.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
 
         data = {}
         if self.worldadapter_instance and self.worldadapter_instance.generate_flow_modules:

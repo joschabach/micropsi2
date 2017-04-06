@@ -98,6 +98,15 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
     def initialize_worldobject(self, data):
         pass
 
+    def add_datasource(self, name, initial_value=0.0):
+        """ add a datasource """
+        self.datasources[name] = initial_value
+
+    def add_datatarget(self, name, initial_value=0.0):
+        """ add a datatarget """
+        self.datatargets[name] = initial_value
+        self.datatarget_feedback[name] = 0.0
+
     def get_available_datasources(self):
         """returns a list of identifiers of the datasources available for this world adapter"""
         return sorted(list(self.datasources.keys()))

@@ -167,6 +167,9 @@ class World(object):
             else:
                 self.logger.warning('Worldobject of type %s not supported anymore. Deleting object of this type.' % object_data['type'])
                 del data['objects'][uid]
+        for uid in list(self.data['agents']):
+            if uid not in micropsi_core.runtime.nodenet_data:
+                del self.data['agents'][uid]
 
     def step(self):
         """ advance the simluation """

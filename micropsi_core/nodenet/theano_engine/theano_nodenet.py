@@ -1817,7 +1817,6 @@ class TheanoNodenet(Nodenet):
         update native modules numeric types if the types have been updated
         either due to reload_native_modules, or due to changing the worldadapter
         """
-        import pdb; pdb.set_trace()
         for key, partition in self.partitions.items():
             native_module_ids = np.where(partition.allocated_nodes > MAX_STD_NODETYPE)[0]
             for id in native_module_ids:

@@ -7,11 +7,16 @@ __author__ = 'rvuine'
 
 import os
 import logging
-import coloredlogs
 import time
 from operator import itemgetter
 
 MAX_RECORDS_PER_STORAGE = 1000
+
+# optionally color log console log output
+try:
+    import coloredlogs
+except ImportError:
+    coloredlogs = None
 
 
 class RecordWebStorageHandler(logging.Handler):
@@ -102,7 +107,8 @@ class MicropsiLogger():
         if self.filehandler:
             logging.getLogger(name).addHandler(self.filehandler)
         self.loggers[name].debug("Logger %s ready" % name)
-        coloredlogs.install(logger=self.loggers[name])
+        if coloredlogs is not None:
+            coloredlogs.install(logger=self.loggers[name])
 
     def unregister_logger(self, name):
         logging.getLogger(name).removeHandler(self.handlers[name])

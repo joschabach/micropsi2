@@ -33,14 +33,16 @@ class Monitor(metaclass=ABCMeta):
         self.name = name or "some monitor"
         self.color = color or "#%02d%02d%02d" % (random.randint(0,99), random.randint(0,99), random.randint(0,99))
 
-    def get_data(self):
-        return {
+    def get_data(self, with_values=True):
+        data = {
             "uid": self.uid,
-            "values": self.values,
             "name": self.name,
             "color": self.color,
             "classname": self.__class__.__name__
         }
+        if with_values:
+            data["values"] = self.values
+        return data
 
     @abstractmethod
     def getvalue(self):
@@ -67,8 +69,8 @@ class GroupMonitor(Monitor):
         else:
             self.nodenet.group_nodes_by_ids(nodespace, node_uids, name, gatetype=gate)
 
-    def get_data(self):
-        data = super().get_data()
+    def get_data(self, with_values=True):
+        data = super().get_data(with_values=with_values)
         data.update({
             "nodespace": self.nodespace,
             "node_uids": self.node_uids,
@@ -93,8 +95,8 @@ class NodeMonitor(Monitor):
         self.type = type
         self.target = target or 'gen'
 
-    def get_data(self):
-        data = super().get_data()
+    def get_data(self, with_values=True):
+        data = super().get_data(with_values=with_values)
         data.update({
             "node_uid": self.node_uid,
             "type": self.type,
@@ -127,8 +129,8 @@ class LinkMonitor(Monitor):
         self.gate_type = gate_type
         self.slot_type = slot_type
 
-    def get_data(self):
-        data = super().get_data()
+    def get_data(self, with_values=True):
+        data = super().get_data(with_values=with_values)
         data.update({
             "source_node_uid": self.source_node_uid,
             "target_node_uid": self.target_node_uid,
@@ -163,8 +165,8 @@ class ModulatorMonitor(Monitor):
         self.modulator = modulator
         self.nodenet = nodenet
 
-    def get_data(self):
-        data = super().get_data()
+    def get_data(self, with_values=True):
+        data = super().get_data(with_values=with_values)
         data.update({
             "modulator": self.modulator
         })
@@ -181,8 +183,8 @@ class CustomMonitor(Monitor):
         self.function = function
         self.compiled_function = micropsi_core.tools.create_function(self.function, parameters="netapi")
 
-    def get_data(self):
-        data = super().get_data()
+    def get_data(self, with_values=True):
+        data = super().get_data(with_values=with_values)
         data.update({
             "function": self.function,
         })

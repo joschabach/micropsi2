@@ -27,10 +27,14 @@ import threading
 from datetime import datetime, timedelta
 import time
 import signal
-
 import logging
 
 from .micropsi_logger import MicropsiLogger
+
+try:
+    import ipdb as pdb
+except ImportError:
+    import pdb
 
 
 NODENET_DIRECTORY = "nodenets"
@@ -174,6 +178,9 @@ class MicropsiRunner(threading.Thread):
                             stop_nodenetrunner(uid)
                             # nodenet.is_active = False
                             logging.getLogger("agent.%s" % uid).error("Exception in Agent:", exc_info=1)
+                            if cfg['micropsi2'].get('on_exception') == 'debug':
+                                _, _, tb = sys.exc_info()
+                                pdb.post_mortem(tb)
                             MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
                         if nodenet.world and nodenet.current_step % runner['factor'] == 0:
                             try:
@@ -183,6 +190,9 @@ class MicropsiRunner(threading.Thread):
                                 # nodenet.is_active = False
                                 logging.getLogger("world").error("Exception in Environment:", exc_info=1)
                                 MicropsiRunner.last_world_exception[nodenets[uid].world] = sys.exc_info()
+                                if cfg['micropsi2'].get('on_exception') == 'debug':
+                                    _, _, tb = sys.exc_info()
+                                    pdb.post_mortem(tb)
                         if self.profiler:
                             self.profiler.disable()
 

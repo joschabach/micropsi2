@@ -676,10 +676,10 @@ class Nodenet(metaclass=ABCMeta):
         for uid in self._recorders:
             self._recorders[uid].step(self.current_step)
 
-    def construct_monitors_dict(self):
+    def construct_monitors_dict(self, with_values=True):
         data = {}
         for monitor_uid in self._monitors:
-            data[monitor_uid] = self._monitors[monitor_uid].get_data()
+            data[monitor_uid] = self._monitors[monitor_uid].get_data(with_values=with_values)
         return data
 
     def construct_recorders_dict(self):

@@ -1851,6 +1851,8 @@ def initialize(persistency_path=None, resource_path=None, world_path=None):
     RESOURCE_PATH = resource_path or cfg['paths']['agent_directory']
     WORLD_PATH = world_path or cfg['paths']['world_directory']
 
+    sys.path.append(WORLD_PATH)
+
     configs = config.ConfigurationManager(cfg['paths']['server_settings_path'])
 
     if logger is None:

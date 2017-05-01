@@ -1034,7 +1034,7 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
 
         gate_config = node.get_gate_configuration()
         for gatetype, gconfig in gate_config.items():
-            lines.append("%s.set_gate_configuration('%s', \"%s\", %.2f)" % (varname, gatetype, gconfig['gatefunction'], gconfig.get('gatefunction_parameters', {})))
+            lines.append("%s.set_gate_configuration('%s', \"%s\", %s)" % (varname, gatetype, gconfig['gatefunction'], str(gconfig.get('gatefunction_parameters', {}))))
 
         nps = node.clone_parameters()
         for parameter, value in nps.items():

@@ -1155,7 +1155,7 @@ class TheanoPartition():
         self.g_min.set_value(new_g_min, borrow=True)
 
         new_g_max = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
-        new_g_max[0:self.NoE] =  self.g_max.get_value(borrow=True)
+        new_g_max[0:self.NoE] = self.g_max.get_value(borrow=True)
         self.g_max.set_value(new_g_max, borrow=True)
 
         new_g_function_selector = np.zeros(new_NoE, dtype=np.int8)
@@ -1373,7 +1373,7 @@ class TheanoPartition():
 
         # initialize activation to zero
         a_array = self.a.get_value(borrow=True)
-        for element in range (0, get_elements_per_type(get_numerical_node_type(nodetype, self.nodenet.native_modules), self.nodenet.native_modules)):
+        for element in range(0, get_elements_per_type(get_numerical_node_type(nodetype, self.nodenet.native_modules), self.nodenet.native_modules)):
             a_array[offset + element] = 0
         self.a.set_value(a_array)
 

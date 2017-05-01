@@ -42,8 +42,13 @@ def test_gate_arithmetics_minimum(runtime, test_nodenet):
         "minimum": 1.5,
     }
     register.set_gate_configuration("gen", "threshold", params)
+    runtime.save_nodenet(test_nodenet)
     net.step()
     assert register.get_gate("gen").activation == 1.5
+    runtime.revert_nodenet(test_nodenet)
+    net = runtime.nodenets[test_nodenet]
+    net.step()
+    assert net.get_node(register.uid).get_gate("gen").activation == 1.5
 
 
 def test_gate_arithmetics_threshold(runtime, test_nodenet):
@@ -145,40 +150,65 @@ def test_gatefunction_sigmoid(runtime, test_nodenet):
     from micropsi_core.nodenet.gatefunctions import sigmoid
     net, netapi, source, register = prepare(runtime, test_nodenet)
     register.set_gate_configuration("gen", "sigmoid", {'bias': 1.2})
+    runtime.save_nodenet(test_nodenet)
     net.step()
     assert round(register.get_gate("gen").activation, 5) == round(sigmoid(1, 1.2), 5)
+    runtime.revert_nodenet(test_nodenet)
+    net = runtime.nodenets[test_nodenet]
+    net.step()
+    assert round(net.get_node(register.uid).get_gate("gen").activation, 5) == round(sigmoid(1, 1.2), 5)
 
 
 def test_gatefunction_elu(runtime, test_nodenet):
     from micropsi_core.nodenet.gatefunctions import elu
     net, netapi, source, register = prepare(runtime, test_nodenet)
     register.set_gate_configuration("gen", "elu", {'bias': 1.2})
+    runtime.save_nodenet(test_nodenet)
     net.step()
     assert round(register.get_gate("gen").activation, 5) == round(elu(1, 1.2), 5)
+    runtime.revert_nodenet(test_nodenet)
+    net = runtime.nodenets[test_nodenet]
+    net.step()
+    assert round(net.get_node(register.uid).get_gate("gen").activation, 5) == round(elu(1, 1.2), 5)
 
 
 def test_gatefunction_relu(runtime, test_nodenet):
     from micropsi_core.nodenet.gatefunctions import relu
     net, netapi, source, register = prepare(runtime, test_nodenet)
     register.set_gate_configuration("gen", "relu", {'bias': 1.2})
+    runtime.save_nodenet(test_nodenet)
     net.step()
     assert round(register.get_gate("gen").activation, 5) == round(relu(1, 1.2), 5)
+    runtime.revert_nodenet(test_nodenet)
+    net = runtime.nodenets[test_nodenet]
+    net.step()
+    assert round(net.get_node(register.uid).get_gate("gen").activation, 5) == round(relu(1, 1.2), 5)
 
 
 def test_gatefunction_on_over_x(runtime, test_nodenet):
     from micropsi_core.nodenet.gatefunctions import one_over_x
     net, netapi, source, register = prepare(runtime, test_nodenet)
     register.set_gate_configuration("gen", "one_over_x",)
+    runtime.save_nodenet(test_nodenet)
     net.step()
     assert round(register.get_gate("gen").activation, 5) == round(one_over_x(1), 5)
+    runtime.revert_nodenet(test_nodenet)
+    net = runtime.nodenets[test_nodenet]
+    net.step()
+    assert round(net.get_node(register.uid).get_gate("gen").activation) == round(one_over_x(1), 5)
 
 
 def test_gatefunction_absolute(runtime, test_nodenet):
     from micropsi_core.nodenet.gatefunctions import absolute
     net, netapi, source, register = prepare(runtime, test_nodenet)
     register.set_gate_configuration("gen", "absolute")
+    runtime.save_nodenet(test_nodenet)
     net.step()
     assert round(register.get_gate("gen").activation, 5) == round(absolute(1), 5)
+    runtime.revert_nodenet(test_nodenet)
+    net = runtime.nodenets[test_nodenet]
+    net.step()
+    assert round(net.get_node(register.uid).get_gate("gen").activation, 5) == round(absolute(1), 5)
 
 
 def test_gatefunction_none_is_identity(runtime, test_nodenet):

@@ -998,7 +998,7 @@ class TheanoPartition():
             self.has_gatefunction_relu = GATE_FUNCTION_RELU in g_function_selector
             self.has_gatefunction_one_over_x = GATE_FUNCTION_DIST in g_function_selector
             self.has_gatefunction_elu = GATE_FUNCTION_ELU in g_function_selector
-            self.has_gatefunction_elu = GATE_FUNCTION_THRESHOLD in g_function_selector
+            self.has_gatefunction_threshold = GATE_FUNCTION_THRESHOLD in g_function_selector
         else:
             self.logger.warning("no g_function_selector in file, falling back to defaults")
 

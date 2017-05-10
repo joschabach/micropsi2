@@ -184,7 +184,9 @@ def test_generate_netapi_fragment(runtime, test_nodenet, engine, resourcepath):
         nodes.extend([p1, p2])
         netapi.link_with_reciprocal(p1, p2, t)
     reg = netapi.create_node('Neuron', None, 'reg')
+    reg.set_gate_configuration('gen', 'threshold', {'amplification': 2})
     netapi.link(reg, 'gen', nodes[0], 'gen')
+    nodes.append(reg)
     # remember their names
     names = [n.name for n in nodes]
     fragment = runtime.generate_netapi_fragment(test_nodenet, [n.uid for n in nodes])

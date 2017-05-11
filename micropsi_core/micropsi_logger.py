@@ -83,6 +83,8 @@ class MicropsiLogger():
             datefmt='%d.%m. %H:%M:%S'
         )
 
+        logging.getLogger().handlers = []
+
         self.log_to_file = log_to_file
         self.filehandler = None
         if log_to_file:
@@ -91,6 +93,7 @@ class MicropsiLogger():
             self.filehandler = logging.FileHandler(self.log_to_file, mode='a')
             formatter = logging.Formatter(self.default_format)
             self.filehandler.setFormatter(formatter)
+            self.filehandler.set_name('filehandler')
 
         self.register_logger("system", self.logging_levels.get(default_logging_levels.get('system', {}), logging.WARNING))
         self.register_logger("world", self.logging_levels.get(default_logging_levels.get('world', {}), logging.WARNING))
@@ -100,7 +103,6 @@ class MicropsiLogger():
         self.loggers[name].setLevel(level)
         self.record_storage[name] = []
         self.handlers[name] = RecordWebStorageHandler(self.record_storage, name)
-
         formatter = logging.Formatter(self.default_format)
         self.handlers[name].setFormatter(formatter)
         logging.getLogger(name).addHandler(self.handlers[name])

@@ -110,7 +110,7 @@ class DictNodenet(Nodenet):
     def current_step(self):
         return self._step
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None):
+    def __init__(self, persistency_path, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None):
         """Create a new MicroPsi agent.
 
         Arguments:
@@ -120,7 +120,7 @@ class DictNodenet(Nodenet):
             uid (optional): unique handle of the agent; if none is given, it will be generated
         """
 
-        super().__init__(name, worldadapter, world, owner, uid, native_modules=native_modules, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance, version=version)
+        super().__init__(persistency_path, name, worldadapter, world, owner, uid, native_modules=native_modules, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance, version=version)
 
         self.nodetypes = {}
         for type, data in STANDARD_NODETYPES.items():
@@ -209,7 +209,7 @@ class DictNodenet(Nodenet):
         return data
 
     def save(self):
-        base_path = self.get_persistency_path()
+        base_path = self.persistency_path
         filename = os.path.join(base_path, 'nodenet.json')
         # dict_engine saves everything to json, just dump the json export
         data = json.dumps(self.export_json(), sort_keys=True, indent=4)
@@ -225,7 +225,7 @@ class DictNodenet(Nodenet):
         if self._version != NODENET_VERSION:
             self.logger.error("Wrong version of nodenet data in nodenet %s, cannot load." % self.uid)
             return False
-        filename = os.path.join(self.get_persistency_path(), 'nodenet.json')
+        filename = os.path.join(self.persistency_path, 'nodenet.json')
         with self.netlock:
 
             initfrom = {}

@@ -725,7 +725,7 @@ class TheanoPartition():
         self.has_new_usages = True
 
     def save(self):
-        base_path = self.nodenet.get_persistency_path()
+        base_path = self.nodenet.persistency_path
 
         allocated_nodes = self.allocated_nodes
         allocated_node_offsets = self.allocated_node_offsets
@@ -811,7 +811,7 @@ class TheanoPartition():
         """Load the node net from a file"""
         # try to access file
 
-        base_path = self.nodenet.get_persistency_path()
+        base_path = self.nodenet.persistency_path
         filename = os.path.join(base_path, "partition-%s.npz" % self.spid)
         datafile = None
         if os.path.isfile(filename):
@@ -1033,7 +1033,7 @@ class TheanoPartition():
             self.__calculate_g_factors()
 
     def load_inlinks(self):
-        base_path = self.nodenet.get_persistency_path()
+        base_path = self.nodenet.persistency_path
         for spid in self.nodenet.partitions:
             filename = os.path.join(base_path, "inlinks-%s-from-%s.npz" % (self.spid, spid))
             if os.path.isfile(filename):

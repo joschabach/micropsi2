@@ -33,7 +33,7 @@ class TheanoNode(Node):
 
         self.is_highdimensional = type(self._nodetype) == HighdimensionalNodetype
 
-        self.datafile = os.path.join(nodenet.get_persistency_path(), '%s_node_%s.npz' % (self._nodenet.uid, self.uid))
+        self.datafile = os.path.join(nodenet.persistency_path, '%s_node_%s.npz' % (self._nodenet.uid, self.uid))
 
         if strtype in nodenet.native_modules or strtype == "Comment":
             self.slot_activation_snapshot = {}

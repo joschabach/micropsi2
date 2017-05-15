@@ -416,6 +416,7 @@ def load_nodenet(nodenet_uid):
                 logger.register_logger("agent.%s" % nodenet_uid, cfg['logging']['level_agent'])
 
                 params = {
+                    'persistency_path': os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, data.uid),
                     'name': data.name,
                     'worldadapter': worldadapter,
                     'worldadapter_instance': worldadapter_instance,

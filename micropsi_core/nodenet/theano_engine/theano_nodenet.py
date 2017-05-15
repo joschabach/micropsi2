@@ -127,7 +127,7 @@ class TheanoNodenet(Nodenet):
     def current_step(self):
         return self._step
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None, flow_modules={}):
+    def __init__(self, persistency_path, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None, flow_modules={}):
 
         # map of string uids to positions. Not all nodes necessarily have an entry.
         self.positions = {}
@@ -141,7 +141,7 @@ class TheanoNodenet(Nodenet):
         # map of data targets to string node IDs
         self.actuatormap = {}
 
-        super().__init__(name, worldadapter, world, owner, uid, native_modules=native_modules, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance, version=version)
+        super().__init__(persistency_path, name, worldadapter, world, owner, uid, native_modules=native_modules, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance, version=version)
 
         self.nodetypes = {}
         for type, data in STANDARD_NODETYPES.items():
@@ -489,7 +489,7 @@ class TheanoNodenet(Nodenet):
         self.stepoperators.sort(key=lambda op: op.priority)
 
     def save(self):
-        base_path = self.get_persistency_path()
+        base_path = self.persistency_path
 
         # write json metadata, which will be used by runtime to manage the net
         with open(os.path.join(base_path, 'nodenet.json'), 'w+', encoding="utf-8") as fp:
@@ -537,7 +537,7 @@ class TheanoNodenet(Nodenet):
             return False
 
         # try to access file
-        filename = os.path.join(self.get_persistency_path(), 'nodenet.json')
+        filename = os.path.join(self.persistency_path, 'nodenet.json')
         with self.netlock:
             initfrom = {}
             if os.path.isfile(filename):
@@ -596,14 +596,14 @@ class TheanoNodenet(Nodenet):
                 data = initfrom['recorders'][recorder_uid]
                 self._recorders[recorder_uid] = getattr(recorder, data['classname'])(self, **data)
 
-            flowfile = os.path.join(self.get_persistency_path(), 'flowgraph.pickle')
+            flowfile = os.path.join(self.persistency_path, 'flowgraph.pickle')
 
             if os.path.isfile(flowfile):
                 self.flowgraph = nx.read_gpickle(flowfile)
 
             for node_uid in self.flow_module_instances:
                 self.flow_module_instances[node_uid].ensure_initialized()
-                theta_file = os.path.join(self.get_persistency_path(), "%s_thetas.npz" % node_uid)
+                theta_file = os.path.join(self.persistency_path, "%s_thetas.npz" % node_uid)
                 if os.path.isfile(theta_file):
                     data = np.load(theta_file)
                     for key in data:

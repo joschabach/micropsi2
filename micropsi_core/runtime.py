@@ -1648,6 +1648,8 @@ def parse_world_definitions(path):
                         logging.getLogger("system").debug("Found world %s " % name)
             except Exception as e:
                 errors.append("%s when importing world file %s: %s" % (e.__class__.__name__, relpath, str(e)))
+                if cfg['micropsi2'].get('on_exception') == 'debug':
+                    pdb.set_trace()
         for w in worldadapterfiles:
             relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
             name = w[:-3]
@@ -1660,6 +1662,8 @@ def parse_world_definitions(path):
                         # errors.append("Name collision in worldadapters: %s defined more than once" % name)
             except Exception as e:
                 errors.append("%s when importing worldadapter file %s: %s" % (e.__class__.__name__, relpath, str(e)))
+                if cfg['micropsi2'].get('on_exception') == 'debug':
+                    pdb.set_trace()
         for w in worldobjectfiles:
             relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
             name = w[:-3]
@@ -1672,6 +1676,8 @@ def parse_world_definitions(path):
                         # errors.append("Name collision in worldadapters: %s defined more than once" % name)
             except Exception as e:
                 errors.append("%s when importing worldobject file %s: %s" % (e.__class__.__name__, relpath, str(e)))
+                if cfg['micropsi2'].get('on_exception') == 'debug':
+                    pdb.set_trace()
     return errors or None
 
 
@@ -1695,6 +1701,8 @@ def parse_native_module_file(path):
                 logging.getLogger("system").warning("Native module names must be unique. %s is not." % moduledef['name'])
             native_modules[moduledef['name']] = moduledef
     except Exception as e:
+        if cfg['micropsi2'].get('on_exception') == 'debug':
+            pdb.set_trace()
         return "%s when importing nodetype file %s: %s" % (e.__class__.__name__, relpath, str(e))
 
 
@@ -1716,6 +1724,8 @@ def parse_recipe_or_operations_file(path, mode, category_overwrite=False):
         # recipes = __import__(pyname, fromlist=['recipes'])
         # importlib.reload(sys.modules[pyname])
     except Exception as e:
+        if cfg['micropsi2'].get('on_exception') == 'debug':
+            pdb.post_mortem(e.__traceback__)
         return "%s when importing %s file %s: %s" % (e.__class__.__name__, mode, relpath, str(e))
 
     for name, module in inspect.getmembers(recipes, inspect.ismodule):

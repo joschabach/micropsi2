@@ -1646,7 +1646,7 @@ def parse_world_definitions(path):
                     if World in inspect.getmro(cls) and name != "World":
                         world_classes[name] = cls
                         logging.getLogger("system").debug("Found world %s " % name)
-            except (SyntaxError, ImportError, SystemError) as e:
+            except Exception as e:
                 errors.append("%s when importing world file %s: %s" % (e.__class__.__name__, relpath, str(e)))
         for w in worldadapterfiles:
             relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
@@ -1658,7 +1658,7 @@ def parse_world_definitions(path):
                     if WorldAdapter in inspect.getmro(cls) and not inspect.isabstract(cls):
                         worldadapter_classes[name] = cls
                         # errors.append("Name collision in worldadapters: %s defined more than once" % name)
-            except (SyntaxError, ImportError, SystemError) as e:
+            except Exception as e:
                 errors.append("%s when importing worldadapter file %s: %s" % (e.__class__.__name__, relpath, str(e)))
         for w in worldobjectfiles:
             relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
@@ -1670,7 +1670,7 @@ def parse_world_definitions(path):
                     if WorldObject in inspect.getmro(cls) and WorldAdapter not in inspect.getmro(cls):
                         worldobject_classes[name] = cls
                         # errors.append("Name collision in worldadapters: %s defined more than once" % name)
-            except (SyntaxError, ImportError, SystemError) as e:
+            except Exception as e:
                 errors.append("%s when importing worldobject file %s: %s" % (e.__class__.__name__, relpath, str(e)))
     return errors or None
 
@@ -1715,7 +1715,7 @@ def parse_recipe_or_operations_file(path, mode, category_overwrite=False):
         recipes = loader.load_module()
         # recipes = __import__(pyname, fromlist=['recipes'])
         # importlib.reload(sys.modules[pyname])
-    except (SyntaxError, ImportError, SystemError) as e:
+    except Exception as e:
         return "%s when importing %s file %s: %s" % (e.__class__.__name__, mode, relpath, str(e))
 
     for name, module in inspect.getmembers(recipes, inspect.ismodule):

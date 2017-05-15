@@ -14,7 +14,6 @@ import numpy as np
 import scipy
 import networkx as nx
 
-import sys
 try:
     import ipdb as pdb
 except ImportError:
@@ -1076,8 +1075,7 @@ class TheanoNodenet(Nodenet):
                 except Exception as err:
                     self.logger.error("Error in buildfunction of Flowodule %s.\n %s: %s" % (str(node), err.__class__.__name__, str(err)))
                     if settings['micropsi2'].get('on_exception') == 'debug':
-                        _, _, tb = sys.exc_info()
-                        pdb.post_mortem(tb)
+                        pdb.post_mortem(err.__traceback__)
 
                     skip = True
                     break
@@ -1743,8 +1741,7 @@ class TheanoNodenet(Nodenet):
                 except Exception as err:
                     self.logger.error("Can not instantiate node type %s: %s: %s" % (key, err.__class__.__name__, str(err)))
                     if settings['micropsi2'].get('on_exception') == 'debug':
-                        _, _, tb = sys.exc_info()
-                        pdb.post_mortem(tb)
+                        pdb.post_mortem(err.__traceback__)
 
         for partition in self.partitions.values():
             for uid, instance in partition.native_module_instances.items():

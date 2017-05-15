@@ -70,14 +70,14 @@ from code import InteractiveConsole
 
 
 class FileCacher():
-    "Cache the stdout text so we can analyze it before returning it"
+    """Cache the stdout text so we can analyze it before returning it"""
     def __init__(self):
         self.reset()
 
     def reset(self):
         self.out = []
 
-    def write(self,line):
+    def write(self, line):
         self.out.append(line)
 
     def flush(self):
@@ -87,7 +87,7 @@ class FileCacher():
 
 
 class NetapiShell(InteractiveConsole):
-    "Wrapper around Python that can filter input/output to the shell"
+    """Wrapper around Python that can filter input/output to the shell"""
     def __init__(self, netapi):
         self.stdout = sys.stdout
         self.stderr = sys.stderr
@@ -104,11 +104,11 @@ class NetapiShell(InteractiveConsole):
         sys.stdout = self.stdout
         sys.stderr = self.stderr
 
-    def push(self,line):
+    def push(self, line):
         self.get_output()
-        incomplete = InteractiveConsole.push(self,line)
+        incomplete = InteractiveConsole.push(self, line)
         if incomplete:
-            InteractiveConsole.push(self,'\n')
+            InteractiveConsole.push(self, '\n')
         self.return_output()
         err = self.errcache.flush()
         if err and err.startswith('Traceback'):

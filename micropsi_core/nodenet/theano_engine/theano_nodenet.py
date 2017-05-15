@@ -36,8 +36,6 @@ from micropsi_core.nodenet.theano_engine.theano_flowmodule import FlowModule
 from configuration import config as settings
 
 
-
-
 STANDARD_NODETYPES = {
     "Comment": {
         "name": "Comment",

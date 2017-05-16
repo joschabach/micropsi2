@@ -18,6 +18,7 @@ from configuration import config as cfg
 from micropsi_core.nodenet import node_alignment
 from micropsi_core import config
 from micropsi_core.tools import Bunch
+from micropsi_core.tools import post_mortem
 
 import os
 import sys
@@ -30,12 +31,6 @@ import signal
 import logging
 
 from .micropsi_logger import MicropsiLogger
-
-try:
-    import ipdb as pdb
-except ImportError:
-    import pdb
-
 
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
@@ -67,6 +62,7 @@ netapi_consoles = {}
 initialized = False
 
 from code import InteractiveConsole
+
 
 
 class FileCacher():
@@ -178,9 +174,7 @@ class MicropsiRunner(threading.Thread):
                             stop_nodenetrunner(uid)
                             # nodenet.is_active = False
                             logging.getLogger("agent.%s" % uid).error("Exception in Agent:", exc_info=1)
-                            if cfg['micropsi2'].get('on_exception') == 'debug':
-                                _, _, tb = sys.exc_info()
-                                pdb.post_mortem(tb)
+                            post_mortem()
                             MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
                         if nodenet.world and nodenet.current_step % runner['factor'] == 0:
                             try:
@@ -190,9 +184,7 @@ class MicropsiRunner(threading.Thread):
                                 # nodenet.is_active = False
                                 logging.getLogger("world").error("Exception in Environment:", exc_info=1)
                                 MicropsiRunner.last_world_exception[nodenets[uid].world] = sys.exc_info()
-                                if cfg['micropsi2'].get('on_exception') == 'debug':
-                                    _, _, tb = sys.exc_info()
-                                    pdb.post_mortem(tb)
+                                post_mortem()
                         if self.profiler:
                             self.profiler.disable()
 
@@ -1648,8 +1640,7 @@ def parse_world_definitions(path):
                         logging.getLogger("system").debug("Found world %s " % name)
             except Exception as e:
                 errors.append("%s when importing world file %s: %s" % (e.__class__.__name__, relpath, str(e)))
-                if cfg['micropsi2'].get('on_exception') == 'debug':
-                    pdb.set_trace()
+                post_mortem()
         for w in worldadapterfiles:
             relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
             name = w[:-3]
@@ -1662,8 +1653,7 @@ def parse_world_definitions(path):
                         # errors.append("Name collision in worldadapters: %s defined more than once" % name)
             except Exception as e:
                 errors.append("%s when importing worldadapter file %s: %s" % (e.__class__.__name__, relpath, str(e)))
-                if cfg['micropsi2'].get('on_exception') == 'debug':
-                    pdb.set_trace()
+                post_mortem()
         for w in worldobjectfiles:
             relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
             name = w[:-3]
@@ -1676,8 +1666,7 @@ def parse_world_definitions(path):
                         # errors.append("Name collision in worldadapters: %s defined more than once" % name)
             except Exception as e:
                 errors.append("%s when importing worldobject file %s: %s" % (e.__class__.__name__, relpath, str(e)))
-                if cfg['micropsi2'].get('on_exception') == 'debug':
-                    pdb.set_trace()
+                post_mortem()
     return errors or None
 
 
@@ -1701,8 +1690,7 @@ def parse_native_module_file(path):
                 logging.getLogger("system").warning("Native module names must be unique. %s is not." % moduledef['name'])
             native_modules[moduledef['name']] = moduledef
     except Exception as e:
-        if cfg['micropsi2'].get('on_exception') == 'debug':
-            pdb.set_trace()
+        post_mortem()
         return "%s when importing nodetype file %s: %s" % (e.__class__.__name__, relpath, str(e))
 
 
@@ -1724,8 +1712,7 @@ def parse_recipe_or_operations_file(path, mode, category_overwrite=False):
         # recipes = __import__(pyname, fromlist=['recipes'])
         # importlib.reload(sys.modules[pyname])
     except Exception as e:
-        if cfg['micropsi2'].get('on_exception') == 'debug':
-            pdb.post_mortem(e.__traceback__)
+        post_mortem()
         return "%s when importing %s file %s: %s" % (e.__class__.__name__, mode, relpath, str(e))
 
     for name, module in inspect.getmembers(recipes, inspect.ismodule):

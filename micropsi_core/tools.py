@@ -11,6 +11,19 @@ __date__ = '29.06.12'
 import uuid
 import errno
 import os
+import sys
+from configuration import config as cfg
+try:
+    import ipdb as pdb
+except ImportError:
+    import pdb
+
+def post_mortem():
+    """ if desired, point a debugger to the origin of the last exception """
+    if cfg['micropsi2'].get('on_exception') == 'debug':
+        exception_type, exception, tb = sys.exc_info()
+        print('\033[01m\033[31m%s: \033[32m%s\033[0m' % (exception_type.__name__,  exception))
+        pdb.post_mortem(tb)
 
 
 def pid_exists(pid):

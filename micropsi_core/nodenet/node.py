@@ -526,7 +526,13 @@ class Nodetype(object):
         self._nodefunction_name = nodefunction_name
         try:
             if self.path:
-                module = SourceFileLoader("nodefunctions", self.path).load_module()
+                if "micropsi_core" in self.path:
+                    # builtin native module
+                    modulename = "micropsi_core.nodenet.native_modules"
+                else:
+                    # native module from code dir
+                    modulename = "nodetypes." + self.category.replace('/', '.') + os.path.basename(self.path)[:-3]
+                module = SourceFileLoader(modulename, self.path).load_module()
                 self.nodefunction = getattr(module, nodefunction_name)
                 self.line_number = inspect.getsourcelines(self.nodefunction)[1]
             else:

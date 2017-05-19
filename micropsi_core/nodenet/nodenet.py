@@ -248,9 +248,11 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def save(self):
+    def save(self, base_path=None):
         """
-        Saves the nodenet to the given main metadata json file.
+        Saves the nodenet to persistency.
+        Arguments:
+            base_path (String) - Save files to a non-standard directory
         """
         pass  # pragma: no cover
 

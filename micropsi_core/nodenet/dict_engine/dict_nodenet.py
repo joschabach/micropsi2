@@ -208,8 +208,9 @@ class DictNodenet(Nodenet):
 
         return data
 
-    def save(self):
-        base_path = self.persistency_path
+    def save(self, base_path=None):
+        if base_path is None:
+            base_path = self.persistency_path
         filename = os.path.join(base_path, 'nodenet.json')
         # dict_engine saves everything to json, just dump the json export
         data = json.dumps(self.export_json(), sort_keys=True, indent=4)

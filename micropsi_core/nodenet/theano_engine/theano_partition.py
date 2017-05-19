@@ -724,8 +724,9 @@ class TheanoPartition():
         self.NoN = new_NoN
         self.has_new_usages = True
 
-    def save(self):
-        base_path = self.nodenet.persistency_path
+    def save(self, base_path=None):
+        if base_path is None:
+            base_path = self.nodenet.persistency_path
 
         allocated_nodes = self.allocated_nodes
         allocated_node_offsets = self.allocated_node_offsets

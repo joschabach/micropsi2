@@ -488,8 +488,9 @@ class TheanoNodenet(Nodenet):
             self.stepoperators.append(DoernerianEmotionalModulators())
         self.stepoperators.sort(key=lambda op: op.priority)
 
-    def save(self):
-        base_path = self.persistency_path
+    def save(self, base_path=None):
+        if base_path is None:
+            base_path = self.persistency_path
 
         # write json metadata, which will be used by runtime to manage the net
         with open(os.path.join(base_path, 'nodenet.json'), 'w+', encoding="utf-8") as fp:
@@ -527,7 +528,7 @@ class TheanoNodenet(Nodenet):
 
         for partition in self.partitions.values():
             # save partitions
-            partition.save()
+            partition.save(base_path=base_path)
 
     def load(self):
         """Load the node net from a file"""

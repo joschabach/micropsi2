@@ -1484,6 +1484,12 @@ def get_recorders(nodenet_uid):
 # --------- logging --------
 
 
+@rpc("get_logging_levels")
+def get_logging_levels():
+    """ Set the logging levels """
+    return True, runtime.get_logging_levels()
+
+
 @rpc("set_logging_levels")
 def set_logging_levels(logging_levels):
     """ Set the logging levels """

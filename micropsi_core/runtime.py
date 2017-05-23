@@ -1779,8 +1779,6 @@ def reload_code():
     errors = []
 
     # load builtins:
-    from micropsi_core.nodenet.native_modules import nodetypes
-    native_modules.update(nodetypes)
     operationspath = os.path.dirname(os.path.realpath(__file__)) + '/nodenet/operations/'
     for file in os.listdir(operationspath):
         import micropsi_core.nodenet.operations

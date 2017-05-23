@@ -21,9 +21,21 @@ from micropsi_core.tools import Bunch
 
 import os
 import sys
+import threading
+
+
+def plotter_initializer():
+    from matplotlib import pyplot as plt
+    plt.show()
+
+# bring up plotting infrastructure
+import matplotlib
+matplotlib.use('WebAgg')
+plt_thread = threading.Thread(target=plotter_initializer, args=(), daemon=True)
+plt_thread.start()
+
 from micropsi_core import tools
 import json
-import threading
 from datetime import datetime, timedelta
 import time
 import signal

@@ -30,6 +30,8 @@ def plotter_initializer():
 
 # bring up plotting infrastructure
 import matplotlib
+matplotlib.rcParams['webagg.port'] = 6545
+matplotlib.rcParams['webagg.open_in_browser'] = False
 matplotlib.use('WebAgg')
 plt_thread = threading.Thread(target=plotter_initializer, args=(), daemon=True)
 plt_thread.start()

@@ -27,3 +27,4 @@ micropsi.log
 /test-data/
 pip-selfcheck.json
 /cherrypy
+/.pycharmvenv/

@@ -942,10 +942,7 @@ def test_get_available_node_types(app, test_nodenet):
 def test_get_available_native_module_types(app, test_nodenet, engine):
     response = app.get_json('/rpc/get_available_native_module_types(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
-    if engine == 'dict_engine':
-        assert response.json_body['data'] == {}
-    elif engine == 'theano_engine':
-        assert "GradientDescent" in response.json_body['data']
+    assert response.json_body['data'] == {}
 
 
 def test_set_node_parameters(app, test_nodenet):

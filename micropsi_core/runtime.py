@@ -284,8 +284,10 @@ def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor
 def get_logging_levels(nodenet_uid=None):
     levels = {}
     for key in logging.Logger.manager.loggerDict:
-        levels[key] = logging.getLevelName(logging.getLogger(key).getEffectiveLevel())
-    levels['agent'] = cfg['logging']['level_agent']
+        if key.startswith('agent') or key in ['world', 'system']:
+            levels[key] = logging.getLevelName(logging.getLogger(key).getEffectiveLevel())
+    if 'agent' not in levels:
+        levels['agent'] = cfg['logging']['level_agent']
     return levels
 
 
@@ -1784,8 +1786,6 @@ def reload_code():
     errors = []
 
     # load builtins:
-    from micropsi_core.nodenet.native_modules import nodetypes
-    native_modules.update(nodetypes)
     operationspath = os.path.dirname(os.path.realpath(__file__)) + '/nodenet/operations/'
     for file in os.listdir(operationspath):
         import micropsi_core.nodenet.operations

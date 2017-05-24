@@ -296,6 +296,32 @@ def test_revert_both(app, test_nodenet, default_world):
     assert res.json_body['data']['current_world_step'] == 0
 
 
+def test_revert_and_reload(app, test_nodenet, default_world, resourcepath):
+    import os
+    app.set_auth()
+    app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, worldadapter="Default", world_uid=default_world))
+    for i in range(5):
+        app.get_json('/rpc/step_calculation(nodenet_uid="%s")' % test_nodenet)
+    res = app.get_json('/rpc/get_calculation_state(nodenet_uid="%s")' % test_nodenet)
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
+    with open(nodetype_file, 'w') as fp:
+        fp.write("""nodetype_definition = {
+            "name": "Testnode",
+            "slottypes": ["gen", "foo", "bar"],
+            "nodefunction_name": "testnodefunc",
+            "gatetypes": ["gen", "foo", "bar"],
+            "symbol": "t"}
+
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+""")
+    app.get_json('/rpc/reload_and_revert(nodenet_uid="%s")' % test_nodenet)
+    res = app.get_json('/rpc/get_calculation_state(nodenet_uid="%s")' % test_nodenet)
+    assert res.json_body['data']['current_nodenet_step'] == 0
+    assert res.json_body['data']['current_world_step'] == 0
+    response = app.get_json('/rpc/get_available_node_types(nodenet_uid="%s")' % test_nodenet)
+    assert "Testnode" in response.json_body['data']['native_modules']
+
+
 def test_save_nodenet(app, test_nodenet, default_world):
     app.set_auth()
     response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, nodenet_name="new_name", worldadapter="Default", world_uid=default_world))

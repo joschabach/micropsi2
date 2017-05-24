@@ -420,24 +420,6 @@ def load_nodenet(nodenet_uid):
     return False, "Agent %s not found in %s" % (nodenet_uid, PERSISTENCY_PATH)
 
 
-def load_world(world_uid):
-    global worlds
-    if world_uid not in worlds:
-        if world_uid in world_data:
-            if "world_type" in world_data[world_uid]:
-                try:
-                    worlds[world_uid] = get_world_class_from_name(world_data[world_uid].world_type)(**world_data[world_uid])
-                except TypeError:
-                    worlds[world_uid] = world.World(**world_data[world_uid])
-                # except AttributeError as err:
-                #     logging.getLogger('system').warning("Unknown world_type: %s (%s)" % (world_data[world_uid].world_type, str(err)))
-                # except:
-                #     logging.getLogger('system').warning("Can not instantiate World \"%s\": %s" % (world_data[world_uid].name, str(sys.exc_info()[1])))
-            else:
-                worlds[world_uid] = world.World(**world_data[world_uid])
-    return worlds.get(world_uid)
-
-
 def get_nodenet_metadata(nodenet_uid):
     """ returns the given nodenet's metadata"""
     nodenet = get_nodenet(nodenet_uid)
@@ -760,6 +742,18 @@ def revert_nodenet(nodenet_uid, also_revert_world=False):
     unload_nodenet(nodenet_uid)
     load_nodenet(nodenet_uid)
     return True
+
+
+def reload_and_revert(nodenet_uid, also_revert_world=False):
+    """Returns the nodenet to the last saved state."""
+    nodenet = get_nodenet(nodenet_uid)
+    world_uid = nodenet.world
+    unload_nodenet(nodenet_uid)
+    if world_uid:
+        unload_world(world_uid)
+    result = reload_code()
+    load_nodenet(nodenet_uid)
+    return result
 
 
 def save_nodenet(nodenet_uid):

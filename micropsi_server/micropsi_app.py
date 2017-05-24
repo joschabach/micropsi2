@@ -1005,6 +1005,12 @@ def revert_nodenet(nodenet_uid):
     return runtime.revert_nodenet(nodenet_uid)
 
 
+@rpc("reload_and_revert", permission_required="manage nodenets")
+def reload_and_revert(nodenet_uid):
+    """ reload code, and revert calculation"""
+    return runtime.reload_and_revert(nodenet_uid)
+
+
 @rpc("save_nodenet", permission_required="manage nodenets")
 def save_nodenet(nodenet_uid):
     """ Persist the current state of the nodenet"""

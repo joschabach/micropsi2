@@ -762,7 +762,7 @@ class Nodenet(metaclass=ABCMeta):
                     self.logger.debug("Closing %d figures belonging to node %s" % (len(plots), node_uid))
                     for fig in plots:
                         plt.close(fig)
-                    self.figures[node_uid] = []
+                    del self.figures[node_uid]
             else:
                 self.logger.debug("Closing open figures.")
                 for uid in self.figures:

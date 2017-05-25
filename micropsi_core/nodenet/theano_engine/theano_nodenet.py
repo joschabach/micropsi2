@@ -1321,7 +1321,7 @@ class TheanoNodenet(Nodenet):
         return uid
 
     def delete_node(self, uid):
-
+        self.close_figures(uid)
         partition = self.get_partition(uid)
         node_id = node_from_id(uid)
 
@@ -1778,6 +1778,7 @@ class TheanoNodenet(Nodenet):
                 position = instance.position
                 name = instance.name
                 partition = self.get_partition(uid)
+                self.close_figures(uid)
                 if uid in self.flow_module_instances:
                     flowdata = instance.get_flow_data(complete=True)
                     new_instance = FlowModule(

@@ -1423,20 +1423,18 @@ def get_netapi_autocomplete_data(nodenet_uid, name=None):
             if name.startswith('_'):
                 continue
             if inspect.isroutine(thing):
-                argspec = inspect.getargspec(thing)
-                arguments = argspec.args[1:]
-                defaults = argspec.defaults or []
+                sig = inspect.signature(thing)
                 params = []
-                diff = len(arguments) - len(defaults)
-                for i, arg in enumerate(arguments):
-                    if i >= diff:
+                for key in sig.parameters:
+                    if key == 'self':
+                        continue
+                    if sig.parameters[key].default != inspect.Signature.empty:
                         params.append({
-                            'name': arg,
-                            'default': defaults[i - diff]
+                            'name': key,
+                            'default': sig.parameters[key].default
                         })
                     else:
-                        params.append({'name': arg})
-
+                        params.append({'name': key})
                 data[name] = params
             else:
                 data[name] = None
@@ -1723,21 +1721,16 @@ def parse_recipe_or_operations_file(path, mode, category_overwrite=False):
             # import from another file of the same mode. ignore, to avoid
             # false duplicate-function-name alerts
             continue
-        argspec = inspect.getargspec(func)
-        if mode == 'recipes':
-            arguments = argspec.args[1:]
-        elif mode == 'operations':
-            arguments = argspec.args[2:]
-        defaults = argspec.defaults or []
+        signature = inspect.signature(func)
         params = []
-        diff = len(arguments) - len(defaults)
-        for i, arg in enumerate(arguments):
-            if i >= diff:
-                default = defaults[i - diff]
-            else:
+        for param in signature.parameters:
+            if param == 'netapi' or (param == 'selection' and mode == 'operations'):
+                continue
+            default = signature.parameters[param].default
+            if default == inspect.Signature.empty:
                 default = None
             params.append({
-                'name': arg,
+                'name': param,
                 'default': default
             })
         if mode == 'recipes' and name in custom_recipes and id(func) != id(custom_recipes[name]['function']):

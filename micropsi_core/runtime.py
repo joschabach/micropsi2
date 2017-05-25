@@ -23,15 +23,20 @@ import os
 import sys
 import threading
 
-import matplotlib
-matplotlib.rcParams['webagg.port'] = 6545
-matplotlib.rcParams['webagg.open_in_browser'] = False
-matplotlib.use('WebAgg')
+try:
+    import matplotlib
+    matplotlib.rcParams['webagg.port'] = 6545
+    matplotlib.rcParams['webagg.open_in_browser'] = False
+    matplotlib.use('WebAgg')
 
+    def plotter_initializer():
+        from matplotlib import pyplot as plt
+        plt.show()
 
-def plotter_initializer():
-    from matplotlib import pyplot as plt
-    plt.show()
+except ImportError:
+    matplotlib = None
+    pass
+
 
 from micropsi_core import tools
 import json
@@ -1864,8 +1869,9 @@ def initialize(persistency_path=None, resource_path=None, world_path=None):
     configs = config.ConfigurationManager(cfg['paths']['server_settings_path'])
 
     # bring up plotting infrastructure
-    plt_thread = threading.Thread(target=plotter_initializer, args=(), daemon=True)
-    plt_thread.start()
+    if matplotlib is not None:
+        plt_thread = threading.Thread(target=plotter_initializer, args=(), daemon=True)
+        plt_thread.start()
 
     if logger is None:
         logger = MicropsiLogger({

@@ -180,6 +180,7 @@ class Nodenet(metaclass=ABCMeta):
         self.deleted_items = {}
         self.stepping_rate = []
         self.dashboard_values = {}
+        self.figures = set()
 
         self.native_modules = {}
         for type, data in native_modules.items():
@@ -742,3 +743,15 @@ class Nodenet(metaclass=ABCMeta):
                 else:
                     del self.self._runner_condition['monitor']
         return False
+
+    def register_figure(self, figure):
+        self.figures.add(figure)
+
+    def close_figures(self):
+        try:
+            import matplotlib.pyplot as plt
+            self.logger.debug("Closing %d open pyplot figures" % len(self.figures))
+            for fig in self.figures:
+                plt.close(fig)
+        except ImportError:
+            pass

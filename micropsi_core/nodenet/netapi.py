@@ -565,3 +565,10 @@ class NetAPI(object):
 
     def announce_nodes(self, nodespace_uid, numer_of_nodes, average_element_per_node):
         pass
+
+    def show_plot(self, figure=None):
+        from matplotlib import pyplot as plt
+        if figure is None:
+            figure = plt.gca().figure
+        plt.show()
+        self.__nodenet.register_figure(figure)

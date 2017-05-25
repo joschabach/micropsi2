@@ -14,6 +14,12 @@ import numpy as np
 import scipy
 import networkx as nx
 
+try:
+    import ipdb as pdb
+except ImportError:
+    import pdb
+
+from micropsi_core.tools import post_mortem
 from micropsi_core.tools import OrderedSet
 from micropsi_core.nodenet import monitor
 from micropsi_core.nodenet import recorder
@@ -1067,6 +1073,7 @@ class TheanoNodenet(Nodenet):
                         original_outex = node.build(*buildargs)
                 except Exception as err:
                     self.logger.error("Error in buildfunction of Flowodule %s.\n %s: %s" % (str(node), err.__class__.__name__, str(err)))
+                    post_mortem()
                     skip = True
                     break
 
@@ -1730,6 +1737,7 @@ class TheanoNodenet(Nodenet):
                     self.native_module_definitions[key] = data
                 except Exception as err:
                     self.logger.error("Can not instantiate node type %s: %s: %s" % (key, err.__class__.__name__, str(err)))
+                    post_mortem()
 
         for partition in self.partitions.values():
             for uid, instance in partition.native_module_instances.items():

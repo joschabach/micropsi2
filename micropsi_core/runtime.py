@@ -18,6 +18,7 @@ from configuration import config as cfg
 from micropsi_core.nodenet import node_alignment
 from micropsi_core import config
 from micropsi_core.tools import Bunch
+from micropsi_core.tools import post_mortem
 
 import os
 import sys
@@ -38,11 +39,9 @@ import json
 from datetime import datetime, timedelta
 import time
 import signal
-
 import logging
 
 from .micropsi_logger import MicropsiLogger
-
 
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
@@ -76,15 +75,16 @@ initialized = False
 from code import InteractiveConsole
 
 
+
 class FileCacher():
-    "Cache the stdout text so we can analyze it before returning it"
+    """Cache the stdout text so we can analyze it before returning it"""
     def __init__(self):
         self.reset()
 
     def reset(self):
         self.out = []
 
-    def write(self,line):
+    def write(self, line):
         self.out.append(line)
 
     def flush(self):
@@ -94,7 +94,7 @@ class FileCacher():
 
 
 class NetapiShell(InteractiveConsole):
-    "Wrapper around Python that can filter input/output to the shell"
+    """Wrapper around Python that can filter input/output to the shell"""
     def __init__(self, netapi):
         self.stdout = sys.stdout
         self.stderr = sys.stderr
@@ -111,11 +111,11 @@ class NetapiShell(InteractiveConsole):
         sys.stdout = self.stdout
         sys.stderr = self.stderr
 
-    def push(self,line):
+    def push(self, line):
         self.get_output()
-        incomplete = InteractiveConsole.push(self,line)
+        incomplete = InteractiveConsole.push(self, line)
         if incomplete:
-            InteractiveConsole.push(self,'\n')
+            InteractiveConsole.push(self, '\n')
         self.return_output()
         err = self.errcache.flush()
         if err and err.startswith('Traceback'):
@@ -185,6 +185,7 @@ class MicropsiRunner(threading.Thread):
                             stop_nodenetrunner(uid)
                             # nodenet.is_active = False
                             logging.getLogger("agent.%s" % uid).error("Exception in Agent:", exc_info=1)
+                            post_mortem()
                             MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
                         if nodenet.world and nodenet.current_step % runner['factor'] == 0:
                             try:
@@ -194,6 +195,7 @@ class MicropsiRunner(threading.Thread):
                                 # nodenet.is_active = False
                                 logging.getLogger("world").error("Exception in Environment:", exc_info=1)
                                 MicropsiRunner.last_world_exception[nodenets[uid].world] = sys.exc_info()
+                                post_mortem()
                         if self.profiler:
                             self.profiler.disable()
 
@@ -1644,8 +1646,9 @@ def parse_world_definitions(path):
                     if World in inspect.getmro(cls) and name != "World":
                         world_classes[name] = cls
                         logging.getLogger("system").debug("Found world %s " % name)
-            except (SyntaxError, ImportError, SystemError) as e:
+            except Exception as e:
                 errors.append("%s when importing world file %s: %s" % (e.__class__.__name__, relpath, str(e)))
+                post_mortem()
         for w in worldadapterfiles:
             relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
             name = w[:-3]
@@ -1656,8 +1659,9 @@ def parse_world_definitions(path):
                     if WorldAdapter in inspect.getmro(cls) and not inspect.isabstract(cls):
                         worldadapter_classes[name] = cls
                         # errors.append("Name collision in worldadapters: %s defined more than once" % name)
-            except (SyntaxError, ImportError, SystemError) as e:
+            except Exception as e:
                 errors.append("%s when importing worldadapter file %s: %s" % (e.__class__.__name__, relpath, str(e)))
+                post_mortem()
         for w in worldobjectfiles:
             relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
             name = w[:-3]
@@ -1668,8 +1672,9 @@ def parse_world_definitions(path):
                     if WorldObject in inspect.getmro(cls) and WorldAdapter not in inspect.getmro(cls):
                         worldobject_classes[name] = cls
                         # errors.append("Name collision in worldadapters: %s defined more than once" % name)
-            except (SyntaxError, ImportError, SystemError) as e:
+            except Exception as e:
                 errors.append("%s when importing worldobject file %s: %s" % (e.__class__.__name__, relpath, str(e)))
+                post_mortem()
     return errors or None
 
 
@@ -1693,6 +1698,7 @@ def parse_native_module_file(path):
                 logging.getLogger("system").warning("Native module names must be unique. %s is not." % moduledef['name'])
             native_modules[moduledef['name']] = moduledef
     except Exception as e:
+        post_mortem()
         return "%s when importing nodetype file %s: %s" % (e.__class__.__name__, relpath, str(e))
 
 
@@ -1713,7 +1719,8 @@ def parse_recipe_or_operations_file(path, mode, category_overwrite=False):
         recipes = loader.load_module()
         # recipes = __import__(pyname, fromlist=['recipes'])
         # importlib.reload(sys.modules[pyname])
-    except (SyntaxError, ImportError, SystemError) as e:
+    except Exception as e:
+        post_mortem()
         return "%s when importing %s file %s: %s" % (e.__class__.__name__, mode, relpath, str(e))
 
     for name, module in inspect.getmembers(recipes, inspect.ismodule):

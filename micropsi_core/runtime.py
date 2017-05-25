@@ -1578,6 +1578,8 @@ def load_user_files(path, resourcetype, errors=[]):
                 abspath = os.path.join(path, f)
                 if f == "__pycache__":
                     shutil.rmtree(abspath)
+                elif f.startswith("_"):
+                    continue
                 err = None
                 if os.path.isdir(abspath):
                     errors.extend(load_user_files(abspath, resourcetype, errors=[]))

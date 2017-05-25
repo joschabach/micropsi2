@@ -23,18 +23,15 @@ import os
 import sys
 import threading
 
+import matplotlib
+matplotlib.rcParams['webagg.port'] = 6545
+matplotlib.rcParams['webagg.open_in_browser'] = False
+matplotlib.use('WebAgg')
+
 
 def plotter_initializer():
     from matplotlib import pyplot as plt
     plt.show()
-
-# bring up plotting infrastructure
-import matplotlib
-matplotlib.rcParams['webagg.port'] = 6545
-matplotlib.rcParams['webagg.open_in_browser'] = cfg['micropsi2'].get('plotting_open_browser', False)
-matplotlib.use('WebAgg')
-plt_thread = threading.Thread(target=plotter_initializer, args=(), daemon=True)
-plt_thread.start()
 
 from micropsi_core import tools
 import json
@@ -1866,6 +1863,10 @@ def initialize(persistency_path=None, resource_path=None, world_path=None):
 
     configs = config.ConfigurationManager(cfg['paths']['server_settings_path'])
 
+    # bring up plotting infrastructure
+    plt_thread = threading.Thread(target=plotter_initializer, args=(), daemon=True)
+    plt_thread.start()
+
     if logger is None:
         logger = MicropsiLogger({
             'system': cfg['logging']['level_system'],
@@ -1876,6 +1877,10 @@ def initialize(persistency_path=None, resource_path=None, world_path=None):
     load_definitions()
     for e in errors:
         logging.getLogger("system").error(e)
+
+    # shut tornado up
+    for key in ["tornado.application", "tornado.access", "tornado", "tornado.general"]:
+        logging.getLogger(key).setLevel(logging.ERROR)
 
     # initialize runners
     # Initialize the threads for the continuous calculation of nodenets and worlds

@@ -20,7 +20,6 @@ class TheanoNode(Node):
         self._id = node_from_id(uid)
         self._uid = uid
         self._parent_id = nodespace_from_id(parent_uid)
-        self._nodenet = nodenet
         self._partition = partition
         self._state = {}
 
@@ -30,7 +29,7 @@ class TheanoNode(Node):
         self.parameters = None
         strtype = get_string_node_type(numerictype, nodenet.native_modules)
 
-        Node.__init__(self, strtype, nodenet.get_nodetype(strtype))
+        Node.__init__(self, nodenet, strtype, nodenet.get_nodetype(strtype))
 
         self.is_highdimensional = type(self._nodetype) == HighdimensionalNodetype
 

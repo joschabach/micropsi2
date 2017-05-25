@@ -128,10 +128,11 @@ class Node(metaclass=ABCMeta):
         """
         return self._nodetype
 
-    def __init__(self, nodetype_name, nodetype):
+    def __init__(self, nodenet, nodetype_name, nodetype):
         """
         Constructor needs the string name of this node's type, and a Nodetype instance
         """
+        self._nodenet = nodenet
         self._nodetype_name = nodetype_name
         self._nodetype = nodetype
         self.logger = nodetype.logger

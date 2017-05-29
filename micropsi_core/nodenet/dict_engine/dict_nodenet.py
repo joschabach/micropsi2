@@ -806,14 +806,22 @@ class DictNodenet(Nodenet):
         """
         Returns a dict of the available gatefunctions and their parameters and parameter-defaults
         """
-        from inspect import getmembers, getargspec, isfunction
+        import inspect
         from micropsi_core.nodenet import gatefunctions
         data = {}
-        for name, func in getmembers(gatefunctions, isfunction):
-            argspec = getargspec(func)
+        for name, func in inspect.getmembers(gatefunctions, inspect.isfunction):
+            sig = inspect.signature(func)
             data[name] = {}
-            for idx, arg in enumerate(argspec.args[1:]):
-                data[name][arg] = argspec.defaults[idx]
+            skip = True
+            for key in sig.parameters:
+                if skip:
+                    # first param is input_activation. skip
+                    skip = False
+                    continue
+                default = sig.parameters[key].default
+                if default == inspect.Signature.empty:
+                    default = None
+                data[name][key] = default
         return data
 
     def has_nodespace_changes(self, nodespace_uids=[], since_step=0):

@@ -163,7 +163,7 @@ def test_node_show_plot_and_close_plot(runtime, test_nodenet):
     node.show_plot(fig)
     assert net.figures[node.uid] == [fig]
     netapi.delete_node(node)
-    assert node.uid not in net.figures[node.uid]
+    assert node.uid not in net.figures
     node = netapi.create_node("Neuron", None, "Neuron")
     node.show_plot(fig)
     runtime.unload_nodenet(test_nodenet)

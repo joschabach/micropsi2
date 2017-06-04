@@ -1,9 +1,4 @@
 
-try:
-    from . import vizapi
-except ImportError:
-    vizapi = None
-
 
 class NetAPI(object):
     # Node Net API facade class for use from within the node net (in node functions)
@@ -26,11 +21,6 @@ class NetAPI(object):
     def logger(self):
         """ The nodenet logger """
         return self.__nodenet.logger
-
-    @property
-    def vizapi(self):
-        """ An API for visualizations """
-        return vizapi
 
     def __init__(self, nodenet):
         self.__nodenet = nodenet

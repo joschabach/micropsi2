@@ -354,6 +354,9 @@ class Node(metaclass=ABCMeta):
         except ImportError:
             self.logger.error("Matplotlib is needed for plotting")
 
+    def close_figures(self):
+        self._nodenet.close_figures(node_uid=self.uid)
+
     def __repr__(self):
         return "<%s \"%s\" (%s)>" % (self.nodetype.name, self.name, self.uid)
 

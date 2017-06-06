@@ -21,9 +21,25 @@ from micropsi_core.tools import Bunch
 
 import os
 import sys
+import threading
+
+try:
+    import matplotlib
+    matplotlib.rcParams['webagg.port'] = 6545
+    matplotlib.rcParams['webagg.open_in_browser'] = False
+    matplotlib.use('WebAgg')
+
+    def plotter_initializer():
+        from matplotlib import pyplot as plt
+        plt.show()
+
+except ImportError:
+    matplotlib = None
+    pass
+
+
 from micropsi_core import tools
 import json
-import threading
 from datetime import datetime, timedelta
 import time
 import signal
@@ -406,24 +422,6 @@ def load_nodenet(nodenet_uid):
     return False, "Agent %s not found in %s" % (nodenet_uid, PERSISTENCY_PATH)
 
 
-def load_world(world_uid):
-    global worlds
-    if world_uid not in worlds:
-        if world_uid in world_data:
-            if "world_type" in world_data[world_uid]:
-                try:
-                    worlds[world_uid] = get_world_class_from_name(world_data[world_uid].world_type)(**world_data[world_uid])
-                except TypeError:
-                    worlds[world_uid] = world.World(**world_data[world_uid])
-                # except AttributeError as err:
-                #     logging.getLogger('system').warning("Unknown world_type: %s (%s)" % (world_data[world_uid].world_type, str(err)))
-                # except:
-                #     logging.getLogger('system').warning("Can not instantiate World \"%s\": %s" % (world_data[world_uid].name, str(sys.exc_info()[1])))
-            else:
-                worlds[world_uid] = world.World(**world_data[world_uid])
-    return worlds.get(world_uid)
-
-
 def get_nodenet_metadata(nodenet_uid):
     """ returns the given nodenet's metadata"""
     nodenet = get_nodenet(nodenet_uid)
@@ -523,6 +521,7 @@ def unload_nodenet(nodenet_uid):
     if nodenet_uid in netapi_consoles:
         del netapi_consoles[nodenet_uid]
     nodenet = nodenets[nodenet_uid]
+    nodenet.close_figures()
     if nodenet.world:
         worlds[nodenet.world].unregister_nodenet(nodenet.uid)
     del nodenets[nodenet_uid]
@@ -746,6 +745,18 @@ def revert_nodenet(nodenet_uid, also_revert_world=False):
     unload_nodenet(nodenet_uid)
     load_nodenet(nodenet_uid)
     return True
+
+
+def reload_and_revert(nodenet_uid, also_revert_world=False):
+    """Returns the nodenet to the last saved state."""
+    nodenet = get_nodenet(nodenet_uid)
+    world_uid = nodenet.world
+    unload_nodenet(nodenet_uid)
+    if world_uid:
+        unload_world(world_uid)
+    result = reload_code()
+    load_nodenet(nodenet_uid)
+    return result
 
 
 def save_nodenet(nodenet_uid):
@@ -1850,6 +1861,11 @@ def initialize(persistency_path=None, resource_path=None, world_path=None):
 
     configs = config.ConfigurationManager(cfg['paths']['server_settings_path'])
 
+    # bring up plotting infrastructure
+    if matplotlib is not None:
+        plt_thread = threading.Thread(target=plotter_initializer, args=(), daemon=True)
+        plt_thread.start()
+
     if logger is None:
         logger = MicropsiLogger({
             'system': cfg['logging']['level_system'],
@@ -1860,6 +1876,10 @@ def initialize(persistency_path=None, resource_path=None, world_path=None):
     load_definitions()
     for e in errors:
         logging.getLogger("system").error(e)
+
+    # shut tornado up
+    for key in ["tornado.application", "tornado.access", "tornado", "tornado.general"]:
+        logging.getLogger(key).setLevel(logging.ERROR)
 
     # initialize runners
     # Initialize the threads for the continuous calculation of nodenets and worlds

@@ -473,7 +473,7 @@ def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepa
 
     result = worldadapter.get_flow_datatarget('bar')
 
-    assert np.all(result == sources * 2 * thetas.get_theta("weights").get_value() + thetas.get_theta("bias").get_value())
+    assert np.allclose(result, sources * 2 * thetas.get_theta("weights").get_value() + thetas.get_theta("bias").get_value())
 
     runtime.save_nodenet(test_nodenet)
     runtime.revert_nodenet(test_nodenet)
@@ -484,9 +484,9 @@ def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepa
     worldadapter.set_flow_datasource('foo', sources)
     thetas = netapi.get_node(thetas.uid)
 
-    assert np.all(thetas.get_theta("weights").get_value() == custom_theta)
+    assert np.allclose(thetas.get_theta("weights").get_value(), custom_theta)
     nodenet.step()
-    assert np.all(worldadapter.get_flow_datatarget('bar') == result)
+    assert np.allclose(worldadapter.get_flow_datatarget('bar'), result)
     assert netapi.get_node(double.uid).initfunction_ran
     # also assert, that the edge-keys are preserved:
     # this would raise an exception otherwise
@@ -494,7 +494,7 @@ def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepa
 
     # assert that custom thetas survive reloadCode:
     runtime.reload_code()
-    assert np.all(netapi.get_node(thetas.uid).get_theta('weights').get_value() == custom_theta)
+    assert np.allclose(netapi.get_node(thetas.uid).get_theta('weights').get_value(), custom_theta)
 
 
 @pytest.mark.engine("theano_engine")

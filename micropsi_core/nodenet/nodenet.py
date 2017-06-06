@@ -180,6 +180,7 @@ class Nodenet(metaclass=ABCMeta):
         self.deleted_items = {}
         self.stepping_rate = []
         self.dashboard_values = {}
+        self.figures = {}
 
         self.native_modules = {}
         for type, data in native_modules.items():
@@ -615,6 +616,7 @@ class Nodenet(metaclass=ABCMeta):
 
     def clear(self):
         self._monitors = {}
+        self.close_figures()
 
     def add_gate_monitor(self, node_uid, gate, name=None, color=None):
         """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation
@@ -742,3 +744,29 @@ class Nodenet(metaclass=ABCMeta):
                 else:
                     del self.self._runner_condition['monitor']
         return False
+
+    def register_figure(self, node_uid, figure):
+        """ Registers a figure for the given node_uid"""
+        if node_uid in self.figures:
+            self.figures[node_uid].append(figure)
+        else:
+            self.figures[node_uid] = [figure]
+
+    def close_figures(self, node_uid=None):
+        """ Close all figures used by the given node, or alle figures if no uid given"""
+        try:
+            import matplotlib.pyplot as plt
+            if node_uid is not None:
+                plots = self.figures.get(node_uid, [])
+                if len(plots):
+                    self.logger.debug("Closing %d figures belonging to node %s" % (len(plots), node_uid))
+                    for fig in plots:
+                        plt.close(fig)
+                    del self.figures[node_uid]
+            else:
+                self.logger.debug("Closing open figures.")
+                for uid in self.figures:
+                    [plt.close(fig) for fig in self.figures[uid]]
+                self.figures = {}
+        except ImportError:
+            pass

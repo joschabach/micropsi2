@@ -1,4 +1,4 @@
-0.10-alpha8 (unreleased)
+0.10-alpha8 (2017-06-06)
 ==========
  * use matplotlib's webagg for plotting
 

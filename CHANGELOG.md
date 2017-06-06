@@ -1,5 +1,6 @@
 0.10-alpha8 (unreleased)
 ==========
+ * use matplotlib's webagg for plotting
 
 
 0.9-alpha7 (2017-02-13)

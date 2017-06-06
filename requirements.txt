@@ -1,5 +1,6 @@
 beautifulsoup4==4.4.1
 CherryPy==5.4.0
+coloredlogs==6.0
 coverage==4.0.3
 cycler==0.10.0
 matplotlib==1.5.1
@@ -23,3 +24,4 @@ WebTest==2.0.21
 Pillow==3.2.0
 networkx==1.11
 git+https://github.com/micropsi-industries/spock.git
+tornado==4.4

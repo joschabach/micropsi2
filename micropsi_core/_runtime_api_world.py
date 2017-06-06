@@ -231,15 +231,30 @@ def set_world_data(world_uid, data):
 
 def revert_world(world_uid):
     """Reverts the world to the last saved state."""
-    data = micropsi_core.runtime.world_data[world_uid]
+    unload_world(world_uid)
+    load_world(world_uid)
+    return True
+
+
+def unload_world(world_uid):
     if world_uid in micropsi_core.runtime.worlds:
         micropsi_core.runtime.worlds[world_uid].__del__()
         del micropsi_core.runtime.worlds[world_uid]
-    if data.get('world_type'):
-        micropsi_core.runtime.worlds[world_uid] = get_world_class_from_name(data.world_type)(**data)
-    else:
-        micropsi_core.runtime.worlds[world_uid] = world.World(**data)
     return True
+
+
+def load_world(world_uid):
+    if world_uid not in micropsi_core.runtime.worlds:
+        if world_uid in micropsi_core.runtime.world_data:
+            data = micropsi_core.runtime.world_data[world_uid]
+            if "world_type" in data:
+                try:
+                    micropsi_core.runtime.worlds[world_uid] = get_world_class_from_name(data.world_type)(**data)
+                except Exception as e:
+                    logging.getLogger("system").error("Could not load world %s: %s - %s" % (data.world_type, e.__class__.__name__, str(e)))
+            else:
+                micropsi_core.runtime.worlds[world_uid] = world.World(**data)
+    return micropsi_core.runtime.worlds.get(world_uid)
 
 
 def save_world(world_uid):
@@ -277,10 +292,15 @@ def import_world(worlddata, owner=None):
     return data['uid']
 
 
-def get_world_class_from_name(world_type):
+def get_world_class_from_name(world_type, case_sensitive=True):
     """Returns the class from a world type, if it is known"""
     from micropsi_core.world.world import World
-    return micropsi_core.runtime.world_classes[world_type]
+    if case_sensitive:
+        return micropsi_core.runtime.world_classes[world_type]
+    else:
+        for key in micropsi_core.runtime.world_classes:
+            if key.lower() == world_type.lower():
+                return micropsi_core.runtime.world_classes[key]
 
 
 def get_available_world_types():

@@ -21,9 +21,25 @@ from micropsi_core.tools import Bunch
 
 import os
 import sys
+import threading
+
+try:
+    import matplotlib
+    matplotlib.rcParams['webagg.port'] = 6545
+    matplotlib.rcParams['webagg.open_in_browser'] = False
+    matplotlib.use('WebAgg')
+
+    def plotter_initializer():
+        from matplotlib import pyplot as plt
+        plt.show()
+
+except ImportError:
+    matplotlib = None
+    pass
+
+
 from micropsi_core import tools
 import json
-import threading
 from datetime import datetime, timedelta
 import time
 import signal
@@ -161,7 +177,8 @@ class MicropsiRunner(threading.Thread):
                     nodenet = nodenets[uid]
                     if nodenet.is_active:
                         if nodenet.check_stop_runner_condition():
-                            nodenet.is_active = False
+                            stop_nodenetrunner(uid)
+                            # nodenet.is_active = False
                             continue
                         log = True
                         if self.profiler:
@@ -170,14 +187,16 @@ class MicropsiRunner(threading.Thread):
                             nodenet.timed_step()
                             nodenet.update_monitors_and_recorders()
                         except:
-                            nodenet.is_active = False
+                            stop_nodenetrunner(uid)
+                            # nodenet.is_active = False
                             logging.getLogger("agent.%s" % uid).error("Exception in Agent:", exc_info=1)
                             MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
                         if nodenet.world and nodenet.current_step % runner['factor'] == 0:
                             try:
                                 worlds[nodenet.world].step()
                             except:
-                                nodenet.is_active = False
+                                stop_nodenetrunner(uid)
+                                # nodenet.is_active = False
                                 logging.getLogger("world").error("Exception in Environment:", exc_info=1)
                                 MicropsiRunner.last_world_exception[nodenets[uid].world] = sys.exc_info()
                         if self.profiler:
@@ -241,7 +260,8 @@ MicropsiRunner.last_nodenet_exception = {}
 def kill_runners(signal=None, frame=None):
     for uid in nodenets:
         if nodenets[uid].is_active:
-            nodenets[uid].is_active = False
+            stop_nodenetrunner(uid)
+            # nodenets[uid].is_active = False
     runner['runner'].resume()
     runner['running'] = False
     runner['runner'].join()
@@ -278,8 +298,10 @@ def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor
 def get_logging_levels(nodenet_uid=None):
     levels = {}
     for key in logging.Logger.manager.loggerDict:
-        levels[key] = logging.getLevelName(logging.getLogger(key).getEffectiveLevel())
-    levels['agent'] = cfg['logging']['level_agent']
+        if key.startswith('agent') or key in ['world', 'system']:
+            levels[key] = logging.getLevelName(logging.getLogger(key).getEffectiveLevel())
+    if 'agent' not in levels:
+        levels['agent'] = cfg['logging']['level_agent']
     return levels
 
 
@@ -400,24 +422,6 @@ def load_nodenet(nodenet_uid):
     return False, "Agent %s not found in %s" % (nodenet_uid, PERSISTENCY_PATH)
 
 
-def load_world(world_uid):
-    global worlds
-    if world_uid not in worlds:
-        if world_uid in world_data:
-            if "world_type" in world_data[world_uid]:
-                try:
-                    worlds[world_uid] = get_world_class_from_name(world_data[world_uid].world_type)(**world_data[world_uid])
-                except TypeError:
-                    worlds[world_uid] = world.World(**world_data[world_uid])
-                # except AttributeError as err:
-                #     logging.getLogger('system').warning("Unknown world_type: %s (%s)" % (world_data[world_uid].world_type, str(err)))
-                # except:
-                #     logging.getLogger('system').warning("Can not instantiate World \"%s\": %s" % (world_data[world_uid].name, str(sys.exc_info()[1])))
-            else:
-                worlds[world_uid] = world.World(**world_data[world_uid])
-    return worlds.get(world_uid)
-
-
 def get_nodenet_metadata(nodenet_uid):
     """ returns the given nodenet's metadata"""
     nodenet = get_nodenet(nodenet_uid)
@@ -429,10 +433,12 @@ def get_nodenet_metadata(nodenet_uid):
         'nodespaces': nodenet.construct_nodespaces_dict(None, transitive=True),
         'native_modules': nodenet.get_native_module_definitions(),
         'flow_modules': nodenet.get_flow_module_definitions(),
-        'monitors': nodenet.construct_monitors_dict(),
+        'monitors': nodenet.construct_monitors_dict(with_values=False),
         'rootnodespace': nodenet.get_nodespace(None).uid,
         'resource_path': RESOURCE_PATH
     })
+    if nodenet.world:
+        data['current_world_step'] = worlds[nodenet.world].current_step
     return True, data
 
 
@@ -515,6 +521,7 @@ def unload_nodenet(nodenet_uid):
     if nodenet_uid in netapi_consoles:
         del netapi_consoles[nodenet_uid]
     nodenet = nodenets[nodenet_uid]
+    nodenet.close_figures()
     if nodenet.world:
         worlds[nodenet.world].unregister_nodenet(nodenet.uid)
     del nodenets[nodenet_uid]
@@ -607,8 +614,11 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
 
 def start_nodenetrunner(nodenet_uid):
     """Starts a thread that regularly advances the given nodenet by one step."""
-
-    nodenets[nodenet_uid].is_active = True
+    nodenet = get_nodenet(nodenet_uid)
+    nodenet.simulation_started()
+    # nodenets[nodenet_uid].is_active = True
+    if nodenet.world:
+        worlds[nodenet.world].simulation_started()
     if runner['runner'].paused:
         runner['runner'].resume()
     return True
@@ -666,8 +676,12 @@ def get_is_nodenet_running(nodenet_uid):
 def stop_nodenetrunner(nodenet_uid):
     """Stops the thread for the given nodenet."""
     nodenet = get_nodenet(nodenet_uid)
-    nodenet.is_active = False
+    nodenet.simulation_stopped()
     test = {nodenets[uid].is_active for uid in nodenets}
+    if nodenet.world:
+        test_world = {nodenets[uid].is_active and nodenets[uid].world == nodenet.world for uid in nodenets}
+        if True not in test_world:
+            worlds[nodenet.world].simulation_stopped()
     if True not in test:
         runner['runner'].pause()
     return True
@@ -731,6 +745,18 @@ def revert_nodenet(nodenet_uid, also_revert_world=False):
     unload_nodenet(nodenet_uid)
     load_nodenet(nodenet_uid)
     return True
+
+
+def reload_and_revert(nodenet_uid, also_revert_world=False):
+    """Returns the nodenet to the last saved state."""
+    nodenet = get_nodenet(nodenet_uid)
+    world_uid = nodenet.world
+    unload_nodenet(nodenet_uid)
+    if world_uid:
+        unload_world(world_uid)
+    result = reload_code()
+    load_nodenet(nodenet_uid)
+    return result
 
 
 def save_nodenet(nodenet_uid):
@@ -1021,7 +1047,7 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
 
         gate_config = node.get_gate_configuration()
         for gatetype, gconfig in gate_config.items():
-            lines.append("%s.set_gate_configuration('%s', \"%s\", %.2f)" % (varname, gatetype, gconfig['gatefunction'], gconfig.get('gatefunction_parameters', {})))
+            lines.append("%s.set_gate_configuration('%s', \"%s\", %s)" % (varname, gatetype, gconfig['gatefunction'], str(gconfig.get('gatefunction_parameters', {}))))
 
         nps = node.clone_parameters()
         for parameter, value in nps.items():
@@ -1292,7 +1318,9 @@ def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
     nodenet = get_nodenet(nodenet_uid)
     for key, value in values.items():
         nodenet.get_node(node_uid).set_parameter(key, value)
-    nodenet.is_active = resume_nodenet
+    if resume_nodenet:
+        start_nodenetrunner(nodenet_uid)
+    # nodenet.is_active = resume_nodenet
     nodenet.user_prompt = None
 
 
@@ -1406,20 +1434,18 @@ def get_netapi_autocomplete_data(nodenet_uid, name=None):
             if name.startswith('_'):
                 continue
             if inspect.isroutine(thing):
-                argspec = inspect.getargspec(thing)
-                arguments = argspec.args[1:]
-                defaults = argspec.defaults or []
+                sig = inspect.signature(thing)
                 params = []
-                diff = len(arguments) - len(defaults)
-                for i, arg in enumerate(arguments):
-                    if i >= diff:
+                for key in sig.parameters:
+                    if key == 'self':
+                        continue
+                    if sig.parameters[key].default != inspect.Signature.empty:
                         params.append({
-                            'name': arg,
-                            'default': defaults[i - diff]
+                            'name': key,
+                            'default': sig.parameters[key].default
                         })
                     else:
-                        params.append({'name': arg})
-
+                        params.append({'name': key})
                 data[name] = params
             else:
                 data[name] = None
@@ -1554,10 +1580,15 @@ def load_definitions():
 
 def load_user_files(path, resourcetype, errors=[]):
     global native_modules, custom_recipes
+    import shutil
     if os.path.isdir(path):
         for f in os.listdir(path):
-            if not f.startswith('.') and f != '__pycache__':
+            if not f.startswith('.'):
                 abspath = os.path.join(path, f)
+                if f == "__pycache__":
+                    shutil.rmtree(abspath)
+                elif f.startswith("_"):
+                    continue
                 err = None
                 if os.path.isdir(abspath):
                     errors.extend(load_user_files(abspath, resourcetype, errors=[]))
@@ -1612,11 +1643,8 @@ def parse_world_definitions(path):
             sys.path.append(base_path)
             name = w[:-3]
             try:
-                try:
-                    wmodule = importlib.reload(sys.modules[name])
-                except:
-                    loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
-                    wmodule = loader.load_module()
+                loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
+                wmodule = loader.load_module()
                 for name, cls in inspect.getmembers(wmodule, inspect.isclass):
                     if World in inspect.getmro(cls) and name != "World":
                         world_classes[name] = cls
@@ -1627,11 +1655,8 @@ def parse_world_definitions(path):
             relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
             name = w[:-3]
             try:
-                try:
-                    wmodule = importlib.reload(sys.modules[name])
-                except:
-                    loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
-                    wmodule = loader.load_module()
+                loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
+                wmodule = loader.load_module()
                 for name, cls in inspect.getmembers(wmodule, inspect.isclass):
                     if WorldAdapter in inspect.getmro(cls) and not inspect.isabstract(cls):
                         worldadapter_classes[name] = cls
@@ -1642,11 +1667,8 @@ def parse_world_definitions(path):
             relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
             name = w[:-3]
             try:
-                try:
-                    wmodule = importlib.reload(sys.modules[name])
-                except:
-                    loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
-                    wmodule = loader.load_module()
+                loader = importlib.machinery.SourceFileLoader(name, os.path.join(base_path, w))
+                wmodule = loader.load_module()
                 for name, cls in inspect.getmembers(wmodule, inspect.isclass):
                     if WorldObject in inspect.getmro(cls) and WorldAdapter not in inspect.getmro(cls):
                         worldobject_classes[name] = cls
@@ -1659,6 +1681,7 @@ def parse_world_definitions(path):
 def parse_native_module_file(path):
     import importlib
     global native_modules
+    import os
     try:
         base_path = os.path.join(RESOURCE_PATH, 'nodetypes')
         relpath = os.path.relpath(path, start=base_path)
@@ -1709,21 +1732,16 @@ def parse_recipe_or_operations_file(path, mode, category_overwrite=False):
             # import from another file of the same mode. ignore, to avoid
             # false duplicate-function-name alerts
             continue
-        argspec = inspect.getargspec(func)
-        if mode == 'recipes':
-            arguments = argspec.args[1:]
-        elif mode == 'operations':
-            arguments = argspec.args[2:]
-        defaults = argspec.defaults or []
+        signature = inspect.signature(func)
         params = []
-        diff = len(arguments) - len(defaults)
-        for i, arg in enumerate(arguments):
-            if i >= diff:
-                default = defaults[i - diff]
-            else:
+        for param in signature.parameters:
+            if param == 'netapi' or (param == 'selection' and mode == 'operations'):
+                continue
+            default = signature.parameters[param].default
+            if default == inspect.Signature.empty:
                 default = None
             params.append({
-                'name': arg,
+                'name': param,
                 'default': default
             })
         if mode == 'recipes' and name in custom_recipes and id(func) != id(custom_recipes[name]['function']):
@@ -1767,8 +1785,6 @@ def reload_code():
     errors = []
 
     # load builtins:
-    from micropsi_core.nodenet.native_modules import nodetypes
-    native_modules.update(nodetypes)
     operationspath = os.path.dirname(os.path.realpath(__file__)) + '/nodenet/operations/'
     for file in os.listdir(operationspath):
         import micropsi_core.nodenet.operations
@@ -1780,7 +1796,8 @@ def reload_code():
     for uid in nodenets:
         if nodenets[uid].is_active:
             runners[uid] = True
-            nodenets[uid].is_active = False
+            stop_nodenetrunner(uid)
+            # nodenets[uid].is_active = False
 
     # load code-directory
     if RESOURCE_PATH not in sys.path:
@@ -1815,7 +1832,8 @@ def reload_code():
 
     # restart previously active nodenets
     for uid in runners:
-        nodenets[uid].is_active = True
+        start_nodenetrunner(uid)
+        # nodenets[uid].is_active = True
 
     if len(errors) == 0:
         return True, []
@@ -1839,7 +1857,14 @@ def initialize(persistency_path=None, resource_path=None, world_path=None):
     RESOURCE_PATH = resource_path or cfg['paths']['agent_directory']
     WORLD_PATH = world_path or cfg['paths']['world_directory']
 
+    sys.path.append(WORLD_PATH)
+
     configs = config.ConfigurationManager(cfg['paths']['server_settings_path'])
+
+    # bring up plotting infrastructure
+    if matplotlib is not None:
+        plt_thread = threading.Thread(target=plotter_initializer, args=(), daemon=True)
+        plt_thread.start()
 
     if logger is None:
         logger = MicropsiLogger({
@@ -1851,6 +1876,10 @@ def initialize(persistency_path=None, resource_path=None, world_path=None):
     load_definitions()
     for e in errors:
         logging.getLogger("system").error(e)
+
+    # shut tornado up
+    for key in ["tornado.application", "tornado.access", "tornado", "tornado.general"]:
+        logging.getLogger(key).setLevel(logging.ERROR)
 
     # initialize runners
     # Initialize the threads for the continuous calculation of nodenets and worlds

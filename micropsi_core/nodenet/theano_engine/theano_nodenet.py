@@ -112,6 +112,7 @@ class TheanoNodenet(Nodenet):
             self.native_module_definitions.update(flow_io_types)
             for key in flow_io_types:
                 self.native_modules[key] = FlowNodetype(nodenet=self, **flow_io_types[key])
+            self.update_numeric_native_module_types()
             self.generate_worldadapter_flow_instances()
         if self._worldadapter_instance:
             self._worldadapter_instance.nodenet = self
@@ -915,7 +916,8 @@ class TheanoNodenet(Nodenet):
         graphs = []
         for enduid in endpoints:
             ancestors = nx.ancestors(self.flowgraph, enduid)
-            if ancestors:
+            node = self.flow_module_instances[enduid]
+            if ancestors or node.inputs == []:
                 fullpath = [uid for uid in toposort if uid in ancestors] + [enduid]
                 path = []
                 for uid in reversed(fullpath):
@@ -1312,7 +1314,7 @@ class TheanoNodenet(Nodenet):
         return uid
 
     def delete_node(self, uid):
-
+        self.close_figures(uid)
         partition = self.get_partition(uid)
         node_id = node_from_id(uid)
 
@@ -1768,6 +1770,7 @@ class TheanoNodenet(Nodenet):
                 position = instance.position
                 name = instance.name
                 partition = self.get_partition(uid)
+                self.close_figures(uid)
                 if uid in self.flow_module_instances:
                     flowdata = instance.get_flow_data(complete=True)
                     new_instance = FlowModule(
@@ -1778,9 +1781,9 @@ class TheanoNodenet(Nodenet):
                         get_numerical_node_type(instance.type, self.native_modules),
                         inputmap=flowdata['inputmap'],
                         outputmap=flowdata['outputmap'],
-                        parameters=parameters,
-                        initialized=True
+                        parameters=parameters
                     )
+                    self.flow_module_instances[uid] = new_instance
                 else:
                     new_instance = TheanoNode(self, partition, instance.parent_nodespace, uid, partition.allocated_nodes[node_from_id(uid)])
                 new_native_module_instances[uid] = new_instance
@@ -1793,12 +1796,7 @@ class TheanoNodenet(Nodenet):
 
             partition.native_module_instances = new_native_module_instances
 
-            # update native modules numeric types, as these may have been set with a different native module
-            # node types list
-            native_module_ids = np.where(partition.allocated_nodes > MAX_STD_NODETYPE)[0]
-            for id in native_module_ids:
-                instance = self.get_node(node_to_id(id, partition.pid))
-                partition.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
+        self.update_numeric_native_module_types()
 
         # recreate the deleted ones. Gate configurations and links will not be transferred.
         for uid, data in instances_to_recreate.items():
@@ -1814,6 +1812,17 @@ class TheanoNodenet(Nodenet):
 
         # recompile flow_graphs:
         self.update_flow_graphs()
+
+    def update_numeric_native_module_types(self):
+        """
+        update native modules numeric types if the types have been updated
+        either due to reload_native_modules, or due to changing the worldadapter
+        """
+        for key, partition in self.partitions.items():
+            native_module_ids = np.where(partition.allocated_nodes > MAX_STD_NODETYPE)[0]
+            for id in native_module_ids:
+                instance = self.get_node(node_to_id(id, partition.pid))
+                partition.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
 
     def generate_worldadapter_flow_types(self, delete_existing=False):
         """ returns native_module_definitions for datasources and targets from the configured worldadapter"""

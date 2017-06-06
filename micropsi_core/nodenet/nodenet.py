@@ -180,6 +180,7 @@ class Nodenet(metaclass=ABCMeta):
         self.deleted_items = {}
         self.stepping_rate = []
         self.dashboard_values = {}
+        self.figures = {}
 
         self.native_modules = {}
         for type, data in native_modules.items():
@@ -226,6 +227,12 @@ class Nodenet(metaclass=ABCMeta):
             'modulators': {},
         })
         return data
+
+    def simulation_started(self):
+        self.is_active = True
+
+    def simulation_stopped(self):
+        self.is_active = False
 
     @abstractmethod
     def get_nodes(self, nodespaces=[], node_uids=[], include_links=True, links_to_nodespaces=[]):
@@ -609,6 +616,7 @@ class Nodenet(metaclass=ABCMeta):
 
     def clear(self):
         self._monitors = {}
+        self.close_figures()
 
     def add_gate_monitor(self, node_uid, gate, name=None, color=None):
         """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation
@@ -670,10 +678,10 @@ class Nodenet(metaclass=ABCMeta):
         for uid in self._recorders:
             self._recorders[uid].step(self.current_step)
 
-    def construct_monitors_dict(self):
+    def construct_monitors_dict(self, with_values=True):
         data = {}
         for monitor_uid in self._monitors:
-            data[monitor_uid] = self._monitors[monitor_uid].get_data()
+            data[monitor_uid] = self._monitors[monitor_uid].get_data(with_values=with_values)
         return data
 
     def construct_recorders_dict(self):
@@ -736,3 +744,29 @@ class Nodenet(metaclass=ABCMeta):
                 else:
                     del self.self._runner_condition['monitor']
         return False
+
+    def register_figure(self, node_uid, figure):
+        """ Registers a figure for the given node_uid"""
+        if node_uid in self.figures:
+            self.figures[node_uid].append(figure)
+        else:
+            self.figures[node_uid] = [figure]
+
+    def close_figures(self, node_uid=None):
+        """ Close all figures used by the given node, or alle figures if no uid given"""
+        try:
+            import matplotlib.pyplot as plt
+            if node_uid is not None:
+                plots = self.figures.get(node_uid, [])
+                if len(plots):
+                    self.logger.debug("Closing %d figures belonging to node %s" % (len(plots), node_uid))
+                    for fig in plots:
+                        plt.close(fig)
+                    del self.figures[node_uid]
+            else:
+                self.logger.debug("Closing open figures.")
+                for uid in self.figures:
+                    [plt.close(fig) for fig in self.figures[uid]]
+                self.figures = {}
+        except ImportError:
+            pass

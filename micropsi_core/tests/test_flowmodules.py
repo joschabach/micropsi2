@@ -14,6 +14,22 @@ def prepare(runtime, test_nodenet, default_world, resourcepath, wa_class=None):
     import os
     foodir = os.path.join(resourcepath, "nodetypes", 'foobar')
     os.makedirs(foodir)
+    with open(os.path.join(resourcepath, "nodetypes", "out12345.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "python",
+    "name": "out12345",
+    "run_function_name": "out12345",
+    "inputs": [],
+    "outputs": ["out"],
+    "inputdims": []
+}
+
+def out12345(netapi, node, parameters):
+    import numpy as np
+    return np.asarray([1,2,3,4,5])
+""")
+
     with open(os.path.join(foodir, "Double.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
@@ -96,6 +112,8 @@ def numpyfunc(inputs, netapi, node, parameters):
     "outputs": ["Y"],
     "inputdims": [1]
 }
+
+import theano
 
 def thetas_init(netapi, node, parameters):
     import numpy as np
@@ -445,6 +463,8 @@ def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepa
     custom_theta = np.random.rand(5).astype(netapi.floatX)
     thetas.set_theta("weights", custom_theta)
 
+    assert double.initfunction_ran
+
     sources = np.zeros((5), dtype=netapi.floatX)
     sources[:] = np.random.randn(*sources.shape)
     worldadapter.set_flow_datasource('foo', sources)
@@ -453,7 +473,7 @@ def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepa
 
     result = worldadapter.get_flow_datatarget('bar')
 
-    assert np.all(result == sources * 2 * thetas.get_theta("weights").get_value() + thetas.get_theta("bias").get_value())
+    assert np.allclose(result, sources * 2 * thetas.get_theta("weights").get_value() + thetas.get_theta("bias").get_value())
 
     runtime.save_nodenet(test_nodenet)
     runtime.revert_nodenet(test_nodenet)
@@ -464,9 +484,9 @@ def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepa
     worldadapter.set_flow_datasource('foo', sources)
     thetas = netapi.get_node(thetas.uid)
 
-    assert np.all(thetas.get_theta("weights").get_value() == custom_theta)
+    assert np.allclose(thetas.get_theta("weights").get_value(), custom_theta)
     nodenet.step()
-    assert np.all(worldadapter.get_flow_datatarget('bar') == result)
+    assert np.allclose(worldadapter.get_flow_datatarget('bar'), result)
     assert netapi.get_node(double.uid).initfunction_ran
     # also assert, that the edge-keys are preserved:
     # this would raise an exception otherwise
@@ -474,7 +494,7 @@ def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepa
 
     # assert that custom thetas survive reloadCode:
     runtime.reload_code()
-    assert np.all(netapi.get_node(thetas.uid).get_theta('weights').get_value() == custom_theta)
+    assert np.allclose(netapi.get_node(thetas.uid).get_theta('weights').get_value(), custom_theta)
 
 
 @pytest.mark.engine("theano_engine")
@@ -482,8 +502,15 @@ def test_flowmodule_reload_code_behaviour(runtime, test_nodenet, default_world, 
     import os
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
     node = netapi.create_node("Thetas", None, "Thetas", weights_shape=5)
+    double = netapi.create_node("Double", None, "Double")
+    netapi.flow('worldadapter', 'foo', double, 'inputs')
+    netapi.flow(double, 'outputs', 'worldadapter', 'bar')
     node.ensure_initialized()
     weights = node.get_theta('weights').get_value()
+    source = netapi.create_node("Neuron", None)
+    netapi.link(source, 'gen', source, 'gen')
+    netapi.link(source, 'gen', double, 'sub')
+    source.activation = 1
     with open(os.path.join(resourcepath, "nodetypes", "Thetas.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
@@ -496,6 +523,8 @@ def test_flowmodule_reload_code_behaviour(runtime, test_nodenet, default_world, 
     "outputs": ["Z"],
     "inputdims": [1]
 }
+
+import theano
 
 def thetas_init(netapi, node, parameters):
     import numpy as np
@@ -511,6 +540,24 @@ def thetas(Y, netapi, node, parameters):
     else:
         return Y
 """)
+    with open(os.path.join(resourcepath, "nodetypes", "foobar", "Double.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "theano",
+    "name": "Double",
+    "build_function_name": "double",
+    "init_function_name": "double_init",
+    "inputs": ["inputs"],
+    "outputs": ["outputs"],
+    "inputdims": [1]
+}
+
+def double_init(netapi, node, parameters):
+    node.initfunction_ran = True
+
+def double(inputs, netapi, node, parameters):
+    return inputs * 4
+""")
     runtime.reload_code()
     node = netapi.get_node(node.uid)
     assert node.inputs == ["Y"]
@@ -518,6 +565,12 @@ def thetas(Y, netapi, node, parameters):
     assert not np.all(weights == node.get_theta('weights').get_value())
     assert weights.shape == node.get_theta('weights').get_value().shape
     assert node.initfunction_ran == 'yep'
+    worldadapter = nodenet.worldadapter_instance
+    sources = np.zeros((5), dtype=worldadapter.floatX)
+    sources[:] = np.random.randn(*sources.shape)
+    worldadapter.set_flow_datasource('foo', sources)
+    nodenet.step()
+    assert np.all(worldadapter.get_flow_datatarget("bar") == sources * 4)
 
 
 @pytest.mark.engine("theano_engine")
@@ -991,6 +1044,19 @@ class SimpleArrayWA(ArrayWorldAdapter):
     assert nodenet.get_node(double.uid).inputmap['inputs'] == (sources.uid, 'vision')
     assert (double.uid, 'inputs') in nodenet.get_node(sources.uid).outputmap['vision']
     assert (targets.uid, 'motor') in nodenet.get_node(double.uid).outputmap['outputs']
+
+
+@pytest.mark.engine("theano_engine")
+def test_flownode_output_only(runtime, test_nodenet, default_world, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+    out = netapi.create_node("out12345")
+    source = netapi.create_node("Neuron")
+    source.activation = 1
+    netapi.link(source, 'gen', source, 'gen')
+    netapi.link(source, 'gen', out, 'sub')
+    netapi.flow(out, 'out', 'worldadapter', 'bar')
+    nodenet.step()
+    assert np.all(worldadapter.get_flow_datatarget('bar') == [1, 2, 3, 4, 5])
 
 
 @pytest.mark.engine("theano_engine")

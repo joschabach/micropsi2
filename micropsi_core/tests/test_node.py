@@ -10,6 +10,14 @@ from micropsi_core.nodenet.nodefunctions import neuron, concept
 import pytest
 
 
+plotting_available = False
+try:
+    import matplotlib
+    plotting_available = True
+except ImportError:
+    pass
+
+
 @pytest.mark.engine("theano_engine")
 def test_nodetype_function_definition_overwrites_default_function_name_theano(runtime, test_nodenet):
     nodenet = runtime.get_nodenet(test_nodenet)
@@ -143,3 +151,20 @@ def phatNM(netapi, node, **_):
     assert result['dimensionality']['slots']['B_in0'] == 62
     assert result['gatetypes'] == ['gen', 'sub', 'sur', 'A_out0', 'B_out0']
     assert result['is_highdimensional']
+
+
+@pytest.mark.skipif(not plotting_available, reason="requires matplotlib")
+def test_node_show_plot_and_close_plot(runtime, test_nodenet):
+    from matplotlib import pyplot as plt
+    net = runtime.nodenets[test_nodenet]
+    netapi = net.netapi
+    node = netapi.create_node("Neuron", None, "Neuron")
+    fig = plt.figure(figsize=(3, 2))
+    node.show_plot(fig)
+    assert net.figures[node.uid] == [fig]
+    netapi.delete_node(node)
+    assert node.uid not in net.figures
+    node = netapi.create_node("Neuron", None, "Neuron")
+    node.show_plot(fig)
+    runtime.unload_nodenet(test_nodenet)
+    assert plt.get_fignums() == []

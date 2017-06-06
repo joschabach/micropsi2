@@ -25,8 +25,8 @@
 
 <div id="world_editor" class="frontend_section section-margin collapse in">
     <div class="world section">
-        %if world_assets.get('template'):
-            %include(world_assets['template'], assets=world_assets)
+        %if world_template:
+            {{!world_template}}
         %else:
             <div class="editor_field">
                 <canvas id="world" width="100%" height="500" style="background:#eeeeee; width:100%"></canvas>
@@ -47,7 +47,7 @@
 <script src="/static/js/world.js" type="text/javascript"></script>
 
 %if world_assets.get('paperjs'):
-    <script src="/static/{{world_assets['paperjs']}}" type="text/paperscript" canvas="world"></script>
+    <script src="/world_assets/{{world_type}}/{{world_assets['paperjs']}}" type="text/paperscript" canvas="world"></script>
 %elif world_assets.get('js'):
-    <script src="/static/{{world_assets['js']}}" type="text/javascript"></script>
+    <script src="/world_assets/{{world_type}}/{{world_assets['js']}}" type="text/javascript"></script>
 %end

@@ -289,10 +289,8 @@ $(function() {
     $('.navbar a.reload_code').on('click', function(event){
         event.preventDefault();
         if($(event.target).hasClass("reload_revert")){
-            api.call('reload_code', {}, function(){
-                api.call('revert_nodenet', {nodenet_uid: currentNodenet}, function(){
-                    window.location.reload();
-                });
+            api.call('reload_and_revert', {nodenet_uid: currentNodenet}, function(){
+                window.location.reload();
             });
             return
         }

@@ -105,7 +105,7 @@ class World(object):
             "current_step": 0,
             "config": config
         }
-
+        self.is_active = False
         folder = self.__module__.split('.')
         folder.pop()
         folder = '.'.join(folder)
@@ -143,6 +143,12 @@ class World(object):
             self.logger.warning("Wrong version of the world data")
             return False
 
+    def simulation_started(self):
+        self.is_active = True
+
+    def simulation_stopped(self):
+        self.is_active = False
+
     def get_available_worldadapters(self):
         """ return the list of instantiated worldadapters """
         return self.supported_worldadapters
@@ -161,6 +167,9 @@ class World(object):
             else:
                 self.logger.warning('Worldobject of type %s not supported anymore. Deleting object of this type.' % object_data['type'])
                 del data['objects'][uid]
+        for uid in list(self.data['agents']):
+            if uid not in micropsi_core.runtime.nodenet_data:
+                del self.data['agents'][uid]
 
     def step(self):
         """ advance the simluation """

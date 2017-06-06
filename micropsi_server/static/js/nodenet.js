@@ -301,6 +301,8 @@ function setCurrentNodenet(uid, nodespace, changed){
                 linkLayer.removeChildren();
             }
             $(document).trigger('nodenet_loaded', uid);
+            $('.nodenet_step').text(data.current_step || 0);
+            $('.world_step').text(data.current_world_step || 0);
 
             nodenet_data = data;
             nodenet_data['snap_to_grid'] = $.cookie('snap_to_grid') || viewProperties.snap_to_grid;
@@ -4018,8 +4020,8 @@ function handleEditNodenet(event){
             if(reload){
                 window.location.reload();
             } else {
-                // setCurrentNodenet(currentNodenet, currentNodeSpace);
-                refreshNodespace();
+                setCurrentNodenet(currentNodenet, currentNodeSpace, true);
+                // refreshNodespace();
             }
         }
     );

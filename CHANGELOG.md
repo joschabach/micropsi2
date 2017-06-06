@@ -1,3 +1,7 @@
+0.10-alpha8 (2017-06-06)
+==========
+ * use matplotlib's webagg for plotting
+
 
 0.9-alpha7 (2017-02-13)
 ==========

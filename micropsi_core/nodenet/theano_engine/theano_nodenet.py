@@ -1072,7 +1072,7 @@ class TheanoNodenet(Nodenet):
                     else:
                         original_outex = node.build(*buildargs)
                 except Exception as err:
-                    self.logger.error("Error in buildfunction of Flowodule %s.\n %s: %s" % (str(node), err.__class__.__name__, str(err)))
+                    self.logger.error("Error in buildfunction of Flowmodule %s.\n %s: %s" % (str(node), err.__class__.__name__, str(err)))
                     post_mortem()
                     skip = True
                     break

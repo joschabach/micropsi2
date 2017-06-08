@@ -1832,8 +1832,9 @@ def reload_code():
             worlds[world_uid] = world_classes[wtype](**world_data[world_uid])
             worlds[world_uid].initialize_world(data)
             for uid in agents:
-                worlds[world_uid].register_nodenet(agents[uid]['type'], uid, agents[uid]['name'], nodenets[uid].metadata['worldadapter_config'])
-                nodenets[uid].worldadapter_instance = worlds[world_uid].agents[uid]
+                if uid in nodenets:
+                    worlds[world_uid].register_nodenet(agents[uid]['type'], uid, agents[uid]['name'], nodenets[uid].metadata['worldadapter_config'])
+                    nodenets[uid].worldadapter_instance = worlds[world_uid].agents[uid]
         else:
             worlds[world_uid].logger.warning("World definition for world %s gone, destroying." % str(worlds[world_uid]))
 

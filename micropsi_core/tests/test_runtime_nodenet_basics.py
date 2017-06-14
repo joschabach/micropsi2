@@ -321,7 +321,7 @@ def test_node_states(runtime, test_nodenet, node):
 
 
 @pytest.mark.engine("theano_engine")
-def test_node_states(runtime, test_nodenet, node, resourcepath):
+def test_node_states_numpy(runtime, test_nodenet, node, resourcepath):
     import os
     import numpy as np
 
@@ -340,15 +340,6 @@ def test_node_states(runtime, test_nodenet, node, resourcepath):
     "slottypes": ["gen", "foo", "bar"],
     "gatetypes": ["gen", "foo", "bar"],
     "nodefunction_name": "testnodefunc",
-    "parameters": ["linktype", "threshold", "protocol_mode"],
-    "parameter_values": {
-        "linktype": ["catexp", "subsur"],
-        "protocol_mode": ["all_active", "most_active_one"]
-    },
-    "parameter_defaults": {
-        "linktype": "catexp",
-        "protocol_mode": "all_active"
-    }
 }
 def testnodefunc(netapi, node=None, **prams):\r\n    return 17
 """)
@@ -360,7 +351,7 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
     testnode.set_state("string", "hugo")
     testnode.set_state("dict", {"eins": 1, "zwei": 2})
     testnode.set_state("list", [{"eins": 1, "zwei": 2}, "boing"])
-    testnode.set_state("numpy", np.asarray([1,2,3,4]))
+    testnode.set_state("numpy", np.asarray([1, 2, 3, 4]))
 
     runtime.save_nodenet(test_nodenet)
     runtime.revert_nodenet(test_nodenet)
@@ -371,7 +362,7 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
     assert testnode.get_state("dict")["eins"] == 1
     assert testnode.get_state("list")[0]["eins"] == 1
     assert testnode.get_state("list")[1] == "boing"
-    assert testnode.get_state("numpy").sum() == 10
+    assert testnode.get_state("numpy").sum() == 10  # only numpy arrays have ".sum()"
 
 
 def test_delete_linked_nodes(runtime, test_nodenet):

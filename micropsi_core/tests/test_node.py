@@ -168,3 +168,32 @@ def test_node_show_plot_and_close_plot(runtime, test_nodenet):
     node.show_plot(fig)
     runtime.unload_nodenet(test_nodenet)
     assert plt.get_fignums() == []
+
+@pytest.mark.engine("theano_engine")
+def test_numpy_state_persistency(runtime, test_nodenet):
+    import numpy as np
+    net = runtime.nodenets[test_nodenet]
+    netapi = net.netapi
+    node = netapi.create_node("Neuron", None, "Neuron")
+    node._state["string"] = "hugo"
+    node._state["dict"] = {"eins": 1, "zwei": 2}
+    node._state["list"] = [{"eins": 1, "zwei": 2}, "boing"]
+    node._state["numpy"] = np.asarray([1,2,3,4])
+
+    json_state, numpy_state = node.get_persistable_state()
+
+    assert json_state["string"] == "hugo"
+    assert json_state["dict"]["eins"] == 1
+    assert json_state["list"][0]["eins"] == 1
+    assert json_state["list"][1] == "boing"
+    assert json_state["numpy"].startswith("__numpyelement__")
+    assert numpy_state[json_state["numpy"]].sum() == 10
+
+    node.set_persistable_state(json_state, numpy_state)
+
+    assert node._state["string"] == "hugo"
+    assert node._state["dict"]["eins"] == 1
+    assert node._state["list"][0]["eins"] == 1
+    assert node._state["list"][1] == "boing"
+    assert node._state["numpy"].sum() == 10
+

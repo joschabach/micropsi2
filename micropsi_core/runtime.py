@@ -203,6 +203,10 @@ class MicropsiRunner(threading.Thread):
                                 post_mortem()
                         if self.profiler:
                             self.profiler.disable()
+                        save_interval = cfg['micropsi2'].get('auto_save_interval')
+                        if save_interval is not None and nodenet.current_step % int(save_interval) == 0:
+                            logging.getLogger("system").info("Auto-saving nodenet %s @ step %d" % (nodenet.name, nodenet.current_step))
+                            save_nodenet(uid)
 
             calc_time = datetime.now() - start
             left = step - calc_time

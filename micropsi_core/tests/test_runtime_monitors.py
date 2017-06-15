@@ -228,3 +228,37 @@ def test_add_group_monitor(runtime, test_nodenet):
     data3 = nodenet.get_monitor(monitor_uid).get_data()
     assert set(data3['values'][6][:6]) == {1.0}  # first 6 active
     assert set(data3['values'][6][6:]) == {0.0}  # rest off
+
+
+def test_adhoc_monitor(runtime, test_nodenet):
+    nodenet = runtime.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    var = 13
+
+    def valuefunc():
+        return var
+    netapi.add_adhoc_monitor(valuefunc, 'test')
+    runtime.step_nodenet(test_nodenet)
+    items = list(runtime.get_monitor_data(test_nodenet)['monitors'].items())
+    assert len(items) == 1
+    uid, data = items[0]
+    assert uid != data['name']
+    assert data['name'] == 'test'
+    assert data['values'][1] == 13
+
+    def doublefunc():
+        return var * 2
+    netapi.add_adhoc_monitor(doublefunc, 'test')
+    runtime.step_nodenet(test_nodenet)
+    items = list(runtime.get_monitor_data(test_nodenet)['monitors'].items())
+    assert len(items) == 1
+    uid, data = items[0]
+    assert uid != data['name']
+    assert data['name'] == 'test'
+    assert data['values'][1] == 13
+    assert data['values'][2] == 26
+
+    runtime.save_nodenet(test_nodenet)
+    runtime.revert_nodenet(test_nodenet)
+    items = list(runtime.get_monitor_data(test_nodenet)['monitors'].items())
+    assert len(items) == 0

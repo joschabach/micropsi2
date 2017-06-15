@@ -91,6 +91,7 @@ def get_monitor_data(nodenet_uid, step=0, from_step=0, count=-1, with_recorders=
             elif from_step + count > nodenet.current_step:
                 from_step = max(nodenet.current_step + 1 - count, 0)
         monitor_data = nodenet.construct_monitors_dict()
+        monitor_data.update(nodenet.construct_adhoc_monitors_dict())
         if from_step > 0 or count > 0:
             for uid in monitor_data:
                 values = {}

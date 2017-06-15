@@ -39,11 +39,14 @@ def out12345(netapi, node, parameters):
     "init_function_name": "double_init",
     "inputs": ["inputs"],
     "outputs": ["outputs"],
-    "inputdims": [1]
+    "inputdims": [1],
+    "parameters": ["test_param"],
+    "parameter_defaults": {"test_param": "defaultvalue"}
 }
 
 def double_init(netapi, node, parameters):
     node.initfunction_ran = True
+    assert parameters['test_param'] == 'defaultvalue'
 
 def double(inputs, netapi, node, parameters):
     return inputs * 2

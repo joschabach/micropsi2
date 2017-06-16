@@ -539,6 +539,7 @@ def unload_nodenet(nodenet_uid):
         return False
     if nodenet_uid in netapi_consoles:
         del netapi_consoles[nodenet_uid]
+    stop_nodenetrunner(nodenet_uid)
     nodenet = nodenets[nodenet_uid]
     nodenet.close_figures()
     if nodenet.world:

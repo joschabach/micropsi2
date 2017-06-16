@@ -119,7 +119,7 @@ def pytest_runtest_setup(item):
     open(os.path.join(testpath, 'nodetypes', 'Test', '__init__.py'), 'w').close()
     micropsi_runtime.reload_code()
     micropsi_runtime.logger.clear_logs()
-    micropsi_runtime.set_runner_properties(1, 1)
+    micropsi_runtime.set_runner_properties(0, 1)
     set_logging_levels()
 
 

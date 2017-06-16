@@ -212,14 +212,16 @@ class MicropsiRunner(threading.Thread):
             if self.profiler:
                 self.profiler.enable()
             for wuid, nodenet_uids in world_uids.items():
-                try:
-                    worlds[wuid].step()
-                except:
-                    for uid in nodenet_uids:
-                        stop_nodenetrunner(uid)
-                    logging.getLogger("world").error("Exception in Environment:", exc_info=1)
-                    MicropsiRunner.last_world_exception[nodenets[uid].world] = sys.exc_info()
-                    post_mortem()
+                if wuid in worlds:
+                    try:
+                        worlds[wuid].step()
+                    except:
+                        for uid in nodenet_uids:
+                            if uid in nodenets:
+                                stop_nodenetrunner(uid)
+                        logging.getLogger("world").error("Exception in Environment:", exc_info=1)
+                        MicropsiRunner.last_world_exception[nodenets[uid].world] = sys.exc_info()
+                        post_mortem()
             if self.profiler:
                 self.profiler.disable()
 

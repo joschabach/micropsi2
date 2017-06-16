@@ -196,9 +196,10 @@ class CustomMonitor(Monitor):
 
 class AdhocMonitor(Monitor):
 
-    def __init__(self, nodenet, function, name=None, uid=None, color=None, values={}, **_):
+    def __init__(self, nodenet, function, name=None, uid=None, color=None, values={}, parameters={}, **_):
         super().__init__(nodenet, name, uid, color=color, values=values)
         self.function = function
+        self.parameters = parameters
 
     def get_data(self, with_values=True):
         data = super().get_data(with_values=with_values)
@@ -208,4 +209,4 @@ class AdhocMonitor(Monitor):
         return data
 
     def getvalue(self):
-        return self.function()
+        return self.function(**self.parameters)

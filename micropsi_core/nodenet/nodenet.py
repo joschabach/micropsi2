@@ -667,13 +667,14 @@ class Nodenet(metaclass=ABCMeta):
         self._monitors[mon.uid] = mon
         return mon.uid
 
-    def add_adhoc_monitor(self, function, name):
+    def add_adhoc_monitor(self, function, name, parameters={}):
         """Adds an ephemeral adhoc monitor to quickly plot values returned by the given function.
         If a monitor with the given name already exists, it's value-function is updated. """
         if name in self._adhoc_monitors:
             self._adhoc_monitors[name].function = function
+            self._adhoc_monitors[name].parameters
         else:
-            mon = monitor.AdhocMonitor(self, function, name)
+            mon = monitor.AdhocMonitor(self, function, name, parameters=parameters)
             self._adhoc_monitors[name] = mon
 
     def get_monitor(self, uid):

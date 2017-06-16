@@ -258,6 +258,18 @@ def test_adhoc_monitor(runtime, test_nodenet):
     assert data['values'][1] == 13
     assert data['values'][2] == 26
 
+    def parameterfunc(foo):
+        return var * foo
+    netapi.add_adhoc_monitor(doublefunc, 'test', {'foo': 2})
+    runtime.step_nodenet(test_nodenet)
+    items = list(runtime.get_monitor_data(test_nodenet)['monitors'].items())
+    assert len(items) == 1
+    uid, data = items[0]
+    assert uid != data['name']
+    assert data['name'] == 'test'
+    assert data['values'][1] == 13
+    assert data['values'][2] == 26
+
     runtime.save_nodenet(test_nodenet)
     runtime.revert_nodenet(test_nodenet)
     items = list(runtime.get_monitor_data(test_nodenet)['monitors'].items())

@@ -515,8 +515,8 @@ class NetAPI(object):
         Returns the uid of the new monitor."""
         return self.__nodenet.add_custom_monitor(function, name, color=color)
 
-    def add_adhoc_monitor(self, function, name):
-        return self.__nodenet.add_adhoc_monitor(function, name)
+    def add_adhoc_monitor(self, function, name, parameters={}):
+        return self.__nodenet.add_adhoc_monitor(function, name, parameters)
 
     def add_group_monitor(self, nodespace, name, node_name_prefix='', node_uids=[], gate='gen', color=None):
         """Adds a continuous monitor, that tracks the activations of the given group

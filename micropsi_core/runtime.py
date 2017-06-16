@@ -201,9 +201,13 @@ class MicropsiRunner(threading.Thread):
                 self.profiler.disable()
 
             calc_time = datetime.now() - start
-            left = step - calc_time
-            if left.total_seconds() > 0:
-                time.sleep(left.total_seconds())
+            if step.total_seconds() > 0:
+                left = step - calc_time
+                if left.total_seconds() > 0:
+                    time.sleep(left.total_seconds())
+                elif left.total_seconds() < 0:
+                    logging.getLogger("system").warning("Overlong step %d took %.4f secs, allowed are %.4f secs!" %
+                                                    (self.total_steps, calc_time.total_seconds(), step.total_seconds()))
 
             if self.profiler:
                 self.profiler.enable()

@@ -98,17 +98,23 @@ def pytest_runtest_setup(item):
         if engine_marker != item.callspec.params['engine']:
             pytest.skip("test requires engine %s" % engine_marker)
 
+    for uid in list(micropsi_runtime.nodenets.keys()):
+        micropsi_runtime.delete_nodenet(uid)
+    for uid in list(micropsi_runtime.worlds.keys()):
+        micropsi_runtime.delete_world(uid)
+
     for item in os.listdir(testpath):
-        if item != 'worlds' and item != 'nodenets':
-            path = os.path.join(testpath, item)
-            if os.path.isdir(path):
-                shutil.rmtree(path)
-            else:
-                os.remove(path)
+        path = os.path.join(testpath, item)
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        else:
+            os.remove(path)
 
     os.mkdir(os.path.join(testpath, 'nodetypes'))
     os.mkdir(os.path.join(testpath, 'recipes'))
     os.mkdir(os.path.join(testpath, 'operations'))
+    os.mkdir(os.path.join(testpath, 'nodenets'))
+    os.mkdir(os.path.join(testpath, 'worlds'))
     os.mkdir(os.path.join(testpath, 'nodetypes', 'Test'))
     open(os.path.join(testpath, 'nodetypes', 'Test', '__init__.py'), 'w').close()
     micropsi_runtime.reload_code()

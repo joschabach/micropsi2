@@ -531,3 +531,13 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
     neuron = runtime.nodenets[test_nodenet].get_node(neuron_uid)
     assert neuron.get_gate('gen').get_links() == []
     assert neuron.get_slot('gen').get_links() == []
+
+
+def test_runtime_nodenet_autosave(runtime, test_nodenet, resourcepath):
+    import os
+    from time import sleep
+    runtime.set_runner_condition(test_nodenet, steps=101)
+    runtime.start_nodenetrunner(test_nodenet)
+    while runtime.nodenets[test_nodenet].is_active:
+        sleep(.1)
+    assert os.path.isfile(os.path.join(resourcepath, "nodenets", "__autosave__", "%s_%d" % (test_nodenet, 100), "nodenet.json"))

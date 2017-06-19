@@ -25,6 +25,7 @@ orig_world_dir = cfg['paths']['world_directory']
 cfg['paths']['persistency_directory'] = testpath
 cfg['paths']['server_settings_path'] = os.path.join(testpath, 'server_cfg.json')
 cfg['paths']['usermanager_path'] = os.path.join(testpath, 'user-db.json')
+
 if 'logfile' in cfg['logging']:
     del cfg['logging']['logfile']
 cfg['micropsi2']['single_agent_mode'] = ''
@@ -32,7 +33,7 @@ if 'theano' in cfg:
     cfg['theano']['initial_number_of_nodes'] = '50'
 if 'on_exception' in cfg['micropsi2']:
     cfg['micropsi2']['on_exception'] = ''
-
+cfg['micropsi2']['auto_save_intervals'] = '100'
 
 world_uid = 'WorldOfPain'
 nn_uid = 'Testnet'

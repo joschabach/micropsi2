@@ -324,6 +324,13 @@ def get_logging_levels(nodenet_uid=None):
     return levels
 
 
+def benchmark_system():
+    from micropsi_core.benchmark_system import benchmark_system as benchmark
+    benchmarks = {}
+    benchmarks["benchmark"] = benchmark()
+    return benchmark
+
+
 # Nodenet
 def get_available_nodenets(owner=None):
     """Returns a dict of uids: Nodenet of available (running and stored) nodenets.

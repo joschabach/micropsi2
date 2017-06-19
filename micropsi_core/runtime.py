@@ -1558,6 +1558,8 @@ def crawl_definition_files(path, datatype="definition"):
     result = {}
     os.makedirs(path, exist_ok=True)
     for user_directory_name, user_directory_names, file_names in os.walk(path):
+        if os.path.relpath(user_directory_name, start=os.path.join(PERSISTENCY_PATH, "nodenets")).startswith("__autosave__"):
+            continue
         for definition_file_name in file_names:
             if definition_file_name.endswith(".json"):
                 try:

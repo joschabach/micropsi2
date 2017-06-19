@@ -578,7 +578,7 @@ class TheanoNodenet(Nodenet):
                 nodeids = np.where((partition.allocated_nodes > MAX_STD_NODETYPE) | (partition.allocated_nodes == COMMENT))[0]
                 for node_id in nodeids:
                     node_uid = node_to_id(node_id, partition.pid)
-                    file = os.path.join(self.get_persistency_path(), '%s_numpystate.npz' % node_uid)
+                    file = os.path.join(self.persistency_path, '%s_numpystate.npz' % node_uid)
                     if os.path.isfile(file):
                         node = self.get_node(node_uid)
                         numpy_states = np.load(file)

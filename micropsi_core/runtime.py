@@ -324,10 +324,10 @@ def get_logging_levels(nodenet_uid=None):
     return levels
 
 
-def benchmark_system():
-    from micropsi_core.benchmark_system import benchmark_system as benchmark
+def benchmark_info():
+    from micropsi_core.benchmark_system import benchmark_system
     benchmarks = {}
-    benchmarks["benchmark"] = benchmark()
+    benchmarks["benchmark"] = benchmark_system()
     return benchmark
 
 

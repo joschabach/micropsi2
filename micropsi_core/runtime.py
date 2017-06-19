@@ -59,6 +59,7 @@ nodenet_lock = threading.Lock()
 RESOURCE_PATH = None
 PERSISTENCY_PATH = None
 WORLD_PATH = None
+AUTOSAVE_PATH = None
 
 configs = None
 logger = None
@@ -77,6 +78,9 @@ netapi_consoles = {}
 
 initialized = False
 
+auto_save_intervals = cfg['micropsi2'].get('auto_save_intervals')
+if auto_save_intervals is not None:
+    auto_save_intervals = sorted([int(x) for x in cfg['micropsi2']['auto_save_intervals'].split(',')], reverse=True)
 from code import InteractiveConsole
 
 
@@ -173,6 +177,7 @@ class MicropsiRunner(threading.Thread):
             log = False
             uids = [uid for uid in nodenets if nodenets[uid].is_active]
             world_uids = {}
+            nodenets_to_save = []
             if self.profiler:
                 self.profiler.enable()
             for uid in uids:
@@ -198,12 +203,21 @@ class MicropsiRunner(threading.Thread):
                                 world_uids[nodenet.world] = []
                             world_uids[nodenet.world].append(uid)
                         save_interval = cfg['micropsi2'].get('auto_save_interval')
-                        if save_interval is not None and nodenet.current_step % int(save_interval) == 0:
-                            logging.getLogger("system").info("Auto-saving nodenet %s @ step %d" % (nodenet.name, nodenet.current_step))
-                            save_nodenet(uid)
+
+                        if auto_save_intervals is not None:
+                            for val in auto_save_intervals:
+                                if nodenet.current_step % val == 0:
+                                    nodenets_to_save.append((nodenet.uid, val))
+                                    break
 
             if self.profiler:
                 self.profiler.disable()
+
+            for uid, interval in nodenets_to_save:
+                savepath = os.path.join(AUTOSAVE_PATH, "%s_%d" % (uid, interval))
+                os.makedirs(savepath, exist_ok=True)
+                logging.getLogger("system").info("Auto-saving nodenet %s at step %d (interval %d)" % (uid, nodenets[uid].current_step, interval))
+                nodenets[uid].save(base_path=savepath)
 
             calc_time = datetime.now() - start
             if step.total_seconds() > 0:
@@ -1889,8 +1903,8 @@ def runtime_info():
     }
 
 
-def initialize(persistency_path=None, resource_path=None, world_path=None):
-    global PERSISTENCY_PATH, RESOURCE_PATH, WORLD_PATH, configs, logger, runner, initialized
+def initialize(persistency_path=None, resource_path=None, world_path=None, autosave_path=None):
+    global PERSISTENCY_PATH, RESOURCE_PATH, WORLD_PATH, AUTOSAVE_PATH, configs, logger, runner, initialized
 
     PERSISTENCY_PATH = persistency_path or cfg['paths']['persistency_directory']
     RESOURCE_PATH = resource_path or cfg['paths']['agent_directory']
@@ -1899,6 +1913,10 @@ def initialize(persistency_path=None, resource_path=None, world_path=None):
     sys.path.append(WORLD_PATH)
 
     configs = config.ConfigurationManager(cfg['paths']['server_settings_path'])
+
+    # create autosave-dir if not exists:
+    if auto_save_intervals is not None:
+        AUTOSAVE_PATH = autosave_path or os.path.join(PERSISTENCY_PATH, "nodenets", "__autosave__")
 
     # bring up plotting infrastructure
     if matplotlib is not None:

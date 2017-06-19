@@ -167,7 +167,7 @@ class FlowModule(TheanoNode):
 
     def ensure_initialized(self):
         if not self.__initialized and not self.is_copy_of:
-            self._initfunction(self._nodenet.netapi, self, self.parameters)
+            self._initfunction(self._nodenet.netapi, self, self.clone_parameters())
             self.__initialized = True
 
     def build(self, *inputs):

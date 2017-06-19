@@ -1921,6 +1921,7 @@ class TheanoPartition():
                 linked_nodespaces_by_partition[self.spid] = self.allocated_node_parents[node_ids]
 
         nodes = {}
+        node_numpy_data = {}
         highdim_nodes = []
         additional_links = []
 
@@ -1961,7 +1962,8 @@ class TheanoPartition():
 
             state = None
             if uid in self.native_module_instances:
-                state = self.native_module_instances[uid].clone_state()
+                state, numpy_state = self.native_module_instances[uid].get_persistable_state()
+                node_numpy_data[uid] = numpy_state
 
             parameters = {}
             if strtype == "Sensor":
@@ -2222,7 +2224,7 @@ class TheanoPartition():
                                         "source_node_uid": source_uid,
                                         "source_gate_name": source_gate_type})
 
-        return nodes, additional_links
+        return nodes, additional_links, node_numpy_data
 
     def integrity_check(self):
 

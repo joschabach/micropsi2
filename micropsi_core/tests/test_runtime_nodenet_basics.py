@@ -6,6 +6,7 @@
 """
 import os
 import mock
+import pytest
 
 __author__ = 'joscha'
 __date__ = '29.10.12'
@@ -306,6 +307,62 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
     node = runtime.nodenets[test_nodenet].get_node(uid)
     assert node.get_parameter('linktype') == 'catexp'
     assert node.get_parameter('protocol_mode') == 'most_active_one'
+
+
+@pytest.mark.engine("dict_engine")
+def test_node_states(runtime, test_nodenet, node):
+    nodenet = runtime.get_nodenet(test_nodenet)
+    node = nodenet.get_node(node)
+    assert node.get_state('foobar') is None
+    node.set_state('foobar', 'bazbaz')
+    assert node.get_state('foobar') == 'bazbaz'
+    node.set_state('foobar', 42)
+    assert node.get_state('foobar') == 42
+
+
+@pytest.mark.engine("theano_engine")
+def test_node_states_numpy(runtime, test_nodenet, node, resourcepath):
+    import os
+    import numpy as np
+
+    nodenet = runtime.get_nodenet(test_nodenet)
+    node = nodenet.get_node(node)
+    assert node.get_state('foobar') is None
+    node.set_state('foobar', 'bazbaz')
+    assert node.get_state('foobar') == 'bazbaz'
+    node.set_state('foobar', 42)
+    assert node.get_state('foobar') == 42
+
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
+    with open(nodetype_file, 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "name": "Testnode",
+    "slottypes": ["gen", "foo", "bar"],
+    "gatetypes": ["gen", "foo", "bar"],
+    "nodefunction_name": "testnodefunc",
+}
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+""")
+
+    assert runtime.reload_code()
+    res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test", parameters={"threshold": "", "protocol_mode": "most_active_one"})
+
+    testnode = runtime.nodenets[test_nodenet].get_node(uid)
+    testnode.set_state("string", "hugo")
+    testnode.set_state("dict", {"eins": 1, "zwei": 2})
+    testnode.set_state("list", [{"eins": 1, "zwei": 2}, "boing"])
+    testnode.set_state("numpy", np.asarray([1, 2, 3, 4]))
+
+    runtime.save_nodenet(test_nodenet)
+    runtime.revert_nodenet(test_nodenet)
+
+    testnode = runtime.nodenets[test_nodenet].get_node(uid)
+
+    assert testnode.get_state("string") == "hugo"
+    assert testnode.get_state("dict")["eins"] == 1
+    assert testnode.get_state("list")[0]["eins"] == 1
+    assert testnode.get_state("list")[1] == "boing"
+    assert testnode.get_state("numpy").sum() == 10  # only numpy arrays have ".sum()"
 
 
 def test_delete_linked_nodes(runtime, test_nodenet):

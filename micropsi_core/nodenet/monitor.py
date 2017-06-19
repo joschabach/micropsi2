@@ -192,3 +192,21 @@ class CustomMonitor(Monitor):
 
     def getvalue(self):
         return self.compiled_function(self.nodenet.netapi)
+
+
+class AdhocMonitor(Monitor):
+
+    def __init__(self, nodenet, function, name=None, uid=None, color=None, values={}, parameters={}, **_):
+        super().__init__(nodenet, name, uid, color=color, values=values)
+        self.function = function
+        self.parameters = parameters
+
+    def get_data(self, with_values=True):
+        data = super().get_data(with_values=with_values)
+        data.update({
+            "function": "%s.%s" % (self.function.__module__, self.function.__name__)
+        })
+        return data
+
+    def getvalue(self):
+        return self.function(**self.parameters)

@@ -16,7 +16,6 @@ def benchmark_system():
     result.append("")
     result.append("theano device: %s" % theano.config.device)
     result.append("theano blas: %s" % theano.config.blas.ldflags)
-    # theano CPU or GPU, which BLAS variant
     result.append("")
 
     n = 1000

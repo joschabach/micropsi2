@@ -510,8 +510,7 @@ class TheanoNodenet(Nodenet):
         numpy_states = self.construct_native_modules_numpy_state_dict()
         for node_uid, states in numpy_states.items():
             if len(states) > 0:
-                file = os.path.join(base_path, 'numpystate_'+ node_uid+'.npz')
-                np.savez(file, **states)
+                np.savez(os.path.join(base_path, '%s_numpystate.npz' % node_uid), **states)
 
         for node_uid in self.thetas:
             # save thetas
@@ -579,7 +578,7 @@ class TheanoNodenet(Nodenet):
                 nodeids = np.where((partition.allocated_nodes > MAX_STD_NODETYPE) | (partition.allocated_nodes == COMMENT))[0]
                 for node_id in nodeids:
                     node_uid = node_to_id(node_id, partition.pid)
-                    file = os.path.join(self.get_persistency_path(), 'numpystate_'+node_uid+'.npz')
+                    file = os.path.join(self.get_persistency_path(), '%s_numpystate.npz' % node_uid)
                     if os.path.isfile(file):
                         node = self.get_node(node_uid)
                         numpy_states = np.load(file)

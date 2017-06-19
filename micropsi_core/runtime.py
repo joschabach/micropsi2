@@ -172,6 +172,9 @@ class MicropsiRunner(threading.Thread):
             start = datetime.now()
             log = False
             uids = [uid for uid in nodenets if nodenets[uid].is_active]
+            world_uids = {}
+            if self.profiler:
+                self.profiler.enable()
             for uid in uids:
                 if uid in nodenets:
                     nodenet = nodenets[uid]
@@ -181,8 +184,6 @@ class MicropsiRunner(threading.Thread):
                             # nodenet.is_active = False
                             continue
                         log = True
-                        if self.profiler:
-                            self.profiler.enable()
                         try:
                             nodenet.timed_step()
                             nodenet.update_monitors_and_recorders()
@@ -193,23 +194,39 @@ class MicropsiRunner(threading.Thread):
                             post_mortem()
                             MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
                         if nodenet.world and nodenet.current_step % runner['factor'] == 0:
-                            try:
-                                worlds[nodenet.world].step()
-                            except:
-                                stop_nodenetrunner(uid)
-                                # nodenet.is_active = False
-                                logging.getLogger("world").error("Exception in Environment:", exc_info=1)
-                                MicropsiRunner.last_world_exception[nodenets[uid].world] = sys.exc_info()
-                                post_mortem()
-                        if self.profiler:
-                            self.profiler.disable()
+                            if nodenet.world not in world_uids:
+                                world_uids[nodenet.world] = []
+                            world_uids[nodenet.world].append(uid)
+            if self.profiler:
+                self.profiler.disable()
 
             calc_time = datetime.now() - start
-            left = step - calc_time
-            if left.total_seconds() > 0:
-                time.sleep(left.total_seconds())
-            step_time = datetime.now() - start
+            if step.total_seconds() > 0:
+                left = step - calc_time
+                if left.total_seconds() > 0:
+                    time.sleep(left.total_seconds())
+                elif left.total_seconds() < 0:
+                    logging.getLogger("system").warning("Overlong step %d took %.4f secs, allowed are %.4f secs!" %
+                                                    (self.total_steps, calc_time.total_seconds(), step.total_seconds()))
+
+            if self.profiler:
+                self.profiler.enable()
+            for wuid, nodenet_uids in world_uids.items():
+                if wuid in worlds:
+                    try:
+                        worlds[wuid].step()
+                    except:
+                        for uid in nodenet_uids:
+                            if uid in nodenets:
+                                stop_nodenetrunner(uid)
+                        logging.getLogger("world").error("Exception in Environment:", exc_info=1)
+                        MicropsiRunner.last_world_exception[nodenets[uid].world] = sys.exc_info()
+                        post_mortem()
+            if self.profiler:
+                self.profiler.disable()
+
             if log:
+                step_time = datetime.now() - start
                 calc_ms = calc_time.seconds + ((calc_time.microseconds // 1000) / 1000)
                 step_ms = step_time.seconds + ((step_time.microseconds // 1000) / 1000)
                 self.sum_of_calc_durations += calc_ms
@@ -522,6 +539,7 @@ def unload_nodenet(nodenet_uid):
         return False
     if nodenet_uid in netapi_consoles:
         del netapi_consoles[nodenet_uid]
+    stop_nodenetrunner(nodenet_uid)
     nodenet = nodenets[nodenet_uid]
     nodenet.close_figures()
     if nodenet.world:

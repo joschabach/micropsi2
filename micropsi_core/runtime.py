@@ -328,7 +328,7 @@ def benchmark_info():
     from micropsi_core.benchmark_system import benchmark_system
     benchmarks = {}
     benchmarks["benchmark"] = benchmark_system()
-    return benchmark
+    return benchmarks
 
 
 # Nodenet

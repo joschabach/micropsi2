@@ -1521,7 +1521,7 @@ def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor
 @rpc("benchmark_info")
 def benchmark_info():
     """ Time some math operations to determine the speed of the underlying machine. """
-    return True, runtime.benchmark_system()
+    return True, runtime.benchmark_info()
 
 # --- user scripts ---
 

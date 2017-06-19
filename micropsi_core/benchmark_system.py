@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 
-def benchmark_system():
+def benchmark_system(n=1000, repeat=100):
 
     import numpy as np
     import theano
@@ -17,9 +17,6 @@ def benchmark_system():
     result.append("theano device: %s" % theano.config.device)
     result.append("theano blas: %s" % theano.config.blas.ldflags)
     result.append("")
-
-    n = 1000
-    repeat = 100
 
     # numpy dot
     setup = "import numpy as np; x = np.random.random(({0}, {0})).astype(np.float32)".format(n)

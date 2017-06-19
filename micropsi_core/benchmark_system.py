@@ -67,7 +67,7 @@ def benchmark_system(n=1000, repeat=100):
     return "\n".join(result)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
 
     results = benchmark_system()
     print(results)

@@ -1277,6 +1277,15 @@ def test_get_monitoring_info(app, test_nodenet):
     assert response.json_body['data']['logs']['logs'] == []
 
 
+@pytest.mark.engine("theano_engine")
+def test_get_benchmark_info(app, test_nodenet):
+    import mock
+    with mock.patch("micropsi_core.benchmark_system.benchmark_system", return_value="testbench") as benchmock:
+        response = app.get_json('/rpc/benchmark_info()')
+        assert_success(response)
+        assert response.json_body['data']['benchmark'] == 'testbench'
+
+
 def test_400(app):
     app.set_auth()
     response = app.get_json('/rpc/save_nodenet("foobar")', expect_errors=True)

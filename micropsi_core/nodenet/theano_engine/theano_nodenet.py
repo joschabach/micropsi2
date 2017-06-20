@@ -1202,7 +1202,7 @@ class TheanoNodenet(Nodenet):
                     elif source == 'path':
                         funcargs.append(all_outputs[pidx][item])
                 if thunk['implementation'] == 'python':
-                    out = thunk['function'](*funcargs, netapi=self.netapi, node=thunk['node'], parameters=thunk['node'].parameters)
+                    out = thunk['function'](*funcargs, netapi=self.netapi, node=thunk['node'], parameters=thunk['node'].clone_parameters())
                     if len(thunk['node'].outputs) <= 1:
                         out = [out]
                 else:

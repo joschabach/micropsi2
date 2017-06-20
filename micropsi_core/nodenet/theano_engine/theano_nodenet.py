@@ -160,13 +160,8 @@ class TheanoNodenet(Nodenet):
             self.scipyfloatX = scipy.float64
             self.numpyfloatX = np.float64
             self.byte_per_float = 8
-        else:  # pragma: no cover
-            self.logger.warning("Unsupported precision value from configuration: %s, falling back to float64", precision)
-            T.config.floatX = "float64"
-            self.theanofloatX = "float64"
-            self.scipyfloatX = scipy.float64
-            self.numpyfloatX = np.float64
-            self.byte_per_float = 8
+        else:
+            raise RuntimeError("Unsupported float precision value")
 
         device = T.config.device
         self.logger.info("Theano configured to use %s", device)

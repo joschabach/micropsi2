@@ -78,11 +78,9 @@ netapi_consoles = {}
 
 initialized = False
 
-auto_save_intervals = cfg['micropsi2'].get('auto_save_intervals')
-if auto_save_intervals is not None:
-    auto_save_intervals = sorted([int(x) for x in cfg['micropsi2']['auto_save_intervals'].split(',')], reverse=True)
-from code import InteractiveConsole
+auto_save_intervals = None
 
+from code import InteractiveConsole
 
 
 class FileCacher():
@@ -202,7 +200,6 @@ class MicropsiRunner(threading.Thread):
                             if nodenet.world not in world_uids:
                                 world_uids[nodenet.world] = []
                             world_uids[nodenet.world].append(uid)
-                        save_interval = cfg['micropsi2'].get('auto_save_interval')
 
                         if auto_save_intervals is not None:
                             for val in auto_save_intervals:
@@ -1906,7 +1903,7 @@ def runtime_info():
 
 
 def initialize(persistency_path=None, resource_path=None, world_path=None, autosave_path=None):
-    global PERSISTENCY_PATH, RESOURCE_PATH, WORLD_PATH, AUTOSAVE_PATH, configs, logger, runner, initialized
+    global PERSISTENCY_PATH, RESOURCE_PATH, WORLD_PATH, AUTOSAVE_PATH, configs, logger, runner, initialized, auto_save_intervals
 
     PERSISTENCY_PATH = persistency_path or cfg['paths']['persistency_directory']
     RESOURCE_PATH = resource_path or cfg['paths']['agent_directory']
@@ -1917,8 +1914,11 @@ def initialize(persistency_path=None, resource_path=None, world_path=None, autos
     configs = config.ConfigurationManager(cfg['paths']['server_settings_path'])
 
     # create autosave-dir if not exists:
+    auto_save_intervals = cfg['micropsi2'].get('auto_save_intervals')
     if auto_save_intervals is not None:
+        auto_save_intervals = sorted([int(x) for x in cfg['micropsi2']['auto_save_intervals'].split(',')], reverse=True)
         AUTOSAVE_PATH = autosave_path or os.path.join(PERSISTENCY_PATH, "nodenets", "__autosave__")
+        os.makedirs(AUTOSAVE_PATH, exist_ok=True)
 
     # bring up plotting infrastructure
     if matplotlib is not None:

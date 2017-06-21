@@ -533,11 +533,80 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
     assert neuron.get_slot('gen').get_links() == []
 
 
-def test_runtime_nodenet_autosave(runtime, test_nodenet, resourcepath):
+@pytest.mark.engine("dict_engine")
+def test_runtime_autosave_dict(runtime, test_nodenet, resourcepath):
     import os
+    import zipfile
     from time import sleep
     runtime.set_runner_condition(test_nodenet, steps=101)
     runtime.start_nodenetrunner(test_nodenet)
+    count = 0
     while runtime.nodenets[test_nodenet].is_active:
         sleep(.1)
-    assert os.path.isfile(os.path.join(resourcepath, "nodenets", "__autosave__", "%s_%d" % (test_nodenet, 100), "nodenet.json"))
+        count += 1
+        assert count < 20  # quit if not done after 2 sec
+    filename = os.path.join(resourcepath, "nodenets", "__autosave__", "%s_%d.zip" % (test_nodenet, 100))
+    assert os.path.isfile(filename)
+    with zipfile.ZipFile(filename, 'r') as archive:
+        assert set(archive.namelist()) == {"nodenet.json"}
+
+
+@pytest.mark.engine("theano_engine")
+def test_runtime_autosave_theano(runtime, test_nodenet, resourcepath):
+    import os
+    import zipfile
+    from time import sleep
+    with open(os.path.join(resourcepath, "nodetypes", "Source.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "python",
+    "name": "Source",
+    "init_function_name": "source_init",
+    "run_function_name": "source",
+    "inputs": [],
+    "outputs": ["X"]
+}
+
+def source_init(netapi, node, parameters):
+    import numpy as np
+    w_array = np.random.rand(8).astype(netapi.floatX)
+    node.set_theta("weights", w_array)
+
+def source(netapi, node, parameters):
+    return node.get_theta("weights")
+""")
+    with open(os.path.join(resourcepath, "nodetypes", "Target.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "python",
+    "name": "Target",
+    "run_function_name": "target",
+    "inputs": ["X"],
+    "outputs": [],
+    "inputdims": [1]
+}
+
+def target(X, netapi, node, parameters):
+    node.set_state("incoming", X.get_value())
+""")
+
+    runtime.reload_code()
+    nodenet = runtime.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    source = netapi.create_node("Source", None, "Source")
+    target = netapi.create_node("Target", None, "Target")
+    netapi.flow(source, "X", target, "X")
+    neuron = netapi.create_node("Neuron", None, "Neuron")
+    netapi.link(neuron, 'gen', target, 'sub')
+    neuron.activation = 1
+    runtime.set_runner_condition(test_nodenet, steps=101)
+    runtime.start_nodenetrunner(test_nodenet)
+    count = 0
+    while runtime.nodenets[test_nodenet].is_active:
+        sleep(.1)
+        count += 1
+        assert count < 20  # quit if not done after 2 sec
+    filename = os.path.join(resourcepath, "nodenets", "__autosave__", "%s_%d.zip" % (test_nodenet, 100))
+    assert os.path.isfile(filename)
+    with zipfile.ZipFile(filename, 'r') as archive:
+        assert set(archive.namelist()) == {"nodenet.json", "flowgraph.pickle", "partition-000.npz", "%s_numpystate.npz" % target.uid, "%s_thetas.npz" % source.uid}

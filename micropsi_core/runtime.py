@@ -22,6 +22,7 @@ from micropsi_core.tools import post_mortem
 
 import os
 import sys
+import zipfile
 import threading
 
 try:
@@ -211,10 +212,13 @@ class MicropsiRunner(threading.Thread):
                 self.profiler.disable()
 
             for uid, interval in nodenets_to_save:
-                savepath = os.path.join(AUTOSAVE_PATH, "%s_%d" % (uid, interval))
-                os.makedirs(savepath, exist_ok=True)
-                logging.getLogger("system").info("Auto-saving nodenet %s at step %d (interval %d)" % (uid, nodenets[uid].current_step, interval))
-                nodenets[uid].save(base_path=savepath)
+                if uid in nodenets:
+                    net = nodenets[uid]
+                    savefile = os.path.join(AUTOSAVE_PATH, "%s_%d.zip" % (uid, interval))
+                    logging.getLogger("system").info("Auto-saving nodenet %s at step %d (interval %d)" % (uid, net.current_step, interval))
+                    zipobj = zipfile.ZipFile(savefile, 'w', zipfile.ZIP_STORED)
+                    net.save(zipfile=zipobj)
+                    zipobj.close()
 
             calc_time = datetime.now() - start
             if step.total_seconds() > 0:

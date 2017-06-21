@@ -208,17 +208,20 @@ class DictNodenet(Nodenet):
 
         return data
 
-    def save(self, base_path=None):
+    def save(self, base_path=None, zipfile=None):
         if base_path is None:
             base_path = self.persistency_path
-        filename = os.path.join(base_path, 'nodenet.json')
-        # dict_engine saves everything to json, just dump the json export
         data = json.dumps(self.export_json(), sort_keys=True, indent=4)
-        with open(filename, 'w+', encoding="utf-8") as fp:
-            fp.write(data)
-        if os.path.getsize(filename) < 100:
-            # kind of hacky, but we don't really know what was going on
-            raise RuntimeError("Error writing nodenet file")
+        if zipfile:
+            zipfile.writestr('nodenet.json', data)
+        else:
+            filename = os.path.join(base_path, 'nodenet.json')
+            # dict_engine saves everything to json, just dump the json export
+            with open(filename, 'w+', encoding="utf-8") as fp:
+                fp.write(data)
+            if os.path.getsize(filename) < 100:
+                # kind of hacky, but we don't really know what was going on
+                raise RuntimeError("Error writing nodenet file")
 
     def load(self):
         """Load the node net from a file"""

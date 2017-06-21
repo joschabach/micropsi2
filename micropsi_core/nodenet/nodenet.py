@@ -248,11 +248,12 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def save(self, base_path=None):
+    def save(self, base_path=None, zipfile=None):
         """
         Saves the nodenet to persistency.
         Arguments:
             base_path (String) - Save files to a non-standard directory
+            zipfile (ZipFile object) - Save the nodenet to a zipfile instead
         """
         pass  # pragma: no cover
 

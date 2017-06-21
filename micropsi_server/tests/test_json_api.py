@@ -149,10 +149,6 @@ def test_start_calculation(app, default_nodenet):
 def test_start_calculation_with_condition(app, default_nodenet):
     import time
     app.set_auth()
-    app.post_json('/rpc/set_runner_properties', params={
-        'timestep': 10,
-        'factor': 1
-    })
     response = app.post_json('/rpc/set_runner_condition', params={
         'nodenet_uid': default_nodenet,
         'steps': '2'

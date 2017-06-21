@@ -113,11 +113,12 @@ def pytest_runtest_setup(item):
         else:
             os.remove(path)
 
+    os.mkdir(os.path.join(testpath, 'worlds'))
+    os.mkdir(os.path.join(testpath, 'nodenets'))
+    os.mkdir(os.path.join(testpath, 'nodenets', '__autosave__'))
     os.mkdir(os.path.join(testpath, 'nodetypes'))
     os.mkdir(os.path.join(testpath, 'recipes'))
     os.mkdir(os.path.join(testpath, 'operations'))
-    os.mkdir(os.path.join(testpath, 'nodenets'))
-    os.mkdir(os.path.join(testpath, 'worlds'))
     os.mkdir(os.path.join(testpath, 'nodetypes', 'Test'))
     open(os.path.join(testpath, 'nodetypes', 'Test', '__init__.py'), 'w').close()
     micropsi_runtime.reload_code()

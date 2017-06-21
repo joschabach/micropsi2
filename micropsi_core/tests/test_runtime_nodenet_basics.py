@@ -536,9 +536,11 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
 @pytest.mark.engine("dict_engine")
 def test_runtime_autosave_dict(runtime, test_nodenet, resourcepath):
     import os
+    import json
     import zipfile
+    import tempfile
     from time import sleep
-    runtime.set_runner_condition(test_nodenet, steps=101)
+    runtime.set_runner_condition(test_nodenet, steps=100)
     runtime.start_nodenetrunner(test_nodenet)
     count = 0
     while runtime.nodenets[test_nodenet].is_active:
@@ -549,12 +551,22 @@ def test_runtime_autosave_dict(runtime, test_nodenet, resourcepath):
     assert os.path.isfile(filename)
     with zipfile.ZipFile(filename, 'r') as archive:
         assert set(archive.namelist()) == {"nodenet.json"}
+        tmp = tempfile.TemporaryDirectory()
+        archive.extractall(tmp.name)
+        with open(os.path.join(tmp.name, "nodenet.json"), 'r') as fp:
+            restored = json.load(fp)
+        original = runtime.nodenets[test_nodenet].export_json()
+        # step and runner_conditions might differ
+        for key in ['nodes', 'links', 'modulators', 'uid', 'name', 'owner', 'world', 'worldadapter', 'version', 'monitors', 'nodespaces']:
+            assert restored[key] == original[key]
 
 
 @pytest.mark.engine("theano_engine")
 def test_runtime_autosave_theano(runtime, test_nodenet, resourcepath):
     import os
+    import tempfile
     import zipfile
+    import numpy as np
     from time import sleep
     with open(os.path.join(resourcepath, "nodetypes", "Source.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
@@ -599,7 +611,7 @@ def target(X, netapi, node, parameters):
     neuron = netapi.create_node("Neuron", None, "Neuron")
     netapi.link(neuron, 'gen', target, 'sub')
     neuron.activation = 1
-    runtime.set_runner_condition(test_nodenet, steps=101)
+    runtime.set_runner_condition(test_nodenet, steps=100)
     runtime.start_nodenetrunner(test_nodenet)
     count = 0
     while runtime.nodenets[test_nodenet].is_active:
@@ -610,3 +622,16 @@ def target(X, netapi, node, parameters):
     assert os.path.isfile(filename)
     with zipfile.ZipFile(filename, 'r') as archive:
         assert set(archive.namelist()) == {"nodenet.json", "flowgraph.pickle", "partition-000.npz", "%s_numpystate.npz" % target.uid, "%s_thetas.npz" % source.uid}
+        from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
+        tmp = tempfile.TemporaryDirectory()
+        archive.extractall(tmp.name)
+        net = TheanoNodenet(tmp.name, "restored", uid=test_nodenet, native_modules=runtime.native_modules)
+        net.load()
+        nsource = net.netapi.get_node(source.uid)
+        ntarget = net.netapi.get_node(target.uid)
+        nneuron = net.netapi.get_node(neuron.uid)
+        assert nsource.name == "Source"
+        assert nsource.outputmap == {'X': {(ntarget.uid, 'X')}}
+        assert np.all(nsource.get_theta("weights").get_value() == source.get_theta("weights").get_value())
+        assert np.all(ntarget.get_state("incoming") == target.get_state("incoming"))
+        assert nneuron.get_gate('gen').get_links()[0].target_node == ntarget

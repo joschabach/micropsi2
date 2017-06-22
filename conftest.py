@@ -53,6 +53,7 @@ def pytest_cmdline_main(config):
     implementation will invoke the configure hooks and runtest_mainloop. """
     if config.getoption('agents'):
         config.args = [orig_agent_dir]
+        config._inicache['python_functions'] = []
         config.addinivalue_line('python_files', '*.py')
         config.addinivalue_line('python_functions', '_test*')
         config.addinivalue_line('norecursedirs', 'experiments')

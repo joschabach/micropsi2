@@ -22,9 +22,13 @@ def prepare(runtime, test_nodenet):
     return net, netapi, source, register
 
 
-def test_new_nodenet(runtime, test_nodenet, resourcepath, engine):
-    success, nodenet_uid = runtime.new_nodenet("Test_Nodenet", engine=engine, worldadapter="Default", owner="tester")
+def test_new_nodenet(runtime, test_nodenet, default_world, resourcepath, engine):
+    success, nodenet_uid = runtime.new_nodenet("Test_Nodenet", engine=engine, world_uid=default_world, worldadapter="Default", owner="tester")
     assert success
+    runtime.revert_nodenet(nodenet_uid)
+    nodenet = runtime.get_nodenet(nodenet_uid)
+    assert nodenet.world == default_world
+    assert nodenet.worldadapter == "Default"
     assert nodenet_uid != test_nodenet
     assert runtime.get_available_nodenets("tester")[nodenet_uid].name == "Test_Nodenet"
     n_path = os.path.join(resourcepath, runtime.NODENET_DIRECTORY, nodenet_uid, "nodenet.json")

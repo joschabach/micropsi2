@@ -593,8 +593,7 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
 
     if world_uid and worldadapter:
         set_nodenet_properties(uid, worldadapter=worldadapter, world_uid=world_uid, worldadapter_config=worldadapter_config)
-
-    nodenets[uid].save()
+    save_nodenet(uid)
     return True, data['uid']
 
 

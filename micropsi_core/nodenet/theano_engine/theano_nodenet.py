@@ -694,12 +694,9 @@ class TheanoNodenet(Nodenet):
                 parent_uid = uidmap[data['parent_nodespace']]
                 id_to_pass = None
             if data['type'] not in self.nodetypes and data['type'] not in self.native_modules:
-                self.logger.warning("Invalid nodetype %s for node %s" % (data['type'], uid))
-                data['parameters'] = {
-                    'comment': 'There was a %s node here' % data['type']
-                }
-                data['type'] = 'Comment'
+                self.logger.error("Invalid nodetype %s for node %s" % (data['type'], uid))
                 invalid_nodes.append(uid)
+                continue
             if native_module_instances_only:
                 if data.get('flow_module') and data['type'] in self.native_module_definitions:
                     node = FlowModule(

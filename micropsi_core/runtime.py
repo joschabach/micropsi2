@@ -556,7 +556,7 @@ def unload_nodenet(nodenet_uid):
     return True
 
 
-def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=None, owner="", world_uid=None, use_modulators=True, worldadapter_config={}):
+def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=None, owner="admin", world_uid=None, use_modulators=True, worldadapter_config={}):
     """Creates a new node net manager and registers it.
 
     Arguments:

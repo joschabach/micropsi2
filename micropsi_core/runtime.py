@@ -995,7 +995,7 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
         if uid:
             uidmap[n.uid] = uid
         else:
-            logger.warning('Could not clone node: ' + uid)
+            logging.getLogger("system").warning('Could not clone node: ' + uid)
 
     for uid, l in copylinks.items():
         source_uid = uidmap.get(l.source_node.uid, l.source_node.uid)
@@ -1013,7 +1013,7 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
     for uid in followupnodes:
         result[uid] = nodenet.get_node(uid).get_data(include_links=True)
 
-    if len(result.keys()) or len(nodes) == 0:
+    if len(result.keys()) or len(node_uids) == 0:
         return True, result
     else:
         return False, "Could not clone nodes. See log for details."

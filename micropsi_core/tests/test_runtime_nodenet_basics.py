@@ -535,3 +535,107 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
     neuron = runtime.nodenets[test_nodenet].get_node(neuron_uid)
     assert neuron.get_gate('gen').get_links() == []
     assert neuron.get_slot('gen').get_links() == []
+
+
+@pytest.mark.engine("dict_engine")
+def test_runtime_autosave_dict(runtime, test_nodenet, resourcepath):
+    import os
+    import json
+    import zipfile
+    import tempfile
+    from time import sleep
+    runtime.set_runner_condition(test_nodenet, steps=100)
+    runtime.start_nodenetrunner(test_nodenet)
+    count = 0
+    while runtime.nodenets[test_nodenet].is_active:
+        sleep(.1)
+        count += 1
+        assert count < 20  # quit if not done after 2 sec
+    filename = os.path.join(resourcepath, "nodenets", "__autosave__", "%s_%d.zip" % (test_nodenet, 100))
+    assert os.path.isfile(filename)
+    with zipfile.ZipFile(filename, 'r') as archive:
+        assert set(archive.namelist()) == {"nodenet.json"}
+        tmp = tempfile.TemporaryDirectory()
+        archive.extractall(tmp.name)
+        with open(os.path.join(tmp.name, "nodenet.json"), 'r') as fp:
+            restored = json.load(fp)
+        original = runtime.nodenets[test_nodenet].export_json()
+        # step and runner_conditions might differ
+        for key in ['nodes', 'links', 'modulators', 'uid', 'name', 'owner', 'world', 'worldadapter', 'version', 'monitors', 'nodespaces']:
+            assert restored[key] == original[key]
+
+
+@pytest.mark.engine("theano_engine")
+def test_runtime_autosave_theano(runtime, test_nodenet, resourcepath):
+    import os
+    import tempfile
+    import zipfile
+    import numpy as np
+    from time import sleep
+    with open(os.path.join(resourcepath, "nodetypes", "Source.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "python",
+    "name": "Source",
+    "init_function_name": "source_init",
+    "run_function_name": "source",
+    "inputs": [],
+    "outputs": ["X"]
+}
+
+def source_init(netapi, node, parameters):
+    import numpy as np
+    w_array = np.random.rand(8).astype(netapi.floatX)
+    node.set_theta("weights", w_array)
+
+def source(netapi, node, parameters):
+    return node.get_theta("weights")
+""")
+    with open(os.path.join(resourcepath, "nodetypes", "Target.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "python",
+    "name": "Target",
+    "run_function_name": "target",
+    "inputs": ["X"],
+    "outputs": [],
+    "inputdims": [1]
+}
+
+def target(X, netapi, node, parameters):
+    node.set_state("incoming", X.get_value())
+""")
+
+    runtime.reload_code()
+    nodenet = runtime.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    source = netapi.create_node("Source", None, "Source")
+    target = netapi.create_node("Target", None, "Target")
+    netapi.flow(source, "X", target, "X")
+    neuron = netapi.create_node("Neuron", None, "Neuron")
+    netapi.link(neuron, 'gen', target, 'sub')
+    neuron.activation = 1
+    runtime.set_runner_condition(test_nodenet, steps=100)
+    runtime.start_nodenetrunner(test_nodenet)
+    count = 0
+    while runtime.nodenets[test_nodenet].is_active:
+        sleep(.1)
+        count += 1
+        assert count < 20  # quit if not done after 2 sec
+    filename = os.path.join(resourcepath, "nodenets", "__autosave__", "%s_%d.zip" % (test_nodenet, 100))
+    assert os.path.isfile(filename)
+    with zipfile.ZipFile(filename, 'r') as archive:
+        assert set(archive.namelist()) == {"nodenet.json", "flowgraph.pickle", "partition-000.npz", "%s_numpystate.npz" % target.uid, "%s_thetas.npz" % source.uid}
+        from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
+        tmp = tempfile.TemporaryDirectory()
+        archive.extractall(tmp.name)
+        net = TheanoNodenet(tmp.name, "restored", uid=test_nodenet, native_modules=runtime.native_modules)
+        net.load()
+        nsource = net.netapi.get_node(source.uid)
+        ntarget = net.netapi.get_node(target.uid)
+        nneuron = net.netapi.get_node(neuron.uid)
+        assert nsource.name == "Source"
+        assert nsource.outputmap == {'X': {(ntarget.uid, 'X')}}
+        assert np.all(nsource.get_theta("weights").get_value() == source.get_theta("weights").get_value())
+        assert np.all(ntarget.get_state("incoming") == target.get_state("incoming"))
+        assert nneuron.get_gate('gen').get_links()[0].target_node == ntarget

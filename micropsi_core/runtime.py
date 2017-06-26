@@ -22,6 +22,7 @@ from micropsi_core.tools import post_mortem
 
 import os
 import sys
+import zipfile
 import threading
 
 try:
@@ -59,6 +60,7 @@ nodenet_lock = threading.Lock()
 RESOURCE_PATH = None
 PERSISTENCY_PATH = None
 WORLD_PATH = None
+AUTOSAVE_PATH = None
 
 configs = None
 logger = None
@@ -77,8 +79,9 @@ netapi_consoles = {}
 
 initialized = False
 
-from code import InteractiveConsole
+auto_save_intervals = None
 
+from code import InteractiveConsole
 
 
 class FileCacher():
@@ -173,6 +176,7 @@ class MicropsiRunner(threading.Thread):
             log = False
             uids = [uid for uid in nodenets if nodenets[uid].is_active]
             world_uids = {}
+            nodenets_to_save = []
             if self.profiler:
                 self.profiler.enable()
             for uid in uids:
@@ -197,8 +201,24 @@ class MicropsiRunner(threading.Thread):
                             if nodenet.world not in world_uids:
                                 world_uids[nodenet.world] = []
                             world_uids[nodenet.world].append(uid)
+
+                        if auto_save_intervals is not None:
+                            for val in auto_save_intervals:
+                                if nodenet.current_step % val == 0:
+                                    nodenets_to_save.append((nodenet.uid, val))
+                                    break
+
             if self.profiler:
                 self.profiler.disable()
+
+            for uid, interval in nodenets_to_save:
+                if uid in nodenets:
+                    net = nodenets[uid]
+                    savefile = os.path.join(AUTOSAVE_PATH, "%s_%d.zip" % (uid, interval))
+                    logging.getLogger("system").info("Auto-saving nodenet %s at step %d (interval %d)" % (uid, net.current_step, interval))
+                    zipobj = zipfile.ZipFile(savefile, 'w', zipfile.ZIP_STORED)
+                    net.save(zipfile=zipobj)
+                    zipobj.close()
 
             calc_time = datetime.now() - start
             if step.total_seconds() > 0:
@@ -411,6 +431,7 @@ def load_nodenet(nodenet_uid):
                 logger.register_logger("agent.%s" % nodenet_uid, cfg['logging']['level_agent'])
 
                 params = {
+                    'persistency_path': os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, data.uid),
                     'name': data.name,
                     'worldadapter': worldadapter,
                     'worldadapter_instance': worldadapter_instance,
@@ -1537,6 +1558,8 @@ def crawl_definition_files(path, datatype="definition"):
     result = {}
     os.makedirs(path, exist_ok=True)
     for user_directory_name, user_directory_names, file_names in os.walk(path):
+        if os.path.relpath(user_directory_name, start=os.path.join(PERSISTENCY_PATH, "nodenets")).startswith("__autosave__"):
+            continue
         for definition_file_name in file_names:
             if definition_file_name.endswith(".json"):
                 try:
@@ -1882,8 +1905,8 @@ def runtime_info():
     }
 
 
-def initialize(persistency_path=None, resource_path=None, world_path=None):
-    global PERSISTENCY_PATH, RESOURCE_PATH, WORLD_PATH, configs, logger, runner, initialized
+def initialize(persistency_path=None, resource_path=None, world_path=None, autosave_path=None):
+    global PERSISTENCY_PATH, RESOURCE_PATH, WORLD_PATH, AUTOSAVE_PATH, configs, logger, runner, initialized, auto_save_intervals
 
     PERSISTENCY_PATH = persistency_path or cfg['paths']['persistency_directory']
     RESOURCE_PATH = resource_path or cfg['paths']['agent_directory']
@@ -1892,6 +1915,13 @@ def initialize(persistency_path=None, resource_path=None, world_path=None):
     sys.path.append(WORLD_PATH)
 
     configs = config.ConfigurationManager(cfg['paths']['server_settings_path'])
+
+    # create autosave-dir if not exists:
+    auto_save_intervals = cfg['micropsi2'].get('auto_save_intervals')
+    if auto_save_intervals is not None:
+        auto_save_intervals = sorted([int(x) for x in cfg['micropsi2']['auto_save_intervals'].split(',')], reverse=True)
+        AUTOSAVE_PATH = autosave_path or os.path.join(PERSISTENCY_PATH, "nodenets", "__autosave__")
+        os.makedirs(AUTOSAVE_PATH, exist_ok=True)
 
     # bring up plotting infrastructure
     if matplotlib is not None:

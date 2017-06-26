@@ -4,6 +4,7 @@
 Nodenet definition
 """
 import json
+import io
 import os
 import copy
 import math
@@ -127,7 +128,7 @@ class TheanoNodenet(Nodenet):
     def current_step(self):
         return self._step
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None, flow_modules={}):
+    def __init__(self, persistency_path, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None, flow_modules={}):
 
         # map of string uids to positions. Not all nodes necessarily have an entry.
         self.positions = {}
@@ -141,7 +142,7 @@ class TheanoNodenet(Nodenet):
         # map of data targets to string node IDs
         self.actuatormap = {}
 
-        super().__init__(name, worldadapter, world, owner, uid, native_modules=native_modules, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance, version=version)
+        super().__init__(persistency_path, name, worldadapter, world, owner, uid, native_modules=native_modules, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance, version=version)
 
         self.nodetypes = {}
         for type, data in STANDARD_NODETYPES.items():
@@ -483,46 +484,70 @@ class TheanoNodenet(Nodenet):
             self.stepoperators.append(DoernerianEmotionalModulators())
         self.stepoperators.sort(key=lambda op: op.priority)
 
-    def save(self):
-        base_path = self.get_persistency_path()
+    def save(self, base_path=None, zipfile=None):
+        if base_path is None:
+            base_path = self.persistency_path
 
         # write json metadata, which will be used by runtime to manage the net
-        with open(os.path.join(base_path, 'nodenet.json'), 'w+', encoding="utf-8") as fp:
-            metadata = self.metadata
-            metadata['positions'] = self.positions
-            metadata['names'] = self.names
-            metadata['actuatormap'] = self.actuatormap
-            metadata['sensormap'] = self.sensormap
-            metadata['nodes'] = self.construct_native_modules_and_comments_dict()
-            metadata['monitors'] = self.construct_monitors_dict()
-            metadata['modulators'] = self.construct_modulators_dict()
-            metadata['partition_parents'] = self.inverted_partitionmap
-            metadata['recorders'] = self.construct_recorders_dict()
-            metadata['worldadapter_flow_nodes'] = self.worldadapter_flow_nodes
-            fp.write(json.dumps(metadata, sort_keys=True, indent=4))
+        metadata = self.metadata
+        metadata['positions'] = self.positions
+        metadata['names'] = self.names
+        metadata['actuatormap'] = self.actuatormap
+        metadata['sensormap'] = self.sensormap
+        metadata['nodes'] = self.construct_native_modules_and_comments_dict()
+        metadata['monitors'] = self.construct_monitors_dict()
+        metadata['modulators'] = self.construct_modulators_dict()
+        metadata['partition_parents'] = self.inverted_partitionmap
+        metadata['recorders'] = self.construct_recorders_dict()
+        metadata['worldadapter_flow_nodes'] = self.worldadapter_flow_nodes
+        if zipfile:
+            zipfile.writestr('nodenet.json', json.dumps(metadata))
+        else:
+            with open(os.path.join(base_path, 'nodenet.json'), 'w+', encoding="utf-8") as fp:
+                fp.write(json.dumps(metadata, sort_keys=True, indent=4))
 
         # write numpy states of native modules
         numpy_states = self.construct_native_modules_numpy_state_dict()
         for node_uid, states in numpy_states.items():
             if len(states) > 0:
-                np.savez(os.path.join(base_path, '%s_numpystate.npz' % node_uid), **states)
+                filename = "%s_numpystate.npz" % node_uid
+                if zipfile:
+                    stream = io.BytesIO()
+                    np.savez(stream, **states)
+                    stream.seek(0)
+                    zipfile.writestr(filename, stream.getvalue())
+                else:
+                    np.savez(os.path.join(base_path, filename), **states)
 
         for node_uid in self.thetas:
             # save thetas
             data = {}
+            filename = "%s_thetas.npz" % node_uid
             for idx, name in enumerate(self.thetas[node_uid]['names']):
                 data[name] = self.thetas[node_uid]['variables'][idx].get_value()
-            np.savez(os.path.join(base_path, "%s_thetas.npz" % node_uid), **data)
+            if zipfile:
+                stream = io.BytesIO()
+                np.savez(stream, **data)
+                stream.seek(0)
+                zipfile.writestr(filename, stream.getvalue())
+            else:
+                np.savez(os.path.join(base_path, filename), **data)
 
         # write graph data
-        nx.write_gpickle(self.flowgraph, os.path.join(base_path, "flowgraph.pickle"))
+        if zipfile:
+            stream = io.BytesIO()
+            nx.write_gpickle(self.flowgraph, stream)
+            stream.seek(0)
+            zipfile.writestr("flowgraph.pickle", stream.getvalue())
+        else:
+            nx.write_gpickle(self.flowgraph, os.path.join(base_path, "flowgraph.pickle"))
 
         for recorder_uid in self._recorders:
             self._recorders[recorder_uid].save()
 
         for partition in self.partitions.values():
             # save partitions
-            partition.save()
+            partition.save(base_path=base_path, zipfile=zipfile)
 
     def load(self):
         """Load the node net from a file"""
@@ -532,7 +557,7 @@ class TheanoNodenet(Nodenet):
             return False
 
         # try to access file
-        filename = os.path.join(self.get_persistency_path(), 'nodenet.json')
+        filename = os.path.join(self.persistency_path, 'nodenet.json')
         with self.netlock:
             initfrom = {}
             if os.path.isfile(filename):
@@ -573,7 +598,7 @@ class TheanoNodenet(Nodenet):
                 nodeids = np.where((partition.allocated_nodes > MAX_STD_NODETYPE) | (partition.allocated_nodes == COMMENT))[0]
                 for node_id in nodeids:
                     node_uid = node_to_id(node_id, partition.pid)
-                    file = os.path.join(self.get_persistency_path(), '%s_numpystate.npz' % node_uid)
+                    file = os.path.join(self.persistency_path, '%s_numpystate.npz' % node_uid)
                     if os.path.isfile(file):
                         node = self.get_node(node_uid)
                         numpy_states = np.load(file)
@@ -591,14 +616,14 @@ class TheanoNodenet(Nodenet):
                 data = initfrom['recorders'][recorder_uid]
                 self._recorders[recorder_uid] = getattr(recorder, data['classname'])(self, **data)
 
-            flowfile = os.path.join(self.get_persistency_path(), 'flowgraph.pickle')
+            flowfile = os.path.join(self.persistency_path, 'flowgraph.pickle')
 
             if os.path.isfile(flowfile):
                 self.flowgraph = nx.read_gpickle(flowfile)
 
             for node_uid in self.flow_module_instances:
                 self.flow_module_instances[node_uid].ensure_initialized()
-                theta_file = os.path.join(self.get_persistency_path(), "%s_thetas.npz" % node_uid)
+                theta_file = os.path.join(self.persistency_path, "%s_thetas.npz" % node_uid)
                 if os.path.isfile(theta_file):
                     data = np.load(theta_file)
                     for key in data:

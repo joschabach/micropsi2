@@ -1,5 +1,6 @@
 
 
+import io
 import os
 
 import theano
@@ -724,8 +725,9 @@ class TheanoPartition():
         self.NoN = new_NoN
         self.has_new_usages = True
 
-    def save(self):
-        base_path = self.nodenet.get_persistency_path()
+    def save(self, base_path=None, zipfile=None):
+        if base_path is None:
+            base_path = self.nodenet.persistency_path
 
         allocated_nodes = self.allocated_nodes
         allocated_node_offsets = self.allocated_node_offsets
@@ -765,53 +767,66 @@ class TheanoPartition():
         sizeinformation = [self.NoN, self.NoE, self.NoNS]
 
         for spid, inlinks in self.inlinks.items():
-            filename = os.path.join(base_path, "inlinks-%s-from-%s.npz" % (self.spid, spid))
-            from_ids = inlinks[0].get_value(borrow=True)
-            to_ids = inlinks[1].get_value(borrow=True)
-            weights = inlinks[2].get_value(borrow=True) if inlinks[2] else None
-            np.savez(filename,
-                from_partition_id=spid,
-                from_ids=from_ids,
-                to_ids=to_ids,
-                weights=weights,
-                inlink_type=inlinks[4])
-
-        np.savez(os.path.join(base_path, "partition-%s.npz" % self.spid),
-                 allocated_nodes=allocated_nodes,
-                 allocated_node_offsets=allocated_node_offsets,
-                 allocated_elements_to_nodes=allocated_elements_to_nodes,
-                 allocated_node_parents=allocated_node_parents,
-                 allocated_nodespaces=allocated_nodespaces,
-                 w_data=w.data,
-                 w_indices=w.indices,
-                 w_indptr=w.indptr,
-                 a=a,
-                 g_bias=g_bias,
-                 g_factor=g_factor,
-                 g_threshold=g_threshold,
-                 g_amplification=g_amplification,
-                 g_min=g_min,
-                 g_max=g_max,
-                 g_function_selector=g_function_selector,
-                 g_expect=g_expect,
-                 g_countdown=g_countdown,
-                 g_wait=g_wait,
-                 n_function_selector=n_function_selector,
-                 sizeinformation=sizeinformation,
-                 allocated_elements_to_activators=allocated_elements_to_activators,
-                 allocated_nodespaces_por_activators=allocated_nodespaces_por_activators,
-                 allocated_nodespaces_ret_activators=allocated_nodespaces_ret_activators,
-                 allocated_nodespaces_sub_activators=allocated_nodespaces_sub_activators,
-                 allocated_nodespaces_sur_activators=allocated_nodespaces_sur_activators,
-                 allocated_nodespaces_cat_activators=allocated_nodespaces_cat_activators,
-                 allocated_nodespaces_exp_activators=allocated_nodespaces_exp_activators,
-                 allocated_nodespaces_sampling_activators=allocated_nodespaces_sampling_activators)
+            filename = "inlinks-%s-from-%s.npz" % (self.spid, spid)
+            data = {
+                'from_partition_id': spid,
+                'from_ids': inlinks[0].get_value(borrow=True),
+                'to_ids': inlinks[1].get_value(borrow=True),
+                'weights': inlinks[2].get_value(borrow=True) if inlinks[2] else None,
+                'inlink_type': inlinks[4]
+            }
+            if zipfile:
+                stream = io.BytesIO()
+                np.savez(stream, **data)
+                stream.seek(0)
+                zipfile.writestr(filename, stream.getvalue())
+            else:
+                np.savez(os.path.join(base_path, filename), **data)
+        filename = "partition-%s.npz" % self.spid
+        data = {
+            'allocated_nodes': allocated_nodes,
+            'allocated_node_offsets': allocated_node_offsets,
+            'allocated_elements_to_nodes': allocated_elements_to_nodes,
+            'allocated_node_parents': allocated_node_parents,
+            'allocated_nodespaces': allocated_nodespaces,
+            'w_data': w.data,
+            'w_indices': w.indices,
+            'w_indptr': w.indptr,
+            'a': a,
+            'g_bias': g_bias,
+            'g_factor': g_factor,
+            'g_threshold': g_threshold,
+            'g_amplification': g_amplification,
+            'g_min': g_min,
+            'g_max': g_max,
+            'g_function_selector': g_function_selector,
+            'g_expect': g_expect,
+            'g_countdown': g_countdown,
+            'g_wait': g_wait,
+            'n_function_selector': n_function_selector,
+            'sizeinformation': sizeinformation,
+            'allocated_elements_to_activators': allocated_elements_to_activators,
+            'allocated_nodespaces_por_activators': allocated_nodespaces_por_activators,
+            'allocated_nodespaces_ret_activators': allocated_nodespaces_ret_activators,
+            'allocated_nodespaces_sub_activators': allocated_nodespaces_sub_activators,
+            'allocated_nodespaces_sur_activators': allocated_nodespaces_sur_activators,
+            'allocated_nodespaces_cat_activators': allocated_nodespaces_cat_activators,
+            'allocated_nodespaces_exp_activators': allocated_nodespaces_exp_activators,
+            'allocated_nodespaces_sampling_activators': allocated_nodespaces_sampling_activators
+        }
+        if zipfile:
+            stream = io.BytesIO()
+            np.savez(stream, **data)
+            stream.seek(0)
+            zipfile.writestr(filename, stream.getvalue())
+        else:
+            np.savez(os.path.join(base_path, filename), **data)
 
     def load_data(self, nodes_data):
         """Load the node net from a file"""
         # try to access file
 
-        base_path = self.nodenet.get_persistency_path()
+        base_path = self.nodenet.persistency_path
         filename = os.path.join(base_path, "partition-%s.npz" % self.spid)
         datafile = None
         if os.path.isfile(filename):
@@ -1033,7 +1048,7 @@ class TheanoPartition():
             self.__calculate_g_factors()
 
     def load_inlinks(self):
-        base_path = self.nodenet.get_persistency_path()
+        base_path = self.nodenet.persistency_path
         for spid in self.nodenet.partitions:
             filename = os.path.join(base_path, "inlinks-%s-from-%s.npz" % (self.spid, spid))
             if os.path.isfile(filename):

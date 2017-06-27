@@ -33,7 +33,7 @@ class TheanoNode(Node):
 
         self.is_highdimensional = type(self._nodetype) == HighdimensionalNodetype
 
-        self.datafile = os.path.join(nodenet.get_persistency_path(), '%s_node_%s.npz' % (self._nodenet.uid, self.uid))
+        self.datafile = os.path.join(nodenet.persistency_path, '%s_node_%s.npz' % (self._nodenet.uid, self.uid))
 
         if strtype in nodenet.native_modules or strtype == "Comment":
             self.slot_activation_snapshot = {}
@@ -412,6 +412,59 @@ class TheanoNode(Node):
             return self._state.copy()
         else:
             return None
+
+    def _pluck_apart_state(self, state, numpy_elements):
+        if isinstance(state, dict):
+            result = dict()
+            for key, value in state.items():
+                result[key] = self._pluck_apart_state(value, numpy_elements)
+        elif isinstance(state, list):
+            result = []
+            for value in state:
+                result.append(self._pluck_apart_state(value, numpy_elements))
+        elif isinstance(state, np.ndarray):
+            result = "__numpyelement__" + str(id(state))
+            numpy_elements[result] = state
+        else:
+            return state
+
+        return result
+
+    def _put_together_state(self, state, numpy_elements):
+        if isinstance(state, dict):
+            result = dict()
+            for key, value in state.items():
+                result[key] = self._put_together_state(value, numpy_elements)
+        elif isinstance(state, list):
+            result = []
+            for value in state:
+                result.append(self._put_together_state(value, numpy_elements))
+        elif isinstance(state, str) and state.startswith("__numpyelement__"):
+            result = numpy_elements[state]
+        else:
+            return state
+
+        return result
+
+    def get_persistable_state(self):
+        """
+        Returns a tuple of dicts, the first one containing json-serializable state information
+        and the second one containing numpy elements that should be persisted into an npz.
+        The json-seriazable dict will contain special values that act as keys for the second dict.
+        This allows to save nested numpy state.
+        set_persistable_state knows how to unserialize from the returned tuple.
+        """
+        numpy_elements = dict()
+        json_state = self._pluck_apart_state(self._state, numpy_elements)
+
+        return json_state, numpy_elements
+
+    def set_persistable_state(self, json_state, numpy_elements):
+        """
+        Sets this node's state from a tuple created with get_persistable_state,
+        essentially nesting numpy objects back into the state dict where it belongs
+        """
+        self._state = self._put_together_state(json_state, numpy_elements)
 
     def node_function(self):
         try:

@@ -7,6 +7,7 @@
 """
 
 import logging
+import pytest
 
 
 def test_set_logging_level(runtime):
@@ -281,3 +282,15 @@ def test_get_netapi_autocomplete(runtime, test_nodenet):
 def test_get_nodenet_by_name(runtime, test_nodenet):
     assert runtime.get_nodenet_uid_by_name("Foobar") is None
     assert runtime.get_nodenet_uid_by_name("Testnet") == test_nodenet
+
+
+@pytest.mark.engine("theano_engine")
+def test_system_benchmark(runtime, test_nodenet):
+    from micropsi_core.benchmark_system import benchmark_system
+    result = benchmark_system(n=10, repeat=1)
+    assert "numpy version" in result
+    assert "scipy version" in result
+    assert "theano version" in result
+    assert "numpy dot" in result
+    assert "scipy dot" in result
+    assert "theano dot" in result

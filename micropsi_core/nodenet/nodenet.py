@@ -144,11 +144,12 @@ class Nodenet(metaclass=ABCMeta):
         if self._worldadapter_instance:
             self._worldadapter_instance.nodenet = self
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None):
+    def __init__(self, persistency_path, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None):
         """
         Constructor for the abstract base class, must be called by implementations
         """
         self._uid = uid or micropsi_core.tools.generate_uid()
+        self.persistency_path = persistency_path
         self._name = name
         self._world_uid = world
         self._worldadapter_uid = worldadapter if world else None
@@ -166,6 +167,7 @@ class Nodenet(metaclass=ABCMeta):
         self.owner = owner
         self._monitors = {}
         self._recorders = {}
+        self._adhoc_monitors = {}
         self._nodespace_ui_properties = {}
 
         self.netlock = Lock()
@@ -201,12 +203,8 @@ class Nodenet(metaclass=ABCMeta):
             for modulator in emo.writeable_modulators + emo.readable_modulators:
                 self._modulators[modulator] = 1
 
-        if not os.path.isdir(self.get_persistency_path()):
-            os.mkdir(self.get_persistency_path())
-
-    def get_persistency_path(self):
-        from micropsi_core.runtime import PERSISTENCY_PATH, NODENET_DIRECTORY
-        return os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, self.uid)
+        if not os.path.isdir(self.persistency_path):
+            os.mkdir(self.persistency_path)
 
     def get_data(self, complete=False, include_links=True):
         """
@@ -250,9 +248,12 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def save(self):
+    def save(self, base_path=None, zipfile=None):
         """
-        Saves the nodenet to the given main metadata json file.
+        Saves the nodenet to persistency.
+        Arguments:
+            base_path (String) - Save files to a non-standard directory
+            zipfile (ZipFile object) - Save the nodenet to a zipfile instead
         """
         pass  # pragma: no cover
 
@@ -666,6 +667,16 @@ class Nodenet(metaclass=ABCMeta):
         self._monitors[mon.uid] = mon
         return mon.uid
 
+    def add_adhoc_monitor(self, function, name, parameters={}):
+        """Adds an ephemeral adhoc monitor to quickly plot values returned by the given function.
+        If a monitor with the given name already exists, it's value-function is updated. """
+        if name in self._adhoc_monitors:
+            self._adhoc_monitors[name].function = function
+            self._adhoc_monitors[name].parameters
+        else:
+            mon = monitor.AdhocMonitor(self, function, name, parameters=parameters)
+            self._adhoc_monitors[name] = mon
+
     def get_monitor(self, uid):
         return self._monitors.get(uid)
 
@@ -677,6 +688,8 @@ class Nodenet(metaclass=ABCMeta):
             self._monitors[uid].step(self.current_step)
         for uid in self._recorders:
             self._recorders[uid].step(self.current_step)
+        for name in self._adhoc_monitors:
+            self._adhoc_monitors[name].step(self.current_step)
 
     def construct_monitors_dict(self, with_values=True):
         data = {}
@@ -688,6 +701,12 @@ class Nodenet(metaclass=ABCMeta):
         data = {}
         for uid in self._recorders:
             data[uid] = self._recorders[uid].get_data()
+        return data
+
+    def construct_adhoc_monitors_dict(self, with_values=True):
+        data = {}
+        for name in self._adhoc_monitors:
+            data[self._adhoc_monitors[name].uid] = self._adhoc_monitors[name].get_data(with_values=with_values)
         return data
 
     def remove_monitor(self, monitor_uid):

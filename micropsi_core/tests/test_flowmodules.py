@@ -22,11 +22,14 @@ def prepare(runtime, test_nodenet, default_world, resourcepath, wa_class=None):
     "run_function_name": "out12345",
     "inputs": [],
     "outputs": ["out"],
-    "inputdims": []
+    "inputdims": [],
+    "parameters": ["default_test"],
+    "parameter_defaults": {"default_test": "defaultvalue"}
 }
 
 def out12345(netapi, node, parameters):
     import numpy as np
+    assert parameters['default_test'] == 'defaultvalue'
     return np.asarray([1,2,3,4,5])
 """)
 
@@ -39,11 +42,14 @@ def out12345(netapi, node, parameters):
     "init_function_name": "double_init",
     "inputs": ["inputs"],
     "outputs": ["outputs"],
-    "inputdims": [1]
+    "inputdims": [1],
+    "parameters": ["test_param"],
+    "parameter_defaults": {"test_param": "defaultvalue"}
 }
 
 def double_init(netapi, node, parameters):
     node.initfunction_ran = True
+    assert parameters['test_param'] == 'defaultvalue'
 
 def double(inputs, netapi, node, parameters):
     return inputs * 2

@@ -101,6 +101,7 @@ class MicropsiLogger():
     def register_logger(self, name, level):
         self.loggers[name] = logging.getLogger(name)
         self.loggers[name].setLevel(level)
+        self.loggers[name].propagate = False
         self.record_storage[name] = []
         self.handlers[name] = RecordWebStorageHandler(self.record_storage, name)
         formatter = logging.Formatter(self.default_format)
@@ -110,7 +111,7 @@ class MicropsiLogger():
             logging.getLogger(name).addHandler(self.filehandler)
         self.loggers[name].debug("Logger %s ready" % name)
         if coloredlogs is not None:
-            coloredlogs.install(logger=self.loggers[name])
+            coloredlogs.install(logger=self.loggers[name], level=level)
 
     def unregister_logger(self, name):
         logging.getLogger(name).removeHandler(self.handlers[name])

@@ -6,6 +6,7 @@
 """
 import os
 import mock
+import pytest
 
 __author__ = 'joscha'
 __date__ = '29.10.12'
@@ -21,9 +22,13 @@ def prepare(runtime, test_nodenet):
     return net, netapi, source, register
 
 
-def test_new_nodenet(runtime, test_nodenet, resourcepath, engine):
-    success, nodenet_uid = runtime.new_nodenet("Test_Nodenet", engine=engine, worldadapter="Default", owner="tester")
+def test_new_nodenet(runtime, test_nodenet, default_world, resourcepath, engine):
+    success, nodenet_uid = runtime.new_nodenet("Test_Nodenet", engine=engine, world_uid=default_world, worldadapter="Default", owner="tester")
     assert success
+    runtime.revert_nodenet(nodenet_uid)
+    nodenet = runtime.get_nodenet(nodenet_uid)
+    assert nodenet.world == default_world
+    assert nodenet.worldadapter == "Default"
     assert nodenet_uid != test_nodenet
     assert runtime.get_available_nodenets("tester")[nodenet_uid].name == "Test_Nodenet"
     n_path = os.path.join(resourcepath, runtime.NODENET_DIRECTORY, nodenet_uid, "nodenet.json")
@@ -308,6 +313,62 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
     assert node.get_parameter('protocol_mode') == 'most_active_one'
 
 
+@pytest.mark.engine("dict_engine")
+def test_node_states(runtime, test_nodenet, node):
+    nodenet = runtime.get_nodenet(test_nodenet)
+    node = nodenet.get_node(node)
+    assert node.get_state('foobar') is None
+    node.set_state('foobar', 'bazbaz')
+    assert node.get_state('foobar') == 'bazbaz'
+    node.set_state('foobar', 42)
+    assert node.get_state('foobar') == 42
+
+
+@pytest.mark.engine("theano_engine")
+def test_node_states_numpy(runtime, test_nodenet, node, resourcepath):
+    import os
+    import numpy as np
+
+    nodenet = runtime.get_nodenet(test_nodenet)
+    node = nodenet.get_node(node)
+    assert node.get_state('foobar') is None
+    node.set_state('foobar', 'bazbaz')
+    assert node.get_state('foobar') == 'bazbaz'
+    node.set_state('foobar', 42)
+    assert node.get_state('foobar') == 42
+
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
+    with open(nodetype_file, 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "name": "Testnode",
+    "slottypes": ["gen", "foo", "bar"],
+    "gatetypes": ["gen", "foo", "bar"],
+    "nodefunction_name": "testnodefunc",
+}
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+""")
+
+    assert runtime.reload_code()
+    res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test", parameters={"threshold": "", "protocol_mode": "most_active_one"})
+
+    testnode = runtime.nodenets[test_nodenet].get_node(uid)
+    testnode.set_state("string", "hugo")
+    testnode.set_state("dict", {"eins": 1, "zwei": 2})
+    testnode.set_state("list", [{"eins": 1, "zwei": 2}, "boing"])
+    testnode.set_state("numpy", np.asarray([1, 2, 3, 4]))
+
+    runtime.save_nodenet(test_nodenet)
+    runtime.revert_nodenet(test_nodenet)
+
+    testnode = runtime.nodenets[test_nodenet].get_node(uid)
+
+    assert testnode.get_state("string") == "hugo"
+    assert testnode.get_state("dict")["eins"] == 1
+    assert testnode.get_state("list")[0]["eins"] == 1
+    assert testnode.get_state("list")[1] == "boing"
+    assert testnode.get_state("numpy").sum() == 10  # only numpy arrays have ".sum()"
+
+
 def test_delete_linked_nodes(runtime, test_nodenet):
 
     nodenet = runtime.get_nodenet(test_nodenet)
@@ -474,3 +535,107 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
     neuron = runtime.nodenets[test_nodenet].get_node(neuron_uid)
     assert neuron.get_gate('gen').get_links() == []
     assert neuron.get_slot('gen').get_links() == []
+
+
+@pytest.mark.engine("dict_engine")
+def test_runtime_autosave_dict(runtime, test_nodenet, resourcepath):
+    import os
+    import json
+    import zipfile
+    import tempfile
+    from time import sleep
+    runtime.set_runner_condition(test_nodenet, steps=100)
+    runtime.start_nodenetrunner(test_nodenet)
+    count = 0
+    while runtime.nodenets[test_nodenet].is_active:
+        sleep(.1)
+        count += 1
+        assert count < 20  # quit if not done after 2 sec
+    filename = os.path.join(resourcepath, "nodenets", "__autosave__", "%s_%d.zip" % (test_nodenet, 100))
+    assert os.path.isfile(filename)
+    with zipfile.ZipFile(filename, 'r') as archive:
+        assert set(archive.namelist()) == {"nodenet.json"}
+        tmp = tempfile.TemporaryDirectory()
+        archive.extractall(tmp.name)
+        with open(os.path.join(tmp.name, "nodenet.json"), 'r') as fp:
+            restored = json.load(fp)
+        original = runtime.nodenets[test_nodenet].export_json()
+        # step and runner_conditions might differ
+        for key in ['nodes', 'links', 'modulators', 'uid', 'name', 'owner', 'world', 'worldadapter', 'version', 'monitors', 'nodespaces']:
+            assert restored[key] == original[key]
+
+
+@pytest.mark.engine("theano_engine")
+def test_runtime_autosave_theano(runtime, test_nodenet, resourcepath):
+    import os
+    import tempfile
+    import zipfile
+    import numpy as np
+    from time import sleep
+    with open(os.path.join(resourcepath, "nodetypes", "Source.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "python",
+    "name": "Source",
+    "init_function_name": "source_init",
+    "run_function_name": "source",
+    "inputs": [],
+    "outputs": ["X"]
+}
+
+def source_init(netapi, node, parameters):
+    import numpy as np
+    w_array = np.random.rand(8).astype(netapi.floatX)
+    node.set_theta("weights", w_array)
+
+def source(netapi, node, parameters):
+    return node.get_theta("weights")
+""")
+    with open(os.path.join(resourcepath, "nodetypes", "Target.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "python",
+    "name": "Target",
+    "run_function_name": "target",
+    "inputs": ["X"],
+    "outputs": [],
+    "inputdims": [1]
+}
+
+def target(X, netapi, node, parameters):
+    node.set_state("incoming", X.get_value())
+""")
+
+    runtime.reload_code()
+    nodenet = runtime.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    source = netapi.create_node("Source", None, "Source")
+    target = netapi.create_node("Target", None, "Target")
+    netapi.flow(source, "X", target, "X")
+    neuron = netapi.create_node("Neuron", None, "Neuron")
+    netapi.link(neuron, 'gen', target, 'sub')
+    neuron.activation = 1
+    runtime.set_runner_condition(test_nodenet, steps=100)
+    runtime.start_nodenetrunner(test_nodenet)
+    count = 0
+    while runtime.nodenets[test_nodenet].is_active:
+        sleep(.1)
+        count += 1
+        assert count < 20  # quit if not done after 2 sec
+    filename = os.path.join(resourcepath, "nodenets", "__autosave__", "%s_%d.zip" % (test_nodenet, 100))
+    assert os.path.isfile(filename)
+    with zipfile.ZipFile(filename, 'r') as archive:
+        assert set(archive.namelist()) == {"nodenet.json", "flowgraph.pickle", "partition-000.npz", "%s_numpystate.npz" % target.uid, "%s_thetas.npz" % source.uid}
+        from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
+        tmp = tempfile.TemporaryDirectory()
+        archive.extractall(tmp.name)
+        net = TheanoNodenet(tmp.name, "restored", uid=test_nodenet, native_modules=runtime.native_modules)
+        net.load()
+        nsource = net.netapi.get_node(source.uid)
+        ntarget = net.netapi.get_node(target.uid)
+        nneuron = net.netapi.get_node(neuron.uid)
+        assert nsource.name == "Source"
+        assert nsource.outputmap == {'X': {(ntarget.uid, 'X')}}
+        assert np.all(nsource.get_theta("weights").get_value() == source.get_theta("weights").get_value())
+        assert np.all(ntarget.get_state("incoming") == target.get_state("incoming"))
+        assert nneuron.get_gate('gen').get_links()[0].target_node == ntarget

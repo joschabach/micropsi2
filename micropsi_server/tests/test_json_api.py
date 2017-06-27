@@ -149,10 +149,6 @@ def test_start_calculation(app, default_nodenet):
 def test_start_calculation_with_condition(app, default_nodenet):
     import time
     app.set_auth()
-    app.post_json('/rpc/set_runner_properties', params={
-        'timestep': 10,
-        'factor': 1
-    })
     response = app.post_json('/rpc/set_runner_condition', params={
         'nodenet_uid': default_nodenet,
         'steps': '2'
@@ -1275,6 +1271,15 @@ def test_get_monitoring_info(app, test_nodenet):
     assert response.json_body['data']['monitors'] == {}
     assert 'servertime' in response.json_body['data']['logs']
     assert response.json_body['data']['logs']['logs'] == []
+
+
+@pytest.mark.engine("theano_engine")
+def test_get_benchmark_info(app, test_nodenet):
+    import mock
+    with mock.patch("micropsi_core.benchmark_system.benchmark_system", return_value="testbench") as benchmock:
+        response = app.get_json('/rpc/benchmark_info()')
+        assert_success(response)
+        assert response.json_body['data']['benchmark'] == 'testbench'
 
 
 def test_400(app):

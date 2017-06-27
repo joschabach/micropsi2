@@ -105,7 +105,7 @@ def set_worldagent_properties(world_uid, uid, position=None, orientation=None, n
     return micropsi_core.runtime.worlds[world_uid].set_agent_properties(uid, position, orientation, name, parameters)
 
 
-def new_world(world_name, world_type, owner="", config={}):
+def new_world(world_name, world_type, owner="admin", config={}):
     """Creates a new world  and registers it.
 
     Arguments:

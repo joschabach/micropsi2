@@ -25,12 +25,15 @@ orig_world_dir = cfg['paths']['world_directory']
 cfg['paths']['persistency_directory'] = testpath
 cfg['paths']['server_settings_path'] = os.path.join(testpath, 'server_cfg.json')
 cfg['paths']['usermanager_path'] = os.path.join(testpath, 'user-db.json')
+
+if 'logfile' in cfg['logging']:
+    del cfg['logging']['logfile']
 cfg['micropsi2']['single_agent_mode'] = ''
 if 'theano' in cfg:
     cfg['theano']['initial_number_of_nodes'] = '50'
 if 'on_exception' in cfg['micropsi2']:
     cfg['micropsi2']['on_exception'] = ''
-
+cfg['micropsi2']['auto_save_intervals'] = '100'
 
 world_uid = 'WorldOfPain'
 nn_uid = 'Testnet'
@@ -51,6 +54,7 @@ def pytest_cmdline_main(config):
     implementation will invoke the configure hooks and runtest_mainloop. """
     if config.getoption('agents'):
         config.args = [orig_agent_dir]
+        config._inicache['python_functions'] = []
         config.addinivalue_line('python_files', '*.py')
         config.addinivalue_line('python_functions', '_test*')
         config.addinivalue_line('norecursedirs', 'experiments')
@@ -98,14 +102,21 @@ def pytest_runtest_setup(item):
         if engine_marker != item.callspec.params['engine']:
             pytest.skip("test requires engine %s" % engine_marker)
 
-    for item in os.listdir(testpath):
-        if item != 'worlds' and item != 'nodenets':
-            path = os.path.join(testpath, item)
-            if os.path.isdir(path):
-                shutil.rmtree(path)
-            else:
-                os.remove(path)
+    for uid in list(micropsi_runtime.nodenets.keys()):
+        micropsi_runtime.delete_nodenet(uid)
+    for uid in list(micropsi_runtime.worlds.keys()):
+        micropsi_runtime.delete_world(uid)
 
+    for item in os.listdir(testpath):
+        path = os.path.join(testpath, item)
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        else:
+            os.remove(path)
+
+    os.mkdir(os.path.join(testpath, 'worlds'))
+    os.mkdir(os.path.join(testpath, 'nodenets'))
+    os.mkdir(os.path.join(testpath, 'nodenets', '__autosave__'))
     os.mkdir(os.path.join(testpath, 'nodetypes'))
     os.mkdir(os.path.join(testpath, 'recipes'))
     os.mkdir(os.path.join(testpath, 'operations'))
@@ -113,7 +124,7 @@ def pytest_runtest_setup(item):
     open(os.path.join(testpath, 'nodetypes', 'Test', '__init__.py'), 'w').close()
     micropsi_runtime.reload_code()
     micropsi_runtime.logger.clear_logs()
-    micropsi_runtime.set_runner_properties(1, 1)
+    micropsi_runtime.set_runner_properties(0, 1)
     set_logging_levels()
 
 

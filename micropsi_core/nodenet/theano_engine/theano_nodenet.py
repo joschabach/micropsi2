@@ -4,6 +4,7 @@
 Nodenet definition
 """
 import json
+import io
 import os
 import copy
 import math
@@ -14,6 +15,12 @@ import numpy as np
 import scipy
 import networkx as nx
 
+try:
+    import ipdb as pdb
+except ImportError:
+    import pdb
+
+from micropsi_core.tools import post_mortem
 from micropsi_core.tools import OrderedSet
 from micropsi_core.nodenet import monitor
 from micropsi_core.nodenet import recorder
@@ -121,7 +128,7 @@ class TheanoNodenet(Nodenet):
     def current_step(self):
         return self._step
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None, flow_modules={}):
+    def __init__(self, persistency_path, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None, flow_modules={}):
 
         # map of string uids to positions. Not all nodes necessarily have an entry.
         self.positions = {}
@@ -135,7 +142,7 @@ class TheanoNodenet(Nodenet):
         # map of data targets to string node IDs
         self.actuatormap = {}
 
-        super().__init__(name, worldadapter, world, owner, uid, native_modules=native_modules, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance, version=version)
+        super().__init__(persistency_path, name, worldadapter, world, owner, uid, native_modules=native_modules, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance, version=version)
 
         self.nodetypes = {}
         for type, data in STANDARD_NODETYPES.items():
@@ -154,13 +161,8 @@ class TheanoNodenet(Nodenet):
             self.scipyfloatX = scipy.float64
             self.numpyfloatX = np.float64
             self.byte_per_float = 8
-        else:  # pragma: no cover
-            self.logger.warning("Unsupported precision value from configuration: %s, falling back to float64", precision)
-            T.config.floatX = "float64"
-            self.theanofloatX = "float64"
-            self.scipyfloatX = scipy.float64
-            self.numpyfloatX = np.float64
-            self.byte_per_float = 8
+        else:
+            raise RuntimeError("Unsupported float precision value")
 
         device = T.config.device
         self.logger.info("Theano configured to use %s", device)
@@ -283,14 +285,14 @@ class TheanoNodenet(Nodenet):
                     linked_nodespaces_by_partition[spid].append(nodespace_from_id(uid))
 
             for spid in nodespaces_by_partition:
-                nodes, links = self.partitions[spid].get_node_data(nodespaces_by_partition=nodespaces_by_partition, include_links=include_links, linked_nodespaces_by_partition=linked_nodespaces_by_partition)
+                nodes, links, _ = self.partitions[spid].get_node_data(nodespaces_by_partition=nodespaces_by_partition, include_links=include_links, linked_nodespaces_by_partition=linked_nodespaces_by_partition)
                 data['nodes'].update(nodes)
                 data['links'] = links
 
         else:
             data['nodespaces'] = self.construct_nodespaces_dict(None, transitive=True)
             for partition in self.partitions.values():
-                nodes, _ = partition.get_node_data(nodespaces_by_partition=None, include_links=include_links)
+                nodes, _ , _ = partition.get_node_data(nodespaces_by_partition=None, include_links=include_links)
                 data['nodes'].update(nodes)
 
         return data
@@ -482,40 +484,70 @@ class TheanoNodenet(Nodenet):
             self.stepoperators.append(DoernerianEmotionalModulators())
         self.stepoperators.sort(key=lambda op: op.priority)
 
-    def save(self):
-        base_path = self.get_persistency_path()
+    def save(self, base_path=None, zipfile=None):
+        if base_path is None:
+            base_path = self.persistency_path
 
         # write json metadata, which will be used by runtime to manage the net
-        with open(os.path.join(base_path, 'nodenet.json'), 'w+', encoding="utf-8") as fp:
-            metadata = self.metadata
-            metadata['positions'] = self.positions
-            metadata['names'] = self.names
-            metadata['actuatormap'] = self.actuatormap
-            metadata['sensormap'] = self.sensormap
-            metadata['nodes'] = self.construct_native_modules_and_comments_dict()
-            metadata['monitors'] = self.construct_monitors_dict()
-            metadata['modulators'] = self.construct_modulators_dict()
-            metadata['partition_parents'] = self.inverted_partitionmap
-            metadata['recorders'] = self.construct_recorders_dict()
-            metadata['worldadapter_flow_nodes'] = self.worldadapter_flow_nodes
-            fp.write(json.dumps(metadata, sort_keys=True, indent=4))
+        metadata = self.metadata
+        metadata['positions'] = self.positions
+        metadata['names'] = self.names
+        metadata['actuatormap'] = self.actuatormap
+        metadata['sensormap'] = self.sensormap
+        metadata['nodes'] = self.construct_native_modules_and_comments_dict()
+        metadata['monitors'] = self.construct_monitors_dict()
+        metadata['modulators'] = self.construct_modulators_dict()
+        metadata['partition_parents'] = self.inverted_partitionmap
+        metadata['recorders'] = self.construct_recorders_dict()
+        metadata['worldadapter_flow_nodes'] = self.worldadapter_flow_nodes
+        if zipfile:
+            zipfile.writestr('nodenet.json', json.dumps(metadata))
+        else:
+            with open(os.path.join(base_path, 'nodenet.json'), 'w+', encoding="utf-8") as fp:
+                fp.write(json.dumps(metadata, sort_keys=True, indent=4))
+
+        # write numpy states of native modules
+        numpy_states = self.construct_native_modules_numpy_state_dict()
+        for node_uid, states in numpy_states.items():
+            if len(states) > 0:
+                filename = "%s_numpystate.npz" % node_uid
+                if zipfile:
+                    stream = io.BytesIO()
+                    np.savez(stream, **states)
+                    stream.seek(0)
+                    zipfile.writestr(filename, stream.getvalue())
+                else:
+                    np.savez(os.path.join(base_path, filename), **states)
 
         for node_uid in self.thetas:
             # save thetas
             data = {}
+            filename = "%s_thetas.npz" % node_uid
             for idx, name in enumerate(self.thetas[node_uid]['names']):
                 data[name] = self.thetas[node_uid]['variables'][idx].get_value()
-            np.savez(os.path.join(base_path, "%s_thetas.npz" % node_uid), **data)
+            if zipfile:
+                stream = io.BytesIO()
+                np.savez(stream, **data)
+                stream.seek(0)
+                zipfile.writestr(filename, stream.getvalue())
+            else:
+                np.savez(os.path.join(base_path, filename), **data)
 
         # write graph data
-        nx.write_gpickle(self.flowgraph, os.path.join(base_path, "flowgraph.pickle"))
+        if zipfile:
+            stream = io.BytesIO()
+            nx.write_gpickle(self.flowgraph, stream)
+            stream.seek(0)
+            zipfile.writestr("flowgraph.pickle", stream.getvalue())
+        else:
+            nx.write_gpickle(self.flowgraph, os.path.join(base_path, "flowgraph.pickle"))
 
         for recorder_uid in self._recorders:
             self._recorders[recorder_uid].save()
 
         for partition in self.partitions.values():
             # save partitions
-            partition.save()
+            partition.save(base_path=base_path, zipfile=zipfile)
 
     def load(self):
         """Load the node net from a file"""
@@ -525,7 +557,7 @@ class TheanoNodenet(Nodenet):
             return False
 
         # try to access file
-        filename = os.path.join(self.get_persistency_path(), 'nodenet.json')
+        filename = os.path.join(self.persistency_path, 'nodenet.json')
         with self.netlock:
             initfrom = {}
             if os.path.isfile(filename):
@@ -561,6 +593,17 @@ class TheanoNodenet(Nodenet):
             self.worldadapter_flow_nodes = initfrom.get('worldadapter_flow_nodes', {})
             self.reload_native_modules(self.native_module_definitions)
 
+            # recover numpy states for native modules
+            for partition in self.partitions.values():
+                nodeids = np.where((partition.allocated_nodes > MAX_STD_NODETYPE) | (partition.allocated_nodes == COMMENT))[0]
+                for node_id in nodeids:
+                    node_uid = node_to_id(node_id, partition.pid)
+                    file = os.path.join(self.persistency_path, '%s_numpystate.npz' % node_uid)
+                    if os.path.isfile(file):
+                        node = self.get_node(node_uid)
+                        numpy_states = np.load(file)
+                        node.set_persistable_state(node._state, numpy_states)
+
             for monitorid in monitors:
                 data = monitors[monitorid]
                 if hasattr(monitor, data['classname']):
@@ -573,14 +616,14 @@ class TheanoNodenet(Nodenet):
                 data = initfrom['recorders'][recorder_uid]
                 self._recorders[recorder_uid] = getattr(recorder, data['classname'])(self, **data)
 
-            flowfile = os.path.join(self.get_persistency_path(), 'flowgraph.pickle')
+            flowfile = os.path.join(self.persistency_path, 'flowgraph.pickle')
 
             if os.path.isfile(flowfile):
                 self.flowgraph = nx.read_gpickle(flowfile)
 
             for node_uid in self.flow_module_instances:
                 self.flow_module_instances[node_uid].ensure_initialized()
-                theta_file = os.path.join(self.get_persistency_path(), "%s_thetas.npz" % node_uid)
+                theta_file = os.path.join(self.persistency_path, "%s_thetas.npz" % node_uid)
                 if os.path.isfile(theta_file):
                     data = np.load(theta_file)
                     for key in data:
@@ -676,12 +719,9 @@ class TheanoNodenet(Nodenet):
                 parent_uid = uidmap[data['parent_nodespace']]
                 id_to_pass = None
             if data['type'] not in self.nodetypes and data['type'] not in self.native_modules:
-                self.logger.warning("Invalid nodetype %s for node %s" % (data['type'], uid))
-                data['parameters'] = {
-                    'comment': 'There was a %s node here' % data['type']
-                }
-                data['type'] = 'Comment'
+                self.logger.error("Invalid nodetype %s for node %s" % (data['type'], uid))
                 invalid_nodes.append(uid)
+                continue
             if native_module_instances_only:
                 if data.get('flow_module') and data['type'] in self.native_module_definitions:
                     node = FlowModule(
@@ -1066,7 +1106,11 @@ class TheanoNodenet(Nodenet):
                     else:
                         original_outex = node.build(*buildargs)
                 except Exception as err:
-                    self.logger.error("Error in buildfunction of Flowodule %s.\n %s: %s" % (str(node), err.__class__.__name__, str(err)))
+                    import traceback as tb
+                    frame = [f[0] for f in tb.walk_tb(err.__traceback__) if f[0].f_code.co_filename == node.definition['path']]
+                    lineno = "<unknown>" if len(frame) == 0 else str(frame[0].f_lineno)
+                    self.logger.error("Error in Flowmodule %s at line %s:  %s: %s" % (str(node), lineno, err.__class__.__name__, str(err)))
+                    post_mortem()
                     skip = True
                     break
 
@@ -1175,7 +1219,7 @@ class TheanoNodenet(Nodenet):
                     elif source == 'path':
                         funcargs.append(all_outputs[pidx][item])
                 if thunk['implementation'] == 'python':
-                    out = thunk['function'](*funcargs, netapi=self.netapi, node=thunk['node'], parameters=thunk['node'].parameters)
+                    out = thunk['function'](*funcargs, netapi=self.netapi, node=thunk['node'], parameters=thunk['node'].clone_parameters())
                     if len(thunk['node'].outputs) <= 1:
                         out = [out]
                 else:
@@ -1730,6 +1774,7 @@ class TheanoNodenet(Nodenet):
                     self.native_module_definitions[key] = data
                 except Exception as err:
                     self.logger.error("Can not instantiate node type %s: %s: %s" % (key, err.__class__.__name__, str(err)))
+                    post_mortem()
 
         for partition in self.partitions.values():
             for uid, instance in partition.native_module_instances.items():
@@ -2039,6 +2084,16 @@ class TheanoNodenet(Nodenet):
                 if node_uid in self.flow_module_instances:
                     data[node_uid].update(self.flow_module_instances[node_uid].get_flow_data())
         return data
+
+    def construct_native_modules_numpy_state_dict(self):
+        numpy_states = {}
+        i = 0
+        for partition in self.partitions.values():
+            nodeids = np.where((partition.allocated_nodes > MAX_STD_NODETYPE) | (partition.allocated_nodes == COMMENT))[0]
+            for node_id in nodeids:
+                node_uid = node_to_id(node_id, partition.pid)
+                numpy_states[node_uid] = self.get_node(node_uid).get_persistable_state()[1]
+        return numpy_states
 
     def construct_nodes_dict(self, nodespace_uid=None, complete=False, include_links=True):
         data = {}
@@ -2376,7 +2431,7 @@ class TheanoNodenet(Nodenet):
                     result['nodespaces_deleted'].extend(self.deleted_items[i].get('nodespaces_deleted', []))
                     result['nodes_deleted'].extend(self.deleted_items[i].get('nodes_deleted', []))
             changed_nodes, changed_nodespaces = partition.get_nodespace_changes(nodespace.uid, since_step)
-            nodes, _ = partition.get_node_data(ids=changed_nodes, nodespaces_by_partition=nodespaces_by_partition, include_links=include_links)
+            nodes, _, _ = partition.get_node_data(ids=changed_nodes, nodespaces_by_partition=nodespaces_by_partition, include_links=include_links)
             result['nodes_dirty'].update(nodes)
             for uid in changed_nodespaces:
                 uid = nodespace_to_id(uid, partition.pid)

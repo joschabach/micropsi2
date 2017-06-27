@@ -42,16 +42,6 @@ def test_nodetype_function_definition_overwrites_default_function_name(runtime, 
     assert foo.nodefunction(nodenet, None) == 17
 
 
-def test_node_states(runtime, test_nodenet, node):
-    nodenet = runtime.get_nodenet(test_nodenet)
-    node = nodenet.get_node(node)
-    assert node.get_state('foobar') is None
-    node.set_state('foobar', 'bazbaz')
-    assert node.get_state('foobar') == 'bazbaz'
-    node.set_state('foobar', 42)
-    assert node.get_state('foobar') == 42
-
-
 def test_node_positions_as_tuples(runtime, test_nodenet):
     nodenet = runtime.get_nodenet(test_nodenet)
     api = nodenet.netapi
@@ -168,3 +158,4 @@ def test_node_show_plot_and_close_plot(runtime, test_nodenet):
     node.show_plot(fig)
     runtime.unload_nodenet(test_nodenet)
     assert plt.get_fignums() == []
+

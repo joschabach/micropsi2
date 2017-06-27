@@ -329,6 +329,10 @@ class MyCustomWA(WorldAdapter):
     assert wa.__class__.__name__ == 'MyCustomWA'
     assert wa.get_available_datasources() == []
 
+    res, nn2_uid = runtime.new_nodenet("deleteme", worldadapter="MyCustomWA", world_uid=world_uid)
+    runtime.save_world(world_uid)
+    runtime.unload_nodenet(nn2_uid)
+    runtime.revert_world(world_uid)
     with open(os.path.join(resourcepath, 'custom_world.py'), 'w') as fp:
         fp.write("""
 
@@ -363,11 +367,14 @@ class SecondWA(WorldAdapter):
 
 """)
 
-    runtime.reload_code()
+    res, errors = runtime.reload_code()
+    assert res
+    assert errors == []
 
     assert 'MyCustomWA' in runtime.get_worldadapters(world_uid)
     assert 'SecondWA' in runtime.get_worldadapters(world_uid)
 
+    assert nn2_uid not in runtime.worlds[world_uid].agents
     assert default_nodenet in runtime.worlds[world_uid].data['agents']
     wa = runtime.nodenets[default_nodenet].worldadapter_instance
     assert wa.get_available_datasources() == ['foo']

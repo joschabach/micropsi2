@@ -23,19 +23,6 @@ class TheanoNodespace(Nodespace):
         raise NotImplementedError("index can not be set in theano_engine")
 
     @property
-    def position(self):
-        return self._nodenet.positions.get(self.uid, [10, 10, 0])
-
-    @position.setter
-    def position(self, position):
-        if position is None and self.uid in self._nodenet.positions:
-            del self._nodenet.positions[self.uid]
-        else:
-            position = list(position)
-            position = (position + [0] * 3)[:3]
-            self._nodenet.positions[self.uid] = position
-
-    @property
     def name(self):
         return self._nodenet.names.get(self.uid, self.uid)
 

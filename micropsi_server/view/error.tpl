@@ -31,8 +31,6 @@
     <div class="span6">
         %if defined("img"):
         <img src="{{img}}"  class="thumbnail"/>
-        %else:
-        <img src="/static/img/2001.gif"  class="thumbnail"/>
         %end
     </div>
 

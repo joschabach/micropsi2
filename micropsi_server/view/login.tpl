@@ -12,7 +12,7 @@
 
             %if defined('cookie_warning') and cookie_warning:
             <div class="alert alert-info">
-                <div class="lead">Without logging in, you may not create and edit nodenets.</div>
+                <div class="lead">Without logging in, you may not create and edit agents.</div>
                 <b>Important:</b> Make sure that cookies are enabled in your browser.
             </div>
             %end

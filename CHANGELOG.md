@@ -1,5 +1,9 @@
 0.11-alpha9 (unreleased)
 ==========
+ * Add adhoc-monitors for plotting simple scalar values
+ * Node states now support numpy data structrues
+ * Add autosave-functionality for nodenets
+ * Change the stepping order from `nodenet, world, sleep` to `nodenet, sleep, world`
 
 
 0.10-alpha8 (2017-06-06)

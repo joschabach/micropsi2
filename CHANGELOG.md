@@ -1,4 +1,5 @@
-0.11-alpha9 (unreleased)
+
+0.11-alpha9 (2017-06-26)
 ==========
  * Add adhoc-monitors for plotting simple scalar values
  * Node states now support numpy data structrues

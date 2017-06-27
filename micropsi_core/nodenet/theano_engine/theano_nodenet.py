@@ -962,7 +962,7 @@ class TheanoNodenet(Nodenet):
                 path = []
                 for uid in reversed(fullpath):
                     if uid in endpoints and uid != enduid:
-                        break
+                        continue
                     path.insert(0, uid)
                 if path:
                     graphs.append(path)

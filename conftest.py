@@ -17,11 +17,13 @@ testpath = directory.name
 print("test data directory:", testpath)
 
 from micropsi_core import runtime as micropsi_runtime
-from micropsi_core.runtime import cfg
+from configuration import config as cfg
 
 orig_agent_dir = cfg['paths']['agent_directory']
 orig_world_dir = cfg['paths']['world_directory']
 
+cfg['paths']['agent_directory'] = testpath
+cfg['paths']['world_directory'] = testpath
 cfg['paths']['persistency_directory'] = testpath
 cfg['paths']['server_settings_path'] = os.path.join(testpath, 'server_cfg.json')
 cfg['paths']['usermanager_path'] = os.path.join(testpath, 'user-db.json')
@@ -58,14 +60,16 @@ def pytest_cmdline_main(config):
         config.addinivalue_line('python_files', '*.py')
         config.addinivalue_line('python_functions', '_test*')
         config.addinivalue_line('norecursedirs', 'experiments')
-        micropsi_runtime.initialize(persistency_path=testpath, resource_path=orig_agent_dir, world_path=orig_world_dir)
+        cfg['paths']['agent_directory'] = orig_agent_dir
+        micropsi_runtime.initialize(config=cfg)
     elif config.getoption('worlds'):
         config.args = [orig_world_dir]
         config.addinivalue_line('python_functions', 'test_*')
-        micropsi_runtime.initialize(persistency_path=testpath, world_path=orig_world_dir, resource_path=testpath)
+        cfg['paths']['world_directory'] = orig_world_dir
+        micropsi_runtime.initialize(config=cfg)
     else:
         config.addinivalue_line('python_functions', 'test_*')
-        micropsi_runtime.initialize(persistency_path=testpath, world_path=testpath, resource_path=testpath)
+        micropsi_runtime.initialize(config=cfg)
 
     from micropsi_server.micropsi_app import usermanager
     usermanager.create_user('Pytest User', 'test', 'Administrator', uid='Pytest User')
@@ -144,7 +148,7 @@ def set_logging_levels():
     """ sets the logging levels of the default loggers back to WARNING """
     logging.getLogger('system').setLevel(logging.WARNING)
     logging.getLogger('world').setLevel(logging.WARNING)
-    micropsi_runtime.cfg['logging']['level_agent'] = 'WARNING'
+    micropsi_runtime.runtime_config['logging']['level_agent'] = 'WARNING'
 
 
 @pytest.fixture(scope="session")

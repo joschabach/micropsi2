@@ -6,48 +6,30 @@ MicroPsi runtime module;
 maintains a set of users, worlds (up to one per user), and nodenets, and provides an interface to external clients
 """
 
-from micropsi_core._runtime_api_world import *
-from micropsi_core._runtime_api_monitors import *
-import re
-
 __author__ = 'joscha'
 __date__ = '10.05.12'
 
-from configuration import config as cfg
-
-from micropsi_core.nodenet import node_alignment
-from micropsi_core import config
-from micropsi_core.tools import Bunch
-from micropsi_core.tools import post_mortem
-
+import re
 import os
 import sys
+import time
+import json
+import signal
+import logging
 import zipfile
 import threading
 
-try:
-    import matplotlib
-    matplotlib.rcParams['webagg.port'] = 6545
-    matplotlib.rcParams['webagg.open_in_browser'] = False
-    matplotlib.use('WebAgg')
-
-    def plotter_initializer():
-        from matplotlib import pyplot as plt
-        plt.show()
-
-except ImportError:
-    matplotlib = None
-    pass
-
-
-from micropsi_core import tools
-import json
+from code import InteractiveConsole
 from datetime import datetime, timedelta
-import time
-import signal
-import logging
 
-from .micropsi_logger import MicropsiLogger
+from micropsi_core.config import ConfigurationManager
+
+from micropsi_core._runtime_api_world import *
+from micropsi_core._runtime_api_monitors import *
+
+from micropsi_core.nodenet import node_alignment
+from micropsi_core.micropsi_logger import MicropsiLogger
+from micropsi_core.tools import Bunch, post_mortem, generate_uid
 
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
@@ -62,7 +44,8 @@ PERSISTENCY_PATH = None
 WORLD_PATH = None
 AUTOSAVE_PATH = None
 
-configs = None
+runtime_config = None
+runner_config = None
 logger = None
 
 worlds = {}
@@ -80,8 +63,6 @@ netapi_consoles = {}
 initialized = False
 
 auto_save_intervals = None
-
-from code import InteractiveConsole
 
 
 class FileCacher():
@@ -151,7 +132,7 @@ class MicropsiRunner(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
-        if cfg['micropsi2'].get('profile_runner'):
+        if runtime_config['micropsi2'].get('profile_runner'):
             import cProfile
             self.profiler = cProfile.Profile()
         else:
@@ -167,10 +148,10 @@ class MicropsiRunner(threading.Thread):
                 if self.paused:
                     self.state.wait()
 
-            if configs['runner_timestep'] > 1000:
-                step = timedelta(seconds=configs['runner_timestep'] / 1000)
+            if runner_config['runner_timestep'] > 1000:
+                step = timedelta(seconds=runner_config['runner_timestep'] / 1000)
             else:
-                step = timedelta(milliseconds=configs['runner_timestep'])
+                step = timedelta(milliseconds=runner_config['runner_timestep'])
 
             start = datetime.now()
             log = False
@@ -313,7 +294,7 @@ def kill_runners(signal=None, frame=None):
 def set_logging_levels(logging_levels):
     for key in logging_levels:
         if key == 'agent':
-            cfg['logging']['level_agent'] = logging_levels[key]
+            runtime_config['logging']['level_agent'] = logging_levels[key]
         else:
             logger.set_logging_level(key, logging_levels[key])
     return True
@@ -340,7 +321,7 @@ def get_logging_levels(nodenet_uid=None):
         if key.startswith('agent') or key in ['world', 'system']:
             levels[key] = logging.getLevelName(logging.getLogger(key).getEffectiveLevel())
     if 'agent' not in levels:
-        levels['agent'] = cfg['logging']['level_agent']
+        levels['agent'] = runtime_config['logging']['level_agent']
     return levels
 
 
@@ -400,7 +381,7 @@ def load_nodenet(nodenet_uid):
 
         with nodenet_lock:
 
-            if cfg['micropsi2'].get('single_agent_mode'):
+            if runtime_config['micropsi2'].get('single_agent_mode'):
                 # unload all other nodenets if single_agent_mode is selected
                 for uid in list(nodenets.keys()):
                     if uid != nodenet_uid:
@@ -428,7 +409,7 @@ def load_nodenet(nodenet_uid):
 
                 engine = data.get('engine') or 'dict_engine'
 
-                logger.register_logger("agent.%s" % nodenet_uid, cfg['logging']['level_agent'])
+                logger.register_logger("agent.%s" % nodenet_uid, runtime_config['logging']['level_agent'])
 
                 params = {
                     'persistency_path': os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, data.uid),
@@ -590,7 +571,7 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
         nodenet_uid if successful,
         None if failure
     """
-    uid = tools.generate_uid()
+    uid = generate_uid()
 
     data = dict(
         step=0,
@@ -677,9 +658,9 @@ def set_runner_properties(timestep, factor):
     Argument:
         timestep: sets the calculation speed.
     """
-    configs['runner_timestep'] = timestep
+    runner_config['runner_timestep'] = timestep
     runner['timestep'] = timestep
-    configs['runner_factor'] = int(factor)
+    runner_config['runner_factor'] = int(factor)
     runner['factor'] = int(factor)
     return True
 
@@ -710,8 +691,8 @@ def remove_runner_condition(nodenet_uid):
 def get_runner_properties():
     """Returns the speed that has been configured for the nodenet runner (in ms)."""
     return {
-        'timestep': configs['runner_timestep'],
-        'factor': configs['runner_factor']
+        'timestep': runner_config['runner_timestep'],
+        'factor': runner_config['runner_factor']
     }
 
 
@@ -742,14 +723,14 @@ def step_nodenet(nodenet_uid):
     """
     nodenet = get_nodenet(nodenet_uid)
 
-    if cfg['micropsi2'].get('profile_runner'):
+    if runtime_config['micropsi2'].get('profile_runner'):
         import cProfile
         profiler = cProfile.Profile()
         profiler.enable()
 
     nodenet.timed_step()
 
-    if cfg['micropsi2'].get('profile_runner'):
+    if runtime_config['micropsi2'].get('profile_runner'):
         profiler.disable()
         import pstats
         import io
@@ -760,7 +741,7 @@ def step_nodenet(nodenet_uid):
         logging.getLogger("agent.%s" % nodenet_uid).debug(s.getvalue())
 
     nodenet.update_monitors_and_recorders()
-    if nodenet.world and nodenet.current_step % configs['runner_factor'] == 0:
+    if nodenet.world and nodenet.current_step % runner_config['runner_factor'] == 0:
         worlds[nodenet.world].step()
     return nodenet.current_step
 
@@ -832,7 +813,7 @@ def import_nodenet(string, owner=None):
     global nodenet_data
     import_data = json.loads(string)
     if 'uid' not in import_data:
-        import_data['uid'] = tools.generate_uid()
+        import_data['uid'] = generate_uid()
     else:
         if import_data['uid'] in nodenets:
             raise RuntimeError("An agent with this ID already exists.")
@@ -1409,7 +1390,7 @@ def run_recipe(nodenet_uid, name, parameters):
             params[key] = parameters[key]
     if name in custom_recipes:
         func = custom_recipes[name]['function']
-        if cfg['micropsi2'].get('profile_runner'):
+        if runtime_config['micropsi2'].get('profile_runner'):
             import cProfile
             profiler = cProfile.Profile()
             profiler.enable()
@@ -1417,7 +1398,7 @@ def run_recipe(nodenet_uid, name, parameters):
         ret = func(netapi, **params)
         if ret:
             result.update(ret)
-        if cfg['micropsi2'].get('profile_runner'):
+        if runtime_config['micropsi2'].get('profile_runner'):
             profiler.disable()
             import pstats
             import io
@@ -1614,7 +1595,7 @@ def load_definitions():
     world_data = crawl_definition_files(path=os.path.join(PERSISTENCY_PATH, WORLD_DIRECTORY), datatype="world")
     if not world_data:
         # create a default world for convenience.
-        uid = tools.generate_uid()
+        uid = generate_uid()
         filename = os.path.join(PERSISTENCY_PATH, WORLD_DIRECTORY, uid + '.json')
         world_data[uid] = Bunch(uid=uid, name="default", version=1, filename=filename, owner="admin", world_type="DefaultWorld")
         with open(filename, 'w+', encoding="utf-8") as fp:
@@ -1898,45 +1879,62 @@ def reload_code():
 
 def runtime_info():
     return {
-        "version": cfg['micropsi2']['version'],
+        "version": runtime_config['micropsi2']['version'],
         "persistency_directory": PERSISTENCY_PATH,
         "agent_directory": RESOURCE_PATH,
         "world_directory": WORLD_PATH
     }
 
 
-def initialize(persistency_path=None, resource_path=None, world_path=None, autosave_path=None):
-    global PERSISTENCY_PATH, RESOURCE_PATH, WORLD_PATH, AUTOSAVE_PATH, configs, logger, runner, initialized, auto_save_intervals
+def initialize(config=None):
+    global PERSISTENCY_PATH, RESOURCE_PATH, WORLD_PATH, AUTOSAVE_PATH
+    global runtime_config, runner_config, logger, runner, initialized, auto_save_intervals
 
-    PERSISTENCY_PATH = persistency_path or cfg['paths']['persistency_directory']
-    RESOURCE_PATH = resource_path or cfg['paths']['agent_directory']
-    WORLD_PATH = world_path or cfg['paths']['world_directory']
+    if config is None:
+        from configuration import config
+
+    runtime_config = config
+
+    PERSISTENCY_PATH = config['paths']['persistency_directory']
+    RESOURCE_PATH = config['paths']['agent_directory']
+    WORLD_PATH = config['paths']['world_directory']
 
     sys.path.append(WORLD_PATH)
 
-    configs = config.ConfigurationManager(cfg['paths']['server_settings_path'])
+    runner_config = ConfigurationManager(config['paths']['server_settings_path'])
 
     # create autosave-dir if not exists:
-    auto_save_intervals = cfg['micropsi2'].get('auto_save_intervals')
+    auto_save_intervals = config['micropsi2'].get('auto_save_intervals')
     if auto_save_intervals is not None:
-        auto_save_intervals = sorted([int(x) for x in cfg['micropsi2']['auto_save_intervals'].split(',')], reverse=True)
-        AUTOSAVE_PATH = autosave_path or os.path.join(PERSISTENCY_PATH, "nodenets", "__autosave__")
+        auto_save_intervals = sorted([int(x) for x in config['micropsi2']['auto_save_intervals'].split(',')], reverse=True)
+        AUTOSAVE_PATH = os.path.join(PERSISTENCY_PATH, "nodenets", "__autosave__")
         os.makedirs(AUTOSAVE_PATH, exist_ok=True)
 
     # bring up plotting infrastructure
-    if matplotlib is not None:
+    try:
+        import matplotlib
+        matplotlib.rcParams['webagg.port'] = 6545
+        matplotlib.rcParams['webagg.open_in_browser'] = False
+        matplotlib.use('WebAgg')
+
+        def plotter_initializer():
+            from matplotlib import pyplot as plt
+            plt.show()
+
         plt_thread = threading.Thread(target=plotter_initializer, args=(), daemon=True)
         plt_thread.start()
+    except ImportError:
+        pass
 
     if logger is None:
         logger = MicropsiLogger({
-            'system': cfg['logging']['level_system'],
-            'world': cfg['logging']['level_world']
-        }, cfg['logging'].get('logfile'))
+            'system': config['logging']['level_system'],
+            'world': config['logging']['level_world']
+        }, config['logging'].get('logfile'))
 
     try:
         import theano
-        precision = cfg['theano']['precision']
+        precision = config['theano']['precision']
         if precision == "32":
             theano.config.floatX = "float32"
         elif precision == "64":
@@ -1944,7 +1942,7 @@ def initialize(persistency_path=None, resource_path=None, world_path=None, autos
         else:  # pragma: no cover
             logging.getLogger("system").warning("Unsupported precision value from configuration: %s, falling back to float64", precision)
             theano.config.floatX = "float64"
-            cfg['theano']['precision'] = "64"
+            config['theano']['precision'] = "64"
     except ImportError:
         pass
 
@@ -1959,14 +1957,14 @@ def initialize(persistency_path=None, resource_path=None, world_path=None, autos
 
     # initialize runners
     # Initialize the threads for the continuous calculation of nodenets and worlds
-    if 'runner_timestep' not in configs:
-        configs['runner_timestep'] = 10
-        configs.save_configs()
-    if 'runner_factor' not in configs:
-        configs['runner_factor'] = 1
-        configs.save_configs()
+    if 'runner_timestep' not in runner_config:
+        runner_config['runner_timestep'] = 10
+        runner_config.save_configs()
+    if 'runner_factor' not in runner_config:
+        runner_config['runner_factor'] = 1
+        runner_config.save_configs()
 
-    set_runner_properties(configs['runner_timestep'], configs['runner_factor'])
+    set_runner_properties(runner_config['runner_timestep'], runner_config['runner_factor'])
 
     runner['running'] = True
     if runner.get('runner') is None:

@@ -1913,7 +1913,7 @@ def initialize(config=None):
     # bring up plotting infrastructure
     try:
         import matplotlib
-        matplotlib.rcParams['webagg.port'] = 6545
+        matplotlib.rcParams['webagg.port'] = int(config['micropsi2'].get('webagg_port', 6545))
         matplotlib.rcParams['webagg.open_in_browser'] = False
         matplotlib.use('WebAgg')
 

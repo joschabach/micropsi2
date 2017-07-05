@@ -199,3 +199,13 @@ def test_worldadapter_mixin(default_world):
     assert adapter.get_datasource_value("some_setting") == 23
     assert adapter.some_setting == 23
     assert adapter.other_setting == 42
+
+
+def test_worldadapter_update_config(default_world, default_nodenet):
+    runtime.set_nodenet_properties(default_nodenet, worldadapter="Default", world_uid=default_world)
+    runtime.save_nodenet(default_nodenet)
+    assert runtime.nodenets[default_nodenet].worldadapter_instance.foo == 'bar'
+    runtime.set_nodenet_properties(default_nodenet, worldadapter="Default", world_uid=default_world, worldadapter_config={'foo': 'changed'})
+    assert runtime.nodenets[default_nodenet].worldadapter_instance.foo == 'changed'
+    assert runtime.nodenets[default_nodenet].worldadapter_instance.config['foo'] == 'changed'
+    assert runtime.worlds[default_world].agents[default_nodenet].foo == 'changed'

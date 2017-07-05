@@ -174,6 +174,14 @@ class Default(WorldAdapter):
     """
     A default Worldadapter, that provides example-datasources and -targets
     """
+    @classmethod
+    def get_config_options(cls):
+        return [
+            {'name': 'foo',
+             'description': 'does nothing',
+             'default': 'bar'}
+        ]
+
     def __init__(self, world, uid=None, config={}, **data):
         super().__init__(world, uid=uid, config=config, **data)
         self.datasources = dict((s, 0) for s in ['static_on', 'random', 'static_off'])

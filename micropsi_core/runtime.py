@@ -619,7 +619,7 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
     nodenet = get_nodenet(nodenet_uid)
     if world_uid == '':
         world_uid = None
-    if nodenet.world and (nodenet.world != world_uid or nodenet.worldadapter != worldadapter):
+    if nodenet.world and (nodenet.world != world_uid or nodenet.worldadapter != worldadapter or worldadapter_config != nodenet.worldadapter_instance.config):
         worlds[nodenet.world].unregister_nodenet(nodenet.uid)
         nodenet.world = None
         nodenet.worldadapter_instance = None

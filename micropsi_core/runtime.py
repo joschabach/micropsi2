@@ -49,7 +49,9 @@ runner_config = None
 logger = None
 
 worlds = {}
+world_data = {}
 nodenets = {}
+nodenet_data = {}
 
 native_modules = {}
 custom_recipes = {}

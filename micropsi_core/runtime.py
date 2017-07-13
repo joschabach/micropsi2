@@ -1726,7 +1726,7 @@ def parse_native_module_file(path):
             category = os.path.relpath(os.path.dirname(path), start=base_path)
             if category == '.':
                 category = ''
-            moduledef = module.nodetype_definition
+            moduledef = nodedef_sanity_check(module.nodetype_definition)
             moduledef['path'] = path
             moduledef['category'] = category
             if moduledef['name'] in native_modules:
@@ -1736,6 +1736,18 @@ def parse_native_module_file(path):
         post_mortem()
         return "%s when importing nodetype file %s: %s" % (e.__class__.__name__, relpath, str(e))
 
+def nodedef_sanity_check(nodetype_definition):
+    """ catch some common errors in nodetype definitions """
+    nd = nodetype_definition
+
+    if nd.get('flow_module', False):
+        # chedck for mismatch between nr of inputdims and nr of inputs
+        n_in = len(nd.get('inputs', []))
+        n_indims = len(nd.get('inputdims', []))
+        if n_in != n_indims:
+            raise Exception('Node takes %s inputs but %s inputdims have been given' % (n_in, n_indims))
+
+    return nodetype_definition
 
 def parse_recipe_or_operations_file(path, mode, category_overwrite=False):
     global custom_recipes

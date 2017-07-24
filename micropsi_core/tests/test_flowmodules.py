@@ -30,7 +30,7 @@ def prepare(runtime, test_nodenet, default_world, resourcepath, wa_class=None):
 def out12345(netapi, node, parameters):
     import numpy as np
     assert parameters['default_test'] == 'defaultvalue'
-    return np.asarray([1,2,3,4,5])
+    return np.asarray([1,2,3,4,5]).astype(netapi.floatX)
 """)
 
     with open(os.path.join(foodir, "Double.py"), 'w') as fp:
@@ -225,9 +225,9 @@ class SimpleArrayWA(ArrayWorldAdapter):
 
     def update_data_sources_and_targets(self):
         for key in self.flow_datatargets:
-            self.flow_datatarget_feedbacks[key] = np.copy(self.flow_datatargets[key])
+            self.flow_datatarget_feedbacks[key] = np.copy(self.flow_datatargets[key]).astype(self.floatX)
         for key in self.flow_datasources:
-            self.flow_datasources[key] = np.random.rand(len(self.flow_datasources[key]))
+            self.flow_datasources[key] = np.random.rand(len(self.flow_datasources[key])).astype(self.floatX)
 """)
 
     nodenet = runtime.nodenets[test_nodenet]
@@ -986,7 +986,7 @@ def test_connect_flow_modules_to_structured_flow_datasource(runtime, test_nodene
     sources = np.zeros((6), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
     worldadapter.set_flow_datasource('vision', sources)
-    worldadapter.set_flow_datasource('start', np.asarray([0.73]))
+    worldadapter.set_flow_datasource('start', np.asarray([0.73]).astype(nodenet.numpyfloatX))
 
     double = netapi.create_node("Double", None, "Double")
     netapi.flow('worldadapter', 'vision', double, 'inputs')
@@ -1013,7 +1013,7 @@ def test_connect_flow_modules_to_structured_flow_datasource(runtime, test_nodene
     sources = np.zeros((6), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
     worldadapter.set_flow_datasource('vision', sources)
-    worldadapter.set_flow_datasource('start', np.asarray([0.64]))
+    worldadapter.set_flow_datasource('start', np.asarray([0.64]).astype(nodenet.numpyfloatX))
     runtime.step_nodenet(test_nodenet)
     assert np.all(worldadapter.get_flow_datatarget_feedback('motor') == np.zeros(6))
     assert np.allclose(worldadapter.get_flow_datatarget_feedback('stop'), [0.64])

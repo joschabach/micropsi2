@@ -59,6 +59,15 @@ class WorldAdapterMixin(object):
     def read_from_world(self):
         pass  # pragma: no cover
 
+    def on_simulation_started(self):
+        pass  # pragma: no cover
+
+    def on_simulation_paused(self):
+        pass  # pragma: no cover
+
+    def shutdown(self):
+        pass  # pragma: no cover
+
 
 class WorldAdapter(WorldObject, metaclass=ABCMeta):
     """Transmits data between agent and environment.

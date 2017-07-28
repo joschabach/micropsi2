@@ -336,7 +336,8 @@ class TheanoNode(Node):
         elif self.type == "Comment" and parameter == "comment":
             self.parameters[parameter] = value
         elif self.type in self._nodenet.native_modules:
-            self.parameters[parameter] = value
+            if parameter in self.nodetype.parameters:
+                self.parameters[parameter] = value
 
     def clear_parameter(self, parameter):
         if self.type in self._nodenet.native_modules and parameter in self.parameters:

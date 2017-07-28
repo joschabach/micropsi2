@@ -397,7 +397,6 @@ class TheanoNode(Node):
             for parameter in self.parameters:
                 if parameter not in parameters:
                     parameters[parameter] = self.parameters[parameter]
-
         return parameters
 
     def get_state(self, state):
@@ -469,7 +468,10 @@ class TheanoNode(Node):
 
     def node_function(self):
         try:
-            self.nodetype.nodefunction(netapi=self._nodenet.netapi, node=self, **self.clone_parameters())
+            params = self.clone_parameters()
+            if self.uid in self._nodenet.user_prompt_response:
+                params.update(self._nodenet.user_prompt_response[self.uid])
+            self.nodetype.nodefunction(netapi=self._nodenet.netapi, node=self, **params)
         except Exception:
             self._nodenet.is_active = False
             if self.nodetype is not None and self.nodetype.nodefunction is None:

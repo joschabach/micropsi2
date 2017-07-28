@@ -82,9 +82,7 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
     assert data['user_prompt']['node']['uid'] == node_uid
     assert data['user_prompt']['options'] == options
     # response
-    runtime.user_prompt_response(test_nodenet, node_uid, {'foo_parameter': 42}, True)
-    assert nodenet.get_node(node_uid).get_parameter('foo_parameter') == 42
-    assert nodenet.is_active
+    runtime.user_prompt_response(test_nodenet, node_uid, {'foo_parameter': 42}, False)
     from micropsi_core.nodenet import nodefunctions
     tmp = nodefunctions.concept
     nodefunc = mock.Mock()
@@ -93,8 +91,7 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
     foo = nodenet.get_node(node_uid).clone_parameters()
     foo.update({'foo_parameter': 42})
     assert nodefunc.called_with(nodenet.netapi, nodenet.get_node(node_uid), foo)
-    nodenet.get_node(node_uid).clear_parameter('foo_parameter')
-    assert nodenet.get_node(node_uid).get_parameter('foo_parameter') is None
+    assert 'foo_parameter' not in nodenet.get_node(node_uid).clone_parameters()
     nodefunctions.concept = tmp
 
 

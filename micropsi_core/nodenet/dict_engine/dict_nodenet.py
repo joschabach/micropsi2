@@ -488,6 +488,7 @@ class DictNodenet(Nodenet):
                     break
                 else:
                     del self.deleted_items[i]
+        self.user_prompt_response = {}
 
     def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_configuration=None):
         nodespace_uid = self.get_nodespace(nodespace_uid).uid

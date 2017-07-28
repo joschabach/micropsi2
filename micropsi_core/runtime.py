@@ -1346,8 +1346,7 @@ def align_nodes(nodenet_uid, nodespace):
 
 def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
     nodenet = get_nodenet(nodenet_uid)
-    for key, value in values.items():
-        nodenet.get_node(node_uid).set_parameter(key, value)
+    nodenet.user_prompt_response[node_uid] = values
     if resume_nodenet:
         start_nodenetrunner(nodenet_uid)
     # nodenet.is_active = resume_nodenet

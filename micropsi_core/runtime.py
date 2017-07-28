@@ -1736,6 +1736,7 @@ def parse_native_module_file(path):
         post_mortem()
         return "%s when importing nodetype file %s: %s" % (e.__class__.__name__, relpath, str(e))
 
+
 def nodedef_sanity_check(nodetype_definition):
     """ catch some common errors in nodetype definitions """
     nd = nodetype_definition
@@ -1748,6 +1749,7 @@ def nodedef_sanity_check(nodetype_definition):
             raise Exception('Node takes %s inputs but %s inputdims have been given' % (n_in, n_indims))
 
     return nodetype_definition
+
 
 def parse_recipe_or_operations_file(path, mode, category_overwrite=False):
     global custom_recipes
@@ -1819,6 +1821,12 @@ def reload_code():
     from micropsi_core.world.world import DefaultWorld
     from micropsi_core.world.worldadapter import Default
     from micropsi_core.world.worldobject import TestObject
+    import sys
+    for mod in list(sys.modules.keys()):
+        if hasattr(sys.modules[mod], '__file__'):
+            path = sys.modules[mod].__file__
+            if path.startswith(RESOURCE_PATH) or path.startswith(WORLD_PATH):
+                del sys.modules[mod]
     world_classes['DefaultWorld'] = DefaultWorld
     worldadapter_classes['Default'] = Default
     worldobject_classes['TestObject'] = TestObject

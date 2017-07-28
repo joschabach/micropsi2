@@ -203,7 +203,8 @@ class DictNode(NetEntity, Node):
                 value = self.nodetype.parameter_defaults[parameter]
             else:
                 value = None
-        self.__parameters[parameter] = value
+        if parameter in self.nodetype.parameters:
+            self.__parameters[parameter] = value
 
     def clone_parameters(self):
         return self.__parameters.copy()

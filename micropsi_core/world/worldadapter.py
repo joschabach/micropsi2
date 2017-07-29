@@ -193,9 +193,9 @@ class Default(WorldAdapter):
 
     def __init__(self, world, uid=None, config={}, **data):
         super().__init__(world, uid=uid, config=config, **data)
-        self.datasources = dict((s, 0) for s in ['static_on', 'random', 'static_off'])
-        self.datatargets = {'echo': 0}
-        self.datatarget_feedback = {'echo': 0}
+        for s in ['static_on', 'random', 'static_off']:
+            self.add_datasource(s, 0)
+        self.add_datatarget('echo', 0)
         self.update_data_sources_and_targets()
 
     def update_data_sources_and_targets(self):

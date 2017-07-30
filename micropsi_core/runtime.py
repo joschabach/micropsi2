@@ -196,12 +196,15 @@ class MicropsiRunner(threading.Thread):
 
             for uid, interval in nodenets_to_save:
                 if uid in nodenets:
-                    net = nodenets[uid]
-                    savefile = os.path.join(AUTOSAVE_PATH, "%s_%d.zip" % (uid, interval))
-                    logging.getLogger("system").info("Auto-saving nodenet %s at step %d (interval %d)" % (uid, net.current_step, interval))
-                    zipobj = zipfile.ZipFile(savefile, 'w', zipfile.ZIP_STORED)
-                    net.save(zipfile=zipobj)
-                    zipobj.close()
+                    try:
+                        net = nodenets[uid]
+                        savefile = os.path.join(AUTOSAVE_PATH, "%s_%d.zip" % (uid, interval))
+                        logging.getLogger("system").info("Auto-saving nodenet %s at step %d (interval %d)" % (uid, net.current_step, interval))
+                        zipobj = zipfile.ZipFile(savefile, 'w', zipfile.ZIP_STORED)
+                        net.save(zipfile=zipobj)
+                        zipobj.close()
+                    except Exception as err:
+                        logging.getLogger("system").error("Auto-save failure for nodenet %s: %s: %s" % (uid, type(err).__name__, str(err)))
 
             calc_time = datetime.now() - start
             if step.total_seconds() > 0:

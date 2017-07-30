@@ -733,6 +733,8 @@ fetch_stepping_info = function(){
         if(data.data == 'No such nodenet'){
             currentNodenet = null;
             $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
+        } else {
+            api.defaultErrorCallback(data, outcome, type);
         }
     });
 

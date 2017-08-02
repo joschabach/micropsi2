@@ -1222,6 +1222,13 @@ class TheanoNodenet(Nodenet):
                     out = thunk['function'](*funcargs, netapi=self.netapi, node=thunk['node'], parameters=thunk['node'].clone_parameters())
                     if len(thunk['node'].outputs) <= 1:
                         out = [out]
+                    else:
+                        if type(out) != tuple:
+                            raise RuntimeError("""Output mismatch!
+                                Node %s returned only one output instead of %d.""" % (str(thunk['node']), len(thunk['node'].outputs)))
+                        elif len(out) != len(thunk['node'].outputs):
+                            raise RuntimeError("""Output mismatch!
+                                Node %s returned %d outputs instead of %d.""" % (str(thunk['node']), len(out), len(thunk['node'].outputs)))
                 else:
                     if thetas:
                         funcargs += thetas

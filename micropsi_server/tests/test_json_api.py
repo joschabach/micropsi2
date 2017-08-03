@@ -1852,3 +1852,12 @@ def double(inputs, netapi, node, parameters):
 
     runtime.step_nodenet(test_nodenet)
     assert np.all(worldadapter.get_flow_datatarget_feedback('bar') == np.zeros(worldadapter.flow_datatargets['bar'].shape))
+
+def test_start_behavior(app, test_nodenet):
+    result = app.post_json('/rpc/start_behavior', {'nodenet_uid':test_nodenet,'condition':{'steps':3}})
+    assert_success(result)
+    import time
+    time.sleep(1)
+    from micropsi_core import runtime
+    assert runtime.nodenets[test_nodenet].current_step == 3
+    assert not runtime.nodenets[test_nodenet].is_active

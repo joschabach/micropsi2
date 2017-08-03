@@ -1034,6 +1034,25 @@ def set_nodespace_properties(nodenet_uid, nodespace_uid, properties):
     return get_nodenet(nodenet_uid).set_nodespace_properties(nodespace_uid, properties)
 
 
+def start_behavior(nodenet_uid, condition):
+    """ Start nodenet with the stop condition """
+    if condition:
+         if 'steps' in condition:
+             condition['steps'] = int(condition['steps'])
+             if condition['steps'] < 0:
+                 condition['steps'] = None
+         else:
+             condition['steps'] = None
+         if 'monitor' in condition:
+             if 'value' in condition['monitor']:
+                 condition['monitor']['value'] = float(condition['monitor']['value'])
+         else:
+             condition['monitor'] = None
+         set_runner_condition(nodenet_uid, condition['monitor'], condition['steps'])
+
+    return start_nodenetrunner(nodenet_uid)
+
+
 def __pythonify(name):
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name).lower()
     return re.sub('([\s+\W])', '_', s1)

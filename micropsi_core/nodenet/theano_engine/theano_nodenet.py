@@ -1839,7 +1839,10 @@ class TheanoNodenet(Nodenet):
                 new_instance.position = position
                 new_instance.name = name
                 for key, value in parameters.items():
-                    new_instance.set_parameter(key, value)
+                    try:
+                        new_instance.set_parameter(key, value)
+                    except NameError:
+                        pass  # parameter not defined anymore
                 for key, value in state.items():
                     new_instance.set_state(key, value)
 

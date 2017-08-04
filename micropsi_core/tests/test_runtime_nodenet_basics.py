@@ -346,7 +346,7 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
 """)
 
     assert runtime.reload_code()
-    res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test", parameters={"threshold": "", "protocol_mode": "most_active_one"})
+    res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test")
 
     testnode = runtime.nodenets[test_nodenet].get_node(uid)
     testnode.set_state("string", "hugo")
@@ -513,7 +513,7 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
 """)
 
     assert runtime.reload_code()
-    res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test", parameters={"threshold": "", "protocol_mode": "most_active_one"})
+    res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test")
     res, neuron_uid = runtime.add_node(test_nodenet, 'Neuron', [10, 10])
     runtime.add_link(test_nodenet, neuron_uid, 'gen', uid, 'gen')
     runtime.add_link(test_nodenet, uid, 'gen', neuron_uid, 'gen')

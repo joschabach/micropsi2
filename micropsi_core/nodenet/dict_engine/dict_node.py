@@ -208,6 +208,8 @@ class DictNode(NetEntity, Node):
                 value = None
         if parameter in self.nodetype.parameters:
             self.__parameters[parameter] = value
+        else:
+            raise NameError("Parameter %s not defined for node %s" % (parameter, str(self)))
 
     def clone_parameters(self):
         return self.__parameters.copy()

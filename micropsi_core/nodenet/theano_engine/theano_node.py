@@ -338,6 +338,8 @@ class TheanoNode(Node):
         elif self.type in self._nodenet.native_modules:
             if parameter in self.nodetype.parameters:
                 self.parameters[parameter] = value
+            else:
+                raise NameError("Parameter %s not defined for node %s" % (parameter, str(self)))
 
     def clear_parameter(self, parameter):
         if self.type in self._nodenet.native_modules and parameter in self.parameters:

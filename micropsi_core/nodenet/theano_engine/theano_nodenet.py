@@ -836,6 +836,7 @@ class TheanoNodenet(Nodenet):
                     break
                 else:
                     del self.deleted_items[i]
+        self.user_prompt_response = {}
 
     def get_partition(self, uid):
         if uid is None:
@@ -1219,7 +1220,10 @@ class TheanoNodenet(Nodenet):
                     elif source == 'path':
                         funcargs.append(all_outputs[pidx][item])
                 if thunk['implementation'] == 'python':
-                    out = thunk['function'](*funcargs, netapi=self.netapi, node=thunk['node'], parameters=thunk['node'].clone_parameters())
+                    params = thunk['node'].clone_parameters()
+                    if self.uid in self.user_prompt_response:
+                        params.update(self.user_prompt_response[self.uid])
+                    out = thunk['function'](*funcargs, netapi=self.netapi, node=thunk['node'], parameters=params)
                     if len(thunk['node'].outputs) <= 1:
                         out = [out]
                     else:
@@ -1842,7 +1846,10 @@ class TheanoNodenet(Nodenet):
                 new_instance.position = position
                 new_instance.name = name
                 for key, value in parameters.items():
-                    new_instance.set_parameter(key, value)
+                    try:
+                        new_instance.set_parameter(key, value)
+                    except NameError:
+                        pass  # parameter not defined anymore
                 for key, value in state.items():
                     new_instance.set_state(key, value)
 

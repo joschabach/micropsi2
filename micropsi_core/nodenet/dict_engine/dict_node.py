@@ -84,7 +84,7 @@ class DictNode(NetEntity, Node):
         self.__parameters = dict((key, self.nodetype.parameter_defaults.get(key)) for key in self.nodetype.parameters)
         if parameters is not None:
             for key in parameters:
-                if parameters[key] is not None:
+                if parameters[key] is not None and key in self.nodetype.parameters:
                     self.set_parameter(key, parameters[key])
 
         for gate in self.nodetype.gatetypes:

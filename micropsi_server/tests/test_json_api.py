@@ -170,17 +170,15 @@ def test_get_runner_properties(app):
     response = app.get_json('/rpc/get_runner_properties()')
     assert_success(response)
     assert 'timestep' in response.json_body['data']
-    assert 'factor' in response.json_body['data']
 
 
 def test_set_runner_properties(app):
     app.set_auth()
-    response = app.post_json('/rpc/set_runner_properties', params=dict(timestep=123, factor=1))
+    response = app.post_json('/rpc/set_runner_properties', params=dict(timestep=123))
     assert_success(response)
     response = app.get_json('/rpc/get_runner_properties()')
     assert_success(response)
     assert response.json_body['data']['timestep'] == 123
-    assert response.json_body['data']['factor'] == 1
 
 
 def test_get_is_calculation_running(app, default_nodenet):

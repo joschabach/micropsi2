@@ -773,9 +773,9 @@ $(document).on('nodenet_changed', function(event, new_uid){
 $(document).on('form_submit', function(event, data){
     if(data.url == '/config/runner'){
         for(var i=0; i < data.values.length; i++){
-            switch(data.values[i].name){
-                case 'timestep': runner_properties.timestep = parseInt(data.values[i].value); break;
-                case 'factor': runner_properties.timestep = parseInt(data.values[i].value); break;
+            if (data.values[i].name == 'timestep'){
+                runner_properties.timestep = parseInt(data.values[i].value);
+                break;
             }
         }
     }

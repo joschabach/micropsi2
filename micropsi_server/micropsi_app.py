@@ -787,7 +787,7 @@ def world_list(current_world=None):
 def edit_runner_properties():
     user_id, permissions, token = get_request_data()
     if len(request.params) > 0:
-        runtime.set_runner_properties(int(request.params['timestep']), int(request.params['factor']))
+        runtime.set_runner_properties(int(request.params['timestep']))
         return dict(status="success", msg="Settings saved")
     else:
         return template("runner_form", action="/config/runner", value=runtime.get_runner_properties())
@@ -963,16 +963,15 @@ def remove_runner_condition(nodenet_uid):
 
 
 @rpc("set_runner_properties", permission_required="manage server")
-def set_runner_properties(timestep, factor):
+def set_runner_properties(timestep):
     """ Configure the server-settings:
-    timestep: miliseconds per nodenet-step
-    factor: nodenet-steps per world-step"""
-    return runtime.set_runner_properties(timestep, factor)
+    timestep: miliseconds per nodenet-step"""
+    return runtime.set_runner_properties(timestep)
 
 
 @rpc("get_runner_properties")
 def get_runner_properties():
-    """ Return the server-settings, returning timestep and factor in a dict"""
+    """ Return the server-settings, returning timestep in a dict"""
     return True, runtime.get_runner_properties()
 
 

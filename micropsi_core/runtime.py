@@ -34,7 +34,7 @@ from micropsi_core.tools import Bunch, post_mortem, generate_uid
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
 
-runner = {'timestep': 1000, 'runner': None, 'factor': 1}
+runner = {'timestep': 1000, 'runner': None}
 
 nodenet_lock = threading.Lock()
 
@@ -180,7 +180,7 @@ class MicropsiRunner(threading.Thread):
                             logging.getLogger("agent.%s" % uid).error("Exception in Agent:", exc_info=1)
                             post_mortem()
                             MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
-                        if nodenet.world and nodenet.current_step % runner['factor'] == 0:
+                        if nodenet.world:
                             if nodenet.world not in world_uids:
                                 world_uids[nodenet.world] = []
                             world_uids[nodenet.world].append(uid)
@@ -669,7 +669,7 @@ def start_nodenetrunner(nodenet_uid):
     return True
 
 
-def set_runner_properties(timestep, factor):
+def set_runner_properties(timestep):
     """Sets the speed of the nodenet calculation in ms.
 
     Argument:
@@ -677,8 +677,6 @@ def set_runner_properties(timestep, factor):
     """
     runner_config['runner_timestep'] = timestep
     runner['timestep'] = timestep
-    runner_config['runner_factor'] = int(factor)
-    runner['factor'] = int(factor)
     return True
 
 
@@ -708,8 +706,7 @@ def remove_runner_condition(nodenet_uid):
 def get_runner_properties():
     """Returns the speed that has been configured for the nodenet runner (in ms)."""
     return {
-        'timestep': runner_config['runner_timestep'],
-        'factor': runner_config['runner_factor']
+        'timestep': runner_config['runner_timestep']
     }
 
 
@@ -758,7 +755,7 @@ def step_nodenet(nodenet_uid):
         logging.getLogger("agent.%s" % nodenet_uid).debug(s.getvalue())
 
     nodenet.update_monitors_and_recorders()
-    if nodenet.world and nodenet.current_step % runner_config['runner_factor'] == 0:
+    if nodenet.world:
         worlds[nodenet.world].step()
     return nodenet.current_step
 
@@ -1997,11 +1994,8 @@ def initialize(config=None):
     if 'runner_timestep' not in runner_config:
         runner_config['runner_timestep'] = 10
         runner_config.save_configs()
-    if 'runner_factor' not in runner_config:
-        runner_config['runner_factor'] = 1
-        runner_config.save_configs()
 
-    set_runner_properties(runner_config['runner_timestep'], runner_config['runner_factor'])
+    set_runner_properties(runner_config['runner_timestep'])
 
     runner['running'] = True
     if runner.get('runner') is None:

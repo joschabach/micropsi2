@@ -514,7 +514,7 @@ def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=No
                     data['calculation_condition']['monitor']['color'] = monitor.color
                 else:
                     del data['calculation_condition']['monitor']
-        data['calculation_running'] = nodenet_obj.is_active
+        data['calculation_running'] = nodenet_obj.is_active or (nodenet_obj.world and worlds[nodenet_obj.world].is_active)
         data['current_nodenet_step'] = nodenet_obj.current_step
         data['current_world_step'] = worlds[nodenet_obj.world].current_step if nodenet_obj.world else 0
         data['control_frequency'] = nodenet_obj.frequency

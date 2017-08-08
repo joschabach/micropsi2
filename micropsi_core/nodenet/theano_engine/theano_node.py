@@ -424,6 +424,8 @@ class TheanoNode(Node):
             result = []
             for value in state:
                 result.append(self._pluck_apart_state(value, numpy_elements))
+        elif isinstance(state, tuple):
+            raise ValueError("Tuples in node states are not supported")
         elif isinstance(state, np.ndarray):
             result = "__numpyelement__" + str(id(state))
             numpy_elements[result] = state

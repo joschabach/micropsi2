@@ -365,6 +365,11 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
     assert testnode.get_state("list")[1] == "boing"
     assert testnode.get_state("numpy").sum() == 10  # only numpy arrays have ".sum()"
 
+    testnode.set_state("wrong", (np.asarray([1, 2, 3]), 'tuple'))
+
+    with pytest.raises(ValueError):
+        runtime.save_nodenet(test_nodenet)
+
 
 def test_delete_linked_nodes(runtime, test_nodenet):
 

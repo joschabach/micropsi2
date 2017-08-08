@@ -105,7 +105,8 @@ def pytest_runtest_setup(item):
         engine_marker = engine_marker.args[0]
         if engine_marker != item.callspec.params['engine']:
             pytest.skip("test requires engine %s" % engine_marker)
-
+    for uid in list(micropsi_runtime.nodenets.keys()):
+        micropsi_runtime.stop_nodenetrunner(uid)
     for uid in list(micropsi_runtime.nodenets.keys()):
         micropsi_runtime.delete_nodenet(uid)
     for uid in list(micropsi_runtime.worlds.keys()):

@@ -494,17 +494,13 @@ def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=No
     nodenet_obj = get_nodenet(nodenet_uid)
     if nodenet_obj is not None:
         if nodenet_uid in MicropsiRunner.last_nodenet_exception:
-            import traceback
             t, err, tb = MicropsiRunner.last_nodenet_exception[nodenet_uid]
             del MicropsiRunner.last_nodenet_exception[nodenet_uid]
             raise err
-            # return False, "%s: %s \r\n%s" % (type(err).__name__, str(err), '\n'.join(traceback.format_tb(tb)))
         if nodenet_obj.world is not None and nodenet_obj.world in MicropsiRunner.last_world_exception:
-            import traceback
             t, err, tb = MicropsiRunner.last_world_exception[nodenet_obj.world]
             del MicropsiRunner.last_world_exception[nodenet_obj.world]
             raise err
-            # return False, "%s: %s \r\n%s" % (type(err).__name__, str(err), '\n'.join(traceback.format_tb(tb)))
         condition = nodenet_obj.get_runner_condition()
         if condition:
             data['calculation_condition'] = condition

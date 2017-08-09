@@ -738,8 +738,10 @@ def step_nodenet(nodenet_uid):
         profiler = cProfile.Profile()
         profiler.enable()
 
-    if nodenet.world and not worlds[nodenet.world].is_active:
-        worlds[nodenet.world].simulation_started()
+    if nodenet.world:
+        if type(worlds[nodenet.world]).is_realtime and not worlds[nodenet.world].is_active:
+            worlds[nodenet.world].simulation_started()
+
     if runner['runner'].paused:
         runner['runner'].resume()
 
@@ -755,6 +757,8 @@ def step_nodenet(nodenet_uid):
         ps.print_stats('micropsi_')
         logging.getLogger("agent.%s" % nodenet_uid).debug(s.getvalue())
 
+    if nodenet.world and not type(worlds[nodenet.world]).is_realtime:
+        worlds[nodenet.world].step()
     nodenet.update_monitors_and_recorders()
     return nodenet.current_step
 

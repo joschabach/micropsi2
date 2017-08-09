@@ -84,6 +84,7 @@ class World(object):
 
     supported_worldadapters = []
     supported_worldobjects = []
+    is_realtime = False
 
     def __init__(self, filename, world_type="", name="", owner="", uid=None, engine=None, version=WORLD_VERSION, config={}):
         """Create a new MicroPsi world environment.

@@ -305,6 +305,15 @@ class MyWorld(World):
 
     def __init__(self, filename, **kwargs):
         super().__init__(filename, **kwargs)
+        self.custom_state = None
+
+    def simulation_started(self):
+        super().simulation_started()
+        self.custom_state = 'runner started'
+
+    def simulation_stopped(self):
+        super().simulation_stopped()
+        self.custom_state = 'runner stopped'
 
 class MyCustomWA(WorldAdapter):
     def __init__(self, world, uid=None, config={}, **data):
@@ -316,11 +325,18 @@ class MyCustomWA(WorldAdapter):
     runtime.reload_code()
     result, world_uid = runtime.new_world("test world", "MyWorld")
     assert runtime.set_nodenet_properties(default_nodenet, world_uid=world_uid, worldadapter="MyCustomWA")
+    runtime.single_step_nodenet_only(default_nodenet)
+    assert not runtime.worlds[world_uid].is_active
+    assert runtime.nodenets[default_nodenet].current_step == 1
+    assert runtime.worlds[world_uid].current_step == 0
+    assert runtime.worlds[world_uid].custom_state is None
     runtime.step_nodenet(default_nodenet)
     time.sleep(.2)
     assert not runtime.nodenets[default_nodenet].is_active
-    assert runtime.nodenets[default_nodenet].current_step == 1
+    assert runtime.nodenets[default_nodenet].current_step == 2
     assert runtime.worlds[world_uid].is_active
-    assert runtime.worlds[world_uid].current_step > 2
+    assert runtime.worlds[world_uid].current_step > 3
+    assert runtime.worlds[world_uid].custom_state == 'runner started'
     runtime.stop_nodenetrunner(default_nodenet)
     assert not runtime.worlds[world_uid].is_active
+    assert runtime.worlds[world_uid].custom_state == 'runner stopped'

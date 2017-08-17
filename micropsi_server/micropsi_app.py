@@ -109,7 +109,11 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                     kwargs = request.json
                 except ValueError:
                     if len(request.params) > 0:
-                        kwargs = dict((key.strip('[]'), json.loads(val)) for key, val in request.params.iteritems())
+                        try:
+                            kwargs = dict((key.strip('[]'), json.loads(val)) for key, val in request.params.iteritems())
+                        except json.JSONDecodeError:
+                            raise ValueError("Invalid JSON in request: " + str(request.params.__dict__))
+
             user_id, permissions, token = get_request_data()
             if permission_required and permission_required not in permissions:
                 response.status = 401

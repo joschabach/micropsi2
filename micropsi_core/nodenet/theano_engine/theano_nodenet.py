@@ -1866,8 +1866,10 @@ class TheanoNodenet(Nodenet):
                 name=data['name'],
                 uid=uid,
                 parameters=data['parameters'])
+
         for new_uid in nx.topological_sort(self.flowgraph):
-            self.get_node(new_uid).ensure_initialized()
+            if new_uid in instances_to_recreate:
+                self.get_node(new_uid).ensure_initialized()
 
         # recompile flow_graphs:
         self.update_flow_graphs()

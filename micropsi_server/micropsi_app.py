@@ -1440,9 +1440,9 @@ def reload_code():
 
 
 @rpc("user_prompt_response")
-def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
+def user_prompt_response(nodenet_uid, node_uid, key, parameters, resume_nodenet):
     """ Respond to a user-prompt issued by a node. """
-    runtime.user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet)
+    runtime.user_prompt_response(nodenet_uid, node_uid, key, parameters, resume_nodenet)
     return True
 
 

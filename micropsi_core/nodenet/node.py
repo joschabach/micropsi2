@@ -170,6 +170,11 @@ class Node(metaclass=ABCMeta):
                 links[key] = [l.get_data() for l in gatelinks]
         return links
 
+    def get_user_prompt(self, key):
+        if key not in self._nodetype.user_prompts:
+            raise KeyError("Nodetype %s does not define a user_prompt named %s" % (self._nodetype.name, key))
+        return self._nodetype.user_prompts[key]
+
     @abstractmethod
     def get_gate(self, type):
         """
@@ -548,7 +553,7 @@ class Nodetype(object):
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None,
-                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', **_):
+                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', user_prompts=None, **_):
         """Initializes or creates a nodetype.
 
         Arguments:
@@ -579,12 +584,32 @@ class Nodetype(object):
         self.parameter_values = parameter_values or {}
         self.parameter_defaults = parameter_defaults or {}
 
+        self.user_prompts = user_prompts or {}
+        if user_prompts:
+            self.load_user_prompt_functions()
+
         if nodefunction_definition:
             self.nodefunction_definition = nodefunction_definition
         elif nodefunction_name:
             self.nodefunction_name = nodefunction_name
         else:
             self.nodefunction = None
+
+    def load_user_prompt_functions(self):
+        import os
+        from importlib.machinery import SourceFileLoader
+        import inspect
+        try:
+            modulename = "nodetypes." + self.category.replace('/', '.') + os.path.basename(self.path)[:-3]
+            module = SourceFileLoader(modulename, self.path).load_module()
+            for key, data in self.user_prompts.items():
+                if hasattr(module, data['callback']):
+                    self.user_prompts[key]['callback'] = getattr(module, data['callback'])
+                else:
+                    self.logger.warning("Callback '%s' for user_prompt %s of nodetype %s not defined" % (data['callback'], key, self.name))
+        except (ImportError, AttributeError) as err:
+            self.logger.warning("Import error while importing node function: nodefunctions.%s %s" % (nodefunction_name, err))
+            raise err
 
     def get_gate_dimensionality(self, gate):
         return 1

@@ -198,6 +198,33 @@ def trpoinpython(X, Y, netapi, node, parameters):
     return Y
 """)
 
+    with open(os.path.join(resourcepath, "nodetypes", "infmaker.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "python",
+    "name": "infmaker",
+    "run_function_name": "infmaker",
+    "inputs": [],
+    "outputs": ["A"],
+    "inputdims": [],
+    "parameters": ["what"],
+    "parameter_values": {"what": ["nan", "inf", "neginf"]},
+    "parameter_defaults": {"what": "nan"}
+}
+
+import numpy as np
+
+def infmaker(netapi, node, parameters):
+    data = np.ones(12)
+    what = np.nan
+    if parameters['what'] == 'inf':
+        what = np.inf
+    elif parameters['what'] == 'neginf':
+        what = -np.inf
+    data[np.random.randint(0, 11)] = what
+    return data
+""")
+
     with open(os.path.join(resourcepath, 'worlds.json'), 'w') as fp:
         fp.write("""{"worlds":["flowworld.py"],"worldadapters":["flowworld.py"]}""")
 
@@ -1100,3 +1127,34 @@ def test_flownode_generate_netapi_fragment(runtime, test_nodenet, default_world,
     x = np.array([1, 2, 3], dtype=netapi.floatX)
     result = np.array([5, 8, 11], dtype=netapi.floatX)
     assert np.all(function(X=x) == result)
+
+
+@pytest.mark.engine("theano_engine")
+def test_flow_inf_guard(runtime, test_nodenet, default_world, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+
+    infmaker = netapi.create_node("infmaker")
+    add = netapi.create_node("Add")
+    netapi.flow(infmaker, "A", add, "input1")
+    netapi.flow('worldadapter', 'foo', add, "input2")
+    netapi.flow(add, 'outputs', 'worldadapter', 'bar')
+    source = netapi.create_node("Neuron")
+    source.activation = 1
+    netapi.link(source, 'gen', source, 'gen')
+    netapi.link(source, 'gen', add, 'sub')
+    with pytest.raises(ValueError) as excinfo:
+        nodenet.step()
+    assert "output A" in str(excinfo.value)
+    assert "infmaker" in str(excinfo.value)
+    assert "NAN value" in str(excinfo.value)
+
+    infmaker.set_parameter('what', 'inf')
+    with pytest.raises(ValueError) as excinfo:
+        nodenet.step()
+    assert "INF value" in str(excinfo.value)
+
+    worldadapter.flow_datasources['foo'][3] = np.nan
+    with pytest.raises(ValueError) as excinfo:
+        nodenet.step()
+    assert type(worldadapter).__name__ in str(excinfo.value)
+    assert "foo" in str(excinfo.value)

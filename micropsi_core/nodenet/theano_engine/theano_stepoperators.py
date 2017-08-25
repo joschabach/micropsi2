@@ -80,21 +80,28 @@ class TheanoCalculateFlowmodules(Propagate):
     def value_guard(self, value, source, name):
         if value is None:
             return None
+        listval = type(value) == list
+        if not listval:
+            value = [value]
         if self.flow_finite_guard:
-            if np.isnan(np.sum(value)):
-                raise ValueError("NAN value in flow datected: %s" % self.format_error(source, name))
-            elif np.isinf(np.sum(value)):
-                raise ValueError("INF value in flow datected: %s" % self.format_error(source, name))
-        return value
+            for idx, val in enumerate(value):
+                if np.isnan(np.sum(value)):
+                    raise ValueError("NAN value in flow datected: %s" % self.format_error(source, name, idx, listval))
+                elif np.isinf(np.sum(value)):
+                    raise ValueError("INF value in flow datected: %s" % self.format_error(source, name, idx, listval))
+        return value[0] if not listval else value
 
-    def format_error(self, source, name):
+    def format_error(self, source, name, idx, listval):
+        msg = ""
+        if listval:
+            msg = "at index %d of " % idx
         if type(source) == dict:
             if len(source['members']) == 1:
-                msg = "output %s of %s" % (name, source['members'][0])
+                msg += "output %s of %s" % (name, source['members'][0])
             else:
-                msg = "output %s of graph %s" % (name, str(source['members']))
+                msg += "output %s of graph %s" % (name, str(source['members']))
         else:
-            msg = "output %s of %s" % (name, str(source))
+            msg += "output %s of %s" % (name, str(source))
         return msg
 
     def execute(self, nodenet, nodes, netapi):

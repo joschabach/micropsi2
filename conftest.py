@@ -33,6 +33,7 @@ if 'logfile' in cfg['logging']:
 cfg['micropsi2']['single_agent_mode'] = ''
 if 'theano' in cfg:
     cfg['theano']['initial_number_of_nodes'] = '50'
+    cfg['theano']['flow_finite_guard'] = '1'
 if 'on_exception' in cfg['micropsi2']:
     cfg['micropsi2']['on_exception'] = ''
 cfg['micropsi2']['auto_save_intervals'] = '100'

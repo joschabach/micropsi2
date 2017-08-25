@@ -164,6 +164,8 @@ class TheanoNodenet(Nodenet):
         else:
             raise RuntimeError("Unsupported float precision value")
 
+        self.flow_finite_guard = settings['theano'].get('flow_finite_guard')
+
         device = T.config.device
         self.logger.info("Theano configured to use %s", device)
         if device.startswith("gpu"):

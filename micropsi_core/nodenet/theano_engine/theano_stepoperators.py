@@ -75,6 +75,27 @@ class TheanoCalculateFlowmodules(Propagate):
 
     def __init__(self, nodenet):
         self.nodenet = nodenet
+        self.flow_finite_guard = nodenet.flow_finite_guard
+
+    def value_guard(self, value, source, name):
+        if value is None:
+            return None
+        if self.flow_finite_guard:
+            if np.isnan(np.sum(value)):
+                raise ValueError("NAN value in flow datected: %s" % self.format_error(source, name))
+            elif np.isinf(np.sum(value)):
+                raise ValueError("INF value in flow datected: %s" % self.format_error(source, name))
+        return value
+
+    def format_error(self, source, name):
+        if type(source) == dict:
+            if len(source['members']) == 1:
+                msg = "output %s of %s" % (name, source['members'][0])
+            else:
+                msg = "output %s of graph %s" % (name, str(source['members']))
+        else:
+            msg = "output %s of %s" % (name, str(source))
+        return msg
 
     def execute(self, nodenet, nodes, netapi):
         if not nodenet.flow_module_instances:
@@ -88,7 +109,8 @@ class TheanoCalculateFlowmodules(Propagate):
                 sourcenode = nodenet.get_node(nodenet.worldadapter_flow_nodes['datasources'])
                 flowio[sourcenode.uid] = {}
                 for key in sourcenode.outputs:
-                    flowio[sourcenode.uid][key] = nodenet.worldadapter_instance.get_flow_datasource(key)
+                    flowio[sourcenode.uid][key] = self.value_guard(nodenet.worldadapter_instance.get_flow_datasource(key), nodenet.worldadapter, key)
+
                     for target_uid, target_name in sourcenode.outputmap[key]:
                         if target_uid == nodenet.worldadapter_flow_nodes.get('datatargets', False):
                             nodenet.worldadapter_instance.add_to_flow_datatarget(target_name, flowio[sourcenode.uid][key])
@@ -124,4 +146,4 @@ class TheanoCalculateFlowmodules(Propagate):
                         for uid, name in nodenet.get_node(node_uid).outputmap[out_name]:
                             if uid == targetnode.uid and node_uid != nodenet.worldadapter_flow_nodes.get('datasources', False):
                                 nodenet.worldadapter_instance.add_to_flow_datatarget(name, out[index])
-                    flowio[node_uid][out_name] = out[index] if out is not None else None
+                    flowio[node_uid][out_name] = self.value_guard(out[index], func, out_name) if out is not None else None

@@ -158,12 +158,17 @@ def two_outputs(X, netapi, node, parameters):
     "build_function_name": "trpoout",
     "inputs": ["X"],
     "outputs": ["Y", "Z"],
-    "inputdims": [1]
+    "inputdims": [1],
+    "parameters": ["makeinf"],
+    "parameter_defaults": {"makeinf": "False"}
 }
 
 def trpoout(X, netapi, node, parameters):
     from theano import tensor as T
-    return [X, X+1, X*2], T.exp(X)
+    if parameters["makeinf"] == "False":
+        return [X, X+1, X*2], T.exp(X)
+    else:
+        return [X, X/0, X*2], T.exp(X)
 """)
     with open(os.path.join(resourcepath, "nodetypes", "TRPOIn.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
@@ -1158,3 +1163,25 @@ def test_flow_inf_guard(runtime, test_nodenet, default_world, resourcepath):
         nodenet.step()
     assert type(worldadapter).__name__ in str(excinfo.value)
     assert "foo" in str(excinfo.value)
+
+
+@pytest.mark.engine("theano_engine")
+def test_flow_inf_guard_on_list_outputs(runtime, test_nodenet, default_world, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+
+    trpoout = netapi.create_node("TRPOOut", None, "TRPOOut")
+    trpoout.set_parameter("makeinf", "True")
+    trpoin = netapi.create_node("TRPOIn", None, "TRPOIn")
+
+    netapi.flow(trpoout, "Y", trpoin, "Y")
+    netapi.flow(trpoout, "Z", trpoin, "Z")
+    netapi.flow('worldadapter', 'foo', trpoout, "X")
+    netapi.flow(trpoin, 'A', 'worldadapter', 'bar')
+    source = netapi.create_node("Neuron")
+    source.activation = 1
+    netapi.link(source, 'gen', source, 'gen')
+    netapi.link(source, 'gen', trpoin, 'sub')
+    with pytest.raises(ValueError) as excinfo:
+        nodenet.step()
+    assert "INF value in" in str(excinfo.value)
+    assert "output A of graph" in str(excinfo.value)

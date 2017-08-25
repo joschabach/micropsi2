@@ -61,38 +61,51 @@ def test_user_prompt(runtime, test_nodenet, resourcepath):
     "parameters": ["testparam"],
     "parameter_defaults": {
         "testparam": 13
-      }
+    },
+    "user_prompts": {
+        "promptident": {
+            "callback": "user_prompt_callback",
+            "parameters": [
+                {"name": "foo", "description": "value for foo", "default": 23},
+                {"name": "bar", "description": "value for bar", "default": 42}
+            ]
+        }
     }
-def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+}
+
+def testnodefunc(netapi, node=None, **prams):
+    if not hasattr(node, 'foo'):
+        node.foo = 0
+        node.bar = 1
+        netapi.show_user_prompt(node, "promptident")
+    node.get_gate("foo").gate_function(node.foo)
+    node.get_gate("bar").gate_function(node.bar)
+
+def user_prompt_callback(netapi, node, user_prompt_params):
+    \"\"\"Elaborate explanation as to what this user prompt is for\"\"\"
+    node.foo = int(user_prompt_params['foo'])
+    node.bar = int(user_prompt_params['bar'])
 """)
 
     runtime.reload_code()
     res, node_uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test")
     nativemodule = nodenet.get_node(node_uid)
 
-    options = [{'key': 'foo_parameter', 'label': 'Please give value for "foo"', 'values': [23, 42]}]
-    nodenet.netapi.ask_user_for_parameter(
-        nativemodule,
-        "foobar",
-        options
-    )
+    runtime.step_nodenet(test_nodenet)
     result, data = runtime.get_calculation_state(test_nodenet, nodenet={})
     assert 'user_prompt' in data
-    assert data['user_prompt']['msg'] == 'foobar'
+    assert data['user_prompt']['key'] == "promptident"
+    assert data['user_prompt']['msg'] == 'Elaborate explanation as to what this user prompt is for'
     assert data['user_prompt']['node']['uid'] == node_uid
-    assert data['user_prompt']['options'] == options
+    assert len(data['user_prompt']['parameters']) == 2
+    assert nativemodule.get_gate('foo').activation == 0
+    assert nativemodule.get_gate('bar').activation == 1
+
     # response
-    runtime.user_prompt_response(test_nodenet, node_uid, {'foo_parameter': 42}, False)
-    from micropsi_core.nodenet import nodefunctions
-    tmp = nodefunctions.concept
-    nodefunc = mock.Mock()
-    nodefunctions.concept = nodefunc
-    nodenet.step()
-    foo = nodenet.get_node(node_uid).clone_parameters()
-    foo.update({'foo_parameter': 42})
-    assert nodefunc.called_with(nodenet.netapi, nodenet.get_node(node_uid), foo)
-    assert 'foo_parameter' not in nodenet.get_node(node_uid).clone_parameters()
-    nodefunctions.concept = tmp
+    runtime.user_prompt_response(test_nodenet, node_uid, "promptident", {'foo': '111', 'bar': '222'}, False)
+    runtime.step_nodenet(test_nodenet)
+    assert nativemodule.get_gate('foo').activation == 111
+    assert nativemodule.get_gate('bar').activation == 222
 
 
 def test_user_notification(runtime, test_nodenet, node):

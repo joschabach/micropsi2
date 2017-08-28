@@ -90,7 +90,7 @@ def user_prompt_callback(netapi, node, user_prompt_params):
     runtime.reload_code()
     res, node_uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test")
     nativemodule = nodenet.get_node(node_uid)
-
+    runtime.reload_code()  # this breaks, if the nodetype overwrites the definition
     runtime.step_nodenet(test_nodenet)
     result, data = runtime.get_calculation_state(test_nodenet, nodenet={})
     assert 'user_prompt' in data

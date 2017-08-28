@@ -553,7 +553,7 @@ class Nodetype(object):
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None,
-                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', user_prompts=None, **_):
+                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', user_prompts={}, **_):
         """Initializes or creates a nodetype.
 
         Arguments:
@@ -584,8 +584,10 @@ class Nodetype(object):
         self.parameter_values = parameter_values or {}
         self.parameter_defaults = parameter_defaults or {}
 
-        self.user_prompts = user_prompts or {}
-        if user_prompts:
+        self.user_prompts = {}
+        for key, val in user_prompts.items():
+            self.user_prompts[key] = val.copy()
+        if self.user_prompts.keys():
             self.load_user_prompt_functions()
 
         if nodefunction_definition:

@@ -741,20 +741,21 @@ fetch_stepping_info = function(){
     $('#nodenet_user_prompt .btn-primary').on('click', function(event){
         event.preventDefault();
         var form = $('#nodenet_user_prompt form');
-        values = {};
+        parameters = {};
         var startnet = false;
         var fields = form.serializeArray();
         for(var idx in fields){
             if(fields[idx].name == 'run_nodenet'){
                 startnet = true;
             } else {
-                values[fields[idx].name] = fields[idx].value;
+                parameters[fields[idx].name] = fields[idx].value;
             }
         }
         api.call('user_prompt_response', {
             nodenet_uid: currentNodenet,
             node_uid: $('#user_prompt_node_uid').val(),
-            values: values,
+            key: $('#user_prompt_key').val(),
+            parameters: parameters,
             resume_nodenet: startnet
         }, function(data){
             $(document).trigger("runner_started");
@@ -999,30 +1000,33 @@ function promptUser(data){
     html += '<p>Agent interrupted by Node ' + (data.node.name || data.node.uid) +' with message:</p>';
     html += "<p>" + data.msg +"</p>";
     html += '<form class="well form-horizontal">';
-    if (data.options){
-        for(var idx in data.options){
-            var item = data.options[idx];
-            html += '<div class="control-group"><label class="control-label">' + item.label + '</label>';
-            if(item.values && typeof item.values == 'object'){
-                html += '<div class="controls"><select name="'+item.key+'">';
-                for(var val in item.values){
-                    if(item.values instanceof Array){
-                        html += '<option>'+item.values[val]+'</option>';
-                    } else {
-                        html += '<option value="'+val+'">'+item.values[val]+'</option>';
+    if (data.parameters){
+        for(var idx in data.parameters){
+            var item = data.parameters[idx];
+            html += '<div class="control-group"><label class="control-label">' + item.name + '</label>';
+            if(item.options && typeof item.options == 'object'){
+                html += '<div class="controls"><select name="'+item.name+'">';
+                for(var val in item.options){
+                    html += '<option';
+                    if (item.default && item.default == item.options[val]){
+                        html += ' selected="selected"'
                     }
+                    html += '>'+item.options[val]+'</option>';
                 }
-                html += '</select></div></div>';
-            } else if(item.type && item.type == "textarea"){
-                html += '<div class="controls"><textarea name="'+item.key+'">'+(item.values || '')+'</textarea></div></div>';
+                html += '</select></div>';
             } else {
-                html += '<div class="controls"><input name="'+item.key+'" value="'+(item.values || '')+'" /></div></div>';
+                html += '<div class="controls"><input name="'+item.name+'" value="'+(item.default || '')+'" /></div>';
             }
+            if (item.description){
+                html += '<div class="hint small">'+item.description+'</div>'
+            }
+            html += '</div>';
         }
     }
     html += '<div class="control-group"><label class="control-label">Continue running agent?</label>';
     html += '<div class="controls"><input type="checkbox" name="run_nodenet"/></div></div>';
     html += '<input class="hidden" id="user_prompt_node_uid" value="'+data.node.uid+'" />';
+    html += '<input class="hidden" id="user_prompt_key" value="'+data.key+'" />';
     html += '</form>';
     $('#nodenet_user_prompt .modal-body').html(html);
     $('#nodenet_user_prompt').modal("show");

@@ -111,7 +111,13 @@ class NetapiShell(InteractiveConsole):
         err = self.errcache.flush()
         if err and err.startswith('Traceback'):
             parts = err.strip().split('\n')
-            return False, "%s: %s" % (parts[-3], parts[-1])
+            if len(parts) > 10:
+                if ":" in parts[10]:
+                    return False, parts[10]
+                else:
+                    return False, "%s: %s" % (parts[10], parts[12])
+            else:
+                return False, err
         out = self.outcache.flush()
         return True, out.strip()
 

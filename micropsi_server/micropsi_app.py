@@ -112,7 +112,8 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                         try:
                             kwargs = dict((key.strip('[]'), json.loads(val)) for key, val in request.params.iteritems())
                         except json.JSONDecodeError:
-                            raise ValueError("Invalid JSON in request: " + str(request.params.__dict__))
+                            response.status = 400
+                            return {'status': 'error', 'data': "Malformed arguments for remote procedure call: %s" % str(request.params.__dict__)}
 
             user_id, permissions, token = get_request_data()
             if permission_required and permission_required not in permissions:

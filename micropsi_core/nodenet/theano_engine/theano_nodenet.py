@@ -621,7 +621,7 @@ class TheanoNodenet(Nodenet):
             if os.path.isfile(flowfile):
                 self.flowgraph = nx.read_gpickle(flowfile)
 
-            for node_uid in self.flow_module_instances:
+            for node_uid in nx.topological_sort(self.flowgraph):
                 self.flow_module_instances[node_uid].ensure_initialized()
                 theta_file = os.path.join(self.persistency_path, "%s_thetas.npz" % node_uid)
                 if os.path.isfile(theta_file):
@@ -1866,7 +1866,9 @@ class TheanoNodenet(Nodenet):
                 name=data['name'],
                 uid=uid,
                 parameters=data['parameters'])
-            if data.get('flow_module'):
+
+        for new_uid in nx.topological_sort(self.flowgraph):
+            if new_uid in instances_to_recreate:
                 self.get_node(new_uid).ensure_initialized()
 
         # recompile flow_graphs:

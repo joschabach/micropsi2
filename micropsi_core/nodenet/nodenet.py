@@ -245,9 +245,10 @@ class Nodenet(metaclass=ABCMeta):
             }
             self.is_active = False
 
-    def get_user_prompt(self):
+    def consume_user_prompt(self):
         data = self.user_prompt
-        data['node'] = data['node'].get_data()
+        if data:
+            data['node'] = data['node'].get_data()
         self.user_prompt = None
         return data
 

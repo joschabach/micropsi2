@@ -540,7 +540,7 @@ def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=No
             }
             if activations['has_changes']:
                 data['nodenet_diff']['changes'] = nodenet_obj.get_nodespace_changes(nodenet_diff.get('nodespaces', []), nodenet_diff['step'], include_links=nodenet_diff.get('include_links', True))
-        prompt = nodenet_obj.get_user_prompt()
+        prompt = nodenet_obj.consume_user_prompt()
         if prompt:
             data['user_prompt'] = prompt
         if world is not None and nodenet_obj.world:

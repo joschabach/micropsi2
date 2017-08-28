@@ -340,3 +340,11 @@ class MyCustomWA(WorldAdapter):
     runtime.stop_nodenetrunner(default_nodenet)
     assert not runtime.worlds[world_uid].is_active
     assert runtime.worlds[world_uid].custom_state == 'runner stopped'
+    runtime.start_nodenetrunner(default_nodenet)
+    time.sleep(.2)
+    runtime.step_nodenet(default_nodenet)
+    laststep = runtime.nodenets[default_nodenet].current_step
+    time.sleep(.2)
+    assert laststep == runtime.nodenets[default_nodenet].current_step
+    assert not runtime.nodenets[default_nodenet].is_active
+    assert runtime.worlds[world_uid].is_active

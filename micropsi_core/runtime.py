@@ -728,6 +728,8 @@ def step_nodenet(nodenet_uid):
         nodenet_uid: The uid of the nodenet
     """
     nodenet = get_nodenet(nodenet_uid)
+    if nodenet.is_active:
+        nodenet.is_active = False
 
     if runtime_config['micropsi2'].get('profile_runner'):
         import cProfile
@@ -736,10 +738,9 @@ def step_nodenet(nodenet_uid):
 
     if nodenet.world:
         if type(worlds[nodenet.world]).is_realtime and not worlds[nodenet.world].is_active:
+            if runner['runner'].paused:
+                runner['runner'].resume()
             worlds[nodenet.world].simulation_started()
-
-    if runner['runner'].paused:
-        runner['runner'].resume()
 
     nodenet.timed_step()
 

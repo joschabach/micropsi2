@@ -111,7 +111,13 @@ class NetapiShell(InteractiveConsole):
         err = self.errcache.flush()
         if err and err.startswith('Traceback'):
             parts = err.strip().split('\n')
-            return False, "%s: %s" % (parts[-3], parts[-1])
+            if len(parts) > 10:
+                if ":" in parts[10]:
+                    return False, parts[10]
+                else:
+                    return False, "%s: %s" % (parts[10], parts[12])
+            else:
+                return False, err
         out = self.outcache.flush()
         return True, out.strip()
 
@@ -628,7 +634,7 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
     nodenet = get_nodenet(nodenet_uid)
     if world_uid == '':
         world_uid = None
-    if nodenet.world and (nodenet.world != world_uid or nodenet.worldadapter != worldadapter or worldadapter_config != nodenet.worldadapter_instance.config):
+    if nodenet.world and (nodenet.world != world_uid or nodenet.worldadapter != worldadapter):
         worlds[nodenet.world].unregister_nodenet(nodenet.uid)
         nodenet.world = None
         nodenet.worldadapter_instance = None
@@ -1385,8 +1391,7 @@ def align_nodes(nodenet_uid, nodespace):
 
 def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
     nodenet = get_nodenet(nodenet_uid)
-    for key, value in values.items():
-        nodenet.get_node(node_uid).set_parameter(key, value)
+    nodenet.user_prompt_response[node_uid] = values
     if resume_nodenet:
         start_nodenetrunner(nodenet_uid)
     # nodenet.is_active = resume_nodenet

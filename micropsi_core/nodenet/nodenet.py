@@ -176,6 +176,7 @@ class Nodenet(metaclass=ABCMeta):
         self.logger.info("Setting up nodenet %s with engine %s", self.name, self.engine)
 
         self.user_prompt = None
+        self.user_prompt_response = {}
 
         self.netapi = NetAPI(self)
 

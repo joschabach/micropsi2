@@ -48,6 +48,7 @@ def out12345(netapi, node, parameters):
 }
 
 def double_init(netapi, node, parameters):
+    assert nodetype_definition['name'] == 'Double'
     node.initfunction_ran = True
     assert parameters['test_param'] == 'defaultvalue'
 

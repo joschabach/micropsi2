@@ -1196,7 +1196,7 @@ def test_user_prompt_response(app, test_nodenet, resourcepath):
             "gatetypes": ["gen", "foo", "bar"],
             "symbol": "t"}
 
-def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+def testnodefunc(netapi, node=None, **params):\r\n    node.get_gate('foo').gate_function(params.get('foo', 23))
 """)
     response = app.get_json('/rpc/reload_code()')
     assert_success(response)
@@ -1215,14 +1215,14 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
     response = app.post_json('/rpc/user_prompt_response', {
         'nodenet_uid': test_nodenet,
         'node_uid': uid,
-        'values': {'foo': 'bar'},
-        'resume_nodenet': True
+        'values': {'foo': 42},
+        'resume_nodenet': False
     })
     assert_success(response)
-    response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
-    data = json.loads(response.json_body['data'])
-    assert data['nodes'][uid]['parameters']['foo'] == 'bar'
-    assert data['is_active']
+    response = app.get_json('/rpc/step_calculation(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/get_nodes(nodenet_uid="%s")' % test_nodenet)
+    data = response.json_body['data']
+    assert data['nodes'][uid]['gate_activations']['foo'] == 42
 
 
 def test_set_logging_levels(app):

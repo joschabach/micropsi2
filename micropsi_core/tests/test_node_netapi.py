@@ -722,7 +722,7 @@ def test_copy_nodes(runtime, test_nodenet):
     a3 = netapi.create_node('Pipe', None, "a3")
     netapi.link(a3, 'gen', a1, 'gen')
     netapi.link(a1, 'por', a2, 'por')
-    a1.set_parameter('expecation', 0.6)
+    a1.set_parameter('expectation', 0.6)
     a1.set_gate_configuration('gen', 'sigmoid', {'bias': 1.3})
     mapping = netapi.copy_nodes([a1, a2], nodespace.uid)
     assert a1 in mapping

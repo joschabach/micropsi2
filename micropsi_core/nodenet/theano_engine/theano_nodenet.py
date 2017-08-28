@@ -621,7 +621,7 @@ class TheanoNodenet(Nodenet):
             if os.path.isfile(flowfile):
                 self.flowgraph = nx.read_gpickle(flowfile)
 
-            for node_uid in self.flow_module_instances:
+            for node_uid in nx.topological_sort(self.flowgraph):
                 self.flow_module_instances[node_uid].ensure_initialized()
                 theta_file = os.path.join(self.persistency_path, "%s_thetas.npz" % node_uid)
                 if os.path.isfile(theta_file):
@@ -836,6 +836,7 @@ class TheanoNodenet(Nodenet):
                     break
                 else:
                     del self.deleted_items[i]
+        self.user_prompt_response = {}
 
     def get_partition(self, uid):
         if uid is None:
@@ -1219,9 +1220,19 @@ class TheanoNodenet(Nodenet):
                     elif source == 'path':
                         funcargs.append(all_outputs[pidx][item])
                 if thunk['implementation'] == 'python':
-                    out = thunk['function'](*funcargs, netapi=self.netapi, node=thunk['node'], parameters=thunk['node'].clone_parameters())
+                    params = thunk['node'].clone_parameters()
+                    if self.uid in self.user_prompt_response:
+                        params.update(self.user_prompt_response[self.uid])
+                    out = thunk['function'](*funcargs, netapi=self.netapi, node=thunk['node'], parameters=params)
                     if len(thunk['node'].outputs) <= 1:
                         out = [out]
+                    else:
+                        if type(out) != tuple:
+                            raise RuntimeError("""Output mismatch!
+                                Node %s returned only one output instead of %d.""" % (str(thunk['node']), len(thunk['node'].outputs)))
+                        elif len(out) != len(thunk['node'].outputs):
+                            raise RuntimeError("""Output mismatch!
+                                Node %s returned %d outputs instead of %d.""" % (str(thunk['node']), len(out), len(thunk['node'].outputs)))
                 else:
                     if thetas:
                         funcargs += thetas
@@ -1835,7 +1846,10 @@ class TheanoNodenet(Nodenet):
                 new_instance.position = position
                 new_instance.name = name
                 for key, value in parameters.items():
-                    new_instance.set_parameter(key, value)
+                    try:
+                        new_instance.set_parameter(key, value)
+                    except NameError:
+                        pass  # parameter not defined anymore
                 for key, value in state.items():
                     new_instance.set_state(key, value)
 
@@ -1852,7 +1866,9 @@ class TheanoNodenet(Nodenet):
                 name=data['name'],
                 uid=uid,
                 parameters=data['parameters'])
-            if data.get('flow_module'):
+
+        for new_uid in nx.topological_sort(self.flowgraph):
+            if new_uid in instances_to_recreate:
                 self.get_node(new_uid).ensure_initialized()
 
         # recompile flow_graphs:

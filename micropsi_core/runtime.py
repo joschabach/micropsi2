@@ -34,7 +34,7 @@ from micropsi_core.tools import Bunch, post_mortem, generate_uid
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
 
-runner = {'timestep': 1000, 'runner': None, 'factor': 1}
+runner = {'timestep': 1000, 'runner': None}
 
 nodenet_lock = threading.Lock()
 
@@ -164,7 +164,6 @@ class MicropsiRunner(threading.Thread):
             start = datetime.now()
             log = False
             uids = [uid for uid in nodenets if nodenets[uid].is_active]
-            world_uids = {}
             nodenets_to_save = []
             if self.profiler:
                 self.profiler.enable()
@@ -186,10 +185,6 @@ class MicropsiRunner(threading.Thread):
                             logging.getLogger("agent.%s" % uid).error("Exception in Agent:", exc_info=1)
                             post_mortem()
                             MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
-                        if nodenet.world and nodenet.current_step % runner['factor'] == 0:
-                            if nodenet.world not in world_uids:
-                                world_uids[nodenet.world] = []
-                            world_uids[nodenet.world].append(uid)
 
                         if auto_save_intervals is not None:
                             for val in auto_save_intervals:
@@ -223,13 +218,14 @@ class MicropsiRunner(threading.Thread):
 
             if self.profiler:
                 self.profiler.enable()
-            for wuid, nodenet_uids in world_uids.items():
-                if wuid in worlds:
+            for wuid, world in worlds.items():
+                if world.is_active:
+                    uids.append(wuid)
                     try:
-                        worlds[wuid].step()
+                        world.step()
                     except:
-                        for uid in nodenet_uids:
-                            if uid in nodenets:
+                        for uid in nodenets:
+                            if nodenets[uid].world == wuid and nodenets[uid].is_active:
                                 stop_nodenetrunner(uid)
                         logging.getLogger("world").error("Exception in Environment:", exc_info=1)
                         MicropsiRunner.last_world_exception[nodenets[uid].world] = sys.exc_info()
@@ -504,17 +500,13 @@ def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=No
     nodenet_obj = get_nodenet(nodenet_uid)
     if nodenet_obj is not None:
         if nodenet_uid in MicropsiRunner.last_nodenet_exception:
-            import traceback
             t, err, tb = MicropsiRunner.last_nodenet_exception[nodenet_uid]
             del MicropsiRunner.last_nodenet_exception[nodenet_uid]
             raise err
-            # return False, "%s: %s \r\n%s" % (type(err).__name__, str(err), '\n'.join(traceback.format_tb(tb)))
         if nodenet_obj.world is not None and nodenet_obj.world in MicropsiRunner.last_world_exception:
-            import traceback
             t, err, tb = MicropsiRunner.last_world_exception[nodenet_obj.world]
             del MicropsiRunner.last_world_exception[nodenet_obj.world]
             raise err
-            # return False, "%s: %s \r\n%s" % (type(err).__name__, str(err), '\n'.join(traceback.format_tb(tb)))
         condition = nodenet_obj.get_runner_condition()
         if condition:
             data['calculation_condition'] = condition
@@ -524,7 +516,7 @@ def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=No
                     data['calculation_condition']['monitor']['color'] = monitor.color
                 else:
                     del data['calculation_condition']['monitor']
-        data['calculation_running'] = nodenet_obj.is_active
+        data['calculation_running'] = nodenet_obj.is_active or (nodenet_obj.world and worlds[nodenet_obj.world].is_active)
         data['current_nodenet_step'] = nodenet_obj.current_step
         data['current_world_step'] = worlds[nodenet_obj.world].current_step if nodenet_obj.world else 0
         data['control_frequency'] = nodenet_obj.frequency
@@ -675,7 +667,7 @@ def start_nodenetrunner(nodenet_uid):
     return True
 
 
-def set_runner_properties(timestep, factor):
+def set_runner_properties(timestep):
     """Sets the speed of the nodenet calculation in ms.
 
     Argument:
@@ -683,8 +675,6 @@ def set_runner_properties(timestep, factor):
     """
     runner_config['runner_timestep'] = timestep
     runner['timestep'] = timestep
-    runner_config['runner_factor'] = int(factor)
-    runner['factor'] = int(factor)
     return True
 
 
@@ -714,8 +704,7 @@ def remove_runner_condition(nodenet_uid):
 def get_runner_properties():
     """Returns the speed that has been configured for the nodenet runner (in ms)."""
     return {
-        'timestep': runner_config['runner_timestep'],
-        'factor': runner_config['runner_factor']
+        'timestep': runner_config['runner_timestep']
     }
 
 
@@ -745,7 +734,40 @@ def step_nodenet(nodenet_uid):
         nodenet_uid: The uid of the nodenet
     """
     nodenet = get_nodenet(nodenet_uid)
+    if nodenet.is_active:
+        nodenet.is_active = False
 
+    if runtime_config['micropsi2'].get('profile_runner'):
+        import cProfile
+        profiler = cProfile.Profile()
+        profiler.enable()
+
+    if nodenet.world:
+        if type(worlds[nodenet.world]).is_realtime and not worlds[nodenet.world].is_active:
+            if runner['runner'].paused:
+                runner['runner'].resume()
+            worlds[nodenet.world].simulation_started()
+
+    nodenet.timed_step()
+
+    if runtime_config['micropsi2'].get('profile_runner'):
+        profiler.disable()
+        import pstats
+        import io
+        s = io.StringIO()
+        sortby = 'cumtime'
+        ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
+        ps.print_stats('micropsi_')
+        logging.getLogger("agent.%s" % nodenet_uid).debug(s.getvalue())
+
+    if nodenet.world and not type(worlds[nodenet.world]).is_realtime:
+        worlds[nodenet.world].step()
+    nodenet.update_monitors_and_recorders()
+    return nodenet.current_step
+
+
+def single_step_nodenet_only(nodenet_uid):
+    nodenet = get_nodenet(nodenet_uid)
     if runtime_config['micropsi2'].get('profile_runner'):
         import cProfile
         profiler = cProfile.Profile()
@@ -764,8 +786,6 @@ def step_nodenet(nodenet_uid):
         logging.getLogger("agent.%s" % nodenet_uid).debug(s.getvalue())
 
     nodenet.update_monitors_and_recorders()
-    if nodenet.world and nodenet.current_step % runner_config['runner_factor'] == 0:
-        worlds[nodenet.world].step()
     return nodenet.current_step
 
 
@@ -773,6 +793,10 @@ def step_nodenets_in_world(world_uid, nodenet_uid=None, steps=1):
     """ Advances all nodenets registered in the given world
     (or, only the given nodenet) by the given number of steps"""
     nodenet = None
+    if world_uid in worlds and not worlds[world_uid].is_active:
+        worlds[world_uid].simulation_started()
+    if runner['runner'].paused:
+        runner['runner'].resume()
     if nodenet_uid is not None:
         nodenet = get_nodenet(nodenet_uid)
     if nodenet and nodenet.world == world_uid:
@@ -2002,11 +2026,8 @@ def initialize(config=None):
     if 'runner_timestep' not in runner_config:
         runner_config['runner_timestep'] = 10
         runner_config.save_configs()
-    if 'runner_factor' not in runner_config:
-        runner_config['runner_factor'] = 1
-        runner_config.save_configs()
 
-    set_runner_properties(runner_config['runner_timestep'], runner_config['runner_factor'])
+    set_runner_properties(runner_config['runner_timestep'])
 
     runner['running'] = True
     if runner.get('runner') is None:

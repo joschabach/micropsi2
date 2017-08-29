@@ -1023,8 +1023,10 @@ function promptUser(data){
             html += '</div>';
         }
     }
-    html += '<div class="control-group"><label class="control-label">Continue running agent?</label>';
-    html += '<div class="controls"><input type="checkbox" name="run_nodenet"/></div></div>';
+    if (nodenetRunning){
+        html += '<div class="control-group"><label class="control-label">Continue running agent?</label>';
+        html += '<div class="controls"><input type="checkbox" name="run_nodenet"/></div></div>';
+    }
     html += '<input class="hidden" id="user_prompt_node_uid" value="'+data.node.uid+'" />';
     html += '<input class="hidden" id="user_prompt_key" value="'+data.key+'" />';
     html += '</form>';

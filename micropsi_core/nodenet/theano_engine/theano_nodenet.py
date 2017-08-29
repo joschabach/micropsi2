@@ -1221,8 +1221,6 @@ class TheanoNodenet(Nodenet):
                         funcargs.append(all_outputs[pidx][item])
                 if thunk['implementation'] == 'python':
                     params = thunk['node'].clone_parameters()
-                    if self.uid in self.user_prompt_response:
-                        params.update(self.user_prompt_response[self.uid])
                     out = thunk['function'](*funcargs, netapi=self.netapi, node=thunk['node'], parameters=params)
                     if len(thunk['node'].outputs) <= 1:
                         out = [out]

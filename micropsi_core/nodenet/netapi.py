@@ -317,7 +317,7 @@ class NetAPI(object):
             node: the node object that emits this message
             msg: a string to display to the user
         """
-        self.__nodenet.set_user_prompt(node, node.uid, msg)
+        self.__nodenet.set_user_prompt(node, None, msg, [])
 
     def show_user_prompt(self, node, key):
         promptinfo = node.get_user_prompt(key)

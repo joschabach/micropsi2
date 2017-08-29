@@ -523,34 +523,6 @@ class Nodetype(object):
     def nodefunction_name(self):
         return self._nodefunction_name
 
-    @nodefunction_name.setter
-    def nodefunction_name(self, nodefunction_name):
-        import os
-        from importlib.machinery import SourceFileLoader
-        import inspect
-        self._nodefunction_name = nodefunction_name
-        try:
-            if self.path:
-                if "micropsi_core" in self.path:
-                    # builtin native module
-                    modulename = "micropsi_core.nodenet.native_modules"
-                else:
-                    # native module from code dir
-                    modulename = "nodetypes." + self.category.replace('/', '.') + os.path.basename(self.path)[:-3]
-                module = SourceFileLoader(modulename, self.path).load_module()
-                self.nodefunction = getattr(module, nodefunction_name)
-                self.line_number = inspect.getsourcelines(self.nodefunction)[1]
-            else:
-                from micropsi_core.nodenet import nodefunctions
-                if hasattr(nodefunctions, nodefunction_name):
-                    self.nodefunction = getattr(nodefunctions, nodefunction_name)
-                else:
-                    self.logger.warning("Can not find definition of nodefunction %s" % nodefunction_name)
-
-        except (ImportError, AttributeError) as err:
-            self.logger.warning("Import error while importing node function: nodefunctions.%s %s" % (nodefunction_name, err))
-            raise err
-
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None,
                  symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category='', user_prompts={}, **_):
@@ -587,30 +559,40 @@ class Nodetype(object):
         self.user_prompts = {}
         for key, val in user_prompts.items():
             self.user_prompts[key] = val.copy()
-        if self.user_prompts.keys():
-            self.load_user_prompt_functions()
 
         if nodefunction_definition:
             self.nodefunction_definition = nodefunction_definition
         elif nodefunction_name:
-            self.nodefunction_name = nodefunction_name
+            self._nodefunction_name = nodefunction_name
         else:
             self.nodefunction = None
+        self.load_functions()
 
-    def load_user_prompt_functions(self):
+    def load_functions(self):
+        """ Loads nodefunctions and user_prompt callbacks"""
         import os
         from importlib.machinery import SourceFileLoader
         import inspect
         try:
-            modulename = "nodetypes." + self.category.replace('/', '.') + os.path.basename(self.path)[:-3]
-            module = SourceFileLoader(modulename, self.path).load_module()
-            for key, data in self.user_prompts.items():
-                if hasattr(module, data['callback']):
-                    self.user_prompts[key]['callback'] = getattr(module, data['callback'])
+            if self.path and self._nodefunction_name or self.user_prompts.keys():
+                modulename = "nodetypes." + self.category.replace('/', '.') + os.path.basename(self.path)[:-3]
+                module = SourceFileLoader(modulename, self.path).load_module()
+                if self._nodefunction_name:
+                    self.nodefunction = getattr(module, self._nodefunction_name)
+                    self.line_number = inspect.getsourcelines(self.nodefunction)[1]
+                for key, data in self.user_prompts.items():
+                    if hasattr(module, data['callback']):
+                        self.user_prompts[key]['callback'] = getattr(module, data['callback'])
+                    else:
+                        self.logger.warning("Callback '%s' for user_prompt %s of nodetype %s not defined" % (data['callback'], key, self.name))
+            elif self._nodefunction_name:
+                from micropsi_core.nodenet import nodefunctions
+                if hasattr(nodefunctions, self._nodefunction_name):
+                    self.nodefunction = getattr(nodefunctions, self._nodefunction_name)
                 else:
-                    self.logger.warning("Callback '%s' for user_prompt %s of nodetype %s not defined" % (data['callback'], key, self.name))
+                    self.logger.warning("Can not find definition of nodefunction %s" % self._nodefunction_name)
         except (ImportError, AttributeError) as err:
-            self.logger.warning("Import error while importing node function: nodefunctions.%s %s" % (nodefunction_name, err))
+            self.logger.warning("Import error while importing node definition file of nodetype %s: %s" % (self.name, err))
             raise err
 
     def get_gate_dimensionality(self, gate):

@@ -128,7 +128,7 @@ class TheanoNodenet(Nodenet):
     def current_step(self):
         return self._step
 
-    def __init__(self, persistency_path, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None, flow_modules={}):
+    def __init__(self, persistency_path, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None):
 
         # map of string uids to positions. Not all nodes necessarily have an entry.
         self.positions = {}
@@ -223,7 +223,6 @@ class TheanoNodenet(Nodenet):
             if native_modules[key].get('engine', self.engine) == self.engine:
                 self.native_module_definitions[key] = native_modules[key]
 
-        self.flow_module_definitions = flow_modules
         self.flow_module_instances = {}
         self.flow_graphs = []
         self.thetas = {}
@@ -729,7 +728,7 @@ class TheanoNodenet(Nodenet):
                 data['type'] = 'Comment'
                 invalid_nodes.append(uid)
             if native_module_instances_only:
-                if data.get('flow_module') and data['type'] in self.native_module_definitions:
+                if data.get('flow_module') and data['type'] in self.get_flow_module_definitions():
                     node = FlowModule(
                         self,
                         self.get_partition(uid),

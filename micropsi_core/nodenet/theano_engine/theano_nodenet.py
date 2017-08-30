@@ -622,12 +622,15 @@ class TheanoNodenet(Nodenet):
                 self.flowgraph = nx.read_gpickle(flowfile)
 
             for node_uid in nx.topological_sort(self.flowgraph):
-                self.flow_module_instances[node_uid].ensure_initialized()
-                theta_file = os.path.join(self.persistency_path, "%s_thetas.npz" % node_uid)
-                if os.path.isfile(theta_file):
-                    data = np.load(theta_file)
-                    for key in data:
-                        self.set_theta(node_uid, key, data[key])
+                if node_uid in self.flow_module_instances:
+                    self.flow_module_instances[node_uid].ensure_initialized()
+                    theta_file = os.path.join(self.persistency_path, "%s_thetas.npz" % node_uid)
+                    if os.path.isfile(theta_file):
+                        data = np.load(theta_file)
+                        for key in data:
+                            self.set_theta(node_uid, key, data[key])
+                else:
+                    self._delete_flow_module(node_uid)
 
             self.update_flow_graphs()
 

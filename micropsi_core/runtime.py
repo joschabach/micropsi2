@@ -661,7 +661,7 @@ def start_nodenetrunner(nodenet_uid):
     nodenet.simulation_started()
     # nodenets[nodenet_uid].is_active = True
     if nodenet.world:
-        worlds[world_uid].is_active = True
+        worlds[nodenet.world].is_active = True
         worlds[nodenet.world].simulation_started()
     if runner['runner'].paused:
         runner['runner'].resume()
@@ -722,7 +722,7 @@ def stop_nodenetrunner(nodenet_uid):
     if nodenet.world:
         test_world = {nodenets[uid].is_active and nodenets[uid].world == nodenet.world for uid in nodenets}
         if True not in test_world:
-            worlds[world_uid].is_active = False
+            worlds[nodenet.world].is_active = False
             worlds[nodenet.world].simulation_stopped()
     if True not in test:
         runner['runner'].pause()

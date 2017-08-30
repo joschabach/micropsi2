@@ -728,7 +728,7 @@ class TheanoNodenet(Nodenet):
                 data['type'] = 'Comment'
                 invalid_nodes.append(uid)
             if native_module_instances_only:
-                if data.get('flow_module') and data['type'] in self.get_flow_module_definitions():
+                if data['type'] in self.get_flow_module_definitions():
                     node = FlowModule(
                         self,
                         self.get_partition(uid),
@@ -736,8 +736,8 @@ class TheanoNodenet(Nodenet):
                         data['uid'],
                         get_numerical_node_type(data['type'], nativemodules=self.native_modules),
                         parameters=data.get('parameters', {}),
-                        inputmap=data['inputmap'],
-                        outputmap=data['outputmap'],
+                        inputmap=data.get('inputmap', {}),
+                        outputmap=data.get('outputmap', {}),
                         is_copy_of=data.get('is_copy_of'))
 
                     self.flow_module_instances[node.uid] = node

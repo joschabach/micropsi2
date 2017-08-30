@@ -1806,7 +1806,11 @@ def parse_recipe_or_operations_file(path, mode, category_overwrite=False):
     category = category_overwrite or os.path.relpath(os.path.dirname(path), start=base_path)
     if category == '.':
         category = ''  # relapth in rootfolder
-    relpath = os.path.relpath(path, start=base_path)
+    if path.startswith(base_path):
+        relpath = os.path.relpath(path, start=base_path)
+    else:
+        # builtin operations get their filename as relpath
+        relpath, _ = os.path.splitext(os.path.basename(path))
     name = os.path.basename(path)[:-3]
 
     try:

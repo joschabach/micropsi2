@@ -146,7 +146,7 @@ class FlowModule(TheanoNode):
                 raise RuntimeError("This input is already connected")
         self.inputmap[input_name] = (source_uid, source_output)
 
-    def unset_input(self, input_name, source_uid, source_output):
+    def unset_input(self, input_name):
         """ Disconnect a Flowmodule or the worldadapter from the given input of this Flowmodule """
         if input_name not in self.inputs:
             raise NameError("Unknown input %s" % input_name)

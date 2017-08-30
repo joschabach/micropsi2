@@ -917,24 +917,24 @@ class TheanoNodenet(Nodenet):
         if target_uid == "worldadapter":
             target_uid = self.worldadapter_flow_nodes['datatargets']
         self.flowgraph.remove_edge(source_uid, target_uid, key="%s_%s" % (source_output, target_input))
-        self.flow_module_instances[target_uid].unset_input(target_input, source_uid, source_output)
+        self.flow_module_instances[target_uid].unset_input(target_input)
         self.flow_module_instances[source_uid].unset_output(source_output, target_uid, target_input)
         self.update_flow_graphs()
 
     def _delete_flow_module(self, delete_uid):
         self.flowgraph.remove_node(delete_uid)
-        module = self.flow_module_instances[delete_uid]
-        for name in module.inputmap:
-            if module.inputmap[name]:
-                source_uid, source_name = module.inputmap[name]
-                if source_uid in self.flow_module_instances:
-                    self.flow_module_instances[source_uid].unset_output(source_name, delete_uid, name)
-        for name in module.outputmap:
-            for target_uid, target_name in module.outputmap[name]:
-                if target_uid in self.flow_module_instances:
-                    self.flow_module_instances[target_uid].unset_input(target_name, delete_uid, name)
-
-        del self.flow_module_instances[delete_uid]
+        for uid, module in self.flow_module_instances.items():
+            for name in module.inputmap:
+                if module.inputmap[name]:
+                    source_uid, source_name = module.inputmap[name]
+                    if source_uid == delete_uid:
+                        module.unset_input(name)
+            for name in module.outputmap:
+                for target_uid, target_name in module.outputmap[name].copy():
+                    if target_uid == delete_uid:
+                        module.unset_output(name, delete_uid, target_name)
+        if delete_uid in self.flow_module_instances:
+            del self.flow_module_instances[delete_uid]
         self.update_flow_graphs()
 
     def update_flow_graphs(self, node_uids=None):

@@ -291,7 +291,7 @@ class TheanoNodenet(Nodenet):
         else:
             data['nodespaces'] = self.construct_nodespaces_dict(None, transitive=True)
             for partition in self.partitions.values():
-                nodes, _ , _ = partition.get_node_data(nodespaces_by_partition=None, include_links=include_links)
+                nodes, _, _ = partition.get_node_data(nodespaces_by_partition=None, include_links=include_links)
                 data['nodes'].update(nodes)
 
         return data
@@ -666,7 +666,7 @@ class TheanoNodenet(Nodenet):
     def merge_data(self, nodenet_data, keep_uids=False, native_module_instances_only=False):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
         uidmap = {}
-        invalid_nodes = []
+        invalid_nodes = {}
 
         # for dict_engine compatibility
         uidmap["Root"] = self.rootpartition.rootnodespace_uid
@@ -722,10 +722,10 @@ class TheanoNodenet(Nodenet):
                 id_to_pass = None
             if data['type'] not in self.nodetypes and data['type'] not in self.native_modules:
                 self.logger.error("Invalid nodetype %s for node %s" % (data['type'], uid))
-                invalid_nodes.append(uid)
+                invalid_nodes[uid] = data
                 continue
             if native_module_instances_only:
-                if data['type'] in self.get_flow_module_definitions():
+                if data.get('flow_module'):
                     node = FlowModule(
                         self,
                         self.get_partition(uid),
@@ -736,7 +736,6 @@ class TheanoNodenet(Nodenet):
                         inputmap=data.get('inputmap', {}),
                         outputmap=data.get('outputmap', {}),
                         is_copy_of=data.get('is_copy_of'))
-
                     self.flow_module_instances[node.uid] = node
                 else:
                     node = TheanoNode(self, self.get_partition(uid), parent_uid, uid, get_numerical_node_type(data['type'], nativemodules=self.native_modules), parameters=data.get('parameters'))
@@ -790,6 +789,10 @@ class TheanoNodenet(Nodenet):
                 # Compatibility mode
                 mon = monitor.NodeMonitor(self, name=data['node_name'], **data)
                 self._monitors[mon.uid] = mon
+
+        for uid in invalid_nodes:
+            if invalid_nodes[uid].get('flow_module'):
+                self._delete_flow_module(uid)
 
     def merge_nodespace_data(self, nodespace_uid, data, uidmap, keep_uids=False):
         """
@@ -921,7 +924,8 @@ class TheanoNodenet(Nodenet):
         self.update_flow_graphs()
 
     def _delete_flow_module(self, delete_uid):
-        self.flowgraph.remove_node(delete_uid)
+        if delete_uid in self.flowgraph.nodes():
+            self.flowgraph.remove_node(delete_uid)
         for uid, module in self.flow_module_instances.items():
             for name in module.inputmap:
                 if module.inputmap[name]:

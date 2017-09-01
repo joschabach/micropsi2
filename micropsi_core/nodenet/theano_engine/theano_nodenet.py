@@ -578,10 +578,18 @@ class TheanoNodenet(Nodenet):
             monitors = initfrom.pop('monitors', {})
 
             # initialize
-            self.initialize_nodenet(initfrom)
+            invalid_uids = self.initialize_nodenet(initfrom)
 
             for partition in self.partitions.values():
                 partition.load_data(nodes_data)
+
+            if invalid_uids:
+                for uid in invalid_uids:
+                    partition = self.get_partition(uid)
+                    id = node_from_id(uid)
+                    partition.allocated_nodes[id] = 0
+                    partition.allocated_node_parents[id] = 0
+                    partition.allocated_elements_to_nodes[np.where(partition.allocated_elements_to_nodes == id)] = 0
 
             for partition in self.partitions.values():
                 partition.load_inlinks()
@@ -649,9 +657,10 @@ class TheanoNodenet(Nodenet):
 
         self._nodespace_ui_properties = initfrom.get('nodespace_ui_properties', {})
 
+        invalid_uids = []
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)
-            self.merge_data(initfrom, keep_uids=True, native_module_instances_only=True)
+            invalid_uids = self.merge_data(initfrom, keep_uids=True, native_module_instances_only=True)
             if 'names' in initfrom:
                 self.names = initfrom['names']
             if 'positions' in initfrom:
@@ -662,6 +671,7 @@ class TheanoNodenet(Nodenet):
                 self.sensormap = initfrom['sensormap']
             if 'current_step' in initfrom:
                 self._step = initfrom['current_step']
+        return invalid_uids
 
     def merge_data(self, nodenet_data, keep_uids=False, native_module_instances_only=False):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
@@ -726,19 +736,27 @@ class TheanoNodenet(Nodenet):
                 continue
             if native_module_instances_only:
                 if data.get('flow_module'):
-                    node = FlowModule(
-                        self,
-                        self.get_partition(uid),
-                        data['parent_nodespace'],
-                        data['uid'],
-                        get_numerical_node_type(data['type'], nativemodules=self.native_modules),
-                        parameters=data.get('parameters', {}),
-                        inputmap=data.get('inputmap', {}),
-                        outputmap=data.get('outputmap', {}),
-                        is_copy_of=data.get('is_copy_of'))
-                    self.flow_module_instances[node.uid] = node
+                    if self.native_module_definitions[data['type']].get('flow_module'):
+                        node = FlowModule(
+                            self,
+                            self.get_partition(uid),
+                            data['parent_nodespace'],
+                            data['uid'],
+                            get_numerical_node_type(data['type'], nativemodules=self.native_modules),
+                            parameters=data.get('parameters', {}),
+                            inputmap=data.get('inputmap', {}),
+                            outputmap=data.get('outputmap', {}),
+                            is_copy_of=data.get('is_copy_of'))
+                        self.flow_module_instances[node.uid] = node
+                    else:
+                        invalid_nodes[uid] = data
+                        continue
                 else:
-                    node = TheanoNode(self, self.get_partition(uid), parent_uid, uid, get_numerical_node_type(data['type'], nativemodules=self.native_modules), parameters=data.get('parameters'))
+                    if not self.native_module_definitions[data['type']].get('flow_module'):
+                        node = TheanoNode(self, self.get_partition(uid), parent_uid, uid, get_numerical_node_type(data['type'], nativemodules=self.native_modules), parameters=data.get('parameters'))
+                    else:
+                        invalid_nodes[uid] = data
+                        continue
                 self.proxycache[node.uid] = node
                 new_uid = node.uid
             else:
@@ -793,6 +811,7 @@ class TheanoNodenet(Nodenet):
         for uid in invalid_nodes:
             if invalid_nodes[uid].get('flow_module'):
                 self._delete_flow_module(uid)
+        return invalid_nodes.keys()
 
     def merge_nodespace_data(self, nodespace_uid, data, uidmap, keep_uids=False):
         """

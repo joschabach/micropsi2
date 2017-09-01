@@ -534,9 +534,9 @@ def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=No
             }
             if activations['has_changes']:
                 data['nodenet_diff']['changes'] = nodenet_obj.get_nodespace_changes(nodenet_diff.get('nodespaces', []), nodenet_diff['step'], include_links=nodenet_diff.get('include_links', True))
-        if nodenet_obj.user_prompt:
-            data['user_prompt'] = nodenet_obj.user_prompt
-            nodenet_obj.user_prompt = None
+        prompt = nodenet_obj.consume_user_prompt()
+        if prompt:
+            data['user_prompt'] = prompt
         if world is not None and nodenet_obj.world:
             if not type(world) == dict:
                 world = {}
@@ -1393,13 +1393,13 @@ def align_nodes(nodenet_uid, nodespace):
     return result
 
 
-def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
+def user_prompt_response(nodenet_uid, node_uid, key, parameters, resume_nodenet):
     nodenet = get_nodenet(nodenet_uid)
-    nodenet.user_prompt_response[node_uid] = values
+    if key and parameters:
+        nodenet.set_user_prompt_response(node_uid, key, parameters)
     if resume_nodenet:
         start_nodenetrunner(nodenet_uid)
     # nodenet.is_active = resume_nodenet
-    nodenet.user_prompt = None
 
 
 def get_available_recipes():

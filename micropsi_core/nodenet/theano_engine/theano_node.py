@@ -473,8 +473,6 @@ class TheanoNode(Node):
     def node_function(self):
         try:
             params = self.clone_parameters()
-            if self.uid in self._nodenet.user_prompt_response:
-                params.update(self._nodenet.user_prompt_response[self.uid])
             self.nodetype.nodefunction(netapi=self._nodenet.netapi, node=self, **params)
         except Exception:
             self._nodenet.is_active = False

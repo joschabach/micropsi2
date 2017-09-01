@@ -1037,20 +1037,22 @@ def set_nodespace_properties(nodenet_uid, nodespace_uid, properties):
 def start_behavior(nodenet_uid, condition):
     """ Start nodenet with the stop condition """
     if condition:
-         if 'steps' in condition:
-             condition['steps'] = int(condition['steps'])
-             if condition['steps'] < 0:
-                 condition['steps'] = None
-         else:
-             condition['steps'] = None
-         if 'monitor' in condition:
-             if 'value' in condition['monitor']:
-                 condition['monitor']['value'] = float(condition['monitor']['value'])
-         else:
-             condition['monitor'] = None
-         set_runner_condition(nodenet_uid, condition['monitor'], condition['steps'])
+        if 'steps' in condition:
+            condition['steps'] = int(condition['steps'])
+            if condition['steps'] < 0:
+                condition['steps'] = None
+        else:
+            condition['steps'] = None
+        if 'monitor' in condition:
+            if 'value' in condition['monitor']:
+                condition['monitor']['value'] = float(condition['monitor']['value'])
+        else:
+            condition['monitor'] = None
+        set_runner_condition(nodenet_uid, condition['monitor'], condition['steps'])
 
-    return start_nodenetrunner(nodenet_uid)
+    token = {'token': nodenet_uid}
+
+    return start_nodenetrunner(nodenet_uid), token
 
 
 def __pythonify(name):

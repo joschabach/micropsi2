@@ -1038,9 +1038,9 @@ def merge_nodenet_rpc(nodenet_uid, nodenet_data):
 
 
 @rpc("start_behavior")
-def start_behavior_rpc(nodenet_uid, condition):
-   """ Start nodenet with the stop condition """
-   return runtime.start_behavior(nodenet_uid, condition)
+def start_behavior_rpc(nodenet_uid, condition=None):
+    """ Start nodenet with the stop condition """
+    return runtime.start_behavior(nodenet_uid, condition)
 
 # World
 

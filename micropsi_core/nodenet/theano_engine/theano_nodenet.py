@@ -580,20 +580,11 @@ class TheanoNodenet(Nodenet):
             # initialize
             invalid_uids = self.initialize_nodenet(initfrom)
 
-            for partition in self.partitions.values():
-                partition.load_data(nodes_data)
+            for uid in invalid_uids:
+                del nodes_data[uid]
 
-            if invalid_uids:
-                w_matrix = partition.w.get_value()
-                for uid in invalid_uids:
-                    partition = self.get_partition(uid)
-                    id = node_from_id(uid)
-                    partition.allocated_nodes[id] = 0
-                    partition.allocated_node_parents[id] = 0
-                    els = partition.allocated_elements_to_nodes[np.where(partition.allocated_elements_to_nodes == id)]
-                    w_matrix[els] = 0
-                    partition.allocated_elements_to_nodes[np.where(partition.allocated_elements_to_nodes == id)] = 0
-                partition.w.set_value(w_matrix)
+            for partition in self.partitions.values():
+                partition.load_data(nodes_data, invalid_uids=invalid_uids)
 
             for partition in self.partitions.values():
                 partition.load_inlinks()

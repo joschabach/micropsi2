@@ -61,9 +61,9 @@ def nodefunc(netapi, node, params):
     netapi.flow(foonode, 'X', foo2node, 'Y')
     netapi.flow(foo2node, 'X', 'worldadapter', 'action')
     runtime.save_nodenet(test_nodenet)
+    runtime.unload_nodenet(test_nodenet)
 
     # remove nativemodule
-    runtime.unload_nodenet(test_nodenet)
     removedefs('barnode.py')
     runtime.reload_code()
     net = runtime.get_nodenet(test_nodenet)
@@ -71,9 +71,9 @@ def nodefunc(netapi, node, params):
     with pytest.raises(KeyError):
         net.netapi.get_node(barnode.uid)
     write_nativemodule('barnode.py', 'barnode')
+    runtime.unload_nodenet(test_nodenet)
 
     # remove a flowmodule
-    runtime.unload_nodenet(test_nodenet)
     removedefs('foonode.py')
     runtime.reload_code()
     net = runtime.get_nodenet(test_nodenet)
@@ -83,3 +83,23 @@ def nodefunc(netapi, node, params):
     assert foonode.uid not in foo2node.inputmap['Y']
     with pytest.raises(KeyError):
         net.netapi.get_node(foonode.uid)
+    runtime.unload_nodenet(test_nodenet)
+
+    # change native module to flowmodule and vice versa
+    write_flowmodule('barnode.py', 'barnode')
+    write_nativemodule('foo2node.py', 'foo2node')
+    runtime.reload_code()
+    net = runtime.get_nodenet(test_nodenet)
+    with pytest.raises(KeyError):
+        foo2node = net.netapi.get_node(foo2node.uid)
+    with pytest.raises(KeyError):
+        barnode = net.netapi.get_node(barnode.uid)
+    with pytest.raises(KeyError):
+        net.netapi.get_node(foonode.uid)
+    newbarnode = net.netapi.create_node("barnode")
+    newfoo2node = net.netapi.create_node("foo2node")
+    neuron = net.netapi.get_node(neuron.uid)
+    net.netapi.link(neuron, 'gen', newbarnode, 'sub')
+    net.netapi.link(neuron, 'gen', newfoo2node, 'foo')
+    net.netapi.flow('worldadapter', 'vision', newbarnode, 'Y')
+    net.netapi.flow(newbarnode, 'X', 'worldadapter', 'action')

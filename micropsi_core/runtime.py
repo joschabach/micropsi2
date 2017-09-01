@@ -241,13 +241,15 @@ class MicropsiRunner(threading.Thread):
                 self.sum_of_step_durations += step_ms
                 self.number_of_samples += 1
                 self.total_steps += 1
-                if self.total_steps % self.granularity == 0:
-                    average_calc_duration = self.sum_of_calc_durations / self.number_of_samples
+                if self.total_steps % (self.granularity/10) == 0:
                     average_step_duration = self.sum_of_step_durations / self.number_of_samples
                     if average_step_duration > 0:
                         nodenet.frequency = round((1 / average_step_duration) * 1000)
                     else:
                         nodenet.frequency = 0
+
+                if self.total_steps % self.granularity == 0:
+                    average_calc_duration = self.sum_of_calc_durations / self.number_of_samples
                     if self.profiler:
                         import pstats
                         import io

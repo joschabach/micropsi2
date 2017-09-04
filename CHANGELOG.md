@@ -1,6 +1,10 @@
 
 0.12-alpha10 (unreleased)
 ==========
+ * Improved user prompts
+ * Inf/NaN guard for flowmodules
+ * Realtime world support
+ * Reliable code reloading
 
 
 0.11-alpha9 (2017-06-26)

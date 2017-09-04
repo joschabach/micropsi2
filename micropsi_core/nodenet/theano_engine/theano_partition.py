@@ -822,7 +822,7 @@ class TheanoPartition():
         else:
             np.savez(os.path.join(base_path, filename), **data)
 
-    def load_data(self, nodes_data):
+    def load_data(self, nodes_data, invalid_uids=[]):
         """Load the node net from a file"""
         # try to access file
 
@@ -1017,11 +1017,26 @@ class TheanoPartition():
         else:
             self.logger.warning("no g_function_selector in file, falling back to defaults")
 
+        for uid in invalid_uids:
+            if self.nodenet.get_partition(uid) == self:
+                w_matrix = self.w.get_value()
+                id = node_from_id(uid)
+                self.allocated_nodes[id] = 0
+                self.allocated_node_parents[id] = 0
+                els = self.allocated_elements_to_nodes[np.where(self.allocated_elements_to_nodes == id)]
+                w_matrix[els] = 0
+                self.allocated_elements_to_nodes[np.where(self.allocated_elements_to_nodes == id)] = 0
+                self.w.set_value(w_matrix)
+
         for id in np.nonzero(self.allocated_nodes)[0]:
             if self.allocated_nodes[id] > MAX_STD_NODETYPE:
                 uid = node_to_id(id, self.pid)
                 if uid in nodes_data:
-                    self.allocated_nodes[id] = get_numerical_node_type(nodes_data[uid]['type'], self.nodenet.native_modules)
+                    try:
+                        self.allocated_nodes[id] = get_numerical_node_type(nodes_data[uid]['type'], self.nodenet.native_modules)
+                    except ValueError:
+                        self.allocated_nodes[id] = 0
+                        self.allocated_elements_to_nodes[np.where(self.allocated_elements_to_nodes == id)] = 0
             if self.allocated_nodes[id] > MAX_STD_NODETYPE:
                 self.native_module_instances[uid] = self.nodenet.get_node(uid)
             elif self.allocated_nodes[id] == COMMENT:

@@ -604,7 +604,7 @@ def source_init(netapi, node, parameters):
     node.set_theta("weights", w_array)
 
 def source(netapi, node, parameters):
-    return node.get_theta("weights")
+    return node.get_theta("weights").get_value()
 """)
     with open(os.path.join(resourcepath, "nodetypes", "Target.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
@@ -618,7 +618,7 @@ def source(netapi, node, parameters):
 }
 
 def target(X, netapi, node, parameters):
-    node.set_state("incoming", X.get_value())
+    node.set_state("incoming", X)
 """)
 
     runtime.reload_code()

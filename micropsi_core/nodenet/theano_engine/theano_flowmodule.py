@@ -193,6 +193,9 @@ class FlowModule(TheanoNode):
         elif self.implementation == 'python':
             outexpression = self._flowfunction
 
+        else:
+            raise ValueError("Unknown flow-implementation: %s" % self.implementation)
+
         self.outexpression = outexpression
 
         return outexpression

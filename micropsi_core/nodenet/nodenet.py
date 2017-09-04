@@ -164,6 +164,7 @@ class Nodenet(metaclass=ABCMeta):
         self._uid = uid
         self._runner_condition = None
 
+        self.runner_config = {}
         self.owner = owner
         self._monitors = {}
         self._recorders = {}
@@ -288,8 +289,9 @@ class Nodenet(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
-    def timed_step(self):
+    def timed_step(self, runner_config={}):
         start = datetime.now()
+        self.runner_config = runner_config
         self.step()
         elapsed = datetime.now() - start
         self.stepping_rate.append(elapsed.seconds + ((elapsed.microseconds // 1000) / 1000))

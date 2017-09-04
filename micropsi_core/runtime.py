@@ -34,7 +34,7 @@ from micropsi_core.tools import Bunch, post_mortem, generate_uid
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
 
-runner = {'timestep': 1000, 'runner': None}
+runner = {'timestep': 1000, 'runner': None, 'infguard': True}
 
 nodenet_lock = threading.Lock()
 
@@ -177,7 +177,7 @@ class MicropsiRunner(threading.Thread):
                             continue
                         log = True
                         try:
-                            nodenet.timed_step()
+                            nodenet.timed_step(runner_config.data)
                             nodenet.update_monitors_and_recorders()
                         except:
                             stop_nodenetrunner(uid)
@@ -670,14 +670,16 @@ def start_nodenetrunner(nodenet_uid):
     return True
 
 
-def set_runner_properties(timestep):
+def set_runner_properties(timestep, infguard=False):
     """Sets the speed of the nodenet calculation in ms.
 
     Argument:
         timestep: sets the calculation speed.
     """
     runner_config['runner_timestep'] = timestep
+    runner_config['runner_infguard'] = bool(infguard)
     runner['timestep'] = timestep
+    runner['infguard'] = bool(infguard)
     return True
 
 
@@ -707,7 +709,8 @@ def remove_runner_condition(nodenet_uid):
 def get_runner_properties():
     """Returns the speed that has been configured for the nodenet runner (in ms)."""
     return {
-        'timestep': runner_config['runner_timestep']
+        'timestep': runner_config['runner_timestep'],
+        'infguard': runner_config['runner_infguard']
     }
 
 
@@ -752,7 +755,7 @@ def step_nodenet(nodenet_uid):
                 runner['runner'].resume()
             worlds[nodenet.world].simulation_started()
 
-    nodenet.timed_step()
+    nodenet.timed_step(runner_config.data)
 
     if runtime_config['micropsi2'].get('profile_runner'):
         profiler.disable()
@@ -777,7 +780,7 @@ def single_step_nodenet_only(nodenet_uid):
         profiler = cProfile.Profile()
         profiler.enable()
 
-    nodenet.timed_step()
+    nodenet.timed_step(runner_config.data)
 
     if runtime_config['micropsi2'].get('profile_runner'):
         profiler.disable()
@@ -805,13 +808,13 @@ def step_nodenets_in_world(world_uid, nodenet_uid=None, steps=1):
         nodenet = get_nodenet(nodenet_uid)
     if nodenet and nodenet.world == world_uid:
         for i in range(steps):
-            nodenet.timed_step()
+            nodenet.timed_step(runner_config.data)
             nodenet.update_monitors_and_recorders()
     else:
         for i in range(steps):
             for uid in worlds[world_uid].agents:
                 nodenet = get_nodenet(uid)
-                nodenet.timed_step()
+                nodenet.timed_step(runner_config.data)
                 nodenet.update_monitors_and_recorders()
     return True
 
@@ -2033,9 +2036,11 @@ def initialize(config=None):
     # Initialize the threads for the continuous calculation of nodenets and worlds
     if 'runner_timestep' not in runner_config:
         runner_config['runner_timestep'] = 10
-        runner_config.save_configs()
+    if 'infguard' not in runner_config:
+        runner_config['runner_infguard'] = True
+    runner_config.save_configs()
 
-    set_runner_properties(runner_config['runner_timestep'])
+    set_runner_properties(runner_config['runner_timestep'], runner_config['runner_infguard'])
 
     runner['running'] = True
     if runner.get('runner') is None:

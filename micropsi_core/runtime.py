@@ -34,7 +34,7 @@ from micropsi_core.tools import Bunch, post_mortem, generate_uid
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
 
-runner = {'timestep': 1000, 'runner': None}
+runner = {'timestep': 1000, 'runner': None, 'infguard': True}
 
 nodenet_lock = threading.Lock()
 
@@ -670,14 +670,16 @@ def start_nodenetrunner(nodenet_uid):
     return True
 
 
-def set_runner_properties(timestep):
+def set_runner_properties(timestep, infguard=False):
     """Sets the speed of the nodenet calculation in ms.
 
     Argument:
         timestep: sets the calculation speed.
     """
     runner_config['runner_timestep'] = timestep
+    runner_config['runner_infguard'] = bool(infguard)
     runner['timestep'] = timestep
+    runner['infguard'] = bool(infguard)
     return True
 
 
@@ -707,7 +709,8 @@ def remove_runner_condition(nodenet_uid):
 def get_runner_properties():
     """Returns the speed that has been configured for the nodenet runner (in ms)."""
     return {
-        'timestep': runner_config['runner_timestep']
+        'timestep': runner_config['runner_timestep'],
+        'infguard': runner_config['runner_infguard']
     }
 
 
@@ -2033,9 +2036,11 @@ def initialize(config=None):
     # Initialize the threads for the continuous calculation of nodenets and worlds
     if 'runner_timestep' not in runner_config:
         runner_config['runner_timestep'] = 10
-        runner_config.save_configs()
+    if 'infguard' not in runner_config:
+        runner_config['runner_infguard'] = True
+    runner_config.save_configs()
 
-    set_runner_properties(runner_config['runner_timestep'])
+    set_runner_properties(runner_config['runner_timestep'], runner_config['runner_infguard'])
 
     runner['running'] = True
     if runner.get('runner') is None:

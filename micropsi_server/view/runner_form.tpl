@@ -31,6 +31,17 @@
                         %end
                     </div>
                 </div>
+                <div class="control-group">
+                    <label class="control-label" for="infguard">NaN/Inf Guard</label>
+                    <div class="controls">
+                        <input type="checkbox" class="input-xlarge" id="infguard" name="infguard"
+                        %if 'infguard' in value and value['infguard']:
+                            checked="checked"
+                        %end
+                        />
+                    </div>
+                </div>
+
             </fieldset>
     </div>
 

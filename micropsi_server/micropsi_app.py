@@ -792,7 +792,7 @@ def world_list(current_world=None):
 def edit_runner_properties():
     user_id, permissions, token = get_request_data()
     if len(request.params) > 0:
-        runtime.set_runner_properties(int(request.params['timestep']))
+        runtime.set_runner_properties(int(request.params['timestep']), bool(request.params.get('infguard')))
         return dict(status="success", msg="Settings saved")
     else:
         return template("runner_form", action="/config/runner", value=runtime.get_runner_properties())
@@ -968,10 +968,10 @@ def remove_runner_condition(nodenet_uid):
 
 
 @rpc("set_runner_properties", permission_required="manage server")
-def set_runner_properties(timestep):
+def set_runner_properties(timestep, infguard):
     """ Configure the server-settings:
     timestep: miliseconds per nodenet-step"""
-    return runtime.set_runner_properties(timestep)
+    return runtime.set_runner_properties(timestep, infguard)
 
 
 @rpc("get_runner_properties")

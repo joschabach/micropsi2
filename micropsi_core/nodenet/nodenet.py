@@ -164,6 +164,7 @@ class Nodenet(metaclass=ABCMeta):
         self._uid = uid
         self._runner_condition = None
 
+        self.runner_config = {}
         self.owner = owner
         self._monitors = {}
         self._recorders = {}

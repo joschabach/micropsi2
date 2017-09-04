@@ -103,11 +103,6 @@ class TheanoNodenet(Nodenet):
         return "theano_engine"
 
     @property
-    def flow_infguard(self):
-        from micropsi_core.runtime import runner_config
-        return runner_config["runner_infguard"]
-
-    @property
     def worldadapter_instance(self):
         return self._worldadapter_instance
 

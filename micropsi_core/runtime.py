@@ -177,7 +177,7 @@ class MicropsiRunner(threading.Thread):
                             continue
                         log = True
                         try:
-                            nodenet.timed_step()
+                            nodenet.timed_step(runner_config.data)
                             nodenet.update_monitors_and_recorders()
                         except:
                             stop_nodenetrunner(uid)
@@ -755,7 +755,7 @@ def step_nodenet(nodenet_uid):
                 runner['runner'].resume()
             worlds[nodenet.world].simulation_started()
 
-    nodenet.timed_step()
+    nodenet.timed_step(runner_config.data)
 
     if runtime_config['micropsi2'].get('profile_runner'):
         profiler.disable()
@@ -780,7 +780,7 @@ def single_step_nodenet_only(nodenet_uid):
         profiler = cProfile.Profile()
         profiler.enable()
 
-    nodenet.timed_step()
+    nodenet.timed_step(runner_config.data)
 
     if runtime_config['micropsi2'].get('profile_runner'):
         profiler.disable()
@@ -808,13 +808,13 @@ def step_nodenets_in_world(world_uid, nodenet_uid=None, steps=1):
         nodenet = get_nodenet(nodenet_uid)
     if nodenet and nodenet.world == world_uid:
         for i in range(steps):
-            nodenet.timed_step()
+            nodenet.timed_step(runner_config.data)
             nodenet.update_monitors_and_recorders()
     else:
         for i in range(steps):
             for uid in worlds[world_uid].agents:
                 nodenet = get_nodenet(uid)
-                nodenet.timed_step()
+                nodenet.timed_step(runner_config.data)
                 nodenet.update_monitors_and_recorders()
     return True
 

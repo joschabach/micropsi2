@@ -1,5 +1,5 @@
 
-0.12-alpha10 (unreleased)
+0.12-alpha10 (2017-09-04)
 ==========
  * Improved user prompts
  * Inf/NaN guard for flowmodules

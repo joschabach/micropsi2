@@ -75,12 +75,11 @@ class TheanoCalculateFlowmodules(Propagate):
 
     def __init__(self, nodenet):
         self.nodenet = nodenet
-        self.flow_finite_guard = nodenet.flow_finite_guard
 
     def value_guard(self, value, source, name):
         if value is None:
             return None
-        if self.flow_finite_guard:
+        if self.nodenet.flow_infguard:
             if np.isnan(np.sum(value)):
                 raise ValueError("NAN value in flow datected: %s" % self.format_error(source, name))
             elif np.isinf(np.sum(value)):

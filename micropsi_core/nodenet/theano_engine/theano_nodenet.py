@@ -103,6 +103,11 @@ class TheanoNodenet(Nodenet):
         return "theano_engine"
 
     @property
+    def flow_infguard(self):
+        from micropsi_core.runtime import runner_config
+        return runner_config["runner_infguard"]
+
+    @property
     def worldadapter_instance(self):
         return self._worldadapter_instance
 
@@ -163,8 +168,6 @@ class TheanoNodenet(Nodenet):
             self.byte_per_float = 8
         else:
             raise RuntimeError("Unsupported float precision value")
-
-        self.flow_finite_guard = settings['theano'].get('flow_finite_guard')
 
         device = T.config.device
         self.logger.info("Theano configured to use %s", device)

@@ -286,29 +286,34 @@ class MyCustomWA(WorldAdapter):
     assert runtime.nodenets[default_nodenet].worldadapter_instance.__class__.__name__ == 'MyCustomWA'
 
 
-def test_reload_world_code(runtime, default_nodenet, resourcepath):
+def test_realtime_world_stepping(runtime, default_nodenet, resourcepath):
     import os
+    import time
     with open(os.path.join(resourcepath, 'worlds.json'), 'w') as fp:
         fp.write("""
             {"worlds": ["custom_world.py"],
-            "worldadapters": ["someadapter.py"]}""")
+            "worldadapters": ["custom_world.py"]}""")
     with open(os.path.join(resourcepath, 'custom_world.py'), 'w') as fp:
         fp.write("""
 
 from micropsi_core.world.world import World
+from micropsi_core.world.worldadapter import WorldAdapter
 
 class MyWorld(World):
+    is_realtime = True
     supported_worldadapters = ['MyCustomWA']
 
     def __init__(self, filename, **kwargs):
         super().__init__(filename, **kwargs)
+        self.custom_state = None
 
-""")
+    def simulation_started(self):
+        super().simulation_started()
+        self.custom_state = 'runner started'
 
-    with open(os.path.join(resourcepath, 'someadapter.py'), 'w') as fp:
-        fp.write("""
-
-from micropsi_core.world.worldadapter import WorldAdapter
+    def simulation_stopped(self):
+        super().simulation_stopped()
+        self.custom_state = 'runner stopped'
 
 class MyCustomWA(WorldAdapter):
     def __init__(self, world, uid=None, config={}, **data):
@@ -316,69 +321,30 @@ class MyCustomWA(WorldAdapter):
 
     def update_data_sources_and_targets(self):
         pass
-
 """)
-
     runtime.reload_code()
-    assert "MyWorld" in runtime.get_available_world_types()
-
     result, world_uid = runtime.new_world("test world", "MyWorld")
-
     assert runtime.set_nodenet_properties(default_nodenet, world_uid=world_uid, worldadapter="MyCustomWA")
-    wa = runtime.nodenets[default_nodenet].worldadapter_instance
-    assert wa.__class__.__name__ == 'MyCustomWA'
-    assert wa.get_available_datasources() == []
-
-    res, nn2_uid = runtime.new_nodenet("deleteme", worldadapter="MyCustomWA", world_uid=world_uid)
-    runtime.save_world(world_uid)
-    runtime.unload_nodenet(nn2_uid)
-    runtime.revert_world(world_uid)
-    with open(os.path.join(resourcepath, 'custom_world.py'), 'w') as fp:
-        fp.write("""
-
-from micropsi_core.world.world import World
-
-class MyWorld(World):
-    supported_worldadapters = ['MyCustomWA', 'SecondWA']
-
-    def __init__(self, filename, **kwargs):
-        super().__init__(filename, **kwargs)
-
-""")
-
-    with open(os.path.join(resourcepath, 'someadapter.py'), 'w') as fp:
-        fp.write("""
-
-from micropsi_core.world.worldadapter import WorldAdapter
-
-class MyCustomWA(WorldAdapter):
-    def __init__(self, world, uid=None, config={}, **data):
-        super().__init__(world, uid=uid, config=config, **data)
-        self.datasources = {'foo': 1}
-        self.datatargets = {'bar': 0}
-        self.datatarget_feedback = {'bar': 0}
-
-    def update_data_sources_and_targets(self):
-        self.datasources['foo'] = self.datatargets['bar'] * 2
-
-class SecondWA(WorldAdapter):
-    def update_data_sources_and_targets(self):
-        pass
-
-""")
-
-    res, errors = runtime.reload_code()
-    assert res
-    assert errors == []
-
-    assert 'MyCustomWA' in runtime.get_worldadapters(world_uid)
-    assert 'SecondWA' in runtime.get_worldadapters(world_uid)
-
-    assert nn2_uid not in runtime.worlds[world_uid].agents
-    assert default_nodenet in runtime.worlds[world_uid].data['agents']
-    wa = runtime.nodenets[default_nodenet].worldadapter_instance
-    assert wa.get_available_datasources() == ['foo']
-
-    runtime.set_nodenet_properties(default_nodenet, world_uid=world_uid, worldadapter='SecondWA')
-    wa = runtime.nodenets[default_nodenet].worldadapter_instance
-    assert wa.get_available_datasources() == []
+    runtime.single_step_nodenet_only(default_nodenet)
+    assert not runtime.worlds[world_uid].is_active
+    assert runtime.nodenets[default_nodenet].current_step == 1
+    assert runtime.worlds[world_uid].current_step == 0
+    assert runtime.worlds[world_uid].custom_state is None
+    runtime.step_nodenet(default_nodenet)
+    time.sleep(.2)
+    assert not runtime.nodenets[default_nodenet].is_active
+    assert runtime.nodenets[default_nodenet].current_step == 2
+    assert runtime.worlds[world_uid].is_active
+    assert runtime.worlds[world_uid].current_step > 3
+    assert runtime.worlds[world_uid].custom_state == 'runner started'
+    runtime.stop_nodenetrunner(default_nodenet)
+    assert not runtime.worlds[world_uid].is_active
+    assert runtime.worlds[world_uid].custom_state == 'runner stopped'
+    runtime.start_nodenetrunner(default_nodenet)
+    time.sleep(.2)
+    runtime.step_nodenet(default_nodenet)
+    laststep = runtime.nodenets[default_nodenet].current_step
+    time.sleep(.2)
+    assert laststep == runtime.nodenets[default_nodenet].current_step
+    assert not runtime.nodenets[default_nodenet].is_active
+    assert runtime.worlds[world_uid].is_active

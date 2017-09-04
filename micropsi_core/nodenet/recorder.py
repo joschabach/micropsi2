@@ -15,7 +15,6 @@ except ImportError:
     pass
 from abc import ABCMeta, abstractmethod
 from micropsi_core import tools
-from micropsi_core.runtime import PERSISTENCY_PATH, NODENET_DIRECTORY
 
 
 class Recorder(metaclass=ABCMeta):

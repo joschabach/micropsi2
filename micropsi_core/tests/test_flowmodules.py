@@ -30,7 +30,7 @@ def prepare(runtime, test_nodenet, default_world, resourcepath, wa_class=None):
 def out12345(netapi, node, parameters):
     import numpy as np
     assert parameters['default_test'] == 'defaultvalue'
-    return np.asarray([1,2,3,4,5])
+    return np.asarray([1,2,3,4,5]).astype(netapi.floatX)
 """)
 
     with open(os.path.join(foodir, "Double.py"), 'w') as fp:
@@ -48,6 +48,7 @@ def out12345(netapi, node, parameters):
 }
 
 def double_init(netapi, node, parameters):
+    assert nodetype_definition['name'] == 'Double'
     node.initfunction_ran = True
     assert parameters['test_param'] == 'defaultvalue'
 
@@ -157,12 +158,17 @@ def two_outputs(X, netapi, node, parameters):
     "build_function_name": "trpoout",
     "inputs": ["X"],
     "outputs": ["Y", "Z"],
-    "inputdims": [1]
+    "inputdims": [1],
+    "parameters": ["makeinf"],
+    "parameter_defaults": {"makeinf": "False"}
 }
 
 def trpoout(X, netapi, node, parameters):
     from theano import tensor as T
-    return [X, X+1, X*2], T.exp(X)
+    if parameters["makeinf"] == "False":
+        return [X, X+1, X*2], T.exp(X)
+    else:
+        return [X, X/0, X*2], T.exp(X)
 """)
     with open(os.path.join(resourcepath, "nodetypes", "TRPOIn.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
@@ -197,6 +203,33 @@ def trpoinpython(X, Y, netapi, node, parameters):
     return Y
 """)
 
+    with open(os.path.join(resourcepath, "nodetypes", "infmaker.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "python",
+    "name": "infmaker",
+    "run_function_name": "infmaker",
+    "inputs": [],
+    "outputs": ["A"],
+    "inputdims": [],
+    "parameters": ["what"],
+    "parameter_values": {"what": ["nan", "inf", "neginf"]},
+    "parameter_defaults": {"what": "nan"}
+}
+
+import numpy as np
+
+def infmaker(netapi, node, parameters):
+    data = np.ones(12).astype(netapi.floatX)
+    what = np.nan
+    if parameters['what'] == 'inf':
+        what = np.inf
+    elif parameters['what'] == 'neginf':
+        what = -np.inf
+    data[np.random.randint(0, 11)] = what
+    return data
+""")
+
     with open(os.path.join(resourcepath, 'worlds.json'), 'w') as fp:
         fp.write("""{"worlds":["flowworld.py"],"worldadapters":["flowworld.py"]}""")
 
@@ -225,9 +258,9 @@ class SimpleArrayWA(ArrayWorldAdapter):
 
     def update_data_sources_and_targets(self):
         for key in self.flow_datatargets:
-            self.flow_datatarget_feedbacks[key] = np.copy(self.flow_datatargets[key])
+            self.flow_datatarget_feedbacks[key] = np.copy(self.flow_datatargets[key]).astype(self.floatX)
         for key in self.flow_datasources:
-            self.flow_datasources[key] = np.random.rand(len(self.flow_datasources[key]))
+            self.flow_datasources[key] = np.random.rand(len(self.flow_datasources[key])).astype(self.floatX)
 """)
 
     nodenet = runtime.nodenets[test_nodenet]
@@ -844,7 +877,7 @@ def test_none_output_skips_following_graphs(runtime, test_nodenet, default_world
     # assert that the bisect function did not run
     assert np.all(worldadapter.get_flow_datatarget('bar') == np.zeros(5))
     # but python did
-    assert nodenet.user_prompt['msg'] == 'numpyfunc ran'
+    assert nodenet.consume_user_prompt()['msg'] == 'numpyfunc ran'
     # and assert that you can get that info from the sur-gates:
     assert bisect.get_gate('sur').activation == 0
     assert py.get_gate('sur').activation == 1
@@ -986,7 +1019,7 @@ def test_connect_flow_modules_to_structured_flow_datasource(runtime, test_nodene
     sources = np.zeros((6), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
     worldadapter.set_flow_datasource('vision', sources)
-    worldadapter.set_flow_datasource('start', np.asarray([0.73]))
+    worldadapter.set_flow_datasource('start', np.asarray([0.73]).astype(nodenet.numpyfloatX))
 
     double = netapi.create_node("Double", None, "Double")
     netapi.flow('worldadapter', 'vision', double, 'inputs')
@@ -1013,7 +1046,7 @@ def test_connect_flow_modules_to_structured_flow_datasource(runtime, test_nodene
     sources = np.zeros((6), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
     worldadapter.set_flow_datasource('vision', sources)
-    worldadapter.set_flow_datasource('start', np.asarray([0.64]))
+    worldadapter.set_flow_datasource('start', np.asarray([0.64]).astype(nodenet.numpyfloatX))
     runtime.step_nodenet(test_nodenet)
     assert np.all(worldadapter.get_flow_datatarget_feedback('motor') == np.zeros(6))
     assert np.allclose(worldadapter.get_flow_datatarget_feedback('stop'), [0.64])
@@ -1099,3 +1132,56 @@ def test_flownode_generate_netapi_fragment(runtime, test_nodenet, default_world,
     x = np.array([1, 2, 3], dtype=netapi.floatX)
     result = np.array([5, 8, 11], dtype=netapi.floatX)
     assert np.all(function(X=x) == result)
+
+
+@pytest.mark.engine("theano_engine")
+def test_flow_inf_guard(runtime, test_nodenet, default_world, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+
+    infmaker = netapi.create_node("infmaker")
+    add = netapi.create_node("Add")
+    netapi.flow(infmaker, "A", add, "input1")
+    netapi.flow('worldadapter', 'foo', add, "input2")
+    netapi.flow(add, 'outputs', 'worldadapter', 'bar')
+    source = netapi.create_node("Neuron")
+    source.activation = 1
+    netapi.link(source, 'gen', source, 'gen')
+    netapi.link(source, 'gen', add, 'sub')
+    with pytest.raises(ValueError) as excinfo:
+        runtime.step_nodenet(test_nodenet)
+    assert "output A" in str(excinfo.value)
+    assert "infmaker" in str(excinfo.value)
+    assert "NAN value" in str(excinfo.value)
+
+    infmaker.set_parameter('what', 'inf')
+    with pytest.raises(ValueError) as excinfo:
+        runtime.step_nodenet(test_nodenet)
+    assert "INF value" in str(excinfo.value)
+
+    worldadapter.flow_datasources['foo'][3] = np.nan
+    with pytest.raises(ValueError) as excinfo:
+        runtime.step_nodenet(test_nodenet)
+    assert type(worldadapter).__name__ in str(excinfo.value)
+    assert "foo" in str(excinfo.value)
+
+
+@pytest.mark.engine("theano_engine")
+def test_flow_inf_guard_on_list_outputs(runtime, test_nodenet, default_world, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+
+    trpoout = netapi.create_node("TRPOOut", None, "TRPOOut")
+    trpoout.set_parameter("makeinf", "True")
+    trpoin = netapi.create_node("TRPOIn", None, "TRPOIn")
+
+    netapi.flow(trpoout, "Y", trpoin, "Y")
+    netapi.flow(trpoout, "Z", trpoin, "Z")
+    netapi.flow('worldadapter', 'foo', trpoout, "X")
+    netapi.flow(trpoin, 'A', 'worldadapter', 'bar')
+    source = netapi.create_node("Neuron")
+    source.activation = 1
+    netapi.link(source, 'gen', source, 'gen')
+    netapi.link(source, 'gen', trpoin, 'sub')
+    with pytest.raises(ValueError) as excinfo:
+        runtime.step_nodenet(test_nodenet)
+    assert "INF value in" in str(excinfo.value)
+    assert "output A of graph" in str(excinfo.value)

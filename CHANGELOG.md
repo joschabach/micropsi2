@@ -1,4 +1,12 @@
 
+0.12-alpha10 (2017-09-04)
+==========
+ * Improved user prompts
+ * Inf/NaN guard for flowmodules
+ * Realtime world support
+ * Reliable code reloading
+
+
 0.11-alpha9 (2017-06-26)
 ==========
  * Add adhoc-monitors for plotting simple scalar values

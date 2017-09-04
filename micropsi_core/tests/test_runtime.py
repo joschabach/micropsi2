@@ -15,7 +15,7 @@ def test_set_logging_level(runtime):
     runtime.set_logging_levels({'system': 'DEBUG', 'world': 'DEBUG', 'agent': 'DEBUG'})
     assert logging.getLogger('system').getEffectiveLevel() == logging.DEBUG
     assert logging.getLogger('world').getEffectiveLevel() == logging.DEBUG
-    assert runtime.cfg['logging']['level_agent'] == 'DEBUG'
+    assert runtime.runtime_config['logging']['level_agent'] == 'DEBUG'
 
 
 def test_get_logging_levels(runtime):
@@ -52,12 +52,12 @@ def test_nodenet_specific_loggers(runtime):
 
 
 def test_single_agent_mode(runtime):
-    mode = runtime.cfg['micropsi2'].get('single_agent_mode')
-    runtime.cfg['micropsi2'].update({'single_agent_mode': '1'})
+    mode = runtime.runtime_config['micropsi2'].get('single_agent_mode')
+    runtime.runtime_config['micropsi2'].update({'single_agent_mode': '1'})
     res, uid1 = runtime.new_nodenet("test1")
     res, uid2 = runtime.new_nodenet("test2")
     assert uid1 not in runtime.nodenets
-    runtime.cfg['micropsi2'].update({'single_agent_mode': mode})
+    runtime.runtime_config['micropsi2'].update({'single_agent_mode': mode})
 
 
 def test_unregister_logger(runtime):
@@ -145,8 +145,8 @@ def test_get_links_for_nodes(runtime, test_nodenet, node):
 
 
 def test_create_nodenet_from_template(runtime, test_nodenet, node, engine):
-    mode = runtime.cfg['micropsi2'].get('single_agent_mode')
-    runtime.cfg['micropsi2'].update({'single_agent_mode': '1'})
+    mode = runtime.runtime_config['micropsi2'].get('single_agent_mode')
+    runtime.runtime_config['micropsi2'].update({'single_agent_mode': '1'})
     api = runtime.nodenets[test_nodenet].netapi
     node1 = api.get_node(node)
     node2 = api.create_node("Neuron", None, "node2")
@@ -159,7 +159,7 @@ def test_create_nodenet_from_template(runtime, test_nodenet, node, engine):
             assert len(n['links']['gen']) == 2
         else:
             assert n['name'] == node2.name
-    runtime.cfg['micropsi2'].update({'single_agent_mode': mode})
+    runtime.runtime_config['micropsi2'].update({'single_agent_mode': mode})
 
 
 def test_export_json_does_not_send_duplicate_links(runtime, test_nodenet):

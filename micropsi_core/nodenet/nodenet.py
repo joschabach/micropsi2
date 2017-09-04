@@ -164,6 +164,7 @@ class Nodenet(metaclass=ABCMeta):
         self._uid = uid
         self._runner_condition = None
 
+        self.runner_config = {}
         self.owner = owner
         self._monitors = {}
         self._recorders = {}
@@ -176,6 +177,7 @@ class Nodenet(metaclass=ABCMeta):
         self.logger.info("Setting up nodenet %s with engine %s", self.name, self.engine)
 
         self.user_prompt = None
+        self.user_prompt_response = {}
 
         self.netapi = NetAPI(self)
 
@@ -232,6 +234,29 @@ class Nodenet(metaclass=ABCMeta):
     def simulation_stopped(self):
         self.is_active = False
 
+    def set_user_prompt(self, node, key, message, parameters={}):
+        if self.user_prompt is not None:
+            raise RuntimeError("Currently only one user prompt per nodenet step supported. node %s already registered one" % str(self.user_prompt['node']))
+        else:
+            self.user_prompt = {
+                'node': node,
+                'key': key,
+                'msg': message,
+                'parameters': parameters
+            }
+            self.is_active = False
+
+    def consume_user_prompt(self):
+        data = self.user_prompt
+        if data:
+            data['node'] = data['node'].get_data()
+        self.user_prompt = None
+        return data
+
+    def set_user_prompt_response(self, node_uid, key, parameters):
+        node = self.get_node(node_uid)
+        node.get_user_prompt(key)['callback'](self.netapi, node, parameters)
+
     @abstractmethod
     def get_nodes(self, nodespaces=[], node_uids=[], include_links=True, links_to_nodespaces=[]):
         """
@@ -264,8 +289,9 @@ class Nodenet(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
-    def timed_step(self):
+    def timed_step(self, runner_config={}):
         start = datetime.now()
+        self.runner_config = runner_config
         self.step()
         elapsed = datetime.now() - start
         self.stepping_rate.append(elapsed.seconds + ((elapsed.microseconds // 1000) / 1000))

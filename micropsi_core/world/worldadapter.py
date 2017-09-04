@@ -59,6 +59,15 @@ class WorldAdapterMixin(object):
     def read_from_world(self):
         pass  # pragma: no cover
 
+    def on_simulation_started(self):
+        pass  # pragma: no cover
+
+    def on_simulation_paused(self):
+        pass  # pragma: no cover
+
+    def shutdown(self):
+        pass  # pragma: no cover
+
 
 class WorldAdapter(WorldObject, metaclass=ABCMeta):
     """Transmits data between agent and environment.
@@ -174,11 +183,19 @@ class Default(WorldAdapter):
     """
     A default Worldadapter, that provides example-datasources and -targets
     """
+    @classmethod
+    def get_config_options(cls):
+        return [
+            {'name': 'foo',
+             'description': 'does nothing',
+             'default': 'bar'}
+        ]
+
     def __init__(self, world, uid=None, config={}, **data):
         super().__init__(world, uid=uid, config=config, **data)
-        self.datasources = dict((s, 0) for s in ['static_on', 'random', 'static_off'])
-        self.datatargets = {'echo': 0}
-        self.datatarget_feedback = {'echo': 0}
+        for s in ['static_on', 'random', 'static_off']:
+            self.add_datasource(s, 0)
+        self.add_datatarget('echo', 0)
         self.update_data_sources_and_targets()
 
     def update_data_sources_and_targets(self):
@@ -340,17 +357,23 @@ try:
 
         def set_flow_datasource(self, name, values):
             """Set the values of the given flow_datasource """
-            values = np.array(np.reshape(values, self.flow_datasources[name].shape), dtype=self.floatX)
+            assert isinstance(values, np.ndarray), "must provide numpy array"
+            assert values.dtype == self.floatX
+            assert self.flow_datasources[name].shape == values.shape
             self.flow_datasources[name] = values
 
         def add_to_flow_datatarget(self, name, values):
             """Add the given values to the given flow_datatarget """
-            values = np.array(np.reshape(values, self.flow_datatargets[name].shape), dtype=self.floatX)
+            assert isinstance(values, np.ndarray), "must provide numpy array"
+            assert values.dtype == self.floatX
+            assert self.flow_datatargets[name].shape == values.shape
             self.flow_datatargets[name] += values
 
         def set_flow_datatarget_feedback(self, name, values):
             """Set the values of the given flow_datatarget_feedback """
-            values = np.array(np.reshape(values, self.flow_datatarget_feedbacks[name].shape), dtype=self.floatX)
+            assert isinstance(values, np.ndarray), "must provide numpy array"
+            assert values.dtype == self.floatX
+            assert self.flow_datatarget_feedbacks[name].shape == values.shape
             self.flow_datatarget_feedbacks[name] = values
 
         def set_datasource_values(self, values):

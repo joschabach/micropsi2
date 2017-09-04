@@ -61,41 +61,51 @@ def test_user_prompt(runtime, test_nodenet, resourcepath):
     "parameters": ["testparam"],
     "parameter_defaults": {
         "testparam": 13
-      }
+    },
+    "user_prompts": {
+        "promptident": {
+            "callback": "user_prompt_callback",
+            "parameters": [
+                {"name": "foo", "description": "value for foo", "default": 23},
+                {"name": "bar", "description": "value for bar", "default": 42}
+            ]
+        }
     }
-def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+}
+
+def testnodefunc(netapi, node=None, **prams):
+    if not hasattr(node, 'foo'):
+        node.foo = 0
+        node.bar = 1
+        netapi.show_user_prompt(node, "promptident")
+    node.get_gate("foo").gate_function(node.foo)
+    node.get_gate("bar").gate_function(node.bar)
+
+def user_prompt_callback(netapi, node, user_prompt_params):
+    \"\"\"Elaborate explanation as to what this user prompt is for\"\"\"
+    node.foo = int(user_prompt_params['foo'])
+    node.bar = int(user_prompt_params['bar'])
 """)
 
     runtime.reload_code()
     res, node_uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test")
+    runtime.reload_code()  # this breaks, if the nodetype overwrites the definition
     nativemodule = nodenet.get_node(node_uid)
-
-    options = [{'key': 'foo_parameter', 'label': 'Please give value for "foo"', 'values': [23, 42]}]
-    nodenet.netapi.ask_user_for_parameter(
-        nativemodule,
-        "foobar",
-        options
-    )
+    runtime.step_nodenet(test_nodenet)
     result, data = runtime.get_calculation_state(test_nodenet, nodenet={})
     assert 'user_prompt' in data
-    assert data['user_prompt']['msg'] == 'foobar'
+    assert data['user_prompt']['key'] == "promptident"
+    assert data['user_prompt']['msg'] == 'Elaborate explanation as to what this user prompt is for'
     assert data['user_prompt']['node']['uid'] == node_uid
-    assert data['user_prompt']['options'] == options
+    assert len(data['user_prompt']['parameters']) == 2
+    assert nativemodule.get_gate('foo').activation == 0
+    assert nativemodule.get_gate('bar').activation == 1
+
     # response
-    runtime.user_prompt_response(test_nodenet, node_uid, {'foo_parameter': 42}, True)
-    assert nodenet.get_node(node_uid).get_parameter('foo_parameter') == 42
-    assert nodenet.is_active
-    from micropsi_core.nodenet import nodefunctions
-    tmp = nodefunctions.concept
-    nodefunc = mock.Mock()
-    nodefunctions.concept = nodefunc
-    nodenet.step()
-    foo = nodenet.get_node(node_uid).clone_parameters()
-    foo.update({'foo_parameter': 42})
-    assert nodefunc.called_with(nodenet.netapi, nodenet.get_node(node_uid), foo)
-    nodenet.get_node(node_uid).clear_parameter('foo_parameter')
-    assert nodenet.get_node(node_uid).get_parameter('foo_parameter') is None
-    nodefunctions.concept = tmp
+    runtime.user_prompt_response(test_nodenet, node_uid, "promptident", {'foo': '111', 'bar': '222'}, False)
+    runtime.step_nodenet(test_nodenet)
+    assert nativemodule.get_gate('foo').activation == 111
+    assert nativemodule.get_gate('bar').activation == 222
 
 
 def test_user_notification(runtime, test_nodenet, node):
@@ -349,7 +359,7 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
 """)
 
     assert runtime.reload_code()
-    res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test", parameters={"threshold": "", "protocol_mode": "most_active_one"})
+    res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test")
 
     testnode = runtime.nodenets[test_nodenet].get_node(uid)
     testnode.set_state("string", "hugo")
@@ -367,6 +377,11 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
     assert testnode.get_state("list")[0]["eins"] == 1
     assert testnode.get_state("list")[1] == "boing"
     assert testnode.get_state("numpy").sum() == 10  # only numpy arrays have ".sum()"
+
+    testnode.set_state("wrong", (np.asarray([1, 2, 3]), 'tuple'))
+
+    with pytest.raises(ValueError):
+        runtime.save_nodenet(test_nodenet)
 
 
 def test_delete_linked_nodes(runtime, test_nodenet):
@@ -516,7 +531,7 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
 """)
 
     assert runtime.reload_code()
-    res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test", parameters={"threshold": "", "protocol_mode": "most_active_one"})
+    res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test")
     res, neuron_uid = runtime.add_node(test_nodenet, 'Neuron', [10, 10])
     runtime.add_link(test_nodenet, neuron_uid, 'gen', uid, 'gen')
     runtime.add_link(test_nodenet, uid, 'gen', neuron_uid, 'gen')
@@ -589,7 +604,7 @@ def source_init(netapi, node, parameters):
     node.set_theta("weights", w_array)
 
 def source(netapi, node, parameters):
-    return node.get_theta("weights")
+    return node.get_theta("weights").get_value()
 """)
     with open(os.path.join(resourcepath, "nodetypes", "Target.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
@@ -603,7 +618,7 @@ def source(netapi, node, parameters):
 }
 
 def target(X, netapi, node, parameters):
-    node.set_state("incoming", X.get_value())
+    node.set_state("incoming", X)
 """)
 
     runtime.reload_code()

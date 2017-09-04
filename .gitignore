@@ -28,3 +28,4 @@ micropsi.log
 pip-selfcheck.json
 /cherrypy
 /.pycharmvenv/
+/.cache/

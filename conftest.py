@@ -17,11 +17,13 @@ testpath = directory.name
 print("test data directory:", testpath)
 
 from micropsi_core import runtime as micropsi_runtime
-from micropsi_core.runtime import cfg
+from configuration import config as cfg
 
 orig_agent_dir = cfg['paths']['agent_directory']
 orig_world_dir = cfg['paths']['world_directory']
 
+cfg['paths']['agent_directory'] = testpath
+cfg['paths']['world_directory'] = testpath
 cfg['paths']['persistency_directory'] = testpath
 cfg['paths']['server_settings_path'] = os.path.join(testpath, 'server_cfg.json')
 cfg['paths']['usermanager_path'] = os.path.join(testpath, 'user-db.json')
@@ -58,20 +60,22 @@ def pytest_cmdline_main(config):
         config.addinivalue_line('python_files', '*.py')
         config.addinivalue_line('python_functions', '_test*')
         config.addinivalue_line('norecursedirs', 'experiments')
-        micropsi_runtime.initialize(persistency_path=testpath, resource_path=orig_agent_dir, world_path=orig_world_dir)
+        cfg['paths']['agent_directory'] = orig_agent_dir
+        micropsi_runtime.initialize(config=cfg)
     elif config.getoption('worlds'):
         config.args = [orig_world_dir]
         config.addinivalue_line('python_functions', 'test_*')
-        micropsi_runtime.initialize(persistency_path=testpath, world_path=orig_world_dir, resource_path=testpath)
+        cfg['paths']['world_directory'] = orig_world_dir
+        micropsi_runtime.initialize(config=cfg)
     else:
         config.addinivalue_line('python_functions', 'test_*')
-        micropsi_runtime.initialize(persistency_path=testpath, world_path=testpath, resource_path=testpath)
+        micropsi_runtime.initialize(config=cfg)
 
     from micropsi_server.micropsi_app import usermanager
     usermanager.create_user('Pytest User', 'test', 'Administrator', uid='Pytest User')
     usermanager.start_session('Pytest User', 'test', True)
     set_logging_levels()
-    micropsi_runtime.set_runner_properties(1, 1)
+    micropsi_runtime.set_runner_properties(1, True)
 
 
 def pytest_configure(config):
@@ -101,7 +105,8 @@ def pytest_runtest_setup(item):
         engine_marker = engine_marker.args[0]
         if engine_marker != item.callspec.params['engine']:
             pytest.skip("test requires engine %s" % engine_marker)
-
+    for uid in list(micropsi_runtime.nodenets.keys()):
+        micropsi_runtime.stop_nodenetrunner(uid)
     for uid in list(micropsi_runtime.nodenets.keys()):
         micropsi_runtime.delete_nodenet(uid)
     for uid in list(micropsi_runtime.worlds.keys()):
@@ -124,7 +129,7 @@ def pytest_runtest_setup(item):
     open(os.path.join(testpath, 'nodetypes', 'Test', '__init__.py'), 'w').close()
     micropsi_runtime.reload_code()
     micropsi_runtime.logger.clear_logs()
-    micropsi_runtime.set_runner_properties(0, 1)
+    micropsi_runtime.set_runner_properties(0, True)
     set_logging_levels()
 
 
@@ -144,7 +149,7 @@ def set_logging_levels():
     """ sets the logging levels of the default loggers back to WARNING """
     logging.getLogger('system').setLevel(logging.WARNING)
     logging.getLogger('world').setLevel(logging.WARNING)
-    micropsi_runtime.cfg['logging']['level_agent'] = 'WARNING'
+    micropsi_runtime.runtime_config['logging']['level_agent'] = 'WARNING'
 
 
 @pytest.fixture(scope="session")

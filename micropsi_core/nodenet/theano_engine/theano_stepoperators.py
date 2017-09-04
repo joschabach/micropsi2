@@ -80,11 +80,18 @@ class TheanoCalculateFlowmodules(Propagate):
         if value is None:
             return None
         if self.nodenet.runner_config.get('runner_infguard'):
-            if np.isnan(np.sum(value)):
-                raise ValueError("NAN value in flow datected: %s" % self.format_error(source, name))
-            elif np.isinf(np.sum(value)):
-                raise ValueError("INF value in flow datected: %s" % self.format_error(source, name))
+            if type(value) == list:
+                for val in value:
+                    self._guard(val, source, name)
+            else:
+                self._guard(value, source, name)
         return value
+
+    def _guard(self, value, source, name):
+        if np.isnan(np.sum(value)):
+            raise ValueError("NAN value in flow datected: %s" % self.format_error(source, name))
+        elif np.isinf(np.sum(value)):
+            raise ValueError("INF value in flow datected: %s" % self.format_error(source, name))
 
     def format_error(self, source, name):
         if type(source) == dict:

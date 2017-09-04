@@ -877,7 +877,7 @@ def test_none_output_skips_following_graphs(runtime, test_nodenet, default_world
     # assert that the bisect function did not run
     assert np.all(worldadapter.get_flow_datatarget('bar') == np.zeros(5))
     # but python did
-    assert nodenet.user_prompt['msg'] == 'numpyfunc ran'
+    assert nodenet.consume_user_prompt()['msg'] == 'numpyfunc ran'
     # and assert that you can get that info from the sur-gates:
     assert bisect.get_gate('sur').activation == 0
     assert py.get_gate('sur').activation == 1

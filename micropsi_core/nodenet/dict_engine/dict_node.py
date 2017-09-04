@@ -119,8 +119,6 @@ class DictNode(NetEntity, Node):
             #call node function
             try:
                 params = self.clone_parameters()
-                if self.uid in self.nodenet.user_prompt_response:
-                    params.update(self.nodenet.user_prompt_response[self.uid])
                 self.nodetype.nodefunction(netapi=self.nodenet.netapi, node=self, **params)
             except Exception:
                 self.nodenet.is_active = False

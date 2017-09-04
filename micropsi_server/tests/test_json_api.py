@@ -170,17 +170,15 @@ def test_get_runner_properties(app):
     response = app.get_json('/rpc/get_runner_properties()')
     assert_success(response)
     assert 'timestep' in response.json_body['data']
-    assert 'factor' in response.json_body['data']
 
 
 def test_set_runner_properties(app):
     app.set_auth()
-    response = app.post_json('/rpc/set_runner_properties', params=dict(timestep=123, factor=1))
+    response = app.post_json('/rpc/set_runner_properties', params=dict(timestep=123))
     assert_success(response)
     response = app.get_json('/rpc/get_runner_properties()')
     assert_success(response)
     assert response.json_body['data']['timestep'] == 123
-    assert response.json_body['data']['factor'] == 1
 
 
 def test_get_is_calculation_running(app, default_nodenet):
@@ -1192,13 +1190,33 @@ def test_user_prompt_response(app, test_nodenet, resourcepath):
     nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     with open(nodetype_file, 'w') as fp:
         fp.write("""nodetype_definition = {
-            "name": "Testnode",
-            "slottypes": ["gen", "foo", "bar"],
-            "nodefunction_name": "testnodefunc",
-            "gatetypes": ["gen", "foo", "bar"],
-            "symbol": "t"}
+    "name": "Testnode",
+    "slottypes": ["gen", "foo", "bar"],
+    "gatetypes": ["gen", "foo", "bar"],
+    "nodefunction_name": "testnodefunc",
+    "user_prompts": {
+        "promptident": {
+            "callback": "user_prompt_callback",
+            "parameters": [
+                {"name": "foo", "description": "value for foo", "default": 23},
+                {"name": "bar", "description": "value for bar", "default": 42}
+            ]
+        }
+    }
+}
 
-def testnodefunc(netapi, node=None, **params):\r\n    node.get_gate('foo').gate_function(params.get('foo', 23))
+def testnodefunc(netapi, node=None, **prams):
+    if not hasattr(node, 'foo'):
+        node.foo = 0
+        node.bar = 1
+        netapi.show_user_prompt(node, "promptident")
+    node.get_gate("foo").gate_function(node.foo)
+    node.get_gate("bar").gate_function(node.bar)
+
+def user_prompt_callback(netapi, node, user_prompt_params):
+    \"\"\"Elaborate explanation as to what this user prompt is for\"\"\"
+    node.foo = int(user_prompt_params['foo'])
+    node.bar = int(user_prompt_params['bar'])
 """)
     response = app.get_json('/rpc/reload_code()')
     assert_success(response)
@@ -1211,20 +1229,38 @@ def testnodefunc(netapi, node=None, **params):\r\n    node.get_gate('foo').gate_
         'name': 'Testnode'
     })
     assert_success(response)
-
     uid = response.json_body['data']
+
+    response = app.get_json('/rpc/step_calculation(nodenet_uid="%s")' % test_nodenet)
+    assert_success(response)
+
+    response = app.post_json('/rpc/get_calculation_state', {'nodenet_uid': test_nodenet})
+    assert_success(response)
+
+    prompt_data = response.json_body['data']['user_prompt']
+    assert prompt_data['key'] == 'promptident'
+    assert prompt_data['node']['uid'] == uid
+    assert len(prompt_data['parameters']) == 2
 
     response = app.post_json('/rpc/user_prompt_response', {
         'nodenet_uid': test_nodenet,
         'node_uid': uid,
-        'values': {'foo': 42},
+        'key': prompt_data['key'],
+        'parameters': {
+            'foo': '77',
+            'bar': '99'
+        },
         'resume_nodenet': False
     })
     assert_success(response)
+
     response = app.get_json('/rpc/step_calculation(nodenet_uid="%s")' % test_nodenet)
+    assert_success(response)
+
     response = app.get_json('/rpc/get_nodes(nodenet_uid="%s")' % test_nodenet)
     data = response.json_body['data']
-    assert data['nodes'][uid]['gate_activations']['foo'] == 42
+    assert data['nodes'][uid]['gate_activations']['foo'] == 77
+    assert data['nodes'][uid]['gate_activations']['bar'] == 99
 
 
 def test_set_logging_levels(app):

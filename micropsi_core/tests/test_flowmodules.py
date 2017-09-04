@@ -220,7 +220,7 @@ def trpoinpython(X, Y, netapi, node, parameters):
 import numpy as np
 
 def infmaker(netapi, node, parameters):
-    data = np.ones(12)
+    data = np.ones(12).astype(netapi.floatX)
     what = np.nan
     if parameters['what'] == 'inf':
         what = np.inf
@@ -1148,19 +1148,19 @@ def test_flow_inf_guard(runtime, test_nodenet, default_world, resourcepath):
     netapi.link(source, 'gen', source, 'gen')
     netapi.link(source, 'gen', add, 'sub')
     with pytest.raises(ValueError) as excinfo:
-        nodenet.step()
+        runtime.step_nodenet(test_nodenet)
     assert "output A" in str(excinfo.value)
     assert "infmaker" in str(excinfo.value)
     assert "NAN value" in str(excinfo.value)
 
     infmaker.set_parameter('what', 'inf')
     with pytest.raises(ValueError) as excinfo:
-        nodenet.step()
+        runtime.step_nodenet(test_nodenet)
     assert "INF value" in str(excinfo.value)
 
     worldadapter.flow_datasources['foo'][3] = np.nan
     with pytest.raises(ValueError) as excinfo:
-        nodenet.step()
+        runtime.step_nodenet(test_nodenet)
     assert type(worldadapter).__name__ in str(excinfo.value)
     assert "foo" in str(excinfo.value)
 
@@ -1182,6 +1182,6 @@ def test_flow_inf_guard_on_list_outputs(runtime, test_nodenet, default_world, re
     netapi.link(source, 'gen', source, 'gen')
     netapi.link(source, 'gen', trpoin, 'sub')
     with pytest.raises(ValueError) as excinfo:
-        nodenet.step()
+        runtime.step_nodenet(test_nodenet)
     assert "INF value in" in str(excinfo.value)
     assert "output A of graph" in str(excinfo.value)

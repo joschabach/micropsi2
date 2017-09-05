@@ -2,7 +2,7 @@
 
 <div class="row-fluid">
     <p>
-    <h2>Nodenet Console</h2>
+    <h2>Agent Console</h2>
     </p>
 
     %if notification:
@@ -16,8 +16,8 @@
         <table class="table table-bordered table-striped" id="nodenet_mgr">
             <thead>
             <tr>
-                <th>Nodenet UID</th>
-                <th>Nodenet name</th>
+                <th>Agent UID</th>
+                <th>Agent name</th>
                 <th>Owner</th>
                 <th>Actions</th>
             </tr>
@@ -42,7 +42,7 @@
 </div>
 <div class="row-fluid">
     <a class="btn" href="/">Back</a>
-    <a class="btn save_all_nodenets btn-primary" href="/save_all_nodenets">Save all nodenets</a>
+    <a class="btn save_all_nodenets btn-primary" href="/save_all_nodenets">Save all agents</a>
 </div>
 
-%rebase("boilerplate.tpl", title="Manage Nodenets")
+%rebase("boilerplate.tpl", title="Manage Agents")

@@ -24,9 +24,12 @@ GFG = 4
 GATE_FUNCTION_IDENTITY = 0
 GATE_FUNCTION_ABSOLUTE = 1
 GATE_FUNCTION_SIGMOID = 2
-GATE_FUNCTION_TANH = 3
-GATE_FUNCTION_RECT = 4
+#GATE_FUNCTION_TANH = 3
+GATE_FUNCTION_RELU = 4
 GATE_FUNCTION_DIST = 5
+GATE_FUNCTION_ELU = 6
+GATE_FUNCTION_THRESHOLD = 7
+
 
 NFPG_PIPE_NON = 0
 NFPG_PIPE_GEN = 1
@@ -152,9 +155,9 @@ def get_string_slot_type(type, nodetype=None):
 
 
 def get_numerical_node_type(type, nativemodules=None):
-    if type == "Register":
+    if type == "Neuron":
         return REGISTER
-    elif type == "Actor":
+    elif type == "Actuator":
         return ACTUATOR
     elif type == "Sensor":
         return SENSOR
@@ -178,9 +181,9 @@ def get_numerical_node_type(type, nativemodules=None):
 
 def get_string_node_type(type, nativemodules=None):
     if type == REGISTER:
-        return "Register"
+        return "Neuron"
     elif type == ACTUATOR:
-        return "Actor"
+        return "Actuator"
     elif type == SENSOR:
         return "Sensor"
     elif type == ACTIVATOR:
@@ -208,12 +211,14 @@ def get_numerical_gatefunction_type(type):
         return GATE_FUNCTION_ABSOLUTE
     elif type == "sigmoid":
         return GATE_FUNCTION_SIGMOID
-    elif type == "tanh":
-        return GATE_FUNCTION_TANH
-    elif type == "rect":
-        return GATE_FUNCTION_RECT
+    elif type == "relu":
+        return GATE_FUNCTION_RELU
     elif type == "one_over_x":
         return GATE_FUNCTION_DIST
+    elif type == "elu":
+        return GATE_FUNCTION_ELU
+    elif type == "threshold":
+        return GATE_FUNCTION_THRESHOLD
     else:
         raise ValueError("Supplied gatefunction type is not a valid type: "+str(type))
 
@@ -225,12 +230,14 @@ def get_string_gatefunction_type(type):
         return "absolute"
     elif type == GATE_FUNCTION_SIGMOID:
         return "sigmoid"
-    elif type == GATE_FUNCTION_TANH:
-        return "tanh"
-    elif type == GATE_FUNCTION_RECT:
-        return "rect"
+    elif type == GATE_FUNCTION_RELU:
+        return "relu"
     elif type == GATE_FUNCTION_DIST:
         return "one_over_x"
+    elif type == GATE_FUNCTION_ELU:
+        return "elu"
+    elif type == GATE_FUNCTION_THRESHOLD:
+        return "threshold"
     else:
         raise ValueError("Supplied gatefunction type is not a valid type: "+str(type))
 
@@ -327,3 +334,18 @@ def nodespace_to_id(numericid, partitionid):
 
 def nodespace_from_id(stringid):
     return int(stringid[4:])
+
+
+def create_tensor(ndim, dtype, name="tensor"):
+    # return a theano tensor with the given dimensionality
+    from theano import tensor as T
+    if ndim == 0:
+        return T.scalar(name=name, dtype=dtype)
+    elif ndim == 1:
+        return T.vector(name=name, dtype=dtype)
+    elif ndim == 2:
+        return T.matrix(name=name, dtype=dtype)
+    elif ndim == 3:
+        return T.tensor3(name=name, dtype=dtype)
+    elif ndim == 4:
+        return T.tensor4(name=name, dtype=dtype)

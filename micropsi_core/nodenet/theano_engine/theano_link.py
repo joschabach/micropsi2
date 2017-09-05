@@ -39,16 +39,19 @@ class TheanoLink(Link):
             inlinks = target_partition.inlinks[source_partition.spid]
             from_elements = inlinks[0].get_value(borrow=True)
             to_elements = inlinks[1].get_value(borrow=True)
-            weights = inlinks[2].get_value(borrow=True)
+
             target_element = target_partition.allocated_node_offsets[node_from_id(self.__target_node_uid)] + nst
             source_element = source_partition.allocated_node_offsets[node_from_id(self.__source_node_uid)] + ngt
+
             y = np.where(from_elements == source_element)[0][0]
             x = np.where(to_elements == target_element)[0][0]
-            return float(weights[x][y])
 
-    @property
-    def certainty(self):
-        return 1
+            inlink_type = inlinks[4]
+            if inlink_type == "dense":
+                weights = inlinks[2].get_value(borrow=True)
+                return float(weights[x][y])
+            elif inlink_type == "identity":
+                return 1. if x == y else 0.
 
     @property
     def source_node(self):

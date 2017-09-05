@@ -19,9 +19,29 @@ __date__ = '23.11.12'
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), "..")
 PREFIX = "minidoc/"
 FILETYPES = [".py"]
-EXCLUDED_DIRS = ["..", "test", "tests", "__pycache__"]
+EXCLUDED_DIRS = ["..", "test", "tests", "__pycache__", "bin", "lib", "include", "htmlcov", "cherrypy", "src", "share"]
 EXCLUDED_FILES = ["__init__.py"]
 EXCLUDE_HIDDEN = True
+API_SORT = ["json_rpc_api", "netapi", "theano_netapi", "node_api"]
+API_FILES = {
+    "netapi": {
+        "name": "NetAPI",
+        "file": "micropsi_core/nodenet/netapi.py",
+    },
+    "theano_netapi": {
+        "name": "Theano NetAPI",
+        "file": "micropsi_core/nodenet/theano_engine/theano_netapi.py",
+    },
+    "node_api": {
+        "name": "Node API",
+        "file": "micropsi_core/nodenet/node.py",
+    },
+    "json_rpc_api": {
+        "name": "JSON RPC API",
+        "file": "micropsi_server/micropsi_app.py"
+    },
+}
+
 
 ERROR = """<p style = 'error'>No documentation found at the given path</p>"""
 
@@ -47,6 +67,14 @@ def get_navigation():
         return _get_dir_list(realpath, "&nbsp;&nbsp;")
     else:
         return ERROR
+
+
+def get_api_navigation():
+    result = ""
+    for key in API_SORT:
+        result += """<a href="/apidoc/%s">%s</a><br />""" % (key, API_FILES[key]['name'])
+    return result
+
 
 def get_documentation_body(path=""):
     """
@@ -89,6 +117,22 @@ def get_documentation_body(path=""):
     return ERROR
 
 
+def get_api_doc(key=None):
+    """
+    Create documentation of selected API files
+    Methods without docstrings will be omitted.
+    """
+    if key is None:
+        return ""
+
+    elif key in API_FILES:
+        file = API_FILES[key]['file']
+        realpath = os.path.join(os.path.dirname(__file__), '..', file)
+        return _get_file_content(realpath, ignore_undocumented=True)
+
+    return ERROR
+
+
 def _get_dir_content(realpath):
     """Helper function to turn a directory into HTML"""
 
@@ -114,6 +158,14 @@ def _get_dir_list(realpath, indent = "&nbsp;"*4):
 
     result = ""
     for pathname, dirnames, filenames in os.walk(realpath):
+        # prune recurse directories
+        for x in EXCLUDED_DIRS:
+            if x in dirnames:
+                dirnames.remove(x)
+        if EXCLUDE_HIDDEN:
+            for x in dirnames.copy():
+                if x.startswith('.'):
+                    dirnames.remove(x)
         dir = os.path.basename(pathname)
         if dir not in EXCLUDED_DIRS and not (EXCLUDE_HIDDEN and dir.startswith(".")):
             url = _convert_path_to_url(pathname)
@@ -128,7 +180,7 @@ def _get_dir_list(realpath, indent = "&nbsp;"*4):
                             result += '%s<b><a href="/%s%s">%s</a></b><br />\n' % (indent * url.count("/"), PREFIX, url, filename)
     return result
 
-def _get_file_content(realpath):
+def _get_file_content(realpath, ignore_undocumented=False):
     """Helper function to turn a file into HTML"""
 
     result = """<h2>Module: %s</h2>
@@ -151,9 +203,10 @@ def _get_file_content(realpath):
         parsed_code = visitor.get_doc()
         entries = [ parsed_code[key] for key in sorted(parsed_code.keys())]
         for entry in entries:
-            begin, end = entry.get("lines")
-            result += '<hr /><div><pre>' + "".join(code[begin:end]).rstrip().rstrip(":") +"</pre>"
-            result += _convert_str_to_html(entry.get("description"))+"</div>"
+            if ignore_undocumented is False or entry.get("description"):
+                begin, end = entry.get("lines")
+                result += '<hr /><div><pre>' + "".join(code[begin:end]).rstrip().rstrip(":") +"</pre>"
+                result += _convert_str_to_html(entry.get("description"))+"</div>"
 
     return result
 

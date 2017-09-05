@@ -12,7 +12,7 @@
                     <td>
                         <div class="btn-group nodenet_list">
                             <a class="btn" href="#">
-                                (no nodenet selected)
+                                (no agent selected)
                             </a>
                         </div>
                     </td>

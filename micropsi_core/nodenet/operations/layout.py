@@ -2,7 +2,8 @@
 from micropsi_core.nodenet.operations import selectioninfo
 
 
-@selectioninfo(mincount=1)
+@selectioninfo(mincount=1, nodetypes=['Nodespace'])
+@selectioninfo(mincount=2)
 def autoalign(netapi, selection):
     """ Autoalign nodes or nodespaces."""
     if len(selection) == 1:

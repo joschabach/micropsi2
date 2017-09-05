@@ -25,10 +25,6 @@ class DictLink(Link):
         return self.__weight
 
     @property
-    def certainty(self):
-        return self.__certainty
-
-    @property
     def source_node(self):
         return self.__source_node
 
@@ -44,16 +40,16 @@ class DictLink(Link):
     def target_slot(self):
         return self.__target_slot
 
-    def __init__(self, source_node, source_gate_name, target_node, target_slot_name, weight=1, certainty=1):
+    def __init__(self, source_node, source_gate_name, target_node, target_slot_name, weight=1):
         """create a link between the source_node and the target_node, from the source_gate to the target_slot.
         Note: you should make sure that no link between source and gate exists.
 
         Attributes:
             weight (optional): the weight of the link (default is 1)
         """
-        self.link(source_node, source_gate_name, target_node, target_slot_name, weight, certainty)
+        self.link(source_node, source_gate_name, target_node, target_slot_name, weight)
 
-    def link(self, source_node, source_gate_name, target_node, target_slot_name, weight=1, certainty=1):
+    def link(self, source_node, source_gate_name, target_node, target_slot_name, weight=1):
         """link between source and target nodes, from a gate to a slot.
 
             You may call this function to change the connections of an existing link. If the link is already
@@ -64,7 +60,6 @@ class DictLink(Link):
         self.__source_gate = source_node.get_gate(source_gate_name)
         self.__target_slot = target_node.get_slot(target_slot_name)
         self.__weight = weight
-        self.__certainty = certainty
         self.__source_gate._register_outgoing(self)
         self.__target_slot._register_incoming(self)
 
@@ -75,6 +70,5 @@ class DictLink(Link):
         self.__source_gate._unregister_outgoing(self)
         self.__target_slot._unregister_incoming(self)
 
-    def _set_weight(self, weight, certainty=1):
+    def _set_weight(self, weight):
         self.__weight = weight
-        self.__certainty = certainty

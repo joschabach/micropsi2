@@ -47,24 +47,6 @@ class Nodespace(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def position(self):
-        """
-        This node's 3D coordinates within its nodespace
-        """
-        # todo: persistent 3D coordinates are likely to be made non-persistent or stored elsewhere
-        pass  # pragma: no cover
-
-    @position.setter
-    @abstractmethod
-    def position(self, position):
-        """
-        This node's 3D coordinates within its nodespace
-        """
-        # todo: persistent 3D coordinates are likely to be made non-persistent or stored elsewhere
-        pass  # pragma: no cover
-
-    @property
-    @abstractmethod
     def name(self):
         """
         This nodespace's human readable name for display purposes. Returns the UID if no human readable name has been set.
@@ -95,7 +77,6 @@ class Nodespace(metaclass=ABCMeta):
             "uid": self.uid,
             "index": self.index,
             "name": self.name,
-            "position": self.position,
             "parent_nodespace": self.parent_nodespace,
         }
 

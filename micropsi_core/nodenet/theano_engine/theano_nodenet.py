@@ -503,7 +503,7 @@ class TheanoNodenet(Nodenet):
             zipfile.writestr('nodenet.json', json.dumps(metadata))
         else:
             with open(os.path.join(base_path, 'nodenet.json'), 'w+', encoding="utf-8") as fp:
-                fp.write(json.dumps(metadata, sort_keys=True, indent=4))
+                fp.write(json.dumps(metadata, indent=4))
 
         # write numpy states of native modules
         numpy_states = self.construct_native_modules_numpy_state_dict()

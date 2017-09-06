@@ -211,7 +211,7 @@ class DictNodenet(Nodenet):
     def save(self, base_path=None, zipfile=None):
         if base_path is None:
             base_path = self.persistency_path
-        data = json.dumps(self.export_json(), sort_keys=True, indent=4)
+        data = json.dumps(self.export_json(), indent=4)
         if zipfile:
             zipfile.writestr('nodenet.json', data)
         else:

@@ -753,6 +753,7 @@ def step_nodenet(nodenet_uid):
         if type(worlds[nodenet.world]).is_realtime and not worlds[nodenet.world].is_active:
             if runner['runner'].paused:
                 runner['runner'].resume()
+            worlds[nodenet.world].is_active = True
             worlds[nodenet.world].simulation_started()
 
     nodenet.timed_step(runner_config.data)
@@ -801,6 +802,7 @@ def step_nodenets_in_world(world_uid, nodenet_uid=None, steps=1):
     (or, only the given nodenet) by the given number of steps"""
     nodenet = None
     if world_uid in worlds and not worlds[world_uid].is_active:
+        worlds[world_uid].is_active = True
         worlds[world_uid].simulation_started()
     if runner['runner'].paused:
         runner['runner'].resume()

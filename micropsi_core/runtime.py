@@ -66,6 +66,8 @@ initialized = False
 
 auto_save_intervals = None
 
+behavior_token_map = dict()
+
 
 class FileCacher():
     """Cache the stdout text so we can analyze it before returning it"""
@@ -1034,7 +1036,7 @@ def set_nodespace_properties(nodenet_uid, nodespace_uid, properties):
     return get_nodenet(nodenet_uid).set_nodespace_properties(nodespace_uid, properties)
 
 
-def start_behavior(nodenet_uid, condition):
+def start_behavior(nodenet_uid, condition, worldadapter_param):
     """ Start nodenet with the stop condition """
     if condition:
         if 'steps' in condition:
@@ -1050,9 +1052,22 @@ def start_behavior(nodenet_uid, condition):
             condition['monitor'] = None
         set_runner_condition(nodenet_uid, condition['monitor'], condition['steps'])
 
-    token = {'token': nodenet_uid}
+    import hashlib
+    token = hashlib.sha256((nodenet_uid+generate_uid()).encode('utf8')).hexdigest()
 
-    return start_nodenetrunner(nodenet_uid), token
+    behavior_token_map[token] = nodenet_uid
+
+    return start_nodenetrunner(nodenet_uid), {'token': token}
+
+
+def get_behavior_state(token):
+    """ Return the state of the behavior execution identified by token """
+    return get_is_nodenet_running(behavior_token_map[token])
+
+
+def abort_behavior(token):
+    """ Abort behavior identified with the token """
+    return stop_nodenetrunner(behavior_token_map[token])
 
 
 def __pythonify(name):

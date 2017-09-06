@@ -1036,8 +1036,10 @@ def set_nodespace_properties(nodenet_uid, nodespace_uid, properties):
     return get_nodenet(nodenet_uid).set_nodespace_properties(nodespace_uid, properties)
 
 
-def start_behavior(nodenet_uid, condition, worldadapter_param):
+def start_behavior(nodenet_uid, condition=None, worldadapter_param=None):
     """ Start nodenet with the stop condition """
+    set_nodenet_properties(nodenet_uid, worldadapter_config=worldadapter_param)
+
     if condition:
         if 'steps' in condition:
             condition['steps'] = int(condition['steps'])

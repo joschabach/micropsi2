@@ -1172,13 +1172,13 @@ def test_netapi_events(runtime, test_nodenet):
     netapi.register_handler(netapi.Event.NET_UNLOAD, unload)
 
     runtime.start_nodenetrunner(test_nodenet)
-    start.assert_called_once()
+    start.assert_called_once_with()
     for mock in [stop, unload]:
         mock.assert_not_called()
 
     runtime.stop_nodenetrunner(test_nodenet)
-    start.assert_called_once()
-    stop.assert_called_once()
+    start.assert_called_once_with()
+    stop.assert_called_once_with()
     unload.assert_not_called()
 
     netapi.unregister_handler(netapi.Event.NET_STARTED, start)
@@ -1190,6 +1190,6 @@ def test_netapi_events(runtime, test_nodenet):
     runtime.start_nodenetrunner(test_nodenet)
 
     runtime.unload_nodenet(test_nodenet)
-    start.assert_called_once()
-    stop.assert_called_once()
-    unload.assert_called_once()
+    start.assert_called_once_with()
+    stop.assert_called_once_with()
+    unload.assert_called_once_with()

@@ -1152,3 +1152,44 @@ def phatNM(netapi, node, **_):
         assert links[0].target_slot.type == 'inbound%d' % i
     netapi.group_node_gates(node.uid, 'outbound', group_name='fat_out')
     assert np.all(netapi.get_activations(None, 'fat_out') == np.zeros(2))
+
+
+def test_netapi_events(runtime, test_nodenet):
+    from unittest.mock import MagicMock
+
+    net = runtime.get_nodenet(test_nodenet)
+    netapi = net.netapi
+    assert netapi.Event.NET_STARTED
+    assert netapi.Event.NET_STOPPED
+    assert netapi.Event.NET_UNLOAD
+
+    start = MagicMock()
+    stop = MagicMock()
+    unload = MagicMock()
+
+    netapi.register_handler(netapi.Event.NET_STARTED, start)
+    netapi.register_handler(netapi.Event.NET_STOPPED, stop)
+    netapi.register_handler(netapi.Event.NET_UNLOAD, unload)
+
+    runtime.start_nodenetrunner(test_nodenet)
+    start.assert_called_once()
+    for mock in [stop, unload]:
+        mock.assert_not_called()
+
+    runtime.stop_nodenetrunner(test_nodenet)
+    start.assert_called_once()
+    stop.assert_called_once()
+    unload.assert_not_called()
+
+    netapi.unregister_handler(netapi.Event.NET_STARTED, start)
+    netapi.unregister_handler(netapi.Event.NET_STOPPED, stop)
+    with pytest.raises(ValueError):
+        # we can only remove it once
+        netapi.unregister_handler(netapi.Event.NET_STARTED, start)
+
+    runtime.start_nodenetrunner(test_nodenet)
+
+    runtime.unload_nodenet(test_nodenet)
+    start.assert_called_once()
+    stop.assert_called_once()
+    unload.assert_called_once()

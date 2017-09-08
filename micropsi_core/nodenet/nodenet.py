@@ -186,6 +186,8 @@ class Nodenet(metaclass=ABCMeta):
         self.dashboard_values = {}
         self.figures = {}
 
+        self.netapi_event_handlers = dict((evt, []) for evt in self.netapi.Event)
+
         self.native_modules = {}
         for type, data in native_modules.items():
             if data.get('engine', self.engine) == self.engine:
@@ -815,3 +817,9 @@ class Nodenet(metaclass=ABCMeta):
                 self.figures = {}
         except ImportError:
             pass
+
+    def register_netapi_eventhandler(self, event, func):
+        self.netapi_event_handlers[event].append(func)
+
+    def unregister_netapi_eventhandler(self, event, func):
+        self.netapi_event_handlers[event].remove(func)

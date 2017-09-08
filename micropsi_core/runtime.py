@@ -2038,9 +2038,8 @@ def initialize(config=None):
     # Initialize the threads for the continuous calculation of nodenets and worlds
     if 'runner_timestep' not in runner_config:
         runner_config['runner_timestep'] = 10
-    if 'infguard' not in runner_config:
+    if 'runner_infguard' not in runner_config:
         runner_config['runner_infguard'] = True
-    runner_config.save_configs()
 
     set_runner_properties(runner_config['runner_timestep'], runner_config['runner_infguard'])
 

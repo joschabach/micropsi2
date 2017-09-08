@@ -59,7 +59,6 @@ def pytest_cmdline_main(config):
         config._inicache['python_functions'] = []
         config.addinivalue_line('python_files', '*.py')
         config.addinivalue_line('python_functions', '_test*')
-        config.addinivalue_line('norecursedirs', 'experiments')
         cfg['paths']['agent_directory'] = orig_agent_dir
         micropsi_runtime.initialize(config=cfg)
     elif config.getoption('worlds'):

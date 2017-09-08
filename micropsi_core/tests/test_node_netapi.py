@@ -1159,9 +1159,6 @@ def test_netapi_events(runtime, test_nodenet):
 
     net = runtime.get_nodenet(test_nodenet)
     netapi = net.netapi
-    assert netapi.Event.NET_STARTED
-    assert netapi.Event.NET_STOPPED
-    assert netapi.Event.NET_UNLOAD
 
     start = MagicMock()
     stop = MagicMock()

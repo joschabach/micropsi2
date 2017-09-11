@@ -186,6 +186,8 @@ class Nodenet(metaclass=ABCMeta):
         self.dashboard_values = {}
         self.figures = {}
 
+        self.netapi_event_handlers = dict((evt, []) for evt in self.netapi.Event)
+
         self.native_modules = {}
         for type, data in native_modules.items():
             if data.get('engine', self.engine) == self.engine:
@@ -229,10 +231,14 @@ class Nodenet(metaclass=ABCMeta):
         return data
 
     def simulation_started(self):
+        for func in self.netapi_event_handlers[self.netapi.Event.NET_STARTED]:
+            func()
         self.is_active = True
 
     def simulation_stopped(self):
         self.is_active = False
+        for func in self.netapi_event_handlers[self.netapi.Event.NET_STOPPED]:
+            func()
 
     def set_user_prompt(self, node, key, message, parameters={}):
         if self.user_prompt is not None:
@@ -815,3 +821,14 @@ class Nodenet(metaclass=ABCMeta):
                 self.figures = {}
         except ImportError:
             pass
+
+    def on_unload(self):
+        self.close_figures()
+        for func in self.netapi_event_handlers[self.netapi.Event.NET_UNLOAD]:
+            func()
+
+    def register_netapi_eventhandler(self, event, func):
+        self.netapi_event_handlers[event].append(func)
+
+    def unregister_netapi_eventhandler(self, event, func):
+        self.netapi_event_handlers[event].remove(func)

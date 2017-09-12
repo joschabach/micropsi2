@@ -7,8 +7,10 @@ import tempfile
 
 try:
     import theano
+    theano_available = True
     engine_defaults = "dict_engine,theano_engine"
 except:
+    theano_available = False
     engine_defaults = "dict_engine"
 
 
@@ -61,6 +63,13 @@ def pytest_cmdline_main(config):
         config.addinivalue_line('python_functions', '_test*')
         cfg['paths']['agent_directory'] = orig_agent_dir
         micropsi_runtime.initialize(config=cfg)
+        if theano_available and theano.config.floatX != "float32":
+            logging.getLogger("system").warning("""
+#############################################
+#                                           #
+#     WARNING: Running tests on %s!    #
+#                                           #
+#############################################""" % theano.config.floatX)
     elif config.getoption('worlds'):
         config.args = [orig_world_dir]
         config.addinivalue_line('python_functions', 'test_*')

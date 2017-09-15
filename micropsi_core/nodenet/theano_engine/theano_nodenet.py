@@ -865,7 +865,7 @@ class TheanoNodenet(Nodenet):
     def get_node(self, uid):
         partition = self.get_partition(uid)
         if partition is None:
-            raise KeyError("No node with id %s exists", uid)
+            raise KeyError("No node with id %s exists" % uid)
         if uid in partition.native_module_instances:
             if uid in self.flow_module_instances:
                 return self.flow_module_instances[uid]
@@ -887,7 +887,7 @@ class TheanoNodenet(Nodenet):
             self.proxycache[node.uid] = node
             return node
         else:
-            raise KeyError("No node with id %s exists", uid)
+            raise KeyError("No node with id %s exists" % uid)
 
     def get_node_uids(self, group_nodespace_uid=None, group=None):
         if group is not None:

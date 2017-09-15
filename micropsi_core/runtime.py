@@ -116,7 +116,7 @@ class NetapiShell(InteractiveConsole):
                 cleaned_parts = []
                 found_exception_message = False
                 for part in parts[1:]:
-                    # ignore traceback items relating to the console itself:
+                    # ignore traceback items relating to the console itself or the toolkit:
                     if 'in runcode' in part or '<console>"' in part or 'micropsi_core' in part:
                         continue
                     # gather all lines of the exception message, but

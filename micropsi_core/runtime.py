@@ -112,22 +112,27 @@ class NetapiShell(InteractiveConsole):
 
         if err:
             parts = err.strip().split('\n\n')
-            if parts[0] == "Traceback (most recent call last):":
+            if parts[0].startswith("Traceback"):
                 cleaned_parts = []
-                found_exception_message = False
+                begin_exception_message = False
+                ignored_last = False
                 for part in parts[1:]:
                     # ignore traceback items relating to the console itself or the toolkit:
                     if 'in runcode' in part or '<console>"' in part or 'micropsi_core' in part:
+                        ignored_last = True
                         continue
+                    if ignored_last and part.startswith('    '):
+                        # if ignoring a traceback line, also drop its continuation
+                        # in the next line if there is one.
+                        continue
+                    ignored_last = False
                     # gather all lines of the exception message, but
                     # none of the stuff after the next blank line:
                     if ":" in part:
-                        found_exception_message = True
-                    if found_exception_message and len(part) == 0:
+                        begin_exception_message = True
+                    if begin_exception_message and len(part) == 0:
                         break
-
                     cleaned_parts.append(part.strip())
-
                 if len(cleaned_parts) > 1:
                     cleaned_parts = ['\nTraceback:'] + cleaned_parts
                 return False, "\n\n".join(cleaned_parts)

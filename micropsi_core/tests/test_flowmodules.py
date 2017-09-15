@@ -1185,3 +1185,26 @@ def test_flow_inf_guard_on_list_outputs(runtime, test_nodenet, default_world, re
         runtime.step_nodenet(test_nodenet)
     assert "INF value in" in str(excinfo.value)
     assert "output A of graph" in str(excinfo.value)
+
+
+@pytest.mark.engine("theano_engine")
+def test_flow_overlapping_graphs(runtime, test_nodenet, default_world, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+
+    with netapi.flowbuilder:
+        neuron1 = netapi.create_node('Neuron', None, "Neuron1")
+        neuron2 = netapi.create_node('Neuron', None, "Neuron2")
+        neuron2.activation = 1
+        double1 = netapi.create_node('Double', None, "Double1")
+        double2 = netapi.create_node('Double', None, "Double2")
+
+        netapi.link(neuron1, 'gen', double1, 'sub')
+        netapi.link(neuron2, 'gen', double2, 'sub')
+        netapi.link(neuron2, 'gen', neuron2, 'gen')
+        netapi.flow("worldadapter", "vision", double1, "inputs")
+        netapi.flow(double1, "outputs", double2, "inputs")
+        netapi.flow(double1, "outputs", "worldadapter", "motor")
+        netapi.flow(double2, "outputs", "worldadapter", "motor")
+    oldval = worldadapter.flow_datasources['vision']
+    nodenet.step()
+    assert np.all(worldadapter.flow_datatargets['motor'] == oldval * 6)

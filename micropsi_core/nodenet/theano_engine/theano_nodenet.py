@@ -979,12 +979,7 @@ class TheanoNodenet(Nodenet):
             ancestors = nx.ancestors(self.flowgraph, enduid)
             node = self.flow_module_instances[enduid]
             if ancestors or node.inputs == []:
-                fullpath = [uid for uid in toposort if uid in ancestors] + [enduid]
-                path = []
-                for uid in reversed(fullpath):
-                    if uid in endpoints and uid != enduid:
-                        continue
-                    path.insert(0, uid)
+                path = [uid for uid in toposort if uid in ancestors] + [enduid]
                 if path:
                     graphs.append(path)
 

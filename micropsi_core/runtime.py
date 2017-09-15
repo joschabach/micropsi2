@@ -109,15 +109,31 @@ class NetapiShell(InteractiveConsole):
             InteractiveConsole.push(self, '\n')
         self.return_output()
         err = self.errcache.flush()
-        if err and err.startswith('Traceback'):
-            parts = err.strip().split('\n')
-            if len(parts) > 10:
-                if ":" in parts[10]:
-                    return False, parts[10]
-                else:
-                    return False, "%s: %s" % (parts[10], parts[12])
+
+        if err:
+            parts = err.strip().split('\n\n')
+            if parts[0] == "Traceback (most recent call last):":
+                cleaned_parts = []
+                found_exception_message = False
+                for part in parts[1:]:
+                    # ignore traceback items relating to the console itself:
+                    if 'in runcode' in part or '<console>"' in part:
+                        continue
+                    # gather all lines of the exception message, but
+                    # none of the stuff after the next blank line:
+                    if ":" in part:
+                        found_exception_message = True
+                    if found_exception_message and len(part) == 0:
+                        break
+
+                    cleaned_parts.append(part.strip())
+
+                if len(cleaned_parts) > 1:
+                    cleaned_parts = ['\nTraceback:'] + cleaned_parts
+                return False, "\n\n".join(cleaned_parts)
             else:
                 return False, err
+
         out = self.outcache.flush()
         return True, out.strip()
 

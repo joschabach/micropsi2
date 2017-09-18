@@ -531,9 +531,9 @@ def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepa
     # this would raise an exception otherwise
     netapi.unflow(netapi.get_node(double.uid), 'outputs', netapi.get_node(thetas.uid), 'X')
 
-    # assert that custom thetas survive reloadCode:
+    # assert that reloadCode runs the initfunction again:
     runtime.reload_code()
-    assert np.allclose(netapi.get_node(thetas.uid).get_theta('weights').get_value(), custom_theta)
+    assert not np.allclose(netapi.get_node(thetas.uid).get_theta('weights').get_value(), custom_theta)
 
 
 @pytest.mark.engine("theano_engine")

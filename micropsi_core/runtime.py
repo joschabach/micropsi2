@@ -1469,7 +1469,8 @@ def run_recipe(nodenet_uid, name, parameters):
 
 def run_operation(nodenet_uid, name, parameters, selection_uids):
     """ Calls the given operation on the selection"""
-    netapi = get_nodenet(nodenet_uid).netapi
+    nodenet = get_nodenet(nodenet_uid)
+    netapi = nodenet.netapi
     params = {}
     for key in parameters:
         if parameters[key] != '':
@@ -1477,7 +1478,8 @@ def run_operation(nodenet_uid, name, parameters, selection_uids):
     if name in custom_operations:
         func = custom_operations[name]['function']
         result = {}
-        ret = func(netapi, selection_uids, **params)
+        with nodenet.netlock:
+            ret = func(netapi, selection_uids, **params)
         if ret:
             result.update(ret)
         return True, result
@@ -1495,9 +1497,11 @@ def get_agent_dashboard(nodenet_uid):
 
 
 def run_netapi_command(nodenet_uid, command):
-    get_nodenet(nodenet_uid)
+    nodenet = get_nodenet(nodenet_uid)
     shell = netapi_consoles[nodenet_uid]
-    return shell.push(command)
+    with nodenet.netlock:
+        result = shell.push(command)
+    return result
 
 
 def get_netapi_autocomplete_data(nodenet_uid, name=None):

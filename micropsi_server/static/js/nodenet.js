@@ -440,7 +440,6 @@ function setNodespaceData(data, changed){
                 for(var name in node.outputmap){
                     for (var idx in node.outputmap[name]){
                         var pair = node.outputmap[name][idx];
-                        console.log(pair);
                         var target_uid = pair[0];
                         var target_name = pair[1];
                         if(target_uid && target_name){

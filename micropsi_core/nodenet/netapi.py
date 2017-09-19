@@ -20,6 +20,10 @@ class NetAPI(object):
         return self.__nodenet.current_step
 
     @property
+    def is_running(self):
+        return self.__nodenet.is_active
+
+    @property
     def worldadapter(self):
         """ The worldadapter instance """
         return self.__nodenet.worldadapter_instance

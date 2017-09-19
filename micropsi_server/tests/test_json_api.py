@@ -1814,6 +1814,9 @@ def double(inputs, netapi, node, parameters):
     runtime.set_nodenet_properties(test_nodenet, worldadapter="SimpleArrayWA", world_uid=wuid)
     worldadapter = nodenet.worldadapter_instance
 
+    datasource_uid = nodenet.worldadapter_flow_nodes['datasources']
+    datatarget_uid = nodenet.worldadapter_flow_nodes['datatargets']
+
     # create one flow_module, wire to sources & targets
     result = app.post_json('/rpc/add_node', {
         'nodenet_uid': test_nodenet,
@@ -1848,16 +1851,19 @@ def double(inputs, netapi, node, parameters):
     result = app.post_json('/rpc/flow', inward)
     assert_success(result)
 
-    response = app.post_json('/rpc/get_calculation_state', params={'nodenet_uid': test_nodenet, 'nodenet': {'nodespaces': [None]}, 'monitors': True})
-    data = response.json_body['data']
-
-    assert data['nodenet']['nodes'][flow_uid]
-
     sources = np.array(np.random.randn(2, 3), dtype=nodenet.numpyfloatX)
     worldadapter.flow_datasources['foo'][:] = sources
 
     runtime.step_nodenet(test_nodenet)
     assert np.all(worldadapter.get_flow_datatarget_feedback('bar') == sources * 2)
+
+    response = app.post_json('/rpc/get_calculation_state', params={'nodenet_uid': test_nodenet, 'nodenet': {'nodespaces': [None]}, 'monitors': True})
+    data = response.json_body['data']
+
+    assert data['nodenet']['nodes'][flow_uid]
+    assert data['nodenet']['nodes'][flow_uid]['activation'] == 1.0
+    assert data['nodenet']['nodes'][datasource_uid]['activation'] == 1.0
+    assert data['nodenet']['nodes'][datatarget_uid]['activation'] == 1.0
 
     # disconnect first flow_module from datatargets, create a second one, and chain them
     result = app.post_json('/rpc/unflow', outward)

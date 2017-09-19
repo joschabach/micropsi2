@@ -292,13 +292,17 @@ def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepat
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)
     sources[:] = np.random.randn(*sources.shape)
+    datasources = netapi.get_node(nodenet.worldadapter_flow_nodes['datasources'])
+    datatargets = netapi.get_node(nodenet.worldadapter_flow_nodes['datatargets'])
 
     worldadapter.set_flow_datasource('foo', sources)
-
     # step & assert that nothing happened without sub-activation
     nodenet.step()
+    assert flowmodule.activation == 0
+    assert datasources.activation == 1
+    assert datatargets.activation == 0
+
     assert np.all(worldadapter.get_flow_datatarget('bar') == np.zeros(5, dtype=nodenet.numpyfloatX))
-    # assert len(nodenet.flowfunctions) == 0
 
     # create activation source:
     source = netapi.create_node("Neuron", None)
@@ -306,10 +310,12 @@ def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepat
     netapi.link(source, 'gen', flowmodule, 'sub')
     source.activation = 1
 
-    # assert len(nodenet.flowfunctions) == 1
-
     # # step & assert that the initfunction and flowfunction ran
     nodenet.step()
+    assert flowmodule.activation == 1
+    assert datasources.activation == 1
+    assert datatargets.activation == 1
+
     assert np.all(worldadapter.get_flow_datatarget('bar') == sources * 2)
     assert hasattr(flowmodule, 'initfunction_ran')
 

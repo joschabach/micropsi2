@@ -440,19 +440,22 @@ function setNodespaceData(data, changed){
                     links_data[luid].source_gate_name = gate
                 }
             }
-            if(node.inputmap){
-                for(var name in node.inputmap){
-                    var source_uid = node.inputmap[name][0];
-                    var source_name = node.inputmap[name][1];
-                    if(source_uid && source_name){
-                        cid = source_uid + ":" + source_name + ":" + name + ":" + uid;
-                        links_data[cid] = {
-                            'source_node_uid': source_uid,
-                            'target_node_uid': uid,
-                            'source_name': source_name,
-                            'target_name': name,
-                            'is_flow_connection': true
-                        };
+            if(node.outputmap){
+                for(var name in node.outputmap){
+                    for (var idx in node.outputmap[name]){
+                        var pair = node.outputmap[name][idx];
+                        var target_uid = pair[0];
+                        var target_name = pair[1];
+                        if(target_uid && target_name){
+                            cid = uid + ":" + name + ":" + target_name + ":" + target_uid;
+                            links_data[cid] = {
+                                'source_node_uid': uid,
+                                'target_node_uid': target_uid,
+                                'source_name': name,
+                                'target_name': target_name,
+                                'is_flow_connection': true
+                            };
+                        }
                     }
                 }
             }

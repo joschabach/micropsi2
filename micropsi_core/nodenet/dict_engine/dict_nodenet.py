@@ -5,7 +5,7 @@ import os
 
 import micropsi_core
 from micropsi_core.nodenet import monitor
-from micropsi_core.nodenet.node import Nodetype, FlowNodetype, HighdimensionalNodetype
+from micropsi_core.nodenet.node import Nodetype
 from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION
 from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators
 from .dict_stepoperators import DictPropagate, DictCalculate

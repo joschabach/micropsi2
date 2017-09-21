@@ -284,8 +284,9 @@ def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepat
     assert metadata['flow_modules']['Double']['inputs'] == ["inputs"]
     assert metadata['flow_modules']['Double']['outputs'] == ["outputs"]
     assert metadata['flow_modules']['Double']['category'] == 'foobar'
-    flowmodule = netapi.create_node("Double", None, "Double")
+    flowmodule = netapi.create_node("Double", None)
     assert not hasattr(flowmodule, 'initfunction_ran')
+    assert flowmodule.name == "Double"
 
     nodenet.flow('worldadapter', 'foo', flowmodule.uid, "inputs")
     nodenet.flow(flowmodule.uid, "outputs", 'worldadapter', 'bar')

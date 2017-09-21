@@ -18,6 +18,34 @@ except ImportError:
     pass
 
 
+def test_node_name_defaults(runtime, test_nodenet, resourcepath):
+    import os
+    netapi = runtime.nodenets[test_nodenet].netapi
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'testnode.py')
+    with open(nodetype_file, 'w') as fp:
+        fp.write("""nodetype_definition = {
+            "name": "Testnode",
+            "slottypes": ["gen", "foo", "bar"],
+            "nodefunction_name": "testnodefunc",
+            "gatetypes": ["gen", "foo", "bar"]
+            }
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+""")
+    runtime.reload_code()
+    res, uid = runtime.add_node(test_nodenet, "Neuron", [10, 10, 10], None)
+    assert netapi.get_node(uid).name == ""
+    res, uid = runtime.add_node(test_nodenet, "Pipe", [10, 10, 10], None)
+    assert netapi.get_node(uid).name == ""
+    res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10, 10], None)
+    assert netapi.get_node(uid).name == "Testnode"
+    node = netapi.create_node("Neuron")
+    assert node.name == ""
+    node = netapi.create_node("Pipe")
+    assert node.name == ""
+    node = netapi.create_node("Testnode")
+    assert node.name == "Testnode"
+
+
 @pytest.mark.engine("theano_engine")
 def test_nodetype_function_definition_overwrites_default_function_name_theano(runtime, test_nodenet):
     nodenet = runtime.get_nodenet(test_nodenet)

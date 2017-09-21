@@ -326,7 +326,7 @@ def align_flow_nodes(nodenet, entity_uids):
         hopmap = OrderedDict()
         hopmap[startnode.uid] = 0
         for uid in toposort:
-            if uid not in hopmap and (not entity_uids or uid in entity_uids):
+            if uid not in hopmap:
                 node = nodenet.get_node(uid)
                 hop = 0
                 for key in node.inputmap:
@@ -338,12 +338,13 @@ def align_flow_nodes(nodenet, entity_uids):
         highest = 1
         farthest = 1
         for uid in hopmap:
-            hops = hopmap[uid]
-            if hops not in buckets:
-                buckets[hops] = []
-            buckets[hops].append(uid)
-            highest = max(len(buckets[hops]), highest)
-            farthest = max(hops, farthest)
+            if not entity_uids or uid in entity_uids:
+                hops = hopmap[uid]
+                if hops not in buckets:
+                    buckets[hops] = []
+                buckets[hops].append(uid)
+                highest = max(len(buckets[hops]), highest)
+                farthest = max(hops, farthest)
         flow_groups = [[]] * highest
         nodes = hopmap
         for i in range(highest):

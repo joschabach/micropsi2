@@ -1372,6 +1372,8 @@ class TheanoNodenet(Nodenet):
                 self.get_node(uid).set_parameter("datatarget", parameters['datatarget'])
                 if name is None or name == "" or name == uid:
                     name = parameters['datatarget']
+        elif name is None or name == "" or name == uid:
+            name = nodetype
 
         if nodetype in self.native_modules and type(self.native_modules[nodetype]) == FlowNodetype:
             self._create_flow_module(self.get_node(uid))

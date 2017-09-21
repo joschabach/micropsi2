@@ -35,11 +35,14 @@ def test_add_node(runtime, test_nodenet):
 
     nodespace = runtime.get_nodes(test_nodenet)
     assert len(nodespace.get("nodes", [])) == 0
-    res, uid = runtime.add_node(test_nodenet, "Pipe", [200, 250, 10], None, state=None, name="A")
+    res, uid1 = runtime.add_node(test_nodenet, "Pipe", [200, 250, 10], None, state=None, name="A")
+    res, uid2 = runtime.add_node(test_nodenet, "Pipe", [200, 250, 10])
     nodespace = runtime.get_nodes(test_nodenet)
-    assert len(nodespace["nodes"]) == 1
-    node1 = nodespace["nodes"][uid]
+    assert len(nodespace["nodes"]) == 2
+    node1 = nodespace["nodes"][uid1]
+    node2 = nodespace["nodes"][uid2]
     assert node1["name"] == "A"
+    assert node2["name"] == "Pipe"
     assert node1["position"] == [200, 250, 10]
 
 

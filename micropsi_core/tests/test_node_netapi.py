@@ -38,8 +38,9 @@ def test_node_netapi_create_neuron_node(runtime, test_nodenet):
     assert data['type'] == node.type
 
     node = netapi.create_node("Neuron", None)
-    # TODO: teh weirdness, server-internally, we return uids as names, clients don't see this, confusion ensues
-    # assert data['name'] == node.name
+    assert node.name == "Neuron"
+    data = node.get_data()
+    assert data['name'] == "Neuron"
 
 
 def test_node_netapi_create_pipe_node(runtime, test_nodenet):

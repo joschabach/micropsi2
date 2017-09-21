@@ -295,6 +295,10 @@ def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepat
     datasources = netapi.get_node(nodenet.worldadapter_flow_nodes['datasources'])
     datatargets = netapi.get_node(nodenet.worldadapter_flow_nodes['datatargets'])
 
+    runtime.run_operation(test_nodenet, "autoalign", {}, [flowmodule.uid, datasources.uid, datatargets.uid])
+    assert datasources.position[0] < flowmodule.position[0] < datatargets.position[0]
+    assert datasources.position[1] == flowmodule.position[1] == datatargets.position[1]
+
     worldadapter.set_flow_datasource('foo', sources)
     # step & assert that nothing happened without sub-activation
     nodenet.step()

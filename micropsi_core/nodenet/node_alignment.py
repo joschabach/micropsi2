@@ -35,10 +35,10 @@ def align(nodenet, nodespace, entity_uids=False):
     if nodenet.engine == 'theano_engine':
         flownodes = nodenet.flow_module_instances.keys()
 
-    unaligned_nodespaces = [n for n in sorted(nodenet.get_nodespace(nodespace).get_known_ids('nodespaces'),
-        key=lambda i: nodenet.get_nodespace(i).index) if n not in flownodes]
-    unaligned_nodes = [n for n in sorted(nodenet.get_nodespace(nodespace).get_known_ids('nodes'),
-        key=lambda i: nodenet.get_node(i).index) if n not in flownodes]
+    unaligned_nodespaces = sorted(nodenet.get_nodespace(nodespace).get_known_ids('nodespaces'),
+        key=lambda i: nodenet.get_nodespace(i).index)
+    unaligned_nodes = [x for x in sorted(nodenet.get_nodespace(nodespace).get_known_ids('nodes'),
+        key=lambda i: nodenet.get_node(i).index) if x not in flownodes]
 
     if entity_uids:
         unaligned_nodespaces = [id for id in unaligned_nodespaces if id in entity_uids]
@@ -46,9 +46,12 @@ def align(nodenet, nodespace, entity_uids=False):
         sensors = []
         actuators = []
         activators = []
-        ymin = min(nodenet.get_node(n).position[1] for n in unaligned_nodes + unaligned_nodespaces)
-        xmin = min(nodenet.get_node(n).position[0] for n in unaligned_nodes + unaligned_nodespaces)
-        start_position = (xmin, ymin, 0)
+        if unaligned_nodes or unaligned_nodespaces:
+            ymin = min(nodenet.get_node(n).position[1] for n in unaligned_nodes + unaligned_nodespaces)
+            xmin = min(nodenet.get_node(n).position[0] for n in unaligned_nodes + unaligned_nodespaces)
+            start_position = (xmin, ymin, 0)
+        else:
+            start_position = (BORDER + GRID / 2, BORDER, 0)
 
     else:
         sensors = [s for s in unaligned_nodes if nodenet.get_node(s).type == "Sensor"]
@@ -78,7 +81,7 @@ def align(nodenet, nodespace, entity_uids=False):
     por_groups.append(actviator_group)
 
     if len(flownodes):
-        flow_groups = align_flow_nodes(nodenet)
+        flow_groups = align_flow_nodes(nodenet, entity_uids)
         for g in flow_groups:
             por_groups.append(g)
 
@@ -309,7 +312,7 @@ def _fix_link_inheritance(group, excluded_nodes):
                 del group.directions[d]
 
 
-def align_flow_nodes(nodenet):
+def align_flow_nodes(nodenet, entity_uids):
     toposort = nodenet.flow_toposort
     startnode = None
     i = 0
@@ -323,7 +326,7 @@ def align_flow_nodes(nodenet):
         hopmap = OrderedDict()
         hopmap[startnode.uid] = 0
         for uid in toposort:
-            if uid not in hopmap:
+            if uid not in hopmap and (not entity_uids or uid in entity_uids):
                 node = nodenet.get_node(uid)
                 hop = 0
                 for key in node.inputmap:

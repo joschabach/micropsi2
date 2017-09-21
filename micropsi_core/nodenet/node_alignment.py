@@ -16,7 +16,7 @@ import math
 BORDER = 50.0
 GRID = 170.0
 PREFERRED_WIDTH = 8.0
-FLOWGRID = 220.0
+FLOWGRID = 270.0
 
 
 def align(nodenet, nodespace, entity_uids=False):

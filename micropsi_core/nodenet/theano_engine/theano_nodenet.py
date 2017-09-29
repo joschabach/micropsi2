@@ -167,7 +167,6 @@ class TheanoNodenet(Nodenet):
         device = T.config.device
         self.logger.info("Theano configured to use %s", device)
         if device.startswith("gpu"):
-            self.logger.info("Using CUDA with cuda_root=%s and theano_flags=%s", os.environ["CUDA_ROOT"], os.environ["THEANO_FLAGS"])
             if T.config.floatX != "float32":
                 self.logger.warning("Precision set to %s, but attempting to use gpu.", precision)
 

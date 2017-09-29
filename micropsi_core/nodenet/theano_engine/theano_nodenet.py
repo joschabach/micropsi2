@@ -1317,11 +1317,11 @@ class TheanoNodenet(Nodenet):
             new_names = sorted(self.thetas[node_uid]['names'] + [name])
             self.thetas[node_uid]['names'] = new_names
             index = self.thetas[node_uid]['names'].index(name)
-            if not isinstance(val, T.sharedvar.TensorSharedVariable):
+            if not isinstance(val, theano.compile.sharedvalue.SharedVariable):
                 val = theano.shared(value=val.astype(T.config.floatX), name=name, borrow=True)
             self.thetas[node_uid]['variables'].insert(index, val)
         else:
-            if not isinstance(val, T.sharedvar.TensorSharedVariable):
+            if not isinstance(val, theano.compile.sharedvalue.SharedVariable):
                 val = theano.shared(value=val.astype(T.config.floatX), name=name, borrow=True)
             index = self.thetas[node_uid]['names'].index(name)
             self.thetas[node_uid]['variables'][index].set_value(val.get_value(), borrow=True)

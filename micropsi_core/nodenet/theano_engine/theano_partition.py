@@ -1017,6 +1017,8 @@ class TheanoPartition():
         else:
             self.logger.warning("no g_function_selector in file, falling back to defaults")
 
+        datafile.close()
+
         for uid in invalid_uids:
             if self.nodenet.get_partition(uid) == self:
                 w_matrix = self.w.get_value()
@@ -1079,6 +1081,7 @@ class TheanoPartition():
                     datafile['from_ids'],
                     datafile['to_ids'],
                     weights)
+                datafile.close()
 
     def grow_number_of_nodespaces(self, growby):
 

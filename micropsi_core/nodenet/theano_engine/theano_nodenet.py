@@ -604,6 +604,7 @@ class TheanoNodenet(Nodenet):
                         node = self.get_node(node_uid)
                         numpy_states = np.load(file)
                         node.set_persistable_state(node._state, numpy_states)
+                        numpy_states.close()
 
             for monitorid in monitors:
                 data = monitors[monitorid]
@@ -630,6 +631,7 @@ class TheanoNodenet(Nodenet):
                         data = np.load(theta_file)
                         for key in data:
                             self.set_theta(node_uid, key, data[key])
+                        data.close()
                 else:
                     self._delete_flow_module(node_uid)
 

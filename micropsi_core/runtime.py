@@ -1794,7 +1794,6 @@ def parse_world_definitions(path):
 def parse_native_module_file(path):
     import importlib
     global native_modules
-    import os
     try:
         base_path = os.path.join(RESOURCE_PATH, 'nodetypes')
         relpath = os.path.relpath(path, start=base_path)
@@ -1806,7 +1805,7 @@ def parse_native_module_file(path):
                 category = ''
             moduledef = nodedef_sanity_check(module.nodetype_definition)
             moduledef['path'] = path
-            moduledef['category'] = category
+            moduledef['category'] = category.replace(os.sep, '/')
             if moduledef['name'] in native_modules:
                 logging.getLogger("system").warning("Native module names must be unique. %s is not." % moduledef['name'])
             native_modules[moduledef['name']] = moduledef
@@ -1838,6 +1837,7 @@ def parse_recipe_or_operations_file(path, mode, category_overwrite=False):
     category = category_overwrite or os.path.relpath(os.path.dirname(path), start=base_path)
     if category == '.':
         category = ''  # relapth in rootfolder
+    category = category.replace(os.sep, '/')
     if path.startswith(base_path):
         relpath = os.path.relpath(path, start=base_path)
     else:

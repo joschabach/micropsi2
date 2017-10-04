@@ -58,10 +58,16 @@ class FlowModule(TheanoNode):
             self.outputmap[i] = set()
 
         for name in inputmap:
-            self.inputmap[name] = tuple(inputmap[name])
+            if name in self.inputmap:
+                self.inputmap[name] = tuple(inputmap[name])
+            else:
+                self.logger.warning("Invalid flow-connection: Node %s has no input named %s" % (self, name))
         for name in outputmap:
-            for link in outputmap[name]:
-                self.outputmap[name].add(tuple(link))
+            if name in self.outputmap:
+                for link in outputmap[name]:
+                    self.outputmap[name].add(tuple(link))
+            else:
+                self.logger.warning("Invalid flow-connection: Node %s has no output named %s" % (self, name))
         self.__initialized = initialized
 
     def get_flow_data(self, *args, **kwargs):

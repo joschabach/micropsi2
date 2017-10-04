@@ -1954,10 +1954,12 @@ class TheanoNodenet(Nodenet):
                         if out not in self.native_module_definitions[key]['outputs']:
                             for target_uid, name in node.outputmap[out].copy():
                                 self.unflow('worldadapter', out, target_uid, name)
-                    for _in in node.inputmap:
-                        if _in not in self.native_module_definitions[key]['inputs']:
-                            for source_uid, name in node.inputmap[_in]:
-                                self.unflow(source_uid, name, 'worldadapter', _in)
+                    if node.inputs:
+                        for input_uid, input_node in self.flow_module_instances.items():
+                            for output_name in input_node.outputs:
+                                for target_uid, target_name in input_node.outputmap[output_name].copy():
+                                    if target_uid == uid and target_name not in self.native_module_definitions[key]['inputs']:
+                                        self.unflow(input_uid, output_name, 'worldadapter', target_name)
                     numerictype = get_numerical_node_type(key, self.native_modules)
                     self.flow_module_instances[uid] = FlowModule(self, node._partition, self.rootpartition.rootnodespace_uid, node.uid, numerictype, node.parameters, node.inputmap, node.outputmap)
                 else:

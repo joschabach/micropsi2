@@ -1,4 +1,6 @@
 
+import pytest
+
 
 def test_code_reload(runtime, test_nodenet, resourcepath):
     import os
@@ -107,3 +109,68 @@ def get_values():
     assert "foobar" in wa.datatargets
     assert wa.get_datasource_value("foo") == 5
     assert wa.get_datasource_value("bar") == 7
+
+
+@pytest.mark.engine("theano_engine")
+def test_renaming_flow_datasources(runtime, test_nodenet, resourcepath):
+    import os
+
+    def write_resources(datasource_name, datatarget_name):
+        with open(os.path.join(resourcepath, 'worlds.json'), 'w') as fp:
+            fp.write("""{"worlds":["flowworld.py"],"worldadapters":["flowworld.py"]}""")
+
+        with open(os.path.join(resourcepath, 'flowworld.py'), 'w') as fp:
+            fp.write("""
+import numpy as np
+from micropsi_core.world.world import World
+from micropsi_core.world.worldadapter import ArrayWorldAdapter
+
+class FlowWorld(World):
+    supported_worldadapters = ["SimpleArrayWA"]
+
+class SimpleArrayWA(ArrayWorldAdapter):
+    def __init__(self, world, **kwargs):
+        super().__init__(world, **kwargs)
+        self.add_flow_datasource("%s", shape=(5))
+        self.add_flow_datatarget("%s", shape=(5))
+        self.update_data_sources_and_targets()
+
+    def update_data_sources_and_targets(self):
+        for key in self.flow_datatargets:
+            self.flow_datatarget_feedbacks[key] = np.copy(self.flow_datatargets[key]).astype(self.floatX)
+        for key in self.flow_datasources:
+            self.flow_datasources[key] = np.random.rand(len(self.flow_datasources[key])).astype(self.floatX)
+    """ % (datasource_name, datatarget_name))
+
+    with open(os.path.join(resourcepath, "nodetypes", "Double.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "theano",
+    "name": "Double",
+    "build_function_name": "double",
+    "inputs": ["inputs"],
+    "outputs": ["outputs"],
+    "inputdims": [1]
+}
+
+def double(inputs, netapi, node, parameters):
+    return inputs * 2""")
+
+    write_resources("foo", "bar")
+    runtime.reload_code()
+    result, wuid = runtime.new_world("FlowWorld", "FlowWorld")
+    runtime.set_nodenet_properties(test_nodenet, world_uid=wuid, worldadapter="SimpleArrayWA")
+    net = runtime.nodenets[test_nodenet]
+    netapi = net.netapi
+
+    double = netapi.create_node("Double")
+    netapi.flow("worldadapter", "foo", double, "inputs")
+    netapi.flow(double, "outputs", "worldadapter", "bar")
+    runtime.save_nodenet(test_nodenet)
+
+    write_resources("source", "target")
+    runtime.reload_code()
+
+    double = netapi.get_node(double.uid)
+    assert double.inputmap["inputs"] == tuple()
+    assert double.outputmap["outputs"] == set()

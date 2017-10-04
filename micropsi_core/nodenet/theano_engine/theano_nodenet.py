@@ -1037,7 +1037,7 @@ class TheanoNodenet(Nodenet):
             list of tuples (node_uid, out_name) to filter the callable's return-values. defaults to None, returning all outputs
 
         use_different_thetas : boolean, optional
-            if true, return a callable that excepts a parameter "thetas" that will be used instead of existing thetas. defaults to False
+            if true, return a callable that expects a parameter "thetas" that will be used instead of existing thetas. defaults to False
 
         use_unique_input_names : boolen, optional
             if true, the returned callable expects input-kwargs to be prefixe by node_uid: "UID_NAME". defaults to False, using only the name of the input

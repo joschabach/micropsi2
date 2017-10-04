@@ -16,7 +16,7 @@ def test_code_reload(runtime, test_nodenet, resourcepath):
     worldf = os.path.join(resourcepath, 'dummyworld', 'dummyworld.py')
     worldsharedf = os.path.join(resourcepath, 'shared_utils', 'stuff.py')
 
-    def write_resources(nodevalues, datatarget_name, worldvalues):
+    def write_resources(nodevalues, datasource_name, datatarget_name, worldvalues):
         with open(nodetypef, 'w') as fp:
             fp.write("""
 nodetype_definition = {
@@ -65,19 +65,20 @@ class DummyWA(WorldAdapter):
         super().__init__(*args, **kwargs)
         self.add_datasource("foo")
         self.add_datasource("bar")
+        self.add_datasource("%s")
         self.add_datatarget("%s")
     def update_data_sources_and_targets(self):
         from shared_utils.stuff import get_values
         values = get_values()
         self.datasources['foo'] = values[0]
         self.datasources['bar'] = values[1]
-""" % (worldvalues[0], datatarget_name))
+""" % (worldvalues[0], datasource_name, datatarget_name))
         with open(worldsharedf, 'w') as fp:
             fp.write("""variable = %d
 def get_values():
     return %d, %d""" % (worldvalues[1], worldvalues[2], worldvalues[3]))
 
-    write_resources([3, 5, 7], "target", [13, 15, 17, 19])
+    write_resources([3, 5, 7], "source", "target", [13, 15, 17, 19])
     res, errors = runtime.reload_code()
     # assert res
 
@@ -96,8 +97,10 @@ def get_values():
     assert "target" in wa.datatargets
     assert wa.get_datasource_value("foo") == 17
     assert wa.get_datasource_value("bar") == 19
+    sensor = netapi.create_node("Sensor", None, "Sensor", datasource="source")
+    actuator = netapi.create_node("Actuator", None, "Actuator", datatarget="target")
 
-    write_resources([11, 13, 17], "foobar", [1, 3, 5, 7])
+    write_resources([11, 13, 17], "foo", "bar", [1, 3, 5, 7])
     runtime.reload_code()
     node = netapi.get_node(node.uid)
     runtime.step_nodenet(test_nodenet)
@@ -106,9 +109,14 @@ def get_values():
     assert world.inline == 1
     assert world.var == 3
     wa = net.worldadapter_instance
-    assert "foobar" in wa.datatargets
+    assert "foo" in wa.datasources
+    assert "bar" in wa.datatargets
     assert wa.get_datasource_value("foo") == 5
     assert wa.get_datasource_value("bar") == 7
+    sensor = netapi.get_node(sensor.uid)
+    actuator = netapi.get_node(actuator.uid)
+    assert sensor.get_parameter('datasource') is None
+    assert actuator.get_parameter('datatarget') is None
 
 
 @pytest.mark.engine("theano_engine")

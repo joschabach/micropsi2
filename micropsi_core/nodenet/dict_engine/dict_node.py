@@ -199,6 +199,14 @@ class DictNode(NetEntity, Node):
                 self.__parameters[parameter] = None
 
     def set_parameter(self, parameter, value):
+        if self.type == "Sensor" and parameter == "datasource" and value not in self.nodenet.get_datasources():
+            self.logger.warning("Datasource %s not known, will not be assigned for sensor %s" % (value, self))
+            self.__parameters[parameter] = None
+            return
+        if self.type == "Actuator" and parameter == "datatarget" and value not in self.nodenet.get_datatargets():
+            self.logger.warning("Datatarget %s not known, will not be assigned for actuator %s" % (value, self))
+            self.__parameters[parameter] = None
+            return
         if (value == '' or value is None):
             if parameter in self.nodetype.parameter_defaults:
                 value = self.nodetype.parameter_defaults[parameter]

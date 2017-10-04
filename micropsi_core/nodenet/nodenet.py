@@ -16,6 +16,7 @@ from .netapi import NetAPI
 from . import monitor
 from . import recorder
 from .node import Nodetype, FlowNodetype, HighdimensionalNodetype
+from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
@@ -131,14 +132,14 @@ class Nodenet(metaclass=ABCMeta):
     @property
     def worldadapter_instance(self):
         """
-        Returns the uid of the currently connected world adapter
+        Returns the instance of the currently connected world adapter
         """
         return self._worldadapter_instance
 
     @worldadapter_instance.setter
     def worldadapter_instance(self, _worldadapter_instance):
         """
-        Connects the node net to the given world adapter uid, or disconnects if None is given
+        Connects the node net to the given worldadapter instance, or disconnects if None is given
         """
         self._worldadapter_instance = _worldadapter_instance
         if self._worldadapter_instance:
@@ -203,8 +204,7 @@ class Nodenet(metaclass=ABCMeta):
 
         self._modulators = {}
         if use_modulators:
-            from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators as emo
-            for modulator in emo.writeable_modulators + emo.readable_modulators:
+            for modulator in DoernerianEmotionalModulators.writeable_modulators + DoernerianEmotionalModulators.readable_modulators:
                 self._modulators[modulator] = 1
 
         if not os.path.isdir(self.persistency_path):
@@ -520,6 +520,24 @@ class Nodenet(metaclass=ABCMeta):
             if type(self.native_modules[key]) == FlowNodetype:
                 data[key] = self.native_modules[key].get_data()
         return data
+
+    def get_datasources(self):
+        """ Returns a sorted list of available datasources, including worldadapter datasources
+        and readable modulators"""
+        datasources = list(self.worldadapter_instance.get_available_datasources()) if self.worldadapter_instance else []
+        if self.use_modulators:
+            for item in sorted(DoernerianEmotionalModulators.readable_modulators):
+                datasources.append(item)
+        return datasources
+
+    def get_datatargets(self):
+        """ Returns a sorted list of available datatargets, including worldadapter datatargets
+        and writeable modulators"""
+        datatargets = list(self.worldadapter_instance.get_available_datatargets()) if self.worldadapter_instance else []
+        if self.use_modulators:
+            for item in sorted(DoernerianEmotionalModulators.writeable_modulators):
+                datatargets.append(item)
+        return datatargets
 
     @abstractmethod
     def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id', group_name=None):

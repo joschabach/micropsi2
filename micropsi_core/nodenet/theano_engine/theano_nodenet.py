@@ -2262,24 +2262,6 @@ class TheanoNodenet(Nodenet):
                 if self.get_partition(node_id) == partition:
                     self.get_node(node_id).set_parameter("datasource", datasource)
 
-    def get_datasources(self):
-        """ Returns a sorted list of available datasources, including worldadapter datasources
-        and readable modulators"""
-        datasources = list(self.worldadapter_instance.get_available_datasources()) if self.worldadapter_instance else []
-        if self.use_modulators:
-            for item in sorted(DoernerianEmotionalModulators.readable_modulators):
-                datasources.append(item)
-        return datasources
-
-    def get_datatargets(self):
-        """ Returns a sorted list of available datatargets, including worldadapter datatargets
-        and writeable modulators"""
-        datatargets = list(self.worldadapter_instance.get_available_datatargets()) if self.worldadapter_instance else []
-        if self.use_modulators:
-            for item in sorted(DoernerianEmotionalModulators.writeable_modulators):
-                datatargets.append(item)
-        return datatargets
-
     def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id', group_name=None):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid

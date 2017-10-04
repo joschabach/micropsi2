@@ -110,6 +110,23 @@ class DictNodenet(Nodenet):
     def current_step(self):
         return self._step
 
+    @property
+    def worldadapter_instance(self):
+        return self._worldadapter_instance
+
+    @worldadapter_instance.setter
+    def worldadapter_instance(self, _worldadapter_instance):
+        self._worldadapter_instance = _worldadapter_instance
+        if self._worldadapter_instance:
+            for uid, node in self._nodes.items():
+                # re-set parameters to filter for available datasources/-targets
+                if node.type == "Sensor":
+                    node.set_parameter('datasource', node.get_parameter('datasource'))
+                if node.type == "Actuator":
+                    node.set_parameter('datatarget', node.get_parameter('datatarget'))
+
+            self._worldadapter_instance.nodenet = self
+
     def __init__(self, persistency_path, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None):
         """Create a new MicroPsi agent.
 

@@ -139,6 +139,12 @@ class DictNodenet(Nodenet):
 
         super().__init__(persistency_path, name, worldadapter, world, owner, uid, native_modules=native_modules, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance, version=version)
 
+        try:
+            import numpy
+            self.numpy_available = True
+        except ImportError:
+            self.numpy_available = False
+
         self.nodetypes = {}
         for type, data in STANDARD_NODETYPES.items():
             self.nodetypes[type] = Nodetype(nodenet=self, **data)
@@ -227,6 +233,22 @@ class DictNodenet(Nodenet):
         if base_path is None:
             base_path = self.persistency_path
         data = json.dumps(self.export_json(), indent=4)
+
+        if self.numpy_available:
+            import io
+            import numpy as np
+            # write numpy states of native modules
+            numpy_states = self.construct_native_modules_numpy_state_dict()
+            for node_uid, states in numpy_states.items():
+                if len(states) > 0:
+                    filename = "%s_numpystate.npz" % node_uid
+                    if zipfile:
+                        stream = io.BytesIO()
+                        np.savez(stream, **states)
+                        stream.seek(0)
+                        zipfile.writestr(filename, stream.getvalue())
+                    else:
+                        np.savez(os.path.join(base_path, filename), **states)
         if zipfile:
             zipfile.writestr('nodenet.json', data)
         else:
@@ -262,6 +284,17 @@ class DictNodenet(Nodenet):
                     return False
 
             self.initialize_nodenet(initfrom)
+            if self.numpy_available:
+                import numpy as np
+                # recover numpy states for native modules
+                for uid in self._nodes:
+                    if self._nodes[uid].type in self.native_modules:
+                        file = os.path.join(self.persistency_path, '%s_numpystate.npz' % uid)
+                        if os.path.isfile(file):
+                            node = self.get_node(uid)
+                            numpy_states = np.load(file)
+                            node.set_persistable_state(node._state, numpy_states)
+                            numpy_states.close()
             return True
 
     def reload_native_modules(self, native_modules):
@@ -333,6 +366,15 @@ class DictNodenet(Nodenet):
         for node_uid in self.get_node_uids():
             data[node_uid] = self.get_node(node_uid).get_data(**params)
         return data
+
+    def construct_native_modules_numpy_state_dict(self):
+        numpy_states = {}
+        if self.numpy_available:
+            for uid in self._nodes:
+                numpy_state = self._nodes[uid].get_persistable_state()[1]
+                if numpy_state:
+                    numpy_states[uid] = numpy_state
+        return numpy_states
 
     def construct_nodespaces_dict(self, nodespace_uid, transitive=False):
         data = {}

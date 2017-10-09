@@ -147,7 +147,7 @@ class Node(metaclass=ABCMeta):
             "parent_nodespace": self.parent_nodespace,
             "type": self.type,
             "parameters": self.clone_parameters(),
-            "state": self.clone_state(),
+            "state": self.get_persistable_state()[0],
             "activation": self.activation,
             "gate_activations": self.construct_gates_dict(),
             "gate_configuration": self.get_gate_configuration()
@@ -276,6 +276,63 @@ class Node(metaclass=ABCMeta):
         Node states are not formally required by the node net specification. They exist for convenience reasons only.
         """
         return self._state.copy()
+
+    def _pluck_apart_state(self, state, numpy_elements):
+        try:
+            import numpy as np
+        except ImportError:
+            return state
+        if isinstance(state, dict):
+            result = dict()
+            for key, value in state.items():
+                result[key] = self._pluck_apart_state(value, numpy_elements)
+        elif isinstance(state, list):
+            result = []
+            for value in state:
+                result.append(self._pluck_apart_state(value, numpy_elements))
+        elif isinstance(state, tuple):
+            raise ValueError("Tuples in node states are not supported")
+        elif isinstance(state, np.ndarray):
+            result = "__numpyelement__" + str(id(state))
+            numpy_elements[result] = state
+        else:
+            return state
+        return result
+
+    def _put_together_state(self, state, numpy_elements):
+        if isinstance(state, dict):
+            result = dict()
+            for key, value in state.items():
+                result[key] = self._put_together_state(value, numpy_elements)
+        elif isinstance(state, list):
+            result = []
+            for value in state:
+                result.append(self._put_together_state(value, numpy_elements))
+        elif isinstance(state, str) and state.startswith("__numpyelement__"):
+            result = numpy_elements[state]
+        else:
+            return state
+        return result
+
+    def get_persistable_state(self):
+        """
+        Returns a tuple of dicts, the first one containing json-serializable state information
+        and the second one containing numpy elements that should be persisted into an npz.
+        The json-seriazable dict will contain special values that act as keys for the second dict.
+        This allows to save nested numpy state.
+        set_persistable_state knows how to unserialize from the returned tuple.
+        """
+        numpy_elements = dict()
+        json_state = self._pluck_apart_state(self._state, numpy_elements)
+
+        return json_state, numpy_elements
+
+    def set_persistable_state(self, json_state, numpy_elements):
+        """
+        Sets this node's state from a tuple created with get_persistable_state,
+        essentially nesting numpy objects back into the state dict where it belongs
+        """
+        self._state = self._put_together_state(json_state, numpy_elements)
 
     @abstractmethod
     def node_function(self):

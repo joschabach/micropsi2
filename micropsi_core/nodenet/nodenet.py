@@ -522,6 +522,13 @@ class Nodenet(metaclass=ABCMeta):
                 data[key] = self.native_modules[key].get_data()
         return data
 
+    @abstractmethod
+    def construct_native_modules_numpy_state_dict(self):
+        """
+        Constructs a dict numpy states of all nodes
+        """
+        pass
+
     def get_datasources(self):
         """ Returns a sorted list of available datasources, including worldadapter datasources
         and readable modulators"""

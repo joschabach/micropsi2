@@ -74,7 +74,7 @@ class DictNode(NetEntity, Node):
 
         self.position = position
 
-        self.__state = {}
+        self._state = {}
         self.__activation = 0
 
         self.__gates = {}
@@ -92,7 +92,7 @@ class DictNode(NetEntity, Node):
         for slot in self.nodetype.slottypes:
             self.__slots[slot] = DictSlot(slot, self)
         if state:
-            self.__state = state
+            self._state = state
         nodenet._register_node(self)
         self.activation = activation
 
@@ -219,18 +219,6 @@ class DictNode(NetEntity, Node):
 
     def clone_parameters(self):
         return self.__parameters.copy()
-
-    def get_state(self, state_element):
-        if state_element in self.__state:
-            return self.__state[state_element]
-        else:
-            return None
-
-    def set_state(self, state_element, value):
-        self.__state[state_element] = value
-
-    def clone_state(self):
-        return self.__state.copy()
 
     def link(self, gate_name, target_node_uid, slot_name, weight=1):
         """Ensures a link exists with the given weight and returns it

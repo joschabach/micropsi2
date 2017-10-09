@@ -167,6 +167,7 @@ class Nodenet(metaclass=ABCMeta):
 
         self.runner_config = {}
         self.owner = owner
+        self._step = 0
         self._monitors = {}
         self._recorders = {}
         self._adhoc_monitors = {}

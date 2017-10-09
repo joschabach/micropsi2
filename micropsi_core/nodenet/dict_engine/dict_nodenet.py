@@ -148,8 +148,6 @@ class DictNodenet(Nodenet):
             self.stepoperators.append(DoernerianEmotionalModulators())
         self.stepoperators.sort(key=lambda op: op.priority)
 
-        self._step = 0
-
         self._nodes = {}
         self._nodespaces = {}
 

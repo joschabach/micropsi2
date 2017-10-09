@@ -210,8 +210,6 @@ class TheanoNodenet(Nodenet):
         self.inverted_partitionmap = {}
         self._rebuild_sensor_actuator_indices(rootpartition)
 
-        self._step = 0
-
         self.proxycache = {}
 
         self.stepoperators = []

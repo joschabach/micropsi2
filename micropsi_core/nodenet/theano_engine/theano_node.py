@@ -401,14 +401,6 @@ class TheanoNode(Node):
                     parameters[parameter] = self.parameters[parameter]
         return parameters
 
-    def get_state(self, state):
-        return self._state.get(state)
-
-    def set_state(self, state, value):
-        if isinstance(value, np.floating):
-            value = float(value)
-        self._state[state] = value
-
     def clone_state(self):
         if self._numerictype > MAX_STD_NODETYPE:
             return self._state.copy()

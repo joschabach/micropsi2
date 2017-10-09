@@ -243,7 +243,6 @@ class Node(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
-    @abstractmethod
     def get_state(self, state):
         """
         Returns the value of the given state.
@@ -251,9 +250,8 @@ class Node(metaclass=ABCMeta):
         A typical use is native modules "attaching" a bit of information to a node for later retrieval.
         Node states are not formally required by the node net specification. They exist for convenience reasons only.
         """
-        pass  # pragma: no cover
+        return self._state.get(state)
 
-    @abstractmethod
     def set_state(self, state, value):
         """
         Sets the value of a given state.
@@ -261,9 +259,14 @@ class Node(metaclass=ABCMeta):
         A typical use is native modules "attaching" a bit of information to a node for later retrieval.
         Node states are not formally required by the node net specification. They exist for convenience reasons only.
         """
-        pass  # pragma: no cover
+        try:
+            import numpy as np
+            if isinstance(value, np.floating):
+                value = float(value)
+        except ImportError:
+            pass
+        self._state[state] = value
 
-    @abstractmethod
     def clone_state(self):
         """
         Returns a copy of the node's state.
@@ -272,7 +275,7 @@ class Node(metaclass=ABCMeta):
         A typical use is native modules "attaching" a bit of information to a node for later retrieval.
         Node states are not formally required by the node net specification. They exist for convenience reasons only.
         """
-        pass  # pragma: no cover
+        return self._state.copy()
 
     @abstractmethod
     def node_function(self):

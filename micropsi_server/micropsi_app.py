@@ -32,6 +32,8 @@ import logging
 
 from configuration import config as cfg
 
+from threading import Thread
+
 VERSION = cfg['micropsi2']['version']
 APPTITLE = cfg['micropsi2']['apptitle']
 
@@ -1601,11 +1603,31 @@ def runtime_info():
 # -----------------------------------------------------------------------------------------------
 
 
+def ipython_kernel_thread():
+    try:
+        import mock
+        import IPython
+    except ImportError:
+        logging.getLogger('system').warning("Warning: IPython not installed")
+        return
+    with mock.patch('signal.signal'):
+        IPython.embed_kernel()
+
+
 def main(host=None, port=None):
     host = host or cfg['micropsi2']['host']
     port = port or cfg['micropsi2']['port']
     print("Starting App on Port " + str(port))
+
     runtime.initialize()
+
+    import sys
+    tmp_stdin, tmp_stdout, tmp_stderr = sys.stdin, sys.stdout, sys.stderr
+    Thread(target=ipython_kernel_thread).start()
+    import time
+    time.sleep(2)
+    sys.stdin, sys.stdout, sys.stderr = tmp_stdin, tmp_stdout, tmp_stderr
+
     try:
         from cherrypy import wsgiserver
         server = 'cherrypy'

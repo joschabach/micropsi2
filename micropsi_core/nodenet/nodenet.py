@@ -181,7 +181,7 @@ class Nodenet(metaclass=ABCMeta):
         self.user_prompt = None
         self.user_prompt_response = {}
 
-        self.netapi = NetAPI(self)
+        self._create_netapi()
 
         self.deleted_items = {}
         self.stepping_rate = []
@@ -201,6 +201,9 @@ class Nodenet(metaclass=ABCMeta):
 
         if not os.path.isdir(self.persistency_path):
             os.mkdir(self.persistency_path)
+
+    def _create_netapi(self):
+        self.netapi = NetAPI(self)
 
     def get_data(self, complete=False, include_links=True):
         """

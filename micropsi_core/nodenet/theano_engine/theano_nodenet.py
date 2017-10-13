@@ -170,8 +170,6 @@ class TheanoNodenet(Nodenet):
             if T.config.floatX != "float32":
                 self.logger.warning("Precision set to %s, but attempting to use gpu.", precision)
 
-        self.netapi = TheanoNetAPI(self)
-
         self.partitions = {}
         self.last_allocated_partition = 0
 
@@ -237,6 +235,9 @@ class TheanoNodenet(Nodenet):
         self.create_nodespace(None, "Root", nodespace_to_id(1, rootpartition.pid))
 
         self.initialize_nodenet({})
+
+    def _create_netapi(self):
+        self.netapi = TheanoNetAPI(self)
 
     def get_data(self, complete=False, include_links=True):
         data = super().get_data(complete=complete, include_links=include_links)

@@ -11,7 +11,7 @@ from theano import tensor as T
 from micropsi_core.tools import post_mortem
 from micropsi_core.nodenet.node import FlowNodetype
 from micropsi_core.nodenet.flow_engine import FlowEngine
-from micropsi_core.nodenet.theano_engine.theano_flowmodule import FlowModule
+from micropsi_core.nodenet.theano_engine.theano_flowmodule import TheanoFlowModule
 from micropsi_core.nodenet.theano_engine.theano_definitions import get_numerical_node_type, create_tensor, node_from_id, get_string_node_type, nodespace_to_id
 
 
@@ -53,7 +53,7 @@ class TheanoFlowEngine(FlowEngine):
                 if data.get('flow_module'):
                     if self.native_module_definitions.get(data['type'], {}).get('flow_module'):
                         partition = self.get_partition(uid)
-                        node = FlowModule(
+                        node = TheanoFlowModule(
                             self,
                             self.get_partition(uid),
                             data['parent_nodespace'],
@@ -99,7 +99,7 @@ class TheanoFlowEngine(FlowEngine):
             partition = self.get_partition(uid)
             self.close_figures(uid)
             flowdata = instance.get_flow_data(complete=True)
-            new_instance = FlowModule(
+            new_instance = TheanoFlowModule(
                 self,
                 partition,
                 instance.parent_nodespace,
@@ -158,7 +158,7 @@ class TheanoFlowEngine(FlowEngine):
                                     if target_uid == uid and target_name not in self.native_module_definitions[key]['inputs']:
                                         self.unflow(input_uid, output_name, 'worldadapter', target_name)
                     numerictype = get_numerical_node_type(key, self.native_modules)
-                    self.flow_module_instances[uid] = FlowModule(self, node._partition, self.rootpartition.rootnodespace_uid, node.uid, numerictype, node.parameters, node.inputmap, node.outputmap)
+                    self.flow_module_instances[uid] = TheanoFlowModule(self, node._partition, self.rootpartition.rootnodespace_uid, node.uid, numerictype, node.parameters, node.inputmap, node.outputmap)
                 else:
                     uid = self.create_node(key, None, [(idx + 2) * 100, 100], name=key)
                     self.worldadapter_flow_nodes[key] = uid
@@ -168,7 +168,7 @@ class TheanoFlowEngine(FlowEngine):
         parent_id = partition.allocated_node_parents[id]
         nodetype = get_string_node_type(partition.allocated_nodes[id], self.native_modules)
         if type(self.get_nodetype(nodetype)) == FlowNodetype:
-            node = FlowModule(self, partition, nodespace_to_id(parent_id, partition.pid), uid, partition.allocated_nodes[id])
+            node = TheanoFlowModule(self, partition, nodespace_to_id(parent_id, partition.pid), uid, partition.allocated_nodes[id])
             self.flow_module_instances[uid] = node
             partition = self.get_partition(uid)
             partition.native_module_instances[uid] = node

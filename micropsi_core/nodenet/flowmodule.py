@@ -1,10 +1,12 @@
 
-""" Superclass for flow module implementations """
 
-from micropsi_core.nodenet.dict_engine.dict_node import DictNode
+from abc import abstractmethod
 
 
-class Flowmodule(DictNode):
+class FlowModule(object):
+    """
+    Superclass for flow module implementations
+    """
 
     @property
     def inputs(self):
@@ -21,8 +23,8 @@ class Flowmodule(DictNode):
         else:
             return super().activation
 
-    def __init__(self, nodenet, parent_nodespace, position, state={}, activation=0, name="", type="", uid=None, index=None, parameters={}, gate_activations=None, gate_configuration=None, inputmap={}, outputmap={}, is_copy_of=False, initialized=False):
-        super().__init__(nodenet, parent_nodespace, position, state, activation, name, type, uid, index, parameters, gate_activations, gate_configuration)
+    def __init__(self, nodenet, inputmap={}, outputmap={}, is_copy_of=False, initialized=False, **kwargs):
+        super().__init__(nodenet, **kwargs)
         self.definition = nodenet.native_module_definitions[self.type]
         self.implementation = self.definition['implementation']
         self.outexpression = None
@@ -37,10 +39,16 @@ class Flowmodule(DictNode):
             self.outputmap[i] = set()
 
         for name in inputmap:
-            self.inputmap[name] = tuple(inputmap[name])
+            if name in self.inputmap:
+                self.inputmap[name] = tuple(inputmap[name])
+            else:
+                self.logger.warning("Invalid flow-connection: Node %s has no input named %s" % (self, name))
         for name in outputmap:
-            for link in outputmap[name]:
-                self.outputmap[name].add(tuple(link))
+            if name in self.outputmap:
+                for link in outputmap[name]:
+                    self.outputmap[name].add(tuple(link))
+            else:
+                self.logger.warning("Invalid flow-connection: Node %s has no output named %s" % (self, name))
         self.__initialized = initialized
 
     def get_flow_data(self, *args, **kwargs):
@@ -156,35 +164,10 @@ class Flowmodule(DictNode):
             self._initfunction(self._nodenet.netapi, self, self.clone_parameters())
             self.__initialized = True
 
+    @abstractmethod
     def build(self, *inputs):
         """ Builds the node, calls the initfunction if needed, and returns an outexpression.
-        This can be either a symbolic theano expression or a python function """
-        if self.is_copy_of:
-            self._nodenet.get_node(self.is_copy_of).ensure_initialized()
-        self.ensure_initialized()
-        if self.implementation == 'symbolic':
-            outexpression = self._buildfunction(*inputs, netapi=self._nodenet.netapi, node=self, parameters=self.clone_parameters())
-
-            # add names to the theano expressions returned by the build function.
-            # names are added if we received a single expression OR exactly one per documented output,
-            # but not for lists of expressions (which may have arbitrary many items).
-            # name_outexs = outexpression
-            # # if len(self.outputs) == 1:
-            # #     name_outexs = [outexpression]
-            # # for out_idx, subexpression in enumerate(name_outexs):
-            # #     if isinstance(subexpression, TensorVariable):
-            # #         existing_name = "({})".format(subexpression.name) if subexpression.name is not None else ""
-            # #         subexpression.name = "{}_{}{}".format(self.uid, self.outputs[out_idx], existing_name)
-
-        elif self.implementation == 'python':
-            outexpression = self._flowfunction
-
-        else:
-            raise ValueError("Unknown flow-implementation: %s" % self.implementation)
-
-        self.outexpression = outexpression
-
-        return outexpression
+        This can be either a symbolic expression or a python function """
 
     def _load_functions(self):
         """ Loads the run-/build-/init-functions """
@@ -207,12 +190,12 @@ class Flowmodule(DictNode):
                 self._initfunction = lambda x, y, z: None
                 self.__initialized = True
 
-            if self.implementation == 'theano':
-                self._buildfunction = getattr(module, self.definition['build_function_name'])
-                self.line_number = inspect.getsourcelines(self._buildfunction)[1]
-            elif self.implementation == 'python':
+            if self.implementation == 'python':
                 self._flowfunction = getattr(module, self.definition['run_function_name'])
                 self.line_number = inspect.getsourcelines(self._flowfunction)[1]
+            else:
+                self._buildfunction = getattr(module, self.definition['build_function_name'])
+                self.line_number = inspect.getsourcelines(self._buildfunction)[1]
 
     def worldadapter_flowfunction(self, *args, **kwargs):
         if len(self.outputs) == 1:

@@ -13,7 +13,6 @@ import theano
 from theano import tensor as T
 import numpy as np
 import scipy
-import networkx as nx
 
 try:
     import ipdb as pdb
@@ -21,11 +20,10 @@ except ImportError:
     import pdb
 
 from micropsi_core.tools import post_mortem
-from micropsi_core.tools import OrderedSet
 from micropsi_core.nodenet import monitor
 from micropsi_core.nodenet import recorder
 from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION
-from micropsi_core.nodenet.node import Nodetype, FlowNodetype, HighdimensionalNodetype
+from micropsi_core.nodenet.node import Nodetype, HighdimensionalNodetype
 from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators
 from micropsi_core.nodenet.theano_engine.theano_flowengine import TheanoFlowEngine
 from micropsi_core.nodenet.theano_engine.theano_node import *
@@ -34,7 +32,6 @@ from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
 from micropsi_core.nodenet.theano_engine.theano_nodespace import *
 from micropsi_core.nodenet.theano_engine.theano_netapi import TheanoNetAPI
 from micropsi_core.nodenet.theano_engine.theano_partition import TheanoPartition
-from micropsi_core.nodenet.theano_engine.theano_flowmodule import FlowModule
 
 from configuration import config as settings
 

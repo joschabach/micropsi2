@@ -8,7 +8,7 @@ from abc import ABCMeta, abstractmethod
 
 from micropsi_core.tools import OrderedSet
 from micropsi_core.nodenet.node import FlowNodetype
-from micropsi_core.nodenet.flowmodule import Flowmodule
+from micropsi_core.nodenet.flowmodule import FlowModule
 
 
 class FlowEngine(metaclass=ABCMeta):

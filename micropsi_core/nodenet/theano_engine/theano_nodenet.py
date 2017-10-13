@@ -1855,7 +1855,7 @@ class TheanoNodenetCore(Nodenet):
         return rec
 
     def get_dashboard(self):
-        data = super(TheanoNodenet, self).get_dashboard()
+        data = super().get_dashboard()
         data['count_nodes'] = 0
         data['count_links'] = -1
         data['count_positive_nodes'] = 0

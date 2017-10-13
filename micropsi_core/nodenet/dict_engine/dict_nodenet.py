@@ -4,8 +4,9 @@ import json
 import os
 
 import micropsi_core
+from micropsi_core.tools import post_mortem
 from micropsi_core.nodenet import monitor
-from micropsi_core.nodenet.node import Nodetype, FlowNodetype, HighdimensionalNodetype
+from micropsi_core.nodenet.node import Nodetype
 from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION
 from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators
 from .dict_stepoperators import DictPropagate, DictCalculate
@@ -297,22 +298,25 @@ class DictNodenet(Nodenet):
                             numpy_states.close()
             return True
 
+    def _load_nodetypes(self, nodetype_data):
+        newnative_modules = {}
+        for key, data in nodetype_data.items():
+            if data.get('engine', self.engine) == self.engine:
+                try:
+                    if data.get('dimensionality'):
+                        raise NotImplementedError("dict nodenet does not support highdimensional native modules")
+                    else:
+                        newnative_modules[key] = Nodetype(nodenet=self, **data)
+                except Exception as err:
+                    self.logger.error("Can not instantiate node type %s: %s: %s" % (key, err.__class__.__name__, str(err)))
+                    post_mortem()
+        return newnative_modules
+
     def reload_native_modules(self, native_modules):
         """ reloads the native-module definition, and their nodefunctions
         and afterwards reinstantiates the nodenet."""
-        self.native_modules = {}
-        for key in native_modules:
-            if native_modules[key].get('engine', self.engine) == self.engine:
-                try:
-                    if native_modules[key].get('flow_module'):
-                        raise NotImplementedError("dict nodenet does not support flow modules")
-                    elif native_modules[key].get('dimensionality'):
-                        raise NotImplementedError("dict nodenet does not support highdimensional native modules")
-                    else:
-                        self.native_modules[key] = Nodetype(nodenet=self, **native_modules[key])
-                except Exception as err:
-                    self.logger.error("Can not instantiate node type %s: %s: %s" % (key, err.__class__.__name__, str(err)))
-
+        self.native_modules = self._load_nodetypes(native_modules)
+        self.native_module_definitions = dict((uid, native_modules[uid]) for uid in self.native_modules)
         saved = self.export_json()
         self.clear()
         self.merge_data(saved, keep_uids=True)

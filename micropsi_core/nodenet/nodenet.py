@@ -190,18 +190,9 @@ class Nodenet(metaclass=ABCMeta):
 
         self.netapi_event_handlers = dict((evt, []) for evt in self.netapi.Event)
 
-        self.native_modules = {}
-        for type, data in native_modules.items():
-            if data.get('engine', self.engine) == self.engine:
-                try:
-                    if data.get('flow_module'):
-                        self.native_modules[type] = FlowNodetype(nodenet=self, **data)
-                    elif data.get('dimensionality'):
-                        self.native_modules[type] = HighdimensionalNodetype(nodenet=self, **data)
-                    else:
-                        self.native_modules[type] = Nodetype(nodenet=self, **data)
-                except Exception as err:
-                    self.logger.error("Can not instantiate node type %s: %s: %s" % (type, err.__class__.__name__, str(err)))
+        self.native_modules = self._load_nodetypes(native_modules)
+        self.native_module_instances = {}
+        self.native_module_definitions = dict((uid, native_modules[uid]) for uid in self.native_modules)
 
         self._modulators = {}
         if use_modulators:
@@ -442,6 +433,20 @@ class Nodenet(metaclass=ABCMeta):
         Deletes the link between the given node/gate and node/slot
         """
         pass  # pragma: no cover
+
+    def _load_nodetypes(self, nodetype_data):
+        """
+        Creates nodetype-instances for the given nodetype data
+        """
+        newnative_modules = {}
+        for key, data in nodetype_data.items():
+            if data.get('engine', self.engine) == self.engine:
+                try:
+                    newnative_modules[key] = Nodetype(nodenet=self, **data)
+                except Exception as err:
+                    self.logger.error("Can not instantiate node type %s: %s: %s" % (key, err.__class__.__name__, str(err)))
+                    tools.post_mortem()
+        return newnative_modules
 
     @abstractmethod
     def reload_native_modules(self, native_modules):

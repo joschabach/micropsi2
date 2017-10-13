@@ -1775,17 +1775,9 @@ class TheanoNodenet(Nodenet):
             self.update_flow_graphs()
         return result
 
-    def reload_native_modules(self, native_modules):
-
-        # check which instances need to be recreated because of gate/slot changes and keep their .data
-        instances_to_recreate = {}
-        instances_to_delete = {}
-
-        # create the new nodetypes
-        self.native_module_definitions = {}
+    def _load_nodetypes(self, nodetype_data):
         newnative_modules = {}
-        native_modules.update(self.generate_worldadapter_flow_types())
-        for key, data in native_modules.items():
+        for key, data in nodetype_data.items():
             if data.get('engine', self.engine) == self.engine:
                 try:
                     if data.get('flow_module'):
@@ -1794,10 +1786,21 @@ class TheanoNodenet(Nodenet):
                         newnative_modules[key] = HighdimensionalNodetype(nodenet=self, **data)
                     else:
                         newnative_modules[key] = Nodetype(nodenet=self, **data)
-                    self.native_module_definitions[key] = data
                 except Exception as err:
                     self.logger.error("Can not instantiate node type %s: %s: %s" % (key, err.__class__.__name__, str(err)))
                     post_mortem()
+        return newnative_modules
+
+    def reload_native_modules(self, native_modules):
+
+        # check which instances need to be recreated because of gate/slot changes and keep their .data
+        instances_to_recreate = {}
+        instances_to_delete = {}
+
+        # create the new nodetypes
+        self.native_module_definitions = {}
+        newnative_modules = self._load_nodetypes(native_modules)
+        self.native_module_definitions = dict((uid, native_modules[uid]) for uid in newnative_modules)
 
         for partition in self.partitions.values():
             for uid, instance in partition.native_module_instances.items():

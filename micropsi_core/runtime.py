@@ -1949,10 +1949,6 @@ def reload_code():
 
     errors.extend(load_world_files(WORLD_PATH, errors=[]))
 
-    # reload native modules in nodenets
-    for nodenet_uid in nodenets:
-        nodenets[nodenet_uid].reload_native_modules(native_modules)
-
     # reload worlds:
     for world_uid in worlds:
         wtype = worlds[world_uid].__class__.__name__
@@ -1969,6 +1965,10 @@ def reload_code():
                     nodenets[uid].worldadapter_instance = worlds[world_uid].agents[uid]
         else:
             worlds[world_uid].logger.warning("World definition for world %s gone, destroying." % str(worlds[world_uid]))
+
+    # reload native modules in nodenets
+    for nodenet_uid in nodenets:
+        nodenets[nodenet_uid].reload_native_modules(native_modules)
 
     # restart previously active nodenets
     for uid in runners:

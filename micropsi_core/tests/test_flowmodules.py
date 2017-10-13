@@ -1090,9 +1090,9 @@ class SimpleArrayWA(ArrayWorldAdapter):
     targets = nodenet.get_node(nodenet.worldadapter_flow_nodes['datatargets'])
     assert sources.outputs == ["renamed", "vision"]
     assert targets.inputs == ["renamed", "motor"]
-    assert nodenet.get_node(double.uid).inputmap['inputs'] == (sources.uid, 'vision')
-    assert (double.uid, 'inputs') in nodenet.get_node(sources.uid).outputmap['vision']
-    assert (targets.uid, 'motor') in nodenet.get_node(double.uid).outputmap['outputs']
+    assert nodenet.get_node(double.uid).inputmap['inputs'] == tuple()
+    assert nodenet.get_node(sources.uid).outputmap['vision'] == set()
+    assert nodenet.get_node(double.uid).outputmap['outputs'] == set()
 
 
 @pytest.mark.engine("theano_engine")

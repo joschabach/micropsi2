@@ -202,8 +202,17 @@ class Nodenet(metaclass=ABCMeta):
         if not os.path.isdir(self.persistency_path):
             os.mkdir(self.persistency_path)
 
+        self.initialize_stepoperators()
+
     def _create_netapi(self):
         self.netapi = NetAPI(self)
+
+    @abstractmethod
+    def initialize_stepoperators(self):
+        """
+        Instantiate Stepoperators
+        """
+        pass  # pragma: no cover
 
     def get_data(self, complete=False, include_links=True):
         """

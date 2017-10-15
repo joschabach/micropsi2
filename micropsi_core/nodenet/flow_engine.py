@@ -9,6 +9,7 @@ from abc import ABCMeta, abstractmethod
 from micropsi_core.tools import OrderedSet
 from micropsi_core.nodenet.node import FlowNodetype
 from micropsi_core.nodenet.flowmodule import FlowModule
+from micropsi_core.nodenet.stepoperators import CalculateFlowmodules
 
 
 class FlowEngine(metaclass=ABCMeta):
@@ -37,6 +38,11 @@ class FlowEngine(metaclass=ABCMeta):
         self.is_flowbuilder_active = False
         self.flowfunctions = []
         self.worldadapter_flow_nodes = {}
+
+    def initialize_stepoperators(self):
+        super().initialize_stepoperators()
+        self.stepoperators.append(CalculateFlowmodules(self))
+        self.stepoperators.sort(key=lambda op: op.priority)
 
     def save(self, base_path=None, zipfile=None):
         super().save(base_path, zipfile)

@@ -150,17 +150,18 @@ class DictNodenet(Nodenet):
         for type, data in STANDARD_NODETYPES.items():
             self.nodetypes[type] = Nodetype(nodenet=self, **data)
 
-        self.stepoperators = [DictPropagate(), DictCalculate()]
-        if self.use_modulators:
-            self.stepoperators.append(DoernerianEmotionalModulators())
-        self.stepoperators.sort(key=lambda op: op.priority)
-
         self._nodes = {}
         self._nodespaces = {}
 
         self.nodegroups = {}
 
         self.initialize_nodenet({})
+
+    def initialize_stepoperators(self):
+        self.stepoperators = [DictPropagate(), DictCalculate()]
+        if self.use_modulators:
+            self.stepoperators.append(DoernerianEmotionalModulators())
+        self.stepoperators.sort(key=lambda op: op.priority)
 
     def get_data(self, **params):
         data = super().get_data(**params)

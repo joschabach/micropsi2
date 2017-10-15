@@ -449,8 +449,7 @@ class TheanoNodenetCore(Nodenet):
     def initialize_stepoperators(self):
         self.stepoperators = [
             TheanoPropagate(),
-            TheanoCalculate(self),
-            TheanoCalculateFlowmodules(self)]
+            TheanoCalculate(self)]
         if self.use_modulators:
             self.stepoperators.append(DoernerianEmotionalModulators())
         self.stepoperators.sort(key=lambda op: op.priority)

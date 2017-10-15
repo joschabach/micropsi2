@@ -1,11 +1,8 @@
 
 
-from abc import abstractmethod
-
-
 class FlowModule(object):
     """
-    Superclass for flow module implementations
+    Flowmodule base class
     """
 
     @property
@@ -164,10 +161,39 @@ class FlowModule(object):
             self._initfunction(self._nodenet.netapi, self, self.clone_parameters())
             self.__initialized = True
 
-    @abstractmethod
     def build(self, *inputs):
         """ Builds the node, calls the initfunction if needed, and returns an outexpression.
         This can be either a symbolic expression or a python function """
+        if self.is_copy_of:
+            self._nodenet.get_node(self.is_copy_of).ensure_initialized()
+        self.ensure_initialized()
+        if self.implementation == 'theano':
+            from theano.tensor.var import TensorVariable
+            outexpression = self._buildfunction(*inputs, netapi=self._nodenet.netapi, node=self, parameters=self.clone_parameters())
+
+            # add names to the theano expressions returned by the build function.
+            # names are added if we received a single expression OR exactly one per documented output,
+            # but not for lists of expressions (which may have arbitrary many items).
+            name_outexs = outexpression
+            if len(self.outputs) == 1:
+                name_outexs = [outexpression]
+            for out_idx, subexpression in enumerate(name_outexs):
+                if isinstance(subexpression, TensorVariable):
+                    existing_name = "({})".format(subexpression.name) if subexpression.name is not None else ""
+                    subexpression.name = "{}_{}{}".format(self.uid, self.outputs[out_idx], existing_name)
+
+        elif self.implementation == 'tensorflow':
+            pass
+
+        elif self.implementation == 'python':
+            outexpression = self._flowfunction
+
+        else:
+            raise ValueError("Unknown flow-implementation: %s" % self.implementation)
+
+        self.outexpression = outexpression
+
+        return outexpression
 
     def _load_functions(self):
         """ Loads the run-/build-/init-functions """

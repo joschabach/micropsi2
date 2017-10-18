@@ -33,15 +33,12 @@ class TheanoFlowEngine(FlowEngine):
             typechange = False
         super(TheanoFlowEngine, self.__class__).worldadapter_instance.fset(self, _worldadapter_instance)
         if typechange:
-            self._worldadapter_instance = _worldadapter_instance
             flow_io_types = self.generate_worldadapter_flow_types(delete_existing=typechange)
             self.native_module_definitions.update(flow_io_types)
             for key in flow_io_types:
                 self.native_modules[key] = FlowNodetype(nodenet=self, **flow_io_types[key])
             self.update_numeric_native_module_types()
             self.generate_worldadapter_flow_instances()
-        if self._worldadapter_instance:
-            self._worldadapter_instance.nodenet = self
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

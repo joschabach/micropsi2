@@ -120,6 +120,7 @@ def get_values():
 
 
 @pytest.mark.engine("theano_engine")
+@pytest.mark.engine("numpy_engine")
 def test_renaming_flow_datasources(runtime, test_nodenet, resourcepath):
     import os
 

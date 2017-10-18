@@ -460,6 +460,9 @@ def load_nodenet(nodenet_uid):
                 elif engine == 'theano_engine':
                     from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
                     nodenets[nodenet_uid] = TheanoNodenet(**params)
+                elif engine == 'numpy_engine':
+                    from micropsi_core.nodenet.numpy_engine.numpy_nodenet import NumpyNodenet
+                    nodenets[nodenet_uid] = NumpyNodenet(**params)
                 # Add additional engine types here
                 else:
                     return False, "Agent %s requires unknown engine %s" % (nodenet_uid, engine)

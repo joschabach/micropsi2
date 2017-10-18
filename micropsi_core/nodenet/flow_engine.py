@@ -105,6 +105,7 @@ class FlowEngine(metaclass=ABCMeta):
         self.update_flow_graphs()
 
     def _create_flow_module(self, node):
+        self.flow_module_instances[node.uid] = node
         self.flowgraph.add_node(node.uid, implementation=node.nodetype.implementation)
 
     def _delete_flow_module(self, delete_uid):

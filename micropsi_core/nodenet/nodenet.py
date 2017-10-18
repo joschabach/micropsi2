@@ -486,7 +486,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def merge_data(self, nodenet_data, keep_uids=False):
+    def merge_data(self, nodenet_data, keep_uids=False, uidmap={}):
         """
         Merges the data in nodenet_data into this nodenet.
         If keep_uids is True, the supplied UIDs will be used. This may lead to all sorts of inconsistencies,

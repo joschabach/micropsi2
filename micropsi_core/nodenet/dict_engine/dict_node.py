@@ -64,9 +64,6 @@ class DictNode(NetEntity, Node):
     def __init__(self, nodenet, parent_nodespace, position, state=None, activation=0,
                  name="", type="Concept", uid=None, index=None, parameters=None, gate_activations=None, gate_configuration=None, **_):
 
-        if nodenet.is_node(uid):
-            raise KeyError("Node with uid %s already exists" % uid)
-
         Node.__init__(self, nodenet, type, nodenet.get_nodetype(type))
 
         NetEntity.__init__(self, nodenet, parent_nodespace,

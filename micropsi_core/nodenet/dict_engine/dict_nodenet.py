@@ -464,7 +464,7 @@ class DictNodenet(Nodenet):
         self.delete_node(nodespace_uid)
 
     def clear(self):
-        super(DictNodenet, self).clear()
+        super().clear()
         self._nodes = {}
         self.initialize_nodenet({})
 
@@ -478,7 +478,7 @@ class DictNodenet(Nodenet):
         nodespace.last_changed = self.current_step
         self.get_nodespace(nodespace.parent_nodespace).contents_last_changed = self.current_step
 
-    def merge_data(self, nodenet_data, keep_uids=False):
+    def merge_data(self, nodenet_data, keep_uids=False, uidmap={}, **_):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
 
         # merge in spaces, make sure that parent nodespaces exist before children are initialized
@@ -486,7 +486,6 @@ class DictNodenet(Nodenet):
         for nodespace in nodespaces_to_merge:
             self.initialize_nodespace(nodespace, nodenet_data['nodespaces'])
 
-        uidmap = {}
         invalid_nodes = []
 
         # merge in nodes

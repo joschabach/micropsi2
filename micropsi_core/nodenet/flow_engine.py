@@ -9,7 +9,6 @@ from abc import ABCMeta, abstractmethod
 from micropsi_core.tools import OrderedSet
 from micropsi_core.nodenet.node import FlowNodetype
 from micropsi_core.nodenet.flowmodule import FlowModule
-from micropsi_core.nodenet.stepoperators import CalculateFlowmodules
 
 
 class FlowEngine(metaclass=ABCMeta):
@@ -27,7 +26,6 @@ class FlowEngine(metaclass=ABCMeta):
         super().__init__(*args, **kwargs)
         self.flow_module_instances = {}
         self.flow_graphs = []
-        self.thetas = {}
 
         flow_io_types = self.generate_worldadapter_flow_types(delete_existing=True)
         self.native_module_definitions.update(flow_io_types)
@@ -39,28 +37,10 @@ class FlowEngine(metaclass=ABCMeta):
         self.flowfunctions = []
         self.worldadapter_flow_nodes = {}
 
-    def initialize_stepoperators(self):
-        super().initialize_stepoperators()
-        self.stepoperators.append(CalculateFlowmodules(self))
-        self.stepoperators.sort(key=lambda op: op.priority)
-
     def save(self, base_path=None, zipfile=None):
         super().save(base_path, zipfile)
         if base_path is None:
             base_path = self.persistency_path
-        for node_uid in self.thetas:
-            # save thetas
-            data = {}
-            filename = "%s_thetas.npz" % node_uid
-            for idx, name in enumerate(self.thetas[node_uid]['names']):
-                data[name] = self.thetas[node_uid]['variables'][idx].get_value()
-            if zipfile:
-                stream = io.BytesIO()
-                np.savez(stream, **data)
-                stream.seek(0)
-                zipfile.writestr(filename, stream.getvalue())
-            else:
-                np.savez(os.path.join(base_path, filename), **data)
 
         # write graph data
         if zipfile:
@@ -80,15 +60,8 @@ class FlowEngine(metaclass=ABCMeta):
         for node_uid in nx.topological_sort(self.flowgraph):
             if node_uid in self.flow_module_instances:
                 self.flow_module_instances[node_uid].ensure_initialized()
-                theta_file = os.path.join(self.persistency_path, "%s_thetas.npz" % node_uid)
-                if os.path.isfile(theta_file):
-                    data = np.load(theta_file)
-                    for key in data:
-                        self.set_theta(node_uid, key, data[key])
-                    data.close()
             else:
                 self._delete_flow_module(node_uid)
-
         self.update_flow_graphs()
 
     def _load_nodetypes(self, nodetype_data):
@@ -296,74 +269,3 @@ class FlowEngine(metaclass=ABCMeta):
                     paths[-1]['members'].append(node)
                     paths[-1]['hash'] += node.uid
         return paths
-
-    @abstractmethod
-    def compile_flow_subgraph(self, node_uids, requested_outputs=None, use_different_thetas=False, use_unique_input_names=False):
-        """ Compile and return one callable for the given flow_module_uids.
-        If use_different_thetas is True, the callable expects an argument names "thetas".
-        Thetas are expected to be sorted in the same way collect_thetas() would return them.
-
-        Parameters
-        ----------
-        node_uids : list
-            the uids of the members of this graph
-
-        requested_outputs : list, optional
-            list of tuples (node_uid, out_name) to filter the callable's return-values. defaults to None, returning all outputs
-
-        use_different_thetas : boolean, optional
-            if true, return a callable that expects a parameter "thetas" that will be used instead of existing thetas. defaults to False
-
-        use_unique_input_names : boolen, optional
-            if true, the returned callable expects input-kwargs to be prefixe by node_uid: "UID_NAME". defaults to False, using only the name of the input
-
-        Returns
-        -------
-        callable : function
-            the compiled function for this subgraph
-
-        dangling_inputs : list
-            list of tuples (node_uid, input) that the callable expectes as inputs
-
-        dangling_outputs : list
-            list of tuples (node_uid, input) that the callable will return as output
-
-        """
-        pass  # pragma: no cover
-
-    def shadow_flowgraph(self, flow_modules):
-        """ Creates shallow copies of the given flow_modules, copying instances and internal connections.
-        Shallow copies will always have the parameters and shared variables of their originals
-        """
-        copies = []
-        copymap = {}
-        for node in flow_modules:
-            copy_uid = self.create_node(
-                node.type,
-                node.parent_nodespace,
-                node.position,
-                name=node.name,
-                parameters=node.clone_parameters())
-            copy = self.get_node(copy_uid)
-            copy.is_copy_of = node.uid
-            copymap[node.uid] = copy
-            copies.append(copy)
-        for node in flow_modules:
-            for in_name in node.inputmap:
-                if node.inputmap[in_name]:
-                    source_uid, source_name = node.inputmap[in_name]
-                    if source_uid in copymap:
-                        self.flow(copymap[source_uid].uid, source_name, copymap[node.uid].uid, in_name)
-        return copies
-
-    @abstractmethod
-    def set_theta(self, node_uid, name, val):
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def get_theta(self, node_uid, name):
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def collect_thetas(self, node_uids):
-        pass  # pragma: no cover

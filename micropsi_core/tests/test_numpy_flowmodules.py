@@ -464,6 +464,7 @@ def test_flowmodule_reload_code_behaviour(runtime, test_nodenet, resourcepath):
     netapi.flow('worldadapter', 'foo', double, 'inputs')
     netapi.flow(double, 'outputs', 'worldadapter', 'bar')
     double.ensure_initialized()
+    double.set_state('teststate', np.ones(3))
     source = netapi.create_node("Neuron", None)
     netapi.link(source, 'gen', source, 'gen')
     netapi.link(source, 'gen', double, 'sub')
@@ -487,6 +488,7 @@ def double(inputs, netapi, node, parameters):
     runtime.reload_code()
     double = netapi.get_node(double.uid)
     assert double.initfunction_ran == 'yep'
+    assert np.all(double.get_state('teststate') == np.ones(3))
     worldadapter = nodenet.worldadapter_instance
     sources = np.zeros((5), dtype=worldadapter.floatX)
     sources[:] = np.random.randn(*sources.shape)

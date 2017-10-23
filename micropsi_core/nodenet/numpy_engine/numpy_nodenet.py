@@ -127,8 +127,15 @@ class NumpyNodenet(FlowEngine, DictNodenet):
 
     def reload_native_modules(self, native_modules):
         wa_flows = self.worldadapter_flow_nodes  # save uids, because clear() deletes that info
+        states_to_restore = {}
+        for uid, node in self.native_module_instances.items():
+            json_state, numpy_state = node.get_persistable_state()
+            if numpy_state:
+                states_to_restore[uid] = [json_state, numpy_state]
         super().reload_native_modules(native_modules)  # dict_nodenet reloads with clear() and merge()
         self.worldadapter_flow_nodes = wa_flows
+        for uid in states_to_restore:
+            self.native_module_instances[uid].set_persistable_state(*states_to_restore[uid])
         self.update_flow_graphs()
 
         # for uid in old_instances:

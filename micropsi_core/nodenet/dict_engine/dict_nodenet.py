@@ -472,6 +472,8 @@ class DictNodenet(Nodenet):
         self._nodes[node.uid] = node
         node.last_changed = self.current_step
         self.get_nodespace(node.parent_nodespace).contents_last_changed = self.current_step
+        if node.type not in STANDARD_NODETYPES:
+            self.native_module_instances[node.uid] = node
 
     def _register_nodespace(self, nodespace):
         self._nodespaces[nodespace.uid] = nodespace

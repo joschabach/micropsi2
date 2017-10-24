@@ -1,11 +1,9 @@
 
 
-import numpy as np
 import networkx as nx
 
 from micropsi_core import tools
 from micropsi_core.nodenet.node import FlowNodetype
-from micropsi_core.nodenet.flowmodule import FlowModule
 from micropsi_core.nodenet.flow_engine import FlowEngine
 from micropsi_core.nodenet.flow_netapi import FlowNetAPI
 from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
@@ -100,9 +98,6 @@ class NumpyNodenet(FlowEngine, DictNodenet):
                 if path:
                     self.flow_graphs.append(path)
 
-    def compile_flow_subgraph(self, *args, **kwargs):
-        pass
-
     def reload_native_modules(self, native_modules):
         wa_flows = self.worldadapter_flow_nodes  # save uids, because clear() deletes that info
         states_to_restore = {}
@@ -116,55 +111,3 @@ class NumpyNodenet(FlowEngine, DictNodenet):
             self.native_module_instances[uid].set_persistable_state(*states_to_restore[uid])
         self.verify_flow_consistency()
         self.update_flow_graphs()
-
-        # for uid in old_instances:
-        #     instance = old_instances[uid]
-        #     if self.native_modules[instance.type].inputs != instance.inputs or self.native_modules[instance.type].outputs != instance.outputs:
-        #         self.logger.warning("Inputs or Outputs of flow node type %s changed, recreating instance %s" %
-        #                         (instance.type, uid))
-        #         instances_to_recreate[uid] = instance.get_data(complete=True, include_links=False)
-        #         continue
-        #     if not isinstance(instance._nodetype, type(self.native_modules[instance.type])):
-        #         self.logger.warning("Nature of nodetype changed for node %s. Deleting" % instance)
-        #         instances_to_delete[uid] = instance
-        #         continue
-
-        #     parameters = instance.clone_parameters()
-        #     state = instance.clone_state()
-        #     self.close_figures(uid)
-        #     flowdata = instance.get_flow_data(complete=True)
-        #     new_instance = NumpyFlowModule(
-        #         self,
-        #         parent_nodespace=instance.parent_nodespace,
-        #         position=instance.position,
-        #         uid=uid,
-        #         type=instance.type,
-        #         name=instance.name,
-        #         inputmap=flowdata['inputmap'],
-        #         outputmap=flowdata['outputmap'],
-        #         parameters=parameters
-        #     )
-        #     for key, value in parameters.items():
-        #         try:
-        #             new_instance.set_parameter(key, value)
-        #         except NameError:
-        #             pass  # parameter not defined anymore
-        #     for key, value in state.items():
-        #         new_instance.set_state(key, value)
-        #     self.flow_module_instances[uid] = new_instance
-        #     self.native_module_instances[uid] = new_instance
-
-        # for uid in instances_to_delete:
-        #     self.delete_node(uid)
-        # for uid in instances_to_recreate:
-        #     self.delete_node(uid)
-        #     new_uid = self.create_node(
-        #         instances_to_recreate[uid]['type'],
-        #         instances_to_recreate[uid]['parent_nodespace'],
-        #         instances_to_recreate[uid]['position'],
-        #         name=instances_to_recreate[uid]['name'],
-        #         uid=uid,
-        #         parameters=instances_to_recreate[uid]['parameters'])
-
-        # for new_uid in nx.topological_sort(self.flowgraph):
-        #     self.get_node(new_uid).ensure_initialized()

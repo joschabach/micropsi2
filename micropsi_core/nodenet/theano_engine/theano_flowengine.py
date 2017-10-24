@@ -8,7 +8,7 @@ import networkx as nx
 
 from theano import tensor as T
 
-from micropsi_core.tools import post_mortem
+from micropsi_core.tools import post_mortem, OrderedSet
 from micropsi_core.nodenet.node import FlowNodetype
 from micropsi_core.nodenet.flow_engine import FlowEngine
 from micropsi_core.nodenet.theano_engine.theano_flowmodule import TheanoFlowModule
@@ -193,6 +193,60 @@ class TheanoFlowEngine(FlowEngine):
         for node_uid in self.flow_module_instances:
             data[node_uid].update(self.flow_module_instances[node_uid].get_flow_data())
         return data
+
+    def update_flow_graphs(self, node_uids=None):
+        if self.is_flowbuilder_active:
+            return
+        self.flowfunctions = []
+        startpoints = []
+        endpoints = []
+        pythonnodes = set()
+
+        toposort = nx.topological_sort(self.flowgraph)
+        self.flow_toposort = toposort
+        for uid in toposort:
+            node = self.flow_module_instances.get(uid)
+            if node is not None:
+                if node.implementation == 'python':
+                    pythonnodes.add(uid)
+                if node.is_input_node():
+                    startpoints.append(uid)
+                if node.is_output_node():
+                    endpoints.append(uid)
+
+        graphs = []
+        for enduid in endpoints:
+            ancestors = nx.ancestors(self.flowgraph, enduid)
+            node = self.flow_module_instances[enduid]
+            if ancestors or node.inputs == []:
+                path = [uid for uid in toposort if uid in ancestors] + [enduid]
+                if path:
+                    graphs.append(path)
+
+        # worldadapter_names = []
+        # if self.worldadapter_instance is not None:
+        #     worldadapter_names += self.worldadapter_instance.get_available_flow_datasources() + self.worldadapter_instance.get_available_flow_datatargets()
+
+        flowfunctions = {}
+        floworder = OrderedSet()
+        for idx, graph in enumerate(graphs):
+            # split graph in parts:
+            # node_uids = [uid for uid in graph if uid not in worldadapter_names]
+            node_uids = [uid for uid in graph]
+            nodes = [self.get_node(uid) for uid in node_uids]
+            paths = self.split_flow_graph_into_implementation_paths(nodes)
+            for p in paths:
+                floworder.add(p['hash'])
+                if p['hash'] not in flowfunctions:
+                    func, dang_in, dang_out = self.compile_flow_subgraph([n.uid for n in p['members']], use_unique_input_names=True)
+                    if func:
+                        flowfunctions[p['hash']] = {'callable': func, 'members': p['members'], 'endnodes': set([nodes[-1]]), 'inputs': dang_in, 'outputs': dang_out}
+                else:
+                    flowfunctions[p['hash']]['endnodes'].add(nodes[-1])
+        for funcid in floworder:
+            self.flowfunctions.append(flowfunctions[funcid])
+
+        self.logger.debug("Compiled %d flowfunctions" % len(self.flowfunctions))
 
     def compile_flow_subgraph(self, node_uids, requested_outputs=None, use_different_thetas=False, use_unique_input_names=False):
         """ Compile and return one callable for the given flow_module_uids.

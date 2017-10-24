@@ -965,6 +965,10 @@ class TheanoNodenet(Nodenet):
 
         toposort = nx.topological_sort(self.flowgraph)
         self.flow_toposort = toposort
+
+        if not self.check_flow_consistency():
+            return
+
         for uid in toposort:
             node = self.flow_module_instances.get(uid)
             if node is not None:
@@ -1008,6 +1012,30 @@ class TheanoNodenet(Nodenet):
             self.flowfunctions.append(flowfunctions[funcid])
 
         self.logger.debug("Compiled %d flowfunctions" % len(self.flowfunctions))
+
+    def check_flow_consistency(self):
+        for uid in self.flow_toposort:
+            node = self.flow_module_instances.get(uid)
+            if node is not None:
+                for in_name in node.inputs:
+                    if node.inputmap[in_name]:
+                        source_uid, source_name = node.inputmap[in_name]
+                        source = self.flow_module_instances[source_uid]
+                        if source_name not in source.outputs:
+                            self.logger.warning("[FlowCC] Removing invalid flow %s:%s -> %s:%s" % (source, source_name, node, in_name))
+                            node.inputmap[in_name] = tuple()
+                for out_name in node.outputs:
+                    if node.outputmap[out_name]:
+                        for target_uid, target_name in node.outputmap[out_name].copy():
+                            target = self.flow_module_instances[target_uid]
+                            if target_name not in target.inputs:
+                                self.logger.warning("[FlowCC] Removing invalid flow: %s:%s -> %s:%s" % (node, out_name, target, target_name))
+                                node.outputmap[out_name].remove((target_uid, target_name))
+            else:
+                self.logger.warning("[FlowCC] Removing invalid flownode: %s" % uid)
+                self._delete_flow_module(uid)
+                return False
+        return True
 
     def split_flow_graph_into_implementation_paths(self, nodes):
         paths = []

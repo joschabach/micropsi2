@@ -199,3 +199,41 @@ class DoernerianEmotionalModulators(StepOperator):
         nodenet.set_modulator("emo_competence", emo_competence)
         nodenet.set_modulator("emo_sustaining_joy", emo_sustaining_joy)
         nodenet.set_modulator("emo_valence", emo_valence)
+
+
+class CalculateFlowmodules(StepOperator):
+
+    @property
+    def priority(self):
+        return 0
+
+    def __init__(self, nodenet):
+        self.nodenet = nodenet
+
+    def value_guard(self, value, source, name):
+        if value is None:
+            return None
+        if self.nodenet.runner_config.get('runner_infguard'):
+            if type(value) == list:
+                for val in value:
+                    self._guard(val, source, name)
+            else:
+                self._guard(value, source, name)
+        return value
+
+    def _guard(self, value, source, name):
+        import numpy as np
+        if np.isnan(np.sum(value)):
+            raise ValueError("NAN value in flow datected: %s" % self.format_error(source, name))
+        elif np.isinf(np.sum(value)):
+            raise ValueError("INF value in flow datected: %s" % self.format_error(source, name))
+
+    def format_error(self, source, name):
+        if type(source) == dict:
+            if len(source['members']) == 1:
+                msg = "output %s of %s" % (name, source['members'][0])
+            else:
+                msg = "output %s of graph %s" % (name, str(source['members']))
+        else:
+            msg = "output %s of %s" % (name, str(source))
+        return msg

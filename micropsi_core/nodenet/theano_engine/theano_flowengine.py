@@ -12,7 +12,7 @@ from micropsi_core.tools import post_mortem, OrderedSet
 from micropsi_core.nodenet.node import FlowNodetype
 from micropsi_core.nodenet.flow_engine import FlowEngine
 from micropsi_core.nodenet.theano_engine.theano_flowmodule import TheanoFlowModule
-from micropsi_core.nodenet.theano_engine.theano_stepoperators import CalculateFlowmodules
+from micropsi_core.nodenet.theano_engine.theano_stepoperators import CalculateTheanoFlowmodules
 from micropsi_core.nodenet.theano_engine.theano_definitions import get_numerical_node_type, create_tensor, node_from_id, get_string_node_type, nodespace_to_id
 
 
@@ -46,7 +46,7 @@ class TheanoFlowEngine(FlowEngine):
 
     def initialize_stepoperators(self):
         super().initialize_stepoperators()
-        self.stepoperators.append(CalculateFlowmodules(self))
+        self.stepoperators.append(CalculateTheanoFlowmodules(self))
         self.stepoperators.sort(key=lambda op: op.priority)
 
     def save(self, base_path=None, zipfile=None):

@@ -8,7 +8,7 @@ from micropsi_core.nodenet.flow_engine import FlowEngine
 from micropsi_core.nodenet.flow_netapi import FlowNetAPI
 from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
 from micropsi_core.nodenet.numpy_engine.numpy_flowmodule import NumpyFlowModule
-from micropsi_core.nodenet.numpy_engine.numpy_stepoperators import CalculateFlowmodules
+from micropsi_core.nodenet.numpy_engine.numpy_stepoperators import CalculateNumpyFlowmodules
 
 
 class NumpyNodenet(FlowEngine, DictNodenet):
@@ -39,7 +39,7 @@ class NumpyNodenet(FlowEngine, DictNodenet):
 
     def initialize_stepoperators(self):
         super().initialize_stepoperators()
-        self.stepoperators.append(CalculateFlowmodules(self))
+        self.stepoperators.append(CalculateNumpyFlowmodules(self))
         self.stepoperators.sort(key=lambda op: op.priority)
 
     def merge_data(self, nodenet_data, keep_uids=False, uidmap={}, **kwargs):

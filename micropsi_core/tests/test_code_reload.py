@@ -168,8 +168,8 @@ def double(inputs, netapi, node, parameters):
     runtime.reload_code()
     result, wuid = runtime.new_world("FlowWorld", "FlowWorld")
     runtime.set_nodenet_properties(test_nodenet, world_uid=wuid, worldadapter="SimpleArrayWA")
-    net = runtime.nodenets[test_nodenet]
-    netapi = net.netapi
+    nodenet = runtime.nodenets[test_nodenet]
+    netapi = nodenet.netapi
 
     double = netapi.create_node("Double")
     netapi.flow("worldadapter", "foo", double, "inputs")
@@ -178,6 +178,20 @@ def double(inputs, netapi, node, parameters):
 
     write_resources("source", "target")
     runtime.reload_code()
+
+    double = netapi.get_node(double.uid)
+    assert double.inputmap["inputs"] == tuple()
+    assert double.outputmap["outputs"] == set()
+
+    netapi.flow("worldadapter", "source", double, "inputs")
+    netapi.flow(double, "outputs", "worldadapter", "target")
+
+    runtime.save_nodenet(test_nodenet)
+    write_resources("foo", "bar")
+    runtime.reload_and_revert(test_nodenet)
+
+    nodenet = runtime.nodenets[test_nodenet]
+    netapi = nodenet.netapi
 
     double = netapi.get_node(double.uid)
     assert double.inputmap["inputs"] == tuple()

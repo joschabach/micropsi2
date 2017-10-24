@@ -171,7 +171,7 @@ class TheanoFlowEngine(FlowEngine):
         for new_uid in nx.topological_sort(self.flowgraph):
             self.get_node(new_uid).ensure_initialized()
 
-        # recompile flow_graphs:
+        self.verify_flow_consistency()
         self.update_flow_graphs()
 
     def _create_node_proxy(self, partition, uid):

@@ -65,6 +65,7 @@ def pytest_cmdline_main(config):
     if config.getoption('agents'):
         config.args = [orig_agent_dir]
         config._inicache['python_functions'] = []
+        config.addinivalue_line('norecursedirs', 'experiments')
         config.addinivalue_line('python_files', '*.py')
         config.addinivalue_line('python_functions', '_test*')
         cfg['paths']['agent_directory'] = orig_agent_dir

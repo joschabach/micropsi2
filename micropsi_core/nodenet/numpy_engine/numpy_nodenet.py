@@ -114,6 +114,7 @@ class NumpyNodenet(FlowEngine, DictNodenet):
         self.worldadapter_flow_nodes = wa_flows
         for uid in states_to_restore:
             self.native_module_instances[uid].set_persistable_state(*states_to_restore[uid])
+        self.verify_flow_consistency()
         self.update_flow_graphs()
 
         # for uid in old_instances:

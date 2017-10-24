@@ -182,6 +182,7 @@ def double(inputs, netapi, node, parameters):
     double = netapi.get_node(double.uid)
     assert double.inputmap["inputs"] == tuple()
     assert double.outputmap["outputs"] == set()
+    assert nodenet.flowgraph.edges() == []
 
     netapi.flow("worldadapter", "source", double, "inputs")
     netapi.flow(double, "outputs", "worldadapter", "target")
@@ -196,3 +197,4 @@ def double(inputs, netapi, node, parameters):
     double = netapi.get_node(double.uid)
     assert double.inputmap["inputs"] == tuple()
     assert double.outputmap["outputs"] == set()
+    assert nodenet.flowgraph.edges() == []

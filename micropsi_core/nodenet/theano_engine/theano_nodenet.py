@@ -938,7 +938,7 @@ class TheanoNodenet(Nodenet):
         self.flow_module_instances[source_uid].unset_output(source_output, target_uid, target_input)
         self.update_flow_graphs()
 
-    def _delete_flow_module(self, delete_uid):
+    def _delete_flow_module(self, delete_uid, update_flow_graphs=True):
         if delete_uid in self.flowgraph.nodes():
             self.flowgraph.remove_node(delete_uid)
         for uid, module in self.flow_module_instances.items():
@@ -953,7 +953,8 @@ class TheanoNodenet(Nodenet):
                         module.unset_output(name, delete_uid, target_name)
         if delete_uid in self.flow_module_instances:
             del self.flow_module_instances[delete_uid]
-        self.update_flow_graphs()
+        if update_flow_graphs:
+            self.update_flow_graphs()
 
     def update_flow_graphs(self, node_uids=None):
         if self.is_flowbuilder_active:
@@ -967,7 +968,7 @@ class TheanoNodenet(Nodenet):
         self.flow_toposort = toposort
 
         if not self.check_flow_consistency():
-            return
+            return self.update_flow_graphs(node_uids=node_uids)
 
         for uid in toposort:
             node = self.flow_module_instances.get(uid)
@@ -1014,9 +1015,12 @@ class TheanoNodenet(Nodenet):
         self.logger.debug("Compiled %d flowfunctions" % len(self.flowfunctions))
 
     def check_flow_consistency(self):
+        clean = True
         for uid in self.flow_toposort:
             node = self.flow_module_instances.get(uid)
             if node is not None:
+                del_uids = []
+                input_uids = []
                 for in_name in node.inputs:
                     if node.inputmap[in_name]:
                         source_uid, source_name = node.inputmap[in_name]
@@ -1024,6 +1028,15 @@ class TheanoNodenet(Nodenet):
                         if source_name not in source.outputs:
                             self.logger.warning("[FlowCC] Removing invalid flow %s:%s -> %s:%s" % (source, source_name, node, in_name))
                             node.inputmap[in_name] = tuple()
+                            del_uids.append(source_uid)
+                            clean = False
+                        else:
+                            input_uids.append(source_uid)
+                for del_uid in del_uids:
+                    if del_uid not in input_uids:
+                        self.flowgraph.remove_edge(del_uid, node.uid)
+                del_uids = []
+                output_uids = []
                 for out_name in node.outputs:
                     if node.outputmap[out_name]:
                         for target_uid, target_name in node.outputmap[out_name].copy():
@@ -1031,11 +1044,18 @@ class TheanoNodenet(Nodenet):
                             if target_name not in target.inputs:
                                 self.logger.warning("[FlowCC] Removing invalid flow: %s:%s -> %s:%s" % (node, out_name, target, target_name))
                                 node.outputmap[out_name].remove((target_uid, target_name))
+                                del_uids.append(target_uid)
+                                clean = False
+                            else:
+                                output_uids.append(target_uid)
+                for del_uid in del_uids:
+                    if del_uid not in output_uids:
+                        self.flowgraph.remove_edge(node.uid, del_uid)
             else:
                 self.logger.warning("[FlowCC] Removing invalid flownode: %s" % uid)
-                self._delete_flow_module(uid)
-                return False
-        return True
+                self._delete_flow_module(uid, update_flow_graphs=False)
+                clean = False
+        return clean
 
     def split_flow_graph_into_implementation_paths(self, nodes):
         paths = []

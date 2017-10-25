@@ -1819,14 +1819,15 @@ def parse_native_module_file(path):
 
 def nodedef_sanity_check(nodetype_definition):
     """ catch some common errors in nodetype definitions """
-    # nd = nodetype_definition
+    nd = nodetype_definition
 
-    # if nd.get('flow_module', False):
-    #     # chedck for mismatch between nr of inputdims and nr of inputs
-    #     n_in = len(nd.get('inputs', []))
-    #     n_indims = len(nd.get('inputdims', []))
-    #     if n_in != n_indims:
-    #         raise Exception('Node takes %s inputs but %s inputdims have been given' % (n_in, n_indims))
+    if nd.get('flow_module', False) and nd.get('implementation') == 'theano':
+        # chedck for mismatch between nr of inputdims and nr of inputs
+        nd['engine'] = 'theano_engine'
+        n_in = len(nd.get('inputs', []))
+        n_indims = len(nd.get('inputdims', []))
+        if n_in != n_indims:
+            raise Exception('Node takes %s inputs but %s inputdims have been given' % (n_in, n_indims))
 
     return nodetype_definition
 

@@ -155,9 +155,9 @@ class SimpleArrayWA(ArrayWorldAdapter):
     with open(os.path.join(resourcepath, "nodetypes", "Double.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
-    "implementation": "theano",
+    "implementation": "python",
     "name": "Double",
-    "build_function_name": "double",
+    "run_function_name": "double",
     "inputs": ["inputs"],
     "outputs": ["outputs"],
     "inputdims": [1]

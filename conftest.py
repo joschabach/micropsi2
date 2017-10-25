@@ -117,8 +117,9 @@ def pytest_generate_tests(metafunc):
 def pytest_runtest_setup(item):
     engine_marker = item.get_marker("engine")
     if engine_marker is not None:
+        engines = engine_marker.args
         engine_marker = engine_marker.args[0]
-        if engine_marker != item.callspec.params['engine']:
+        if item.callspec.params['engine'] not in engines:
             pytest.skip("test requires engine %s" % engine_marker)
     for uid in list(micropsi_runtime.nodenets.keys()):
         micropsi_runtime.stop_nodenetrunner(uid)

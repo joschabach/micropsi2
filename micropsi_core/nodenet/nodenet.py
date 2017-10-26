@@ -232,11 +232,15 @@ class Nodenet(metaclass=ABCMeta):
         })
         return data
 
-    def simulation_started(self):
+    def on_start(self):
         self.is_active = True
+        for uid, node in self.native_module_instances.items():
+            node.on_start(node)
 
-    def simulation_stopped(self):
+    def on_stop(self):
         self.is_active = False
+        for uid, node in self.native_module_instances.items():
+            node.on_stop(node)
 
     def set_user_prompt(self, node, key, message, parameters={}):
         if self.user_prompt is not None:

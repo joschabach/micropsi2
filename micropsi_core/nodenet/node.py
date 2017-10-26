@@ -136,6 +136,8 @@ class Node(metaclass=ABCMeta):
         self._nodetype_name = nodetype_name
         self._nodetype = nodetype
         self.logger = nodetype.logger
+        self.on_start = lambda x: None
+        self.on_stop = lambda x: None
 
     def get_data(self, complete=False, include_links=True):
         """

@@ -684,7 +684,7 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
 def start_nodenetrunner(nodenet_uid):
     """Starts a thread that regularly advances the given nodenet by one step."""
     nodenet = get_nodenet(nodenet_uid)
-    nodenet.simulation_started()
+    nodenet.on_start()
     # nodenets[nodenet_uid].is_active = True
     if nodenet.world:
         worlds[nodenet.world].is_active = True
@@ -746,7 +746,7 @@ def get_is_nodenet_running(nodenet_uid):
 def stop_nodenetrunner(nodenet_uid):
     """Stops the thread for the given nodenet."""
     nodenet = get_nodenet(nodenet_uid)
-    nodenet.simulation_stopped()
+    nodenet.on_stop()
     test = {nodenets[uid].is_active for uid in nodenets}
     if nodenet.world:
         test_world = {nodenets[uid].is_active and nodenets[uid].world == nodenet.world for uid in nodenets}

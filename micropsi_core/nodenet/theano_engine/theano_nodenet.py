@@ -213,6 +213,18 @@ class TheanoNodenetCore(Nodenet):
     def _create_netapi(self):
         self.netapi = TheanoNetAPI(self)
 
+    def on_start(self):
+        self.is_active = True
+        for partition in self.partitions.values():
+            for uid, node in partition.native_module_instances.items():
+                node.on_start(node)
+
+    def on_stop(self):
+        self.is_active = False
+        for partition in self.partitions.values():
+            for uid, node in partition.native_module_instances.items():
+                node.on_stop(node)
+
     def get_data(self, complete=False, include_links=True):
         data = super().get_data(complete=complete, include_links=include_links)
         data['nodes'] = self.construct_nodes_dict(complete=complete, include_links=include_links)

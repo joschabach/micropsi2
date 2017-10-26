@@ -175,11 +175,15 @@ nodetype_definition = {
 def hook(node):
     node.hook_runs += 1
 
+def antihook(node):
+    node.hook_runs -= 1
+
 def foobar(netapi, node, **_):
     if not hasattr(node, 'initialized'):
         node.initialized = True
         node.hook_runs = 0
         node.on_start = hook
+        node.on_stop = antihook
 """)
 
     runtime.reload_code()
@@ -191,3 +195,4 @@ def foobar(netapi, node, **_):
     sleep(0.001)
     assert foobar.hook_runs == 1
     runtime.stop_nodenetrunner(test_nodenet)
+    assert foobar.hook_runs == 0

@@ -334,10 +334,9 @@ def test_node_states(runtime, test_nodenet, node):
     assert node.get_state('foobar') == 42
 
 
-@pytest.mark.engine("theano_engine")
 def test_node_states_numpy(runtime, test_nodenet, node, resourcepath):
+    np = pytest.importorskip("numpy")
     import os
-    import numpy as np
 
     nodenet = runtime.get_nodenet(test_nodenet)
     node = nodenet.get_node(node)

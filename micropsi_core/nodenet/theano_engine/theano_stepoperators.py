@@ -1,5 +1,5 @@
 
-from micropsi_core.nodenet.stepoperators import Propagate, Calculate
+from micropsi_core.nodenet.stepoperators import Propagate, Calculate, CalculateFlowmodules
 import numpy as np
 from micropsi_core.nodenet.theano_engine.theano_node import *
 from micropsi_core.nodenet.theano_engine.theano_definitions import *
@@ -67,41 +67,7 @@ class TheanoCalculate(Calculate):
             self.count_success_and_failure(nodenet)
 
 
-class TheanoCalculateFlowmodules(Propagate):
-
-    @property
-    def priority(self):
-        return 0
-
-    def __init__(self, nodenet):
-        self.nodenet = nodenet
-
-    def value_guard(self, value, source, name):
-        if value is None:
-            return None
-        if self.nodenet.runner_config.get('runner_infguard'):
-            if type(value) == list:
-                for val in value:
-                    self._guard(val, source, name)
-            else:
-                self._guard(value, source, name)
-        return value
-
-    def _guard(self, value, source, name):
-        if np.isnan(np.sum(value)):
-            raise ValueError("NAN value in flow datected: %s" % self.format_error(source, name))
-        elif np.isinf(np.sum(value)):
-            raise ValueError("INF value in flow datected: %s" % self.format_error(source, name))
-
-    def format_error(self, source, name):
-        if type(source) == dict:
-            if len(source['members']) == 1:
-                msg = "output %s of %s" % (name, source['members'][0])
-            else:
-                msg = "output %s of graph %s" % (name, str(source['members']))
-        else:
-            msg = "output %s of %s" % (name, str(source))
-        return msg
+class CalculateTheanoFlowmodules(CalculateFlowmodules):
 
     def execute(self, nodenet, nodes, netapi):
         if not nodenet.flow_module_instances:

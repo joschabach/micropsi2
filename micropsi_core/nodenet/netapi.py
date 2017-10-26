@@ -12,48 +12,48 @@ class NetAPI(object):
 
     @property
     def uid(self):
-        return self.__nodenet.uid
+        return self._nodenet.uid
 
     @property
     def step(self):
         """ The current step of the nodenet """
-        return self.__nodenet.current_step
+        return self._nodenet.current_step
 
     @property
     def is_running(self):
-        return self.__nodenet.is_active
+        return self._nodenet.is_active
 
     @property
     def worldadapter(self):
         """ The worldadapter instance """
-        return self.__nodenet.worldadapter_instance
+        return self._nodenet.worldadapter_instance
 
     @property
     def logger(self):
         """ The nodenet logger """
-        return self.__nodenet.logger
+        return self._nodenet.logger
 
     def __init__(self, nodenet):
-        self.__nodenet = nodenet
+        self._nodenet = nodenet
 
     def get_nodespace(self, uid):
         """
         Returns the nodespace with the given uid
         """
-        return self.__nodenet.get_nodespace(uid)
+        return self._nodenet.get_nodespace(uid)
 
     def get_nodespaces(self, parent=None):
         """
         Returns a list of all nodespaces in the given nodespace
         """
-        return [self.__nodenet.get_nodespace(uid) for
-                uid in self.__nodenet.get_nodespace(parent).get_known_ids('nodespaces')]
+        return [self._nodenet.get_nodespace(uid) for
+                uid in self._nodenet.get_nodespace(parent).get_known_ids('nodespaces')]
 
     def get_node(self, uid):
         """
         Returns the node with the given uid
         """
-        return self.__nodenet.get_node(uid)
+        return self._nodenet.get_node(uid)
 
     def get_nodes(self, nodespace=None, node_name_prefix=None, nodetype=None, sortby='ids'):
         """
@@ -63,12 +63,12 @@ class NetAPI(object):
         nodes = []
         all_ids = None
         if nodespace is not None:
-            all_ids = self.__nodenet.get_nodespace(nodespace).get_known_ids('nodes')
+            all_ids = self._nodenet.get_nodespace(nodespace).get_known_ids('nodes')
         else:
-            all_ids = self.__nodenet.get_node_uids()
+            all_ids = self._nodenet.get_node_uids()
 
         for node_uid in all_ids:
-            node = self.__nodenet.get_node(node_uid)
+            node = self._nodenet.get_node(node_uid)
             if nodetype is not None and nodetype != node.type:
                 continue
             if node_name_prefix is not None and not node.name.startswith(node_name_prefix):
@@ -93,9 +93,9 @@ class NetAPI(object):
         if gate is not None:
             gates = [gate]
         else:
-            gates = self.__nodenet.get_node(node.uid).get_gate_types()
+            gates = self._nodenet.get_node(node.uid).get_gate_types()
         for gate in gates:
-            for link in self.__nodenet.get_node(node.uid).get_gate(gate).get_links():
+            for link in self._nodenet.get_node(node.uid).get_gate(gate).get_links():
                 skip = False
                 if no_links_to is not None:
                     for g in no_links_to:
@@ -117,9 +117,9 @@ class NetAPI(object):
         if slot is not None:
             slots = [slot]
         else:
-            slots = self.__nodenet.get_node(node.uid).get_slot_types()
+            slots = self._nodenet.get_node(node.uid).get_slot_types()
         for slot in slots:
-            for link in self.__nodenet.get_node(node.uid).get_slot(slot).get_links():
+            for link in self._nodenet.get_node(node.uid).get_slot(slot).get_links():
                 skip = False
                 if no_links_to is not None:
                     for g in no_links_to:
@@ -152,13 +152,13 @@ class NetAPI(object):
         """
         Deletes a node and all links connected to it.
         """
-        self.__nodenet.delete_node(node.uid)
+        self._nodenet.delete_node(node.uid)
 
     def delete_nodespace(self, nodespace):
         """
         Deletes a node and all nodes and nodespaces contained within, and all links connected to it.
         """
-        self.__nodenet.delete_nodespace(nodespace.uid)
+        self._nodenet.delete_nodespace(nodespace.uid)
 
     def create_node(self, nodetype, nodespace=None, name=None, **parameters):
         """
@@ -169,8 +169,8 @@ class NetAPI(object):
             name = ""   # TODO: empty names crash the client right now, but really shouldn't
         pos = [100, 100, 0]  # default so native modules will not be bothered with positions
 
-        uid = self.__nodenet.create_node(nodetype, nodespace, pos, name, parameters=parameters)
-        entity = self.__nodenet.get_node(uid)
+        uid = self._nodenet.create_node(nodetype, nodespace, pos, name, parameters=parameters)
+        entity = self._nodenet.get_node(uid)
         return entity
 
     def create_nodespace(self, parent_nodespace, name=None, options=None):
@@ -183,8 +183,8 @@ class NetAPI(object):
         if name is None:
             name = ""   # TODO: empty names crash the client right now, but really shouldn't
 
-        uid = self.__nodenet.create_nodespace(parent_nodespace, name=name, options=options)
-        entity = self.__nodenet.get_nodespace(uid)
+        uid = self._nodenet.create_nodespace(parent_nodespace, name=name, options=options)
+        entity = self._nodenet.get_nodespace(uid)
         return entity
 
     def link(self, source_node, source_gate, target_node, target_slot, weight=1):
@@ -192,7 +192,7 @@ class NetAPI(object):
         Creates a link between two nodes. If the link already exists, it will be updated
         with the given weight (or the default 1 if not given)
         """
-        self.__nodenet.create_link(source_node.uid, source_gate, target_node.uid, target_slot, weight)
+        self._nodenet.create_link(source_node.uid, source_gate, target_node.uid, target_slot, weight)
 
     def link_with_reciprocal(self, source_node, target_node, linktype, weight=1):
         """
@@ -203,23 +203,23 @@ class NetAPI(object):
         if linktype == "subsur":
             subslot = "sub" if "sub" in target_slot_types else "gen"
             surslot = "sur" if "sur" in source_slot_types else "gen"
-            self.__nodenet.create_link(source_node.uid, "sub", target_node.uid, subslot, weight)
-            self.__nodenet.create_link(target_node.uid, "sur", source_node.uid, surslot, weight)
+            self._nodenet.create_link(source_node.uid, "sub", target_node.uid, subslot, weight)
+            self._nodenet.create_link(target_node.uid, "sur", source_node.uid, surslot, weight)
         elif linktype == "porret":
             porslot = "por" if "por" in target_slot_types else "gen"
             retslot = "ret" if "ret" in source_slot_types else "gen"
-            self.__nodenet.create_link(source_node.uid, "por", target_node.uid, porslot, weight)
-            self.__nodenet.create_link(target_node.uid, "ret", source_node.uid, retslot, weight)
+            self._nodenet.create_link(source_node.uid, "por", target_node.uid, porslot, weight)
+            self._nodenet.create_link(target_node.uid, "ret", source_node.uid, retslot, weight)
         elif linktype == "catexp":
             catslot = "cat" if "cat" in target_slot_types else "gen"
             expslot = "exp" if "exp" in source_slot_types else "gen"
-            self.__nodenet.create_link(source_node.uid, "cat", target_node.uid, catslot, weight)
-            self.__nodenet.create_link(target_node.uid, "exp", source_node.uid, expslot, weight)
+            self._nodenet.create_link(source_node.uid, "cat", target_node.uid, catslot, weight)
+            self._nodenet.create_link(target_node.uid, "exp", source_node.uid, expslot, weight)
         elif linktype == "symref":
             symslot = "sym" if "sym" in target_slot_types else "gen"
             refslot = "ref" if "ref" in source_slot_types else "gen"
-            self.__nodenet.create_link(source_node.uid, "sym", target_node.uid, symslot, weight)
-            self.__nodenet.create_link(target_node.uid, "ref", source_node.uid, refslot, weight)
+            self._nodenet.create_link(source_node.uid, "sym", target_node.uid, symslot, weight)
+            self._nodenet.create_link(target_node.uid, "ref", source_node.uid, refslot, weight)
 
     def unlink(self, source_node, source_gate=None, target_node=None, target_slot=None):
         """
@@ -249,7 +249,7 @@ class NetAPI(object):
         a new actuator will be created, otherwise the first actuator found will be used
         """
         actuator = None
-        for uid, candidate in self.__nodenet.get_actuators(node.parent_nodespace).items():
+        for uid, candidate in self._nodenet.get_actuators(node.parent_nodespace).items():
             if candidate.get_parameter('datatarget') == datatarget:
                 actuator = candidate
         if actuator is None:
@@ -265,7 +265,7 @@ class NetAPI(object):
         a new sensor will be created, otherwise the first sensor found will be used
         """
         sensor = None
-        for uid, candidate in self.__nodenet.get_sensors(node.parent_nodespace).items():
+        for uid, candidate in self._nodenet.get_sensors(node.parent_nodespace).items():
             if candidate.get_parameter('datasource') == datasource:
                 sensor = candidate
         if sensor is None:
@@ -288,7 +288,7 @@ class NetAPI(object):
         for datatarget in datatargets:
             if datatarget_prefix is None or datatarget.startswith(datatarget_prefix):
                 actuator = None
-                for uid, candidate in self.__nodenet.get_actuators(nodespace, datatarget).items():
+                for uid, candidate in self._nodenet.get_actuators(nodespace, datatarget).items():
                     actuator = candidate
                     break
                 if actuator is None:
@@ -311,7 +311,7 @@ class NetAPI(object):
         for datasource in datasources:
             if datasource_prefix is None or datasource.startswith(datasource_prefix):
                 sensor = None
-                for uid, candidate in self.__nodenet.get_sensors(nodespace, datasource).items():
+                for uid, candidate in self._nodenet.get_sensors(nodespace, datasource).items():
                     sensor = candidate
                     break
                 if sensor is None:
@@ -328,41 +328,41 @@ class NetAPI(object):
             node: the node object that emits this message
             msg: a string to display to the user
         """
-        self.__nodenet.set_user_prompt(node, None, msg, [])
+        self._nodenet.set_user_prompt(node, None, msg, [])
 
     def show_user_prompt(self, node, key):
         promptinfo = node.get_user_prompt(key)
-        self.__nodenet.set_user_prompt(node, key, promptinfo['callback'].__doc__, promptinfo['parameters'])
+        self._nodenet.set_user_prompt(node, key, promptinfo['callback'].__doc__, promptinfo['parameters'])
 
     def autoalign_nodespace(self, nodespace):
         """ Calls the autoalignment on the given nodespace """
         from micropsi_core.nodenet.node_alignment import align
-        if nodespace in self.__nodenet.get_nodespace_uids():
-            align(self.__nodenet, nodespace)
+        if nodespace in self._nodenet.get_nodespace_uids():
+            align(self._nodenet, nodespace)
 
     def autoalign_entities(self, nodespace, entity_uids):
         """ Calls the autoalignment on the given entities in the given nodespace """
         from micropsi_core.nodenet.node_alignment import align
-        if nodespace in self.__nodenet.get_nodespace_uids():
-            align(self.__nodenet, nodespace, entity_uids)
+        if nodespace in self._nodenet.get_nodespace_uids():
+            align(self._nodenet, nodespace, entity_uids)
 
     def get_modulator(self, modulator):
         """
         Returns the numeric value of the given global modulator
         """
-        return self.__nodenet.get_modulator(modulator)
+        return self._nodenet.get_modulator(modulator)
 
     def change_modulator(self, modulator, diff):
         """
         Changes the value of the given global modulator by the value of diff
         """
-        self.__nodenet.change_modulator(modulator, diff)
+        self._nodenet.change_modulator(modulator, diff)
 
     def set_modulator(self, modulator, value):
         """
         Changes the value of the given global modulator to the given value
         """
-        self.__nodenet.set_modulator(modulator, value)
+        self._nodenet.set_modulator(modulator, value)
 
     def copy_nodes(self, nodes, nodespace_uid):
         """
@@ -372,7 +372,7 @@ class NetAPI(object):
         uids = [node.uid for node in nodes]
         uidmap = {}
         for node in nodes:
-            new_uid = self.__nodenet.create_node(node.type, nodespace_uid, node.position, name=node.name, parameters=node.clone_parameters(), gate_configuration=node.get_gate_configuration())
+            new_uid = self._nodenet.create_node(node.type, nodespace_uid, node.position, name=node.name, parameters=node.clone_parameters(), gate_configuration=node.get_gate_configuration())
             uidmap[node.uid] = new_uid
         for node in nodes:
             for g in node.get_gate_types():
@@ -395,7 +395,7 @@ class NetAPI(object):
         Grouped nodes will have stable sorting accross all bulk operations.
         If no group name is given, the node_name_prefix will be used as group name.
         """
-        self.__nodenet.group_nodes_by_names(nodespace_uid, node_name_prefix, gatetype=gate, sortby=sortby, group_name=group_name)
+        self._nodenet.group_nodes_by_names(nodespace_uid, node_name_prefix, gatetype=gate, sortby=sortby, group_name=group_name)
 
     def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gate="gen", sortby='id'):
         """
@@ -403,19 +403,19 @@ class NetAPI(object):
         Groups can be used in bulk operations.
         Grouped nodes will have stable sorting accross all bulk operations.
         """
-        self.__nodenet.group_nodes_by_ids(nodespace_uid, node_uids, group_name, gatetype=gate, sortby=sortby)
+        self._nodenet.group_nodes_by_ids(nodespace_uid, node_uids, group_name, gatetype=gate, sortby=sortby)
 
     def ungroup_nodes(self, nodespace_uid, group):
         """
         Deletes the given group (not the nodes, just the group assignment)
         """
-        self.__nodenet.ungroup_nodes(nodespace_uid, group)
+        self._nodenet.ungroup_nodes(nodespace_uid, group)
 
     def get_activations(self, nodespace_uid, group):
         """
         Returns an array of activations for the given group.
         """
-        return self.__nodenet.get_activations(nodespace_uid, group)
+        return self._nodenet.get_activations(nodespace_uid, group)
 
     def substitute_activations(self, nodespace_uid, group, new_activations):
         """
@@ -424,14 +424,14 @@ class NetAPI(object):
         including gate function, thresholds, min, max, amplification and directional
         activators - the values passed will be propagated in the next step.
         """
-        return self.__nodenet.set_activations(nodespace_uid, group, new_activations)
+        return self._nodenet.set_activations(nodespace_uid, group, new_activations)
 
     def get_gate_configurations(self, nodespace_uid, group, gatefunction_parameter=None):
         """
         Returns a dictionary containing a list of gatefunction names, and a list of the values
         of the given gatefunction_parameter (if given)
         """
-        return self.__nodenet.get_gate_configurations(nodespace_uid, group, gatefunction_parameter)
+        return self._nodenet.get_gate_configurations(nodespace_uid, group, gatefunction_parameter)
 
     def set_gate_configurations(self, nodespace_uid, group, gatefunction, gatefunction_parameter=None, parameter_values=None):
         """
@@ -443,7 +443,7 @@ class NetAPI(object):
             gatefunction_parameter (optinoal) - name of the gatefunction_paramr to set
             parameter_values (optional) - values to set for the gatefunction_parameetr
         """
-        self.__nodenet.set_gate_configurations(nodespace_uid, group, gatefunction, gatefunction_parameter, parameter_values)
+        self._nodenet.set_gate_configurations(nodespace_uid, group, gatefunction, gatefunction_parameter, parameter_values)
 
     def get_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to):
         """
@@ -451,7 +451,7 @@ class NetAPI(object):
         Rows are group_to slots, columns are group_from gates.
         Non-existing links will be returned as 0-entries in the matrix.
         """
-        return self.__nodenet.get_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to)
+        return self._nodenet.get_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to)
 
     def set_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to, new_w):
         """
@@ -459,67 +459,67 @@ class NetAPI(object):
         Rows are group_to slots, columns are group_from gates.
         Note that setting matrix entries to non-0 values will implicitly create links.
         """
-        self.__nodenet.set_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to, new_w)
+        self._nodenet.set_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to, new_w)
 
     def get_node_ids(self, nodespace_uid, group):
         """
         Returns the uids of the nodes in the given group
         """
-        return self.__nodenet.get_node_uids(nodespace_uid, group)
+        return self._nodenet.get_node_uids(nodespace_uid, group)
 
     def add_gate_monitor(self, node_uid, gate, name=None, color=None):
         """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation
         value in every calculation step.
         Returns the uid of the new monitor."""
-        return self.__nodenet.add_gate_monitor(node_uid, gate, name=name, color=color)
+        return self._nodenet.add_gate_monitor(node_uid, gate, name=name, color=color)
 
     def add_slot_monitor(self, node_uid, slot, name=None, color=None):
         """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
         value in every calculation step.
         Returns the uid of the new monitor."""
-        return self.__nodenet.add_slot_monitor(node_uid, slot, name=name, color=color)
+        return self._nodenet.add_slot_monitor(node_uid, slot, name=name, color=color)
 
     def add_link_monitor(self, source_node_uid, gate_type, target_node_uid, slot_type, name=None, color=None):
         """Adds a continuous weightmonitor to a link. The monitor will record the linkweight in every calculation step.
         Returns the uid of the new monitor."""
-        return self.__nodenet.add_link_monitor(source_node_uid, gate_type, target_node_uid, slot_type, name=name, color=color)
+        return self._nodenet.add_link_monitor(source_node_uid, gate_type, target_node_uid, slot_type, name=name, color=color)
 
     def add_modulator_monitor(self, modulator, name, color=None):
         """Adds a continuous monitor to a global modulator.
         The monitor will collect respective value in every calculation step.
         Returns the uid of the new monitor."""
-        return self.__nodenet.add_modulator_monitor(modulator, name, color=color)
+        return self._nodenet.add_modulator_monitor(modulator, name, color=color)
 
     def add_custom_monitor(self, function, name, color=None):
         """Adds a continuous monitor, that evaluates the given python-code and collects the
         return-value for every calculation step.
         Returns the uid of the new monitor."""
-        return self.__nodenet.add_custom_monitor(function, name, color=color)
+        return self._nodenet.add_custom_monitor(function, name, color=color)
 
     def add_adhoc_monitor(self, function, name, parameters={}):
-        return self.__nodenet.add_adhoc_monitor(function, name, parameters)
+        return self._nodenet.add_adhoc_monitor(function, name, parameters)
 
     def add_group_monitor(self, nodespace, name, node_name_prefix='', node_uids=[], gate='gen', color=None):
         """Adds a continuous monitor, that tracks the activations of the given group
         return-value for every calculation step.
         Returns the uid of the new monitor."""
-        return self.__nodenet.add_group_monitor(nodespace, name, node_name_prefix=node_name_prefix, node_uids=node_uids, gate=gate, color=color)
+        return self._nodenet.add_group_monitor(nodespace, name, node_name_prefix=node_name_prefix, node_uids=node_uids, gate=gate, color=color)
 
     def get_monitor(self, uid):
         """Returns the monitor with the given uid"""
-        return self.__nodenet.get_monitor(uid)
+        return self._nodenet.get_monitor(uid)
 
     def remove_monitor(self, uid):
         """Removes the monitor with the given uid"""
-        return self.__nodenet.remove_monitor(uid)
+        return self._nodenet.remove_monitor(uid)
 
     def set_dashboard_value(self, name, value):
         """Allows the netapi to set values for the statistics and dashboard"""
-        self.__nodenet.dashboard_values[name] = value
+        self._nodenet.dashboard_values[name] = value
 
     def decay_por_links(self, nodespace_uid):
         """ Decayes all por-links in the given nodespace """
-        porretdecay = self.__nodenet.get_modulator('base_porret_decay_factor')
+        porretdecay = self._nodenet.get_modulator('base_porret_decay_factor')
         nodes = self.get_nodes(nodespace=nodespace_uid, nodetype="Pipe")
         decay_factor = (1 - porretdecay)
         if porretdecay != 0:
@@ -531,11 +531,11 @@ class NetAPI(object):
 
     def get_nodespace_properties(self, nodespace_uid=None):
         """ retrieve the ui properties for the given nodespace"""
-        return self.__nodenet.get_nodespace_properties(nodespace_uid)
+        return self._nodenet.get_nodespace_properties(nodespace_uid)
 
     def set_nodespace_properties(self, nodespace_uid, properties):
         """ sets the ui properties for the given nodespace"""
-        self.__nodenet.set_nodespace_properties(nodespace_uid, properties)
+        self._nodenet.set_nodespace_properties(nodespace_uid, properties)
 
     def announce_nodes(self, nodespace_uid, numer_of_nodes, average_element_per_node):
         pass
@@ -543,8 +543,8 @@ class NetAPI(object):
     def register_handler(self, event, func):
         """ registers a callable to listen for the specified netapi Event.
         event must be one of the defined netapi.Event enum entries"""
-        self.__nodenet.register_netapi_eventhandler(event, func)
+        self._nodenet.register_netapi_eventhandler(event, func)
 
     def unregister_handler(self, event, func):
         """ removes a registered callable from the event"""
-        self.__nodenet.unregister_netapi_eventhandler(event, func)
+        self._nodenet.unregister_netapi_eventhandler(event, func)

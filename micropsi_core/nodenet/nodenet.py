@@ -167,6 +167,7 @@ class Nodenet(metaclass=ABCMeta):
 
         self.runner_config = {}
         self.owner = owner
+        self._step = 0
         self._monitors = {}
         self._recorders = {}
         self._adhoc_monitors = {}
@@ -180,7 +181,7 @@ class Nodenet(metaclass=ABCMeta):
         self.user_prompt = None
         self.user_prompt_response = {}
 
-        self.netapi = NetAPI(self)
+        self._create_netapi()
 
         self.deleted_items = {}
         self.stepping_rate = []
@@ -189,18 +190,9 @@ class Nodenet(metaclass=ABCMeta):
 
         self.netapi_event_handlers = dict((evt, []) for evt in self.netapi.Event)
 
-        self.native_modules = {}
-        for type, data in native_modules.items():
-            if data.get('engine', self.engine) == self.engine:
-                try:
-                    if data.get('flow_module'):
-                        self.native_modules[type] = FlowNodetype(nodenet=self, **data)
-                    elif data.get('dimensionality'):
-                        self.native_modules[type] = HighdimensionalNodetype(nodenet=self, **data)
-                    else:
-                        self.native_modules[type] = Nodetype(nodenet=self, **data)
-                except Exception as err:
-                    self.logger.error("Can not instantiate node type %s: %s: %s" % (type, err.__class__.__name__, str(err)))
+        self.native_modules = self._load_nodetypes(native_modules)
+        self.native_module_instances = {}
+        self.native_module_definitions = dict((uid, native_modules[uid]) for uid in self.native_modules)
 
         self._modulators = {}
         if use_modulators:
@@ -209,6 +201,18 @@ class Nodenet(metaclass=ABCMeta):
 
         if not os.path.isdir(self.persistency_path):
             os.mkdir(self.persistency_path)
+
+        self.initialize_stepoperators()
+
+    def _create_netapi(self):
+        self.netapi = NetAPI(self)
+
+    @abstractmethod
+    def initialize_stepoperators(self):
+        """
+        Instantiate Stepoperators
+        """
+        pass  # pragma: no cover
 
     def get_data(self, complete=False, include_links=True):
         """
@@ -442,6 +446,20 @@ class Nodenet(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
+    def _load_nodetypes(self, nodetype_data):
+        """
+        Creates nodetype-instances for the given nodetype data
+        """
+        newnative_modules = {}
+        for key, data in nodetype_data.items():
+            if data.get('engine', self.engine) == self.engine:
+                try:
+                    newnative_modules[key] = Nodetype(nodenet=self, **data)
+                except Exception as err:
+                    self.logger.error("Can not instantiate node type %s: %s: %s" % (key, err.__class__.__name__, str(err)))
+                    tools.post_mortem()
+        return newnative_modules
+
     @abstractmethod
     def reload_native_modules(self, native_modules):
         """
@@ -468,7 +486,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def merge_data(self, nodenet_data, keep_uids=False):
+    def merge_data(self, nodenet_data, keep_uids=False, uidmap={}):
         """
         Merges the data in nodenet_data into this nodenet.
         If keep_uids is True, the supplied UIDs will be used. This may lead to all sorts of inconsistencies,
@@ -520,6 +538,13 @@ class Nodenet(metaclass=ABCMeta):
             if type(self.native_modules[key]) == FlowNodetype:
                 data[key] = self.native_modules[key].get_data()
         return data
+
+    @abstractmethod
+    def construct_native_modules_numpy_state_dict(self):
+        """
+        Constructs a dict numpy states of all nodes
+        """
+        pass
 
     def get_datasources(self):
         """ Returns a sorted list of available datasources, including worldadapter datasources

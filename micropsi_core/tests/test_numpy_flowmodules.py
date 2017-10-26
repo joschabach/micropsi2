@@ -9,7 +9,7 @@ pytest.importorskip("numpy")
 import numpy as np
 
 
-def prepare(runtime, test_nodenet, default_world, resourcepath, wa_class=None):
+def prepare(runtime, test_nodenet, resourcepath, wa_class=None):
     """ Create a bunch of available flowmodules for the following tests """
     import os
     foodir = os.path.join(resourcepath, "nodetypes", 'foobar')
@@ -17,12 +17,10 @@ def prepare(runtime, test_nodenet, default_world, resourcepath, wa_class=None):
     with open(os.path.join(resourcepath, "nodetypes", "out12345.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
-    "implementation": "python",
     "name": "out12345",
     "run_function_name": "out12345",
     "inputs": [],
     "outputs": ["out"],
-    "inputdims": [],
     "parameters": ["default_test"],
     "parameter_defaults": {"default_test": "defaultvalue"}
 }
@@ -36,13 +34,11 @@ def out12345(netapi, node, parameters):
     with open(os.path.join(foodir, "Double.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
-    "implementation": "theano",
     "name": "Double",
-    "build_function_name": "double",
+    "run_function_name": "double",
     "init_function_name": "double_init",
     "inputs": ["inputs"],
     "outputs": ["outputs"],
-    "inputdims": [1],
     "parameters": ["test_param"],
     "parameter_defaults": {"test_param": "defaultvalue"}
 }
@@ -58,12 +54,10 @@ def double(inputs, netapi, node, parameters):
     with open(os.path.join(resourcepath, "nodetypes", "Add.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
-    "implementation": "theano",
     "name": "Add",
-    "build_function_name": "add",
+    "run_function_name": "add",
     "inputs": ["input1", "input2"],
     "outputs": ["outputs"],
-    "inputdims": [1, 1]
 }
 
 def add(input1, input2, netapi, node, parameters):
@@ -72,12 +66,10 @@ def add(input1, input2, netapi, node, parameters):
     with open(os.path.join(resourcepath, "nodetypes", "Bisect.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
-    "implementation": "theano",
     "name": "Bisect",
-    "build_function_name": "bisect",
+    "run_function_name": "bisect",
     "inputs": ["inputs"],
     "outputs": ["outputs"],
-    "inputdims": [1]
 }
 
 def bisect(inputs, netapi, node, parameters):
@@ -86,13 +78,11 @@ def bisect(inputs, netapi, node, parameters):
     with open(os.path.join(resourcepath, "nodetypes", "Numpy.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
-    "implementation": "python",
     "name": "Numpy",
     "init_function_name": "numpyfunc_init",
     "run_function_name": "numpyfunc",
     "inputs": ["inputs"],
     "outputs": ["outputs"],
-    "inputdims": [1],
     "parameters": ["no_return_flag"]
 }
 
@@ -107,111 +97,43 @@ def numpyfunc(inputs, netapi, node, parameters):
         ones[:] = 1.0
         return inputs + ones
 """)
-    with open(os.path.join(resourcepath, "nodetypes", "Thetas.py"), 'w') as fp:
-        fp.write("""nodetype_definition = {
-    "flow_module": True,
-    "implementation": "theano",
-    "name": "Thetas",
-    "init_function_name": "thetas_init",
-    "build_function_name": "thetas",
-    "parameters": ["weights_shape", "use_thetas"],
-    "inputs": ["X"],
-    "outputs": ["Y"],
-    "inputdims": [1]
-}
-
-import theano
-
-def thetas_init(netapi, node, parameters):
-    import numpy as np
-    w_array = np.random.rand(parameters['weights_shape']).astype(netapi.floatX)
-    b_array = np.random.rand(parameters['weights_shape']).astype(netapi.floatX)
-
-    node.set_theta('weights', w_array)
-    node.set_theta('bias', theano.shared(b_array))
-
-def thetas(X, netapi, node, parameters):
-    if parameters.get('use_thetas'):
-        return X * node.get_theta('weights') + node.get_theta('bias')
-    else:
-        return X
-""")
     with open(os.path.join(resourcepath, "nodetypes", "TwoOutputs.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
-    "implementation": "theano",
     "name": "TwoOutputs",
-    "build_function_name": "two_outputs",
+    "run_function_name": "two_outputs",
     "inputs": ["X"],
     "outputs": ["A", "B"],
-    "inputdims": [1]
 }
 
 def two_outputs(X, netapi, node, parameters):
     return X, X+1
 """)
-    with open(os.path.join(resourcepath, "nodetypes", "TRPOOut.py"), 'w') as fp:
+    with open(os.path.join(resourcepath, "nodetypes", "list_inf_maker.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
-    "implementation": "theano",
-    "name": "TRPOOut",
-    "build_function_name": "trpoout",
+    "name": "ListInfMaker",
+    "run_function_name": "list_inf_maker",
     "inputs": ["X"],
     "outputs": ["Y", "Z"],
-    "inputdims": [1],
     "parameters": ["makeinf"],
     "parameter_defaults": {"makeinf": "False"}
 }
 
-def trpoout(X, netapi, node, parameters):
+def list_inf_maker(X, netapi, node, parameters):
     from theano import tensor as T
     if parameters["makeinf"] == "False":
         return [X, X+1, X*2], T.exp(X)
     else:
         return [X, X/0, X*2], T.exp(X)
 """)
-    with open(os.path.join(resourcepath, "nodetypes", "TRPOIn.py"), 'w') as fp:
-        fp.write("""nodetype_definition = {
-    "flow_module": True,
-    "implementation": "theano",
-    "name": "TRPOIn",
-    "build_function_name": "trpoin",
-    "inputs": ["Y", "Z"],
-    "outputs": ["A"],
-    "inputdims": ["list", 1]
-}
-
-def trpoin(X, Y, netapi, node, parameters):
-    for thing in X:
-        Y += thing
-    return Y
-""")
-    with open(os.path.join(resourcepath, "nodetypes", "TRPOInPython.py"), 'w') as fp:
-        fp.write("""nodetype_definition = {
-    "flow_module": True,
-    "implementation": "python",
-    "name": "TRPOInPython",
-    "run_function_name": "trpoinpython",
-    "inputs": ["Y", "Z"],
-    "outputs": ["A"],
-    "inputdims": ["list", 1]
-}
-
-def trpoinpython(X, Y, netapi, node, parameters):
-    for thing in X:
-        Y += thing
-    return Y
-""")
-
     with open(os.path.join(resourcepath, "nodetypes", "infmaker.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
-    "implementation": "python",
     "name": "infmaker",
     "run_function_name": "infmaker",
     "inputs": [],
     "outputs": ["A"],
-    "inputdims": [],
     "parameters": ["what"],
     "parameter_values": {"what": ["nan", "inf", "neginf"]},
     "parameter_defaults": {"what": "nan"}
@@ -274,10 +196,10 @@ class SimpleArrayWA(ArrayWorldAdapter):
     return nodenet, netapi, worldadapter
 
 
-@pytest.mark.engine("theano_engine")
-def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepath):
+@pytest.mark.engine("numpy_engine")
+def test_flowmodule_definition(runtime, test_nodenet, resourcepath):
     """ Basic definition and existance test """
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, resourcepath)
 
     result, metadata = runtime.get_nodenet_metadata(test_nodenet)
     assert 'Double' not in metadata['native_modules']
@@ -324,10 +246,10 @@ def test_flowmodule_definition(runtime, test_nodenet, default_world, resourcepat
     assert hasattr(flowmodule, 'initfunction_ran')
 
 
-@pytest.mark.engine("theano_engine")
-def test_multiple_flowgraphs(runtime, test_nodenet, default_world, resourcepath):
+@pytest.mark.engine("numpy_engine")
+def test_multiple_flowgraphs(runtime, test_nodenet, resourcepath):
     """ Testing a flow from datasources to datatargets """
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, resourcepath)
 
     double = netapi.create_node("Double", None, "Double")
     add = netapi.create_node("Add", None, "Add")
@@ -378,10 +300,10 @@ def test_multiple_flowgraphs(runtime, test_nodenet, default_world, resourcepath)
     assert np.allclose(worldadapter.get_flow_datatarget('bar'), sources * 3.5)
 
 
-@pytest.mark.engine("theano_engine")
-def test_disconnect_flowmodules(runtime, test_nodenet, default_world, resourcepath):
+@pytest.mark.engine("numpy_engine")
+def test_disconnect_flowmodules(runtime, test_nodenet, resourcepath):
     """ test disconnecting flowmodules """
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, resourcepath)
 
     double = netapi.create_node("Double", None, "Double")
     add = netapi.create_node("Add", None, "Add")
@@ -416,9 +338,9 @@ def test_disconnect_flowmodules(runtime, test_nodenet, default_world, resourcepa
     assert np.all(worldadapter.get_flow_datatarget('bar') == np.zeros_like(worldadapter.get_flow_datatarget('bar')))
 
 
-@pytest.mark.engine("theano_engine")
-def test_diverging_flowgraph(runtime, test_nodenet, default_world, resourcepath):
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+@pytest.mark.engine("numpy_engine")
+def test_diverging_flowgraph(runtime, test_nodenet, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, resourcepath)
 
     double = netapi.create_node("Double", None, "Double")
     add = netapi.create_node("Add", None, "Add")
@@ -459,9 +381,9 @@ def test_diverging_flowgraph(runtime, test_nodenet, default_world, resourcepath)
     assert np.all(worldadapter.get_flow_datatarget('bar') == sources * 1.5)
 
 
-@pytest.mark.engine("theano_engine")
-def test_converging_flowgraphs(runtime, test_nodenet, default_world, resourcepath):
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+@pytest.mark.engine("numpy_engine")
+def test_converging_flowgraphs(runtime, test_nodenet, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, resourcepath)
 
     double1 = netapi.create_node("Double", None, "Double")
     double2 = netapi.create_node("Double", None, "Double")
@@ -493,24 +415,18 @@ def test_converging_flowgraphs(runtime, test_nodenet, default_world, resourcepat
     assert np.all(worldadapter.get_flow_datatarget('bar') == sources * 4)
 
 
-@pytest.mark.engine("theano_engine")
-def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepath):
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+@pytest.mark.engine("numpy_engine")
+def test_flowmodule_persistency(runtime, test_nodenet, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, resourcepath)
 
     double = netapi.create_node("Double", None, "Double")
-    thetas = netapi.create_node("Thetas", None, "Thetas")
-    thetas.set_parameter("weights_shape", 5)
-    thetas.set_parameter("use_thetas", True)
 
     nodenet.flow('worldadapter', 'foo', double.uid, "inputs")
-    nodenet.flow(double.uid, 'outputs', thetas.uid, "X")
-    nodenet.flow(thetas.uid, "Y", 'worldadapter', 'bar')
+    nodenet.flow(double.uid, 'outputs', 'worldadapter', 'bar')
     source = netapi.create_node("Neuron", None)
     netapi.link(source, 'gen', source, 'gen')
-    netapi.link(source, 'gen', thetas, 'sub')
+    netapi.link(source, 'gen', double, 'sub')
     source.activation = 1
-    custom_theta = np.random.rand(5).astype(netapi.floatX)
-    thetas.set_theta("weights", custom_theta)
 
     assert double.initfunction_ran
 
@@ -522,7 +438,7 @@ def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepa
 
     result = worldadapter.get_flow_datatarget('bar')
 
-    assert np.allclose(result, sources * 2 * thetas.get_theta("weights").get_value() + thetas.get_theta("bias").get_value())
+    assert np.allclose(result, sources * 2)
 
     runtime.save_nodenet(test_nodenet)
     runtime.revert_nodenet(test_nodenet)
@@ -531,89 +447,48 @@ def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepa
     netapi = nodenet.netapi
     worldadapter = nodenet.worldadapter_instance
     worldadapter.set_flow_datasource('foo', sources)
-    thetas = netapi.get_node(thetas.uid)
 
-    assert np.allclose(thetas.get_theta("weights").get_value(), custom_theta)
     nodenet.step()
     assert np.allclose(worldadapter.get_flow_datatarget('bar'), result)
     assert netapi.get_node(double.uid).initfunction_ran
     # also assert, that the edge-keys are preserved:
     # this would raise an exception otherwise
-    netapi.unflow(netapi.get_node(double.uid), 'outputs', netapi.get_node(thetas.uid), 'X')
-
-    # assert that reloadCode runs the initfunction again:
-    runtime.reload_code()
-    assert not np.allclose(netapi.get_node(thetas.uid).get_theta('weights').get_value(), custom_theta)
+    netapi.unflow(netapi.get_node(double.uid), 'outputs', 'worldadapter', 'bar')
 
 
-@pytest.mark.engine("theano_engine")
-def test_flowmodule_reload_code_behaviour(runtime, test_nodenet, default_world, resourcepath):
+@pytest.mark.engine("numpy_engine")
+def test_flowmodule_reload_code_behaviour(runtime, test_nodenet, resourcepath):
     import os
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
-    node = netapi.create_node("Thetas", None, "Thetas", weights_shape=5)
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, resourcepath)
     double = netapi.create_node("Double", None, "Double")
     netapi.flow('worldadapter', 'foo', double, 'inputs')
     netapi.flow(double, 'outputs', 'worldadapter', 'bar')
-    node.ensure_initialized()
-    weights = node.get_theta('weights').get_value()
+    double.ensure_initialized()
+    double.set_state('teststate', np.ones(3))
     source = netapi.create_node("Neuron", None)
     netapi.link(source, 'gen', source, 'gen')
     netapi.link(source, 'gen', double, 'sub')
     source.activation = 1
-    with open(os.path.join(resourcepath, "nodetypes", "Thetas.py"), 'w') as fp:
-        fp.write("""nodetype_definition = {
-    "flow_module": True,
-    "implementation": "theano",
-    "name": "Thetas",
-    "init_function_name": "thetas_init",
-    "build_function_name": "thetas",
-    "parameters": ["weights_shape", "use_thetas"],
-    "inputs": ["Y"],
-    "outputs": ["Z"],
-    "inputdims": [1]
-}
-
-import theano
-
-def thetas_init(netapi, node, parameters):
-    import numpy as np
-    w_array = np.random.rand(parameters['weights_shape']).astype(netapi.floatX)
-    b_array = np.random.rand(parameters['weights_shape']).astype(netapi.floatX)
-    node.initfunction_ran = 'yep'
-    node.set_theta('weights', w_array)
-    node.set_theta('bias', theano.shared(b_array))
-
-def thetas(Y, netapi, node, parameters):
-    if parameters.get('use_thetas'):
-        return Y * node.get_theta('weights') + node.get_theta('bias')
-    else:
-        return Y
-""")
     with open(os.path.join(resourcepath, "nodetypes", "foobar", "Double.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
-    "implementation": "theano",
     "name": "Double",
-    "build_function_name": "double",
+    "run_function_name": "double",
     "init_function_name": "double_init",
     "inputs": ["inputs"],
     "outputs": ["outputs"],
-    "inputdims": [1]
 }
 
 def double_init(netapi, node, parameters):
-    node.initfunction_ran = True
+    node.initfunction_ran = 'yep'
 
 def double(inputs, netapi, node, parameters):
     return inputs * 4
 """)
     runtime.reload_code()
-    node = netapi.get_node(node.uid)
-    assert node.inputs == ["Y"]
-    assert node.outputs == ["Z"]
-    assert not np.all(weights == node.get_theta('weights').get_value())
-    assert weights.shape == node.get_theta('weights').get_value().shape
-    assert node.initfunction_ran == 'yep'
+    double = netapi.get_node(double.uid)
+    assert double.initfunction_ran == 'yep'
+    assert np.all(double.get_state('teststate') == np.ones(3))
     worldadapter = nodenet.worldadapter_instance
     sources = np.zeros((5), dtype=worldadapter.floatX)
     sources[:] = np.random.randn(*sources.shape)
@@ -622,9 +497,9 @@ def double(inputs, netapi, node, parameters):
     assert np.all(worldadapter.get_flow_datatarget("bar") == sources * 4)
 
 
-@pytest.mark.engine("theano_engine")
-def test_delete_flowmodule(runtime, test_nodenet, default_world, resourcepath):
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+@pytest.mark.engine("numpy_engine")
+def test_delete_flowmodule(runtime, test_nodenet, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, resourcepath)
 
     double1 = netapi.create_node("Double", None, "Double")
     double2 = netapi.create_node("Double", None, "Double")
@@ -662,9 +537,9 @@ def test_delete_flowmodule(runtime, test_nodenet, default_world, resourcepath):
     assert np.all(worldadapter.get_flow_datatarget('bar') == np.zeros(5))
 
 
-@pytest.mark.engine("theano_engine")
-def test_link_large_graph(runtime, test_nodenet, default_world, resourcepath):
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+@pytest.mark.engine("numpy_engine")
+def test_link_large_graph(runtime, test_nodenet, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, resourcepath)
 
     double = netapi.create_node("Double", None, "Double")
     bisect = netapi.create_node("Bisect", None, "Bisect")
@@ -693,172 +568,37 @@ def test_link_large_graph(runtime, test_nodenet, default_world, resourcepath):
     assert np.all(worldadapter.get_flow_datatarget('bar') == sources * 2)
 
 
-@pytest.mark.engine("theano_engine")
-def test_python_flowmodules(runtime, test_nodenet, default_world, resourcepath):
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
-
-    double = netapi.create_node("Double", None, "Double")
-    py = netapi.create_node("Numpy", None, "Numpy")
-    bisect = netapi.create_node("Bisect", None, "Bisect")
-
-    source = netapi.create_node("Neuron", None)
-    netapi.link(source, 'gen', source, 'gen')
-    source.activation = 1
-
-    assert not hasattr(py, 'initfunction_ran')
-
-    netapi.flow('worldadapter', 'foo', double, "inputs")
-    netapi.flow(double, "outputs", py, "inputs")
-    netapi.flow(py, "outputs", bisect, "inputs")
-    netapi.flow(bisect, "outputs", 'worldadapter', 'bar')
-
-    sources = np.zeros((5), dtype=nodenet.numpyfloatX)
-    sources[:] = np.random.randn(*sources.shape)
-    worldadapter.set_flow_datasource('foo', sources)
-
-    nodenet.step()
-    assert np.all(worldadapter.get_flow_datatarget('bar') == 0)
-
-    # netapi.link(source, 'gen', bisect, 'sub')
-
-    nodenet.step()
-    assert np.all(worldadapter.get_flow_datatarget('bar') == 0)
-
-    netapi.link(source, 'gen', bisect, 'sub')
-
-    nodenet.step()
-    # ((x * 2) + 1) / 2 == x + .5
-    assert np.all(worldadapter.get_flow_datatarget('bar') == sources + 0.5)
-    assert py.initfunction_ran
-
-
-@pytest.mark.engine("theano_engine")
-def test_compile_flow_subgraph(runtime, test_nodenet, default_world, resourcepath):
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
-
-    double = netapi.create_node("Double", None, "Double")
-    bisect = netapi.create_node("Bisect", None, "Bisect")
-
-    netapi.flow(double, "outputs", bisect, "inputs")
-
-    func, ins, outs = nodenet.compile_flow_subgraph([double.uid, bisect.uid])
-
-    assert np.all(func(inputs=[1, 2, 3, 4]) == np.asarray([1, 2, 3, 4], dtype=nodenet.numpyfloatX))
-
-
-@pytest.mark.engine("theano_engine")
-def test_get_callable_flowgraph_bridges_numpy_gaps(runtime, test_nodenet, default_world, resourcepath):
-    """ Asserts that callable_flowgraph wraps everything in one callable, symbolic or numeric """
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
-
-    double = netapi.create_node("Double", None, "Double")
-    py = netapi.create_node("Numpy", None, "Numpy")
-    bisect = netapi.create_node("Bisect", None, "Bisect")
-
-    netapi.flow(double, "outputs", py, "inputs")
-    netapi.flow(py, "outputs", bisect, "inputs")
-
-    func = netapi.get_callable_flowgraph([bisect, double, py])
-
-    assert np.all(func(inputs=[1, 2, 3, 4]) == np.asarray([1.5, 2.5, 3.5, 4.5], dtype=nodenet.numpyfloatX))
-
-
-@pytest.mark.engine("theano_engine")
-def test_collect_thetas(runtime, test_nodenet, default_world, resourcepath):
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
-
-    module = netapi.create_node("Thetas", None, "module")
-    module.set_parameter('use_thetas', True)
-    module.set_parameter('weights_shape', 5)
-
-    netapi.flow('worldadapter', 'foo', module, "X")
-    netapi.flow(module, "Y", 'worldadapter', 'bar')
-
-    sources = np.zeros((5), dtype=nodenet.numpyfloatX)
-    sources[:] = np.random.randn(*sources.shape)
-    worldadapter.set_flow_datasource('foo', sources)
-
-    source = netapi.create_node("Neuron", None)
-    netapi.link(source, 'gen', source, 'gen')
-    source.activation = 1
-    netapi.link(source, 'gen', module, 'sub')
-
-    nodenet.step()
-
-    collected = netapi.collect_thetas([module])
-    assert len(collected) == 2
-    # assert collect sorts alphabetically
-    assert collected[0] == module.get_theta('bias')
-    assert collected[1] == module.get_theta('weights')
-
-    result = sources * module.get_theta('weights').get_value() + module.get_theta('bias').get_value()
-    assert np.allclose(worldadapter.get_flow_datatarget('bar'), result)
-
-    func = netapi.get_callable_flowgraph([module], use_different_thetas=True)
-
-    x = np.ones(5).astype(netapi.floatX)
-    weights = np.random.rand(5).astype(netapi.floatX)
-    bias = np.ones(5).astype(netapi.floatX)
-
-    result = func(thetas=[bias, weights], X=x)
-
-    assert np.all(result == x * weights + bias)
-
-
-@pytest.mark.engine("theano_engine")
-def test_flow_edgecase(runtime, test_nodenet, default_world, resourcepath):
+@pytest.mark.engine("numpy_engine")
+def test_flow_edgecase(runtime, test_nodenet, resourcepath):
     """ Tests a structural edge case: diverging and again converging graph with a numpy node in one arm"""
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, resourcepath)
 
     twoout = netapi.create_node("TwoOutputs", None, "twoout")
     double = netapi.create_node("Double", None, "double")
     numpy = netapi.create_node("Numpy", None, "numpy")
     add = netapi.create_node("Add", None, "add")
 
+    netapi.flow("worldadapter", "foo", twoout, "X")
     netapi.flow(twoout, "A", double, "inputs")
     netapi.flow(twoout, "B", numpy, "inputs")
     netapi.flow(double, "outputs", add, "input1")
     netapi.flow(numpy, "outputs", add, "input2")
+    netapi.flow(add, "outputs", "worldadapter", "bar")
 
-    function = netapi.get_callable_flowgraph([twoout, double, numpy, add])
+    source = netapi.create_node("Neuron", None)
+    source.activation = 1
+    netapi.link(source, 'gen', add, 'sub')
 
-    x = np.array([1, 2, 3], dtype=netapi.floatX)
-    result = np.array([5, 8, 11], dtype=netapi.floatX)
-    assert np.all(function(X=x) == result)
-
-
-@pytest.mark.engine("theano_engine")
-def test_flow_trpo_modules(runtime, test_nodenet, default_world, resourcepath):
-    """ Test the trpo modules, that can return list-outputs """
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
-
-    trpoout = netapi.create_node("TRPOOut", None, "TRPOOut")
-    trpoin = netapi.create_node("TRPOIn", None, "TRPOIn")
-
-    netapi.flow(trpoout, "Y", trpoin, "Y")
-    netapi.flow(trpoout, "Z", trpoin, "Z")
-
-    function = netapi.get_callable_flowgraph([trpoin, trpoout])
-
-    x = np.array([1, 2, 3], dtype=netapi.floatX)
-    result = sum([np.exp(x), x, x * 2, x + 1])
-    assert np.all(function(X=x) == result)
-
-    netapi.delete_node(trpoin)
-    trpoinpy = netapi.create_node("TRPOInPython", None, "TRPOInPython")
-
-    netapi.flow(trpoout, "Y", trpoinpy, "Y")
-    netapi.flow(trpoout, "Z", trpoinpy, "Z")
-
-    function = netapi.get_callable_flowgraph([trpoinpy, trpoout])
-    assert np.all(function(X=x) == result)
+    worldadapter.set_flow_datasource('foo', np.ones(5).astype(worldadapter.floatX))
+    nodenet.timed_step()
+    assert np.all(worldadapter.get_flow_datatarget("bar") == np.asarray([5, 5, 5, 5, 5]))
 
 
-@pytest.mark.engine("theano_engine")
-def test_none_output_skips_following_graphs(runtime, test_nodenet, default_world, resourcepath):
+@pytest.mark.engine("numpy_engine")
+def test_none_output_skips_following_graphs(runtime, test_nodenet, resourcepath):
     """ Tests the "staudamm" functionality: a graph can return None, thus preventing graphs
     depending on this output as their input from being executed, even if they are requested """
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, resourcepath)
 
     with netapi.flowbuilder:
         double = netapi.create_node("Double", None, "Double")
@@ -897,107 +637,10 @@ def test_none_output_skips_following_graphs(runtime, test_nodenet, default_world
     assert np.all(worldadapter.get_flow_datatarget('bar') == (2 * sources + 1) / 2)
 
 
-@pytest.mark.engine("theano_engine")
-def test_shadow_flowgraph(runtime, test_nodenet, default_world, resourcepath):
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
-
-    node1 = netapi.create_node("Thetas", None, "node1")
-    node1.set_parameter('use_thetas', True)
-    node1.set_parameter('weights_shape', 5)
-    node1.set_state('foo', 'bar')
-    node2 = netapi.create_node("Thetas", None, "node2")
-    node2.set_parameter('use_thetas', False)
-    node2.set_parameter('weights_shape', 5)
-
-    netapi.flow(node1, "Y", node2, "X")
-
-    function = netapi.get_callable_flowgraph([node1, node2])
-
-    x = np.array([1, 2, 3, 4, 5], dtype=netapi.floatX)
-    result = function(X=x)[0]
-
-    copies = netapi.shadow_flowgraph([node1, node2])
-
-    copyfunction = netapi.get_callable_flowgraph([copies[0], copies[1]])
-
-    assert np.all(copyfunction(X=x) == result)
-    assert netapi.collect_thetas(copies) == netapi.collect_thetas([node1, node2])
-    assert copies[0].get_state('foo') == 'bar'
-    assert not copies[1].get_parameter('use_thetas')
-
-    # change original
-    node2.set_parameter('use_thetas', True)
-    node1.set_state('foo', 'baz')
-
-    # recompile, assert change took effect
-    assert copies[1].get_parameter('use_thetas')
-    assert copies[0].get_state('foo') == 'baz'
-    function = netapi.get_callable_flowgraph([node1, node2])
-    result2 = function(X=x)[0]
-    assert np.all(result2 != result)
-
-    # recompile copy, assert change took effect here as well.
-    copyfunc = netapi.get_callable_flowgraph([copies[0], copies[1]])
-    assert np.all(copyfunc(X=x) == result2)
-
-    # change back, save and reload and assert the copy
-    # still returs the original's value
-    node2.set_parameter('use_thetas', False)
-    runtime.save_nodenet(test_nodenet)
-    runtime.revert_nodenet(test_nodenet)
-    nodenet = runtime.nodenets[test_nodenet]
-    netapi = nodenet.netapi
-    copies = [netapi.get_node(copies[0].uid), netapi.get_node(copies[1].uid)]
-    assert not copies[1].get_parameter('use_thetas')
-
-
-@pytest.mark.engine("theano_engine")
-def test_naming_collision_in_callable_subgraph(runtime, test_nodenet, default_world, resourcepath):
-    """ Asserts that compiling a graph that has naming collisions raises an Exception,
-    asserts that unique_inputs_names fixes the collision"""
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
-
-    double = netapi.create_node("Double", None, "Double")
-    bisect = netapi.create_node("Bisect", None, "Bisect")
-    add = netapi.create_node("Add", None, "Add")
-
-    netapi.flow(double, "outputs", add, "input1")
-    netapi.flow(bisect, "outputs", add, "input2")
-
-    with pytest.raises(RuntimeError):
-        netapi.get_callable_flowgraph([double, bisect, add])
-
-    function = netapi.get_callable_flowgraph([double, bisect, add], use_unique_input_names=True)
-    kwargs = {
-        "%s_inputs" % double.uid: [1.],
-        "%s_inputs" % bisect.uid: [1.]
-    }
-    assert function(**kwargs) == [2.5]
-
-
-@pytest.mark.engine("theano_engine")
-def test_filter_subgraph_outputs(runtime, test_nodenet, default_world, resourcepath):
-    """ Tests requesting only specific outputs from a subgraph """
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
-
-    double = netapi.create_node("Double", None, "Double")
-    twoout = netapi.create_node("TwoOutputs", None, "TwoOutputs")
-
-    netapi.flow(twoout, "A", double, "inputs")
-
-    function = netapi.get_callable_flowgraph([twoout, double])
-    assert function(X=[2.]) == [3., 4.]
-    assert "B of %s" % twoout.uid in function.__doc__
-
-    function = netapi.get_callable_flowgraph([twoout, double], requested_outputs=[(double.uid, "outputs")])
-    assert function(X=[2.]) == [4.]
-    assert "B of %s" % twoout.uid not in function.__doc__
-
-
-@pytest.mark.engine("theano_engine")
-def test_connect_flow_modules_to_structured_flow_datasource(runtime, test_nodenet, default_world, resourcepath):
+@pytest.mark.engine("numpy_engine")
+def test_connect_flow_modules_to_structured_flow_datasource(runtime, test_nodenet, resourcepath):
     import os
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, resourcepath)
     # get ndoetype defs
     assert nodenet.native_module_definitions['datatargets']['is_autogenerated']
     nodenet.native_modules['datatargets'].inputs == ['motor', 'stop']
@@ -1090,14 +733,15 @@ class SimpleArrayWA(ArrayWorldAdapter):
     targets = nodenet.get_node(nodenet.worldadapter_flow_nodes['datatargets'])
     assert sources.outputs == ["renamed", "vision"]
     assert targets.inputs == ["renamed", "motor"]
-    assert nodenet.get_node(double.uid).inputmap['inputs'] == tuple()
-    assert nodenet.get_node(sources.uid).outputmap['vision'] == set()
-    assert nodenet.get_node(double.uid).outputmap['outputs'] == set()
+    nodenet.step()
+    # assert nodenet.get_node(double.uid).inputmap['inputs'] == tuple()
+    # assert nodenet.get_node(sources.uid).outputmap['vision'] == set()
+    # assert nodenet.get_node(double.uid).outputmap['outputs'] == set()
 
 
-@pytest.mark.engine("theano_engine")
-def test_flownode_output_only(runtime, test_nodenet, default_world, resourcepath):
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+@pytest.mark.engine("numpy_engine")
+def test_flownode_output_only(runtime, test_nodenet, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, resourcepath)
     out = netapi.create_node("out12345")
     source = netapi.create_node("Neuron")
     source.activation = 1
@@ -1108,45 +752,66 @@ def test_flownode_output_only(runtime, test_nodenet, default_world, resourcepath
     assert np.all(worldadapter.get_flow_datatarget('bar') == [1, 2, 3, 4, 5])
 
 
-@pytest.mark.engine("theano_engine")
-def test_flownode_generate_netapi_fragment(runtime, test_nodenet, default_world, resourcepath):
+@pytest.mark.engine("numpy_engine")
+def test_flownode_generate_netapi_fragment(runtime, engine, test_nodenet, resourcepath):
     """ Takes the above-tested edgecase, creates a recipe via generate_netapi_fragment
     and runs the result"""
     import os
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, resourcepath)
 
     twoout = netapi.create_node("TwoOutputs", None, "twoout")
     double = netapi.create_node("Double", None, "double")
     numpy = netapi.create_node("Numpy", None, "numpy")
     add = netapi.create_node("Add", None, "add")
-    nodes = [twoout, double, numpy, add]
 
+    netapi.flow('worldadapter', 'foo', twoout, 'X')
     netapi.flow(twoout, "A", double, "inputs")
     netapi.flow(twoout, "B", numpy, "inputs")
     netapi.flow(double, "outputs", add, "input1")
     netapi.flow(numpy, "outputs", add, "input2")
+    netapi.flow(add, "outputs", "worldadapter", "bar")
 
+    source = netapi.create_node("Neuron")
+    source.activation = 1.0
+    netapi.link(source, 'gen', source, 'gen')
+    netapi.link(source, 'gen', add, 'sub')
+
+    nodes = [twoout, double, numpy, add, source]
     fragment = runtime.generate_netapi_fragment(test_nodenet, [n.uid for n in nodes])
 
-    res, pastenet = runtime.new_nodenet('pastnet', "theano_engine")
-    code = "def foo(netapi):\n    " + "\n    ".join(fragment.split('\n'))
+    source_values = np.random.randn(5).astype(worldadapter.floatX)
+    worldadapter.set_flow_datasource('foo', source_values)
+    nodenet.step()
+    result = worldadapter.get_flow_datatarget('bar')
+
+    res, pastenet_uid = runtime.new_nodenet('pastenet', engine, world_uid=nodenet.world, worldadapter="SimpleArrayWA")
+    code = """
+def foo(netapi):
+    %s
+    netapi.flow("worldadapter", "foo", twoout, "X")
+    netapi.flow(add, "outputs", "worldadapter", "bar")
+
+""" % "\n    ".join(fragment.split('\n'))
     # save the fragment as recipe & run
     with open(os.path.join(resourcepath, 'recipes', 'test.py'), 'w+') as fp:
         fp.write(code)
     runtime.reload_code()
-    runtime.run_recipe(pastenet, 'foo', {})
-    pastnetapi = runtime.get_nodenet(pastenet).netapi
+    runtime.run_recipe(pastenet_uid, 'foo', {})
 
-    function = pastnetapi.get_callable_flowgraph(netapi.get_nodes())
+    pastenet = runtime.get_nodenet(pastenet_uid)
+    paste_wa = pastenet.worldadapter_instance
+    for n in pastenet.netapi.get_nodes():
+        if n.type == "Neuron":
+            n.activation = 1
 
-    x = np.array([1, 2, 3], dtype=netapi.floatX)
-    result = np.array([5, 8, 11], dtype=netapi.floatX)
-    assert np.all(function(X=x) == result)
+    paste_wa.set_flow_datasource('foo', source_values)
+    pastenet.step()
+    assert np.all(paste_wa.get_flow_datatarget('bar') == result)
 
 
-@pytest.mark.engine("theano_engine")
-def test_flow_inf_guard(runtime, test_nodenet, default_world, resourcepath):
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+@pytest.mark.engine("numpy_engine")
+def test_flow_inf_guard(runtime, test_nodenet, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, resourcepath)
 
     infmaker = netapi.create_node("infmaker")
     add = netapi.create_node("Add")
@@ -1175,31 +840,9 @@ def test_flow_inf_guard(runtime, test_nodenet, default_world, resourcepath):
     assert "foo" in str(excinfo.value)
 
 
-@pytest.mark.engine("theano_engine")
-def test_flow_inf_guard_on_list_outputs(runtime, test_nodenet, default_world, resourcepath):
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
-
-    trpoout = netapi.create_node("TRPOOut", None, "TRPOOut")
-    trpoout.set_parameter("makeinf", "True")
-    trpoin = netapi.create_node("TRPOIn", None, "TRPOIn")
-
-    netapi.flow(trpoout, "Y", trpoin, "Y")
-    netapi.flow(trpoout, "Z", trpoin, "Z")
-    netapi.flow('worldadapter', 'foo', trpoout, "X")
-    netapi.flow(trpoin, 'A', 'worldadapter', 'bar')
-    source = netapi.create_node("Neuron")
-    source.activation = 1
-    netapi.link(source, 'gen', source, 'gen')
-    netapi.link(source, 'gen', trpoin, 'sub')
-    with pytest.raises(ValueError) as excinfo:
-        runtime.step_nodenet(test_nodenet)
-    assert "INF value in" in str(excinfo.value)
-    assert "output A of graph" in str(excinfo.value)
-
-
-@pytest.mark.engine("theano_engine")
-def test_flow_overlapping_graphs(runtime, test_nodenet, default_world, resourcepath):
-    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+@pytest.mark.engine("numpy_engine")
+def test_flow_overlapping_graphs(runtime, test_nodenet, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, resourcepath)
 
     with netapi.flowbuilder:
         neuron1 = netapi.create_node('Neuron', None, "Neuron1")

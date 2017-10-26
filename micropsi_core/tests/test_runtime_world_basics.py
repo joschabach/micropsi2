@@ -348,3 +348,4 @@ class MyCustomWA(WorldAdapter):
     assert laststep == runtime.nodenets[default_nodenet].current_step
     assert not runtime.nodenets[default_nodenet].is_active
     assert runtime.worlds[world_uid].is_active
+    runtime.stop_nodenetrunner(default_nodenet)

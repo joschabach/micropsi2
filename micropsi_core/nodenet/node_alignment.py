@@ -32,7 +32,7 @@ def align(nodenet, nodespace, entity_uids=False):
 
     # treat flowmodules seperately
     flownodes = []
-    if nodenet.engine == 'theano_engine':
+    if hasattr(nodenet, "flow_module_instances"):
         flownodes = nodenet.flow_module_instances.keys()
 
     unaligned_nodespaces = sorted(nodenet.get_nodespace(nodespace).get_known_ids('nodespaces'),

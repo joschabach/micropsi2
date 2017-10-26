@@ -1,14 +1,7 @@
 
-from enum import Enum
-
 
 class NetAPI(object):
     # Node Net API facade class for use from within the node net (in node functions)
-
-    class Event(Enum):
-        NET_STARTED = 1
-        NET_STOPPED = 2
-        NET_UNLOAD = 3
 
     @property
     def uid(self):
@@ -539,12 +532,3 @@ class NetAPI(object):
 
     def announce_nodes(self, nodespace_uid, numer_of_nodes, average_element_per_node):
         pass
-
-    def register_handler(self, event, func):
-        """ registers a callable to listen for the specified netapi Event.
-        event must be one of the defined netapi.Event enum entries"""
-        self._nodenet.register_netapi_eventhandler(event, func)
-
-    def unregister_handler(self, event, func):
-        """ removes a registered callable from the event"""
-        self._nodenet.unregister_netapi_eventhandler(event, func)

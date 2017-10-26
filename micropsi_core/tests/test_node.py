@@ -31,6 +31,7 @@ def test_nodetype_function_definition_overwrites_default_function_name_theano(ru
 
 
 @pytest.mark.engine("dict_engine")
+@pytest.mark.engine("numpy_engine")
 def test_nodetype_function_definition_overwrites_default_function_name(runtime, test_nodenet):
     nodenet = runtime.get_nodenet(test_nodenet)
     nodetype = nodenet.get_standard_nodetype_definitions()['Concept'].copy()

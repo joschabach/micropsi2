@@ -33,6 +33,7 @@ def test_add_gate_monitor(runtime, test_nodenet):
 
 
 @pytest.mark.engine("dict_engine")
+@pytest.mark.engine("numpy_engine")
 def test_add_slot_monitor(runtime, test_nodenet):
     net, netapi, source, _ = prepare(runtime, test_nodenet)
     uid = runtime.add_slot_monitor(test_nodenet, source.uid, 'gen', name="FooBarMonitor", color="#112233")

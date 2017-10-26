@@ -236,6 +236,7 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
 
 
 @pytest.mark.engine("dict_engine")
+@pytest.mark.engine("numpy_engine")
 def test_engine_specific_nodetype_dict(runtime, test_nodenet, resourcepath):
     import os
     nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')

@@ -35,16 +35,6 @@ class FlowEngine(metaclass=ABCMeta):
         self.flowfunctions = []
         self.worldadapter_flow_nodes = {}
 
-    def on_start(self):
-        super().on_start()
-        for uid, node in self.flow_module_instances.items():
-            node.on_start(node)
-
-    def on_stop(self):
-        super().on_start()
-        for uid, node in self.flow_module_instances.items():
-            node.on_stop(node)
-
     def save(self, base_path=None, zipfile=None):
         super().save(base_path, zipfile)
         if base_path is None:

@@ -39,8 +39,7 @@
                     <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_world">Environment
                         <b class="caret"></b></a>
                     <ul class="dropdown-menu">
-                        <li><a href="/environment/edit" class="world_new">New...</a></li>
-                        <li data="world-needed"><a href="/environment/edit" class="world_edit">Edit</a></li>
+                        <li><a href="/environment/edit" class="world_manage">Manage</a></li>
                         <li class="divider"></li>
                         <li data="world-needed"><a href="#" class="world_delete">Delete</a></li>
                         <li data="world-needed"><a href="#" class="world_save">Save</a></li>

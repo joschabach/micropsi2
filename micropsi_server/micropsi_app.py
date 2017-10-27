@@ -736,8 +736,10 @@ def edit_world_form():
         world = runtime.worlds.get(world_uid)
     title = 'Edit Environment' if world is not None else 'New Environment'
     worldtypes = runtime.get_available_world_types()
+    world_data = runtime.world_data
     return template("world_form.tpl", title=title,
         worldtypes=worldtypes,
+        world_data=world_data,
         world=world,
         version=VERSION,
         user_id=usermanager.get_user_id_for_session_token(token),

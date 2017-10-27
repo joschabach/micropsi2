@@ -635,6 +635,9 @@ p.clear {
 .hint.small {
   font-size: 0.9em;
 }
+.hint.xsmall {
+  font-size: 0.8em;
+}
 
 table th {
   text-align: left;

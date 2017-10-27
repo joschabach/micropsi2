@@ -1683,11 +1683,6 @@ def load_definitions():
         world_data[uid] = Bunch(uid=uid, name="default", version=1, filename=filename, owner="admin", world_type="DefaultWorld")
         with open(filename, 'w+', encoding="utf-8") as fp:
             fp.write(json.dumps(world_data[uid], sort_keys=True, indent=4))
-    for uid in world_data:
-        try:
-            world_data[uid].supported_worldadapters = get_world_class_from_name(world_data[uid].get('world_type', "DefaultWorld")).get_supported_worldadapters()
-        except KeyError:
-            pass
     return nodenet_data, world_data
 
 

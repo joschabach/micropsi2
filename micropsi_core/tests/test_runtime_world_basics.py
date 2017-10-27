@@ -307,12 +307,12 @@ class MyWorld(World):
         super().__init__(filename, **kwargs)
         self.custom_state = None
 
-    def simulation_started(self):
-        super().simulation_started()
+    def on_start(self):
+        super().on_start()
         self.custom_state = 'runner started'
 
-    def simulation_stopped(self):
-        super().simulation_stopped()
+    def on_stop(self):
+        super().on_stop()
         self.custom_state = 'runner stopped'
 
 class MyCustomWA(WorldAdapter):

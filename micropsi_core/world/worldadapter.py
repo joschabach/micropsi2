@@ -59,10 +59,10 @@ class WorldAdapterMixin(object):
     def read_from_world(self):
         pass  # pragma: no cover
 
-    def on_simulation_started(self):
+    def on_start(self):
         pass  # pragma: no cover
 
-    def on_simulation_paused(self):
+    def on_stop(self):
         pass  # pragma: no cover
 
     def shutdown(self):

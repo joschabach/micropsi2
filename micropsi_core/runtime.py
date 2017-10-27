@@ -688,7 +688,7 @@ def start_nodenetrunner(nodenet_uid):
     # nodenets[nodenet_uid].is_active = True
     if nodenet.world:
         worlds[nodenet.world].is_active = True
-        worlds[nodenet.world].simulation_started()
+        worlds[nodenet.world].on_start()
     if runner['runner'].paused:
         runner['runner'].resume()
     return True
@@ -752,7 +752,7 @@ def stop_nodenetrunner(nodenet_uid):
         test_world = {nodenets[uid].is_active and nodenets[uid].world == nodenet.world for uid in nodenets}
         if True not in test_world:
             worlds[nodenet.world].is_active = False
-            worlds[nodenet.world].simulation_stopped()
+            worlds[nodenet.world].on_stop()
     if True not in test:
         runner['runner'].pause()
     return True
@@ -778,7 +778,7 @@ def step_nodenet(nodenet_uid):
             if runner['runner'].paused:
                 runner['runner'].resume()
             worlds[nodenet.world].is_active = True
-            worlds[nodenet.world].simulation_started()
+            worlds[nodenet.world].on_start()
 
     nodenet.timed_step(runner_config.data)
 
@@ -827,7 +827,7 @@ def step_nodenets_in_world(world_uid, nodenet_uid=None, steps=1):
     nodenet = None
     if world_uid in worlds and not worlds[world_uid].is_active:
         worlds[world_uid].is_active = True
-        worlds[world_uid].simulation_started()
+        worlds[world_uid].on_start()
     if runner['runner'].paused:
         runner['runner'].resume()
     if nodenet_uid is not None:

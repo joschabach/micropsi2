@@ -551,6 +551,8 @@ def test_set_world_properties(app, default_world):
     assert_success(response)
     response = app.get_json('/rpc/get_world_properties(world_uid="%s")' % default_world)
     assert response.json_body['data']['name'] == "asdf"
+    response = app.get_json('/rpc/get_available_worlds()')
+    assert response.json_body['data'][default_world]['name'] == 'asdf'
 
 
 def test_revert_world(app, default_world):

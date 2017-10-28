@@ -1899,3 +1899,41 @@ def double(inputs, netapi, node, parameters):
 
     runtime.step_nodenet(test_nodenet)
     assert np.all(worldadapter.get_flow_datatarget_feedback('bar') == np.zeros(worldadapter.flow_datatargets['bar'].shape))
+
+
+def test_gate_activation_is_persisted(app, runtime, test_nodenet, resourcepath):
+    import os
+    with open(os.path.join(resourcepath, 'nodetypes', 'foobar.py'), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "name": "foobar",
+    "nodefunction_name": "foobar",
+    "slottypes": ["gen", "foo", "bar"],
+    "gatetypes": ["gen", "foo", "bar"]
+}
+def foobar(node, netapi, **_):
+    node.get_gate('gen').gate_function(0.1)
+    node.get_gate('foo').gate_function(0.3)
+    node.get_gate('bar').gate_function(0.5)
+""")
+    res, err = runtime.reload_code()
+    netapi = runtime.nodenets[test_nodenet].netapi
+    source = netapi.create_node("Neuron")
+    target = netapi.create_node("Neuron")
+    netapi.link(source, 'gen', target, 'gen')
+    source.activation = 0.73
+    foobar = netapi.create_node("foobar")
+    ns_uid = netapi.get_nodespace(None).uid
+    runtime.step_nodenet(test_nodenet)
+    runtime.save_nodenet(test_nodenet)
+    runtime.revert_nodenet(test_nodenet)
+    result = app.post_json('/rpc/get_nodes', {
+        'nodenet_uid': test_nodenet,
+        'nodespaces': [ns_uid],
+        'include_links': True
+    })
+    data = result.json_body['data']['nodes']
+    assert round(data[target.uid]['gate_activations']['gen'], 2) == 0.73
+    assert round(data[source.uid]['gate_activations']['gen'], 2) == 0
+    assert round(data[foobar.uid]['gate_activations']['gen'], 2) == 0.1
+    assert round(data[foobar.uid]['gate_activations']['foo'], 2) == 0.3
+    assert round(data[foobar.uid]['gate_activations']['bar'], 2) == 0.5

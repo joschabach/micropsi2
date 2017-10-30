@@ -1,6 +1,4 @@
-from devices.device import Device
-from devices import *
-from devices.cameras import *
+from micropsi_core.device.device import Device
 from micropsi_core.tools import itersubclasses
 import inspect
 

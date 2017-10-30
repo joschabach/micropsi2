@@ -2004,6 +2004,7 @@ def initialize(config=None):
     PERSISTENCY_PATH = config['paths']['persistency_directory']
     RESOURCE_PATH = config['paths']['agent_directory']
     WORLD_PATH = config['paths']['world_directory']
+    DEVICE_PATH = os.path.join(WORLD_PATH, "devices")
 
     sys.path.append(WORLD_PATH)
 

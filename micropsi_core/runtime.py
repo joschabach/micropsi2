@@ -60,6 +60,8 @@ world_classes = {}
 worldadapter_classes = {}
 worldobject_classes = {}
 
+devices = {}
+
 netapi_consoles = {}
 
 initialized = False

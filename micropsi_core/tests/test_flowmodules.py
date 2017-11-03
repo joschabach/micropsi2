@@ -1109,39 +1109,65 @@ def test_flownode_output_only(runtime, test_nodenet, default_world, resourcepath
 
 
 @pytest.mark.engine("theano_engine")
-def test_flownode_generate_netapi_fragment(runtime, test_nodenet, default_world, resourcepath):
+def test_flownode_generate_netapi_fragment(runtime, engine, test_nodenet, default_world, resourcepath):
     """ Takes the above-tested edgecase, creates a recipe via generate_netapi_fragment
     and runs the result"""
     import os
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, default_world, resourcepath)
+    datasources, datatargets = None, None
+    for node in netapi.get_nodes():
+        if node.name == 'datasources':
+            datasources = node
+        elif node.name == 'datatargets':
+            datatargets = node
 
     twoout = netapi.create_node("TwoOutputs", None, "twoout")
     double = netapi.create_node("Double", None, "double")
     numpy = netapi.create_node("Numpy", None, "numpy")
     add = netapi.create_node("Add", None, "add")
-    nodes = [twoout, double, numpy, add]
 
+    netapi.flow('worldadapter', 'foo', twoout, 'X')
     netapi.flow(twoout, "A", double, "inputs")
     netapi.flow(twoout, "B", numpy, "inputs")
     netapi.flow(double, "outputs", add, "input1")
     netapi.flow(numpy, "outputs", add, "input2")
+    netapi.flow(add, "outputs", "worldadapter", "bar")
 
+    source = netapi.create_node("Neuron")
+    source.activation = 1.0
+    netapi.link(source, 'gen', source, 'gen')
+    netapi.link(source, 'gen', add, 'sub')
+
+    nodes = [twoout, double, numpy, add, source, datasources, datatargets]
     fragment = runtime.generate_netapi_fragment(test_nodenet, [n.uid for n in nodes])
+    assert "datasources" not in fragment
+    assert "datatargets" not in fragment
+    source_values = np.random.randn(5).astype(worldadapter.floatX)
+    worldadapter.set_flow_datasource('foo', source_values)
+    nodenet.step()
+    result = worldadapter.get_flow_datatarget('bar')
 
-    res, pastenet = runtime.new_nodenet('pastnet', "theano_engine")
-    code = "def foo(netapi):\n    " + "\n    ".join(fragment.split('\n'))
+    res, pastenet_uid = runtime.new_nodenet('pastenet', engine, world_uid=nodenet.world, worldadapter="SimpleArrayWA")
+    code = """
+def foo(netapi):
+    %s
+
+""" % "\n    ".join(fragment.split('\n'))
     # save the fragment as recipe & run
     with open(os.path.join(resourcepath, 'recipes', 'test.py'), 'w+') as fp:
         fp.write(code)
     runtime.reload_code()
-    runtime.run_recipe(pastenet, 'foo', {})
-    pastnetapi = runtime.get_nodenet(pastenet).netapi
+    runtime.run_recipe(pastenet_uid, 'foo', {})
 
-    function = pastnetapi.get_callable_flowgraph(netapi.get_nodes())
+    pastenet = runtime.get_nodenet(pastenet_uid)
+    paste_wa = pastenet.worldadapter_instance
+    for n in pastenet.netapi.get_nodes():
+        if n.type == "Neuron":
+            n.activation = 1
 
-    x = np.array([1, 2, 3], dtype=netapi.floatX)
-    result = np.array([5, 8, 11], dtype=netapi.floatX)
-    assert np.all(function(X=x) == result)
+    paste_wa.set_flow_datasource('foo', source_values)
+    pastenet.step()
+    assert np.all(paste_wa.get_flow_datatarget('bar') == result)
 
 
 @pytest.mark.engine("theano_engine")

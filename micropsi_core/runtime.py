@@ -1107,12 +1107,6 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     idmap = {}
     nodenet = get_nodenet(nodenet_uid)
     nodes = []
-    #nodespaces = []
-    #for node_uid in node_uids:
-    #    if not nodenet.is_nodespace(node_uid):
-    #        nodes.append(nodenet.get_node(node_uid))
-    #    else:
-    #        nodespaces.append(nodenet.get_nodespace(node_uid))
 
     for node_uid in node_uids:
         nodes.append(nodenet.get_node(node_uid))
@@ -1121,23 +1115,6 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     ypos = []
     zpos = []
     nodes = sorted(nodes, key=lambda node: node.position[1] * 1000 + node.position[0])
-    #nodespaces = sorted(nodespaces, key=lambda node: node.position[1] * 1000 + node.position[0])
-
-    # nodespaces
-    #for i, nodespace in enumerate(nodespaces):
-    #    name = nodespace.name.strip() if nodespace.name != nodespace.uid else None
-    #    varname = "nodespace%i" % i
-    #    if name:
-    #        pythonname = __pythonify(name)
-    #        if pythonname not in idmap.values():
-    #            varname = pythonname
-    #        lines.append("%s = netapi.create_nodespace(None, \"%s\")" % (varname, name))
-    #    else:
-    #        lines.append("%s = netapi.create_nodespace(None)" % (varname))
-    #    idmap[nodespace.uid] = varname
-    #    xpos.append(nodespace.position[0])
-    #    ypos.append(nodespace.position[1])
-    #    zpos.append(nodespace.position[2])
 
     flow_nodetypes = nodenet.get_flow_module_definitions()
 

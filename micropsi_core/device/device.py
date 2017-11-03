@@ -11,9 +11,12 @@ class Device(metaclass=ABCMeta):
 
     def get_config(self):
         config = dict()
+        info = dict()
         for item in self.__class__.get_options():
             config[item['name']] = getattr(self, item['name'])
-        return config
+        info['type'] = self.__class__.__name__
+        info['config'] = config
+        return info
 
     def set_config(self, config):
         for key in config:

@@ -315,21 +315,14 @@ $(function() {
     });
 
     // WORLD
-    $('.navbar a.world_new').on('click', function(event){
+    $('.navbar a.world_manage').on('click', function(event){
         event.preventDefault();
-        dialogs.remote_form_dialog($(event.target).attr('href'), function(data){
-            dialogs.notification('Environment created. ID: ' + data.world_uid, 'success');
-            $(document).trigger('new_world_created', data);
-            var url = '/environment_list/' + ($.cookie('selected_world') || '');
-            $.get(url, {}, function(data){
-                $('#world_list').html(data);
-            });
-        });
+        dialogs.remote_form_dialog($(event.target).attr('href'));
     });
 
-    $('.navbar a.world_edit').on('click', function(event){
+    $('.navbar a.device_manage').on('click', function(event){
         event.preventDefault();
-        dialogs.remote_form_dialog($(event.target).attr("href") + "?id=" + currentWorld);
+        dialogs.remote_form_dialog($(event.target).attr('href'));
     });
 
     $('.navbar a.world_delete').on('click', function(event){

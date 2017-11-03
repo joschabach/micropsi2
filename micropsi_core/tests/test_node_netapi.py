@@ -82,6 +82,7 @@ def test_node_netapi_create_optional_arguments(runtime, test_nodenet):
 
 
 @pytest.mark.engine("dict_engine")
+@pytest.mark.engine("numpy_engine")
 def test_node_netapi_create_concept_node(runtime, test_nodenet):
     # test concept node generation
     net, netapi, source = prepare(runtime, test_nodenet)
@@ -550,6 +551,7 @@ def test_node_netapi_link_with_reciprocal(runtime, test_nodenet):
 
 
 @pytest.mark.engine("dict_engine")
+@pytest.mark.engine("numpy_engine")
 def test_node_netapi_link_with_reciprocal_and_concepts(runtime, test_nodenet):
     # test linking pipe and concept nodes with reciprocal links
     net, netapi, source = prepare(runtime, test_nodenet)
@@ -966,6 +968,7 @@ def test_add_gate_monitor(runtime, test_nodenet, node):
 
 
 @pytest.mark.engine("dict_engine")
+@pytest.mark.engine("numpy_engine")
 def test_add_slot_monitor(runtime, test_nodenet, node):
     nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi

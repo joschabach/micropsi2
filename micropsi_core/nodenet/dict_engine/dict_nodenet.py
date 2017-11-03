@@ -4,8 +4,9 @@ import json
 import os
 
 import micropsi_core
+from micropsi_core.tools import post_mortem
 from micropsi_core.nodenet import monitor
-from micropsi_core.nodenet.node import Nodetype, FlowNodetype, HighdimensionalNodetype
+from micropsi_core.nodenet.node import Nodetype
 from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION
 from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators
 from .dict_stepoperators import DictPropagate, DictCalculate
@@ -139,16 +140,17 @@ class DictNodenet(Nodenet):
 
         super().__init__(persistency_path, name, worldadapter, world, owner, uid, native_modules=native_modules, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance, version=version)
 
+        try:
+            import numpy
+            self.numpy_available = True
+            self.numpyfloatX = numpy.float32
+            self.floatX = 'float32'
+        except ImportError:
+            self.numpy_available = False
+
         self.nodetypes = {}
         for type, data in STANDARD_NODETYPES.items():
             self.nodetypes[type] = Nodetype(nodenet=self, **data)
-
-        self.stepoperators = [DictPropagate(), DictCalculate()]
-        if self.use_modulators:
-            self.stepoperators.append(DoernerianEmotionalModulators())
-        self.stepoperators.sort(key=lambda op: op.priority)
-
-        self._step = 0
 
         self._nodes = {}
         self._nodespaces = {}
@@ -156,6 +158,12 @@ class DictNodenet(Nodenet):
         self.nodegroups = {}
 
         self.initialize_nodenet({})
+
+    def initialize_stepoperators(self):
+        self.stepoperators = [DictPropagate(), DictCalculate()]
+        if self.use_modulators:
+            self.stepoperators.append(DoernerianEmotionalModulators())
+        self.stepoperators.sort(key=lambda op: op.priority)
 
     def get_data(self, **params):
         data = super().get_data(**params)
@@ -229,6 +237,22 @@ class DictNodenet(Nodenet):
         if base_path is None:
             base_path = self.persistency_path
         data = json.dumps(self.export_json(), indent=4)
+
+        if self.numpy_available:
+            import io
+            import numpy as np
+            # write numpy states of native modules
+            numpy_states = self.construct_native_modules_numpy_state_dict()
+            for node_uid, states in numpy_states.items():
+                if len(states) > 0:
+                    filename = "%s_numpystate.npz" % node_uid
+                    if zipfile:
+                        stream = io.BytesIO()
+                        np.savez(stream, **states)
+                        stream.seek(0)
+                        zipfile.writestr(filename, stream.getvalue())
+                    else:
+                        np.savez(os.path.join(base_path, filename), **states)
         if zipfile:
             zipfile.writestr('nodenet.json', data)
         else:
@@ -264,24 +288,38 @@ class DictNodenet(Nodenet):
                     return False
 
             self.initialize_nodenet(initfrom)
+            if self.numpy_available:
+                import numpy as np
+                # recover numpy states for native modules
+                for uid in self._nodes:
+                    if self._nodes[uid].type in self.native_modules:
+                        file = os.path.join(self.persistency_path, '%s_numpystate.npz' % uid)
+                        if os.path.isfile(file):
+                            node = self.get_node(uid)
+                            numpy_states = np.load(file)
+                            node.set_persistable_state(node._state, numpy_states)
+                            numpy_states.close()
             return True
+
+    def _load_nodetypes(self, nodetype_data):
+        newnative_modules = {}
+        for key, data in nodetype_data.items():
+            if data.get('engine', self.engine) == self.engine:
+                try:
+                    if data.get('dimensionality'):
+                        raise NotImplementedError("dict nodenet does not support highdimensional native modules")
+                    else:
+                        newnative_modules[key] = Nodetype(nodenet=self, **data)
+                except Exception as err:
+                    self.logger.error("Can not instantiate node type %s: %s: %s" % (key, err.__class__.__name__, str(err)))
+                    post_mortem()
+        return newnative_modules
 
     def reload_native_modules(self, native_modules):
         """ reloads the native-module definition, and their nodefunctions
         and afterwards reinstantiates the nodenet."""
-        self.native_modules = {}
-        for key in native_modules:
-            if native_modules[key].get('engine', self.engine) == self.engine:
-                try:
-                    if native_modules[key].get('flow_module'):
-                        raise NotImplementedError("dict nodenet does not support flow modules")
-                    elif native_modules[key].get('dimensionality'):
-                        raise NotImplementedError("dict nodenet does not support highdimensional native modules")
-                    else:
-                        self.native_modules[key] = Nodetype(nodenet=self, **native_modules[key])
-                except Exception as err:
-                    self.logger.error("Can not instantiate node type %s: %s: %s" % (key, err.__class__.__name__, str(err)))
-
+        self.native_modules = self._load_nodetypes(native_modules)
+        self.native_module_definitions = dict((uid, native_modules[uid]) for uid in self.native_modules)
         saved = self.export_json()
         self.clear()
         self.merge_data(saved, keep_uids=True)
@@ -335,6 +373,15 @@ class DictNodenet(Nodenet):
         for node_uid in self.get_node_uids():
             data[node_uid] = self.get_node(node_uid).get_data(**params)
         return data
+
+    def construct_native_modules_numpy_state_dict(self):
+        numpy_states = {}
+        if self.numpy_available:
+            for uid in self._nodes:
+                numpy_state = self._nodes[uid].get_persistable_state()[1]
+                if numpy_state:
+                    numpy_states[uid] = numpy_state
+        return numpy_states
 
     def construct_nodespaces_dict(self, nodespace_uid, transitive=False):
         data = {}
@@ -417,7 +464,7 @@ class DictNodenet(Nodenet):
         self.delete_node(nodespace_uid)
 
     def clear(self):
-        super(DictNodenet, self).clear()
+        super().clear()
         self._nodes = {}
         self.initialize_nodenet({})
 
@@ -425,13 +472,15 @@ class DictNodenet(Nodenet):
         self._nodes[node.uid] = node
         node.last_changed = self.current_step
         self.get_nodespace(node.parent_nodespace).contents_last_changed = self.current_step
+        if node.type not in STANDARD_NODETYPES:
+            self.native_module_instances[node.uid] = node
 
     def _register_nodespace(self, nodespace):
         self._nodespaces[nodespace.uid] = nodespace
         nodespace.last_changed = self.current_step
         self.get_nodespace(nodespace.parent_nodespace).contents_last_changed = self.current_step
 
-    def merge_data(self, nodenet_data, keep_uids=False):
+    def merge_data(self, nodenet_data, keep_uids=False, uidmap={}, **_):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
 
         # merge in spaces, make sure that parent nodespaces exist before children are initialized
@@ -439,7 +488,6 @@ class DictNodenet(Nodenet):
         for nodespace in nodespaces_to_merge:
             self.initialize_nodespace(nodespace, nodenet_data['nodespaces'])
 
-        uidmap = {}
         invalid_nodes = []
 
         # merge in nodes

@@ -320,9 +320,9 @@ $(function() {
         dialogs.remote_form_dialog($(event.target).attr('href'));
     });
 
-    $('.navbar a.world_edit').on('click', function(event){
+    $('.navbar a.device_manage').on('click', function(event){
         event.preventDefault();
-        dialogs.remote_form_dialog($(event.target).attr("href") + "?id=" + currentWorld);
+        dialogs.remote_form_dialog($(event.target).attr('href'));
     });
 
     $('.navbar a.world_delete').on('click', function(event){

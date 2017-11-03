@@ -740,6 +740,19 @@ def edit_world_form():
         permissions=usermanager.get_permissions_for_session_token(token))
 
 
+@micropsi_app.route("/device/edit")
+def edit_device_form():
+    token = request.get_cookie("token")
+    device_types = runtime.get_device_types()
+    device_data = runtime.get_devices()
+    return template("device_form.tpl",
+        device_types=device_types,
+        device_data=device_data,
+        version=VERSION,
+        user_id=usermanager.get_user_id_for_session_token(token),
+        permissions=usermanager.get_permissions_for_session_token(token))
+
+
 @micropsi_app.route("/agent_list/")
 @micropsi_app.route("/agent_list/<current_nodenet>")
 def nodenet_list(current_nodenet=None):

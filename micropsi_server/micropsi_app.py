@@ -730,46 +730,14 @@ def export_world(world_uid):
 @micropsi_app.route("/environment/edit")
 def edit_world_form():
     token = request.get_cookie("token")
-    world_uid = request.params.get('id', None)
-    world = None
-    if world_uid:
-        world = runtime.worlds.get(world_uid)
-    title = 'Edit Environment' if world is not None else 'New Environment'
     worldtypes = runtime.get_available_world_types()
     world_data = runtime.world_data
-    return template("world_form.tpl", title=title,
+    return template("world_form.tpl",
         worldtypes=worldtypes,
         world_data=world_data,
-        world=world,
         version=VERSION,
         user_id=usermanager.get_user_id_for_session_token(token),
         permissions=usermanager.get_permissions_for_session_token(token))
-
-
-@micropsi_app.route("/environment/edit", method="POST")
-def edit_world():
-    params = dict((key, request.forms.getunicode(key)) for key in request.forms)
-    world_uid = params.get('world_uid')
-    if world_uid:
-        world_type = runtime.worlds[world_uid].__class__.__name__
-    else:
-        world_type = params['world_type']
-    config = {}
-    for p in params:
-        if p.startswith(world_type + '_'):
-            config[p[len(world_type) + 1:]] = params[p]
-    user_id, permissions, token = get_request_data()
-    if "manage worlds" in permissions:
-        if world_uid:
-            runtime.set_world_properties(world_uid, world_name=params['world_name'], config=config)
-            return dict(status="success", msg="Environment changes saved")
-        else:
-            result, uid = runtime.new_world(params['world_name'], world_type, user_id, config=config)
-            if result:
-                return dict(status="success", msg="Environment created", world_uid=uid)
-            else:
-                return dict(status="error", msg=": %s" % result)
-    return dict(status="error", msg="Insufficient rights to create environment")
 
 
 @micropsi_app.route("/agent_list/")

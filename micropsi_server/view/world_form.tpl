@@ -56,21 +56,15 @@
                             <select class="input-xlarge" id="world_config_{{type}}_{{param['name']}}" name="{{type}}_{{param['name']}}">
                                 % for val in param['options']:
                                     <option value="{{val}}"
-                                    %if world and world.uid:
-                                        %if world.config.get(param['name']) == val:
-                                            selected="selected"
-                                        %end
-                                    %else:
-                                        %if param.get('default') and param['default'] == val:
-                                            selected="selected"
-                                        %end
+                                    %if param.get('default') and param['default'] == val:
+                                        selected="selected"
                                     %end
                                     >{{val}}</option>
                                 %end
                             </select>
                             %else:
                             <input class="input-xlarge" id="world_config_{{type}}_{{param['name']}}" name="{{type}}_{{param['name']}}"
-                                type="text" value="{{world.config.get(param['name'], '') if world else param.get('default', '')}}" />
+                                type="text" value="{{param.get('default', '')}}" />
                             %end
                         </div>
                     </div>

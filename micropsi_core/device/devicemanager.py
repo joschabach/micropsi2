@@ -13,6 +13,8 @@ devices = {}
 
 def reload_devices(path):
     global ignore_list, device_types
+    if not os.path.isdir(path):
+        return
     if path not in sys.path:
         sys.path.append(path)
     device_types = {}

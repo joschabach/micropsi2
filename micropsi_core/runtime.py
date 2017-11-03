@@ -26,10 +26,12 @@ from micropsi_core.config import ConfigurationManager
 
 from micropsi_core._runtime_api_world import *
 from micropsi_core._runtime_api_monitors import *
+from micropsi_core._runtime_api_device import *
 
 from micropsi_core.nodenet import node_alignment
 from micropsi_core.micropsi_logger import MicropsiLogger
 from micropsi_core.tools import Bunch, post_mortem, generate_uid
+from micropsi_core.device import devicemanager
 
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
@@ -43,6 +45,7 @@ RESOURCE_PATH = None
 PERSISTENCY_PATH = None
 WORLD_PATH = None
 AUTOSAVE_PATH = None
+DEVICE_PATH = None
 
 runtime_config = None
 runner_config = None
@@ -60,7 +63,6 @@ world_classes = {}
 worldadapter_classes = {}
 worldobject_classes = {}
 
-devices = {}
 
 netapi_consoles = {}
 
@@ -1925,6 +1927,9 @@ def reload_code():
     runners = {}
     errors = []
 
+    # load devices
+    devicemanager.reload_devices(DEVICE_PATH)
+
     # load builtins:
     operationspath = os.path.dirname(os.path.realpath(__file__)) + '/nodenet/operations/'
     for file in os.listdir(operationspath):
@@ -1993,7 +1998,7 @@ def runtime_info():
 
 
 def initialize(config=None):
-    global PERSISTENCY_PATH, RESOURCE_PATH, WORLD_PATH, AUTOSAVE_PATH
+    global PERSISTENCY_PATH, RESOURCE_PATH, WORLD_PATH, AUTOSAVE_PATH, DEVICE_PATH
     global runtime_config, runner_config, logger, runner, initialized, auto_save_intervals
 
     if config is None:

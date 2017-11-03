@@ -1041,6 +1041,40 @@ def merge_nodenet_rpc(nodenet_uid, nodenet_data):
     return runtime.merge_nodenet(nodenet_uid, nodenet_data)
 
 
+# Device
+
+@rpc("get_device_types")
+def get_device_types():
+    """ Return a dict with device types as keys and config dict as value """
+    data = runtime.get_device_types()
+    return True, data
+
+
+@rpc("get_devices")
+def get_devices():
+    """ Return a dict with device uids as keys and config dict as value """
+    data = runtime.get_devices()
+    return True, data
+
+
+@rpc("add_device")
+def add_device(device_type, config={}):
+    """ Create a new device of the given type with the given configuration """
+    return runtime.add_device(device_type, config)
+
+
+@rpc("remove_device")
+def remove_device(device_uid):
+    """ Remove the device specified by the uid """
+    return runtime.remove_device(device_uid)
+
+
+@rpc("set_device_properties")
+def set_device_properties(device_uid, config):
+    """ Reconfigure the device specified by the uid """
+    return runtime.set_device_properties(device_uid, config)
+
+
 # World
 
 @rpc("step_nodenets_in_world")

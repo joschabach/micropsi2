@@ -9,6 +9,16 @@ class Device(metaclass=ABCMeta):
         for key in config:
             setattr(self, key, config[key])
 
+    def get_config(self):
+        config = dict()
+        for item in self.__class__.get_options():
+            config[item['name']] = getattr(self, item['name'])
+        return config
+
+    def set_config(self, config):
+        for key in config:
+            setattr(self, key, config[key])
+
     @classmethod
     def get_options(cls):
         options = [{

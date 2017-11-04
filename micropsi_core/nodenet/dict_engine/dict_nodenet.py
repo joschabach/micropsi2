@@ -715,7 +715,7 @@ class DictNodenet(Nodenet):
             nodes = sorted(nodes, key=lambda node: node.name)
         self.nodegroups[nodespace_uid][group_name] = (nodes, gatetype)
 
-    def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gatetype="gen", sortby='id'):
+    def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gatetype="gen", sortby=None):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
 

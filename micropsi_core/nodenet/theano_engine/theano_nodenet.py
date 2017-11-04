@@ -1659,7 +1659,7 @@ class TheanoNodenetCore(Nodenet):
                 ids.append(uid)
         self.group_nodes_by_ids(nodespace_uid, ids, group_name, gatetype, sortby)
 
-    def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gatetype="gen", sortby='id'):
+    def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gatetype="gen", sortby=None):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
         partition = self.get_partition(nodespace_uid)

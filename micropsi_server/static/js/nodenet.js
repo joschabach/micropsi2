@@ -364,6 +364,9 @@ function setCurrentNodenet(uid, nodespace, changed){
             }
             nodenet_loaded = true;
             refreshNodespace(nodespace)
+            if(nodenet_data.is_active){
+                $(document).trigger('runner_started');
+            }
         },
         function(data) {
             api.defaultErrorCallback(data);

@@ -1618,12 +1618,13 @@ def main(host=None, port=None):
     runtime.initialize()
 
     import sys
-    tmp_stdin, tmp_stdout, tmp_stderr = sys.stdin, sys.stdout, sys.stderr
+    import time
+
+    tmp_stdin, tmp_stderr = sys.stdin, sys.stderr
     Thread(target=ipython_kernel_thread).start()
-    while (sys.stdout == tmp_stdout) or (sys.stderr == tmp_stderr):
-        import time
+    while (sys.stderr == tmp_stderr):
         time.sleep(0.5)
-    sys.stdin, sys.stdout, sys.stderr = tmp_stdin, tmp_stdout, tmp_stderr
+    sys.stdin, sys.stderr = tmp_stdin, tmp_stderr
 
     try:
         from cherrypy import wsgiserver

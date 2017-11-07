@@ -30,6 +30,10 @@ class Device(metaclass=ABCMeta):
                         'default': 'Device'}, ]
         return options
 
+    @abstractmethod
+    def get_data_size(self):
+        pass
+
 
 class InputDevice(Device):
     def __init__(self, config):

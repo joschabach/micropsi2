@@ -12,16 +12,36 @@ import uuid
 import errno
 import os
 import sys
-import pdb
+import logging
+
+last_tb = None
 
 
 def post_mortem():
-    """ if desired, point a debugger to the origin of the last exception """
+    """ store detailed traceback data for use in debuggers, if configured"""
+    global last_tb
     from micropsi_core.runtime import runtime_config
     if runtime_config['micropsi2'].get('on_exception') == 'debug':
-        exception_type, exception, tb = sys.exc_info()
-        print('\033[01m\033[31m%s: \033[32m%s\033[0m' % (exception_type.__name__, exception))
-        pdb.post_mortem(tb)
+        _, _, last_tb = sys.exc_info()
+        logging.getLogger('system').debug("traceback stored. use micropsi_core.tools.interactive_pdb to inspect.")
+
+
+def interactive_pdb():
+    """ inspect the traceback of the most recent exception. """
+    import traceback
+    from IPython.core.debugger import Pdb
+
+    if last_tb is None:
+        print("Nothing to debug.")
+        return
+
+    # print to stdout (sic!) what this pdb session is about
+    msg = traceback.format_tb(last_tb)[-5:]
+    print('Starting PDB session for:\n\n\033[94m%s\033[0m\n' % ''.join(msg))
+
+    pdb = Pdb()
+    pdb.reset()
+    pdb.interaction(frame=None, traceback=last_tb)
 
 
 def pid_exists(pid):

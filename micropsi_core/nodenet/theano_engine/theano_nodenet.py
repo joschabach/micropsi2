@@ -14,10 +14,7 @@ from theano import tensor as T
 import numpy as np
 import scipy
 
-try:
-    import ipdb as pdb
-except ImportError:
-    import pdb
+import pdb
 
 from micropsi_core.tools import post_mortem
 from micropsi_core.nodenet import monitor

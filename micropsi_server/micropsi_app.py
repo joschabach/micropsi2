@@ -153,11 +153,7 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                     on_exception = cfg['micropsi2'].get('on_exception', None)
                     if on_exception == 'debug':
                         import sys
-                        # use the nice ipdb if it is there, but don't throw a fit if it isnt:
-                        try:
-                            import ipdb as pdb
-                        except ImportError:
-                            import pdb
+                        import pdb
                         _, _, tb = sys.exc_info()
                         pdb.post_mortem(tb)
                     else:

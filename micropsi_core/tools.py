@@ -12,10 +12,7 @@ import uuid
 import errno
 import os
 import sys
-try:
-    import ipdb as pdb
-except ImportError:
-    import pdb
+import pdb
 
 
 def post_mortem():

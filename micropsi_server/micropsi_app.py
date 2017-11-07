@@ -1617,14 +1617,17 @@ def main(host=None, port=None):
 
     runtime.initialize()
 
+    Thread(target=ipython_kernel_thread).start()
+
     import sys
     import time
 
-    tmp_stdin, tmp_stderr = sys.stdin, sys.stderr
-    Thread(target=ipython_kernel_thread).start()
-    while (sys.stderr == tmp_stderr):
-        time.sleep(0.5)
-    sys.stdin, sys.stderr = tmp_stdin, tmp_stderr
+    # wait until ipython hijacked the streams
+    while (sys.stderr == sys.__stderr__):
+        time.sleep(0.2)
+
+    # revert input and error back to their original state
+    sys.stdin, sys.stderr = sys.__stdin__, sys.__stderr__
 
     try:
         from cherrypy import wsgiserver

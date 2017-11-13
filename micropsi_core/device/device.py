@@ -16,6 +16,7 @@ class Device(metaclass=ABCMeta):
             config[item['name']] = getattr(self, item['name'])
         info['type'] = self.__class__.__name__
         info['config'] = config
+        info['prefix'] = self.get_prefix()
         return info
 
     def set_config(self, config):
@@ -32,6 +33,10 @@ class Device(metaclass=ABCMeta):
 
     @abstractmethod
     def get_data_size(self):
+        pass
+
+    @abstractmethod
+    def get_prefix(self):
         pass
 
 

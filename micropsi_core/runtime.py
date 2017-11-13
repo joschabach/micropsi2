@@ -603,7 +603,7 @@ def unload_nodenet(nodenet_uid):
     return True
 
 
-def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=None, owner="admin", world_uid=None, use_modulators=True, worldadapter_config={}):
+def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=None, owner="admin", world_uid=None, use_modulators=True, worldadapter_config={}, device_map={}):
     """Creates a new node net manager and registers it.
 
     Arguments:
@@ -639,7 +639,7 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
         nodenets[uid].merge_data(data_to_merge)
 
     if world_uid and worldadapter:
-        set_nodenet_properties(uid, worldadapter=worldadapter, world_uid=world_uid, worldadapter_config=worldadapter_config)
+        set_nodenet_properties(uid, worldadapter=worldadapter, world_uid=world_uid, worldadapter_config=worldadapter_config, device_map=device_map)
     save_nodenet(uid)
     return True, data['uid']
 
@@ -658,7 +658,7 @@ def delete_nodenet(nodenet_uid):
     return True
 
 
-def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None, worldadapter_config={}):
+def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None, worldadapter_config={}, device_map={}):
     """Sets the supplied parameters (and only those) for the nodenet with the given uid."""
 
     nodenet = get_nodenet(nodenet_uid)
@@ -675,7 +675,7 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
         assert worldadapter in world_obj.supported_worldadapters
         nodenet.world = world_uid
         nodenet.worldadapter = worldadapter
-        result, wa_instance = world_obj.register_nodenet(worldadapter, nodenet.uid, nodenet_name=nodenet.name, config=worldadapter_config)
+        result, wa_instance = world_obj.register_nodenet(worldadapter, nodenet.uid, nodenet_name=nodenet.name, config=worldadapter_config, device_map=device_map)
         if result:
             nodenet.worldadapter_instance = wa_instance
     if nodenet_name:

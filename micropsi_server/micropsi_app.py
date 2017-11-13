@@ -786,8 +786,9 @@ def edit_runner_properties():
         return template("runner_form", action="/config/runner", value=runtime.get_runner_properties())
 
 
+@micropsi_app.route("/create_worldadapter_selector/")
 @micropsi_app.route("/create_worldadapter_selector/<world_uid>")
-def create_worldadapter_selector(world_uid):
+def create_worldadapter_selector(world_uid=None):
     return template("worldadapter_selector",
         world_uid=world_uid,
         nodenets=runtime.get_available_nodenets(),

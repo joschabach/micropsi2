@@ -642,7 +642,9 @@ $(function() {
 updateWorldAdapterSelector = function() {
     var option = $("#nn_world option:selected");
     uid = (option)? option.val() : "";
-    $("#nn_worldadapter").parent().load("/create_worldadapter_selector/"+option.val());
+    $("#nn_worldadapter").parent().load("/create_worldadapter_selector/"+option.val(), null, function(evt){
+        $('#nn_world').trigger("world_form_refreshed");
+    });
 };
 
 

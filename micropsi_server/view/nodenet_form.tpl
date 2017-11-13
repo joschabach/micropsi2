@@ -1,6 +1,6 @@
 <div class="dialogform modal">
 
-    <form class="form-horizontal" action="/agent/edit" method="POST">
+    <form id="nodenet_form" class="form-horizontal" action="/agent/edit" method="POST">
 
     <div class="modal-header">
       <button type="button" class="close" data-dismiss="modal">×</button>
@@ -155,16 +155,112 @@
                         % end
                     %end
                 %end
-
-
+                <div class="control-group worldadapter-device-config" style="display:none;">
+                    <label class="control-label">Devices</label>
+                    % for uid in devices:
+                        <div class="controls">
+                            <label class="inline" style="width: 150px">
+                                <input type="checkbox" name="device-map-{{uid}}" value="{{uid}}"
+                                % if defined('nodenet_uid') and uid in nodenets[nodenet_uid]['device_map']:
+                                    checked="checked"
+                                % end
+                                /> {{devices[uid]['config']['name']}}
+                            </label>
+                            <input type="text" readonly="readonly" id="device-name-{{uid}}" name="device-name-{{uid}}" data-prefix="{{devices[uid]['prefix']}}" class="input-small device-name-input"
+                            % if defined('nodenet_uid') and uid in nodenets[nodenet_uid]['device_map']:
+                                value="{{nodenets[nodenet_uid]['device_map'][uid]}}"
+                            %end
+                            />
+                        </div>
+                    % end
+                </div>
             </fieldset>
     </div>
 
     <div class="modal-footer">
-        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="submit" id="asdfasdf" class="btn btn-primary">Save</button>
         <a class="btn" data-dismiss="modal" href="/">Cancel</a>
     </div>
 
     </form>
 
 </div>
+
+<script type="text/javascript">
+
+
+var device_section = $('.worldadapter-device-config');
+function wa_changed(evt){
+    var $el = $(event.target);
+    if($el.val()){
+        device_section.show();
+    } else {
+        device_section.hide();
+    }
+}
+$('#nn_world').on('world_form_refreshed', function(evt){
+    $('#nn_worldadapter').on('change', wa_changed);
+    if($(evt.target).val()){
+        device_section.show();
+    }
+});
+
+var assigned_prefixes = {};
+
+var checkboxes = $('.worldadapter-device-config input[type="checkbox"]');
+checkboxes.each(function(idx, el){
+    var $el = $(el);
+    $el.on('change', update_label);
+    if(el.checked){
+        var textfield = $('device-name-'+$el.val());
+        if(!assigned_prefixes[textfield.data().prefix]){
+            assigned_prefixes[textfield.data().prefix] = [];
+        }
+        assigned_prefixes[textfield].push(parseInt(textfield.val().substr(prefix.length + 1)));
+    }
+});
+
+
+function update_label(event){
+    var cb = $(event.target);
+    var uid = cb.val();
+    var textfield = $('#device-name-'+uid);
+    var prefix = textfield.data().prefix;
+    if(assigned_prefixes[prefix] && assigned_prefixes[prefix].length){
+        assigned_prefixes[prefix].sort();
+        if(cb[0].checked){
+            // added:
+            var maxidx = assigned_prefixes[prefix][assigned_prefixes[prefix].length -1];
+            assigned_prefixes[prefix].push(maxidx + 1);
+            textfield.val(prefix + "_" + (maxidx + 1).toString());
+        } else {
+            var key = textfield.val().substr(prefix.length + 1);
+            var idx = assigned_prefixes[prefix].indexOf(parseInt(key));
+            assigned_prefixes[prefix].splice(idx, 1);
+            var reference;
+            if(idx >= 0){
+                for(var i = 0; i < assigned_prefixes[prefix].length; i++){
+                    if(i >= idx - 1){
+                        var newname = prefix + "_" + (i + 1);
+                        $('.device-name-input').each(function(idx, el){
+                            if($(el).val() == prefix + "_" + assigned_prefixes[prefix][i]){
+                                $(el).val(newname);
+                            }
+                        });
+                        assigned_prefixes[prefix][i] = i + 1;
+                    }
+                }
+            }
+            textfield.val('');
+        }
+    } else {
+        if(cb[0].checked){
+            assigned_prefixes[prefix] = [1];
+            textfield.val(prefix + "_1");
+        }
+    }
+}
+
+
+
+</script>

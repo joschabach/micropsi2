@@ -89,6 +89,7 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
     def __init__(self, world, uid=None, config={}, **data):
         self.datasources = {}
         self.datatargets = {}
+        self.device_map = {}
         self.flow_datasources = OrderedDict()
         self.flow_datatargets = OrderedDict()
         self.flow_datatarget_feedbacks = OrderedDict()
@@ -245,8 +246,7 @@ try:
             self.datatarget_feedback_values = np.zeros(0, dtype=self.floatX)
             if data.get('device_map'):
                 self.device_map = data['device_map']
-            else:
-                self.device_map = {}
+
             for k in self.device_map:
                 if k not in devicemanager.devices:
                     raise KeyError("Device not connected: %s" % k)

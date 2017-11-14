@@ -46,6 +46,7 @@ PERSISTENCY_PATH = None
 WORLD_PATH = None
 AUTOSAVE_PATH = None
 DEVICE_PATH = None
+DEVICE_PERSISTENCY_PATH = None
 
 runtime_config = None
 runner_config = None
@@ -1927,7 +1928,8 @@ def reload_code():
     errors = []
 
     # load devices
-    devicemanager.reload_devices(DEVICE_PATH)
+    devicemanager.reload_device_types(DEVICE_PATH)
+    devicemanager.reload_devices(DEVICE_PERSISTENCY_PATH)
 
     # load builtins:
     operationspath = os.path.dirname(os.path.realpath(__file__)) + '/nodenet/operations/'
@@ -1997,7 +1999,7 @@ def runtime_info():
 
 
 def initialize(config=None):
-    global PERSISTENCY_PATH, RESOURCE_PATH, WORLD_PATH, AUTOSAVE_PATH, DEVICE_PATH
+    global PERSISTENCY_PATH, RESOURCE_PATH, WORLD_PATH, AUTOSAVE_PATH, DEVICE_PATH, DEVICE_PERSISTENCY_PATH
     global runtime_config, runner_config, logger, runner, initialized, auto_save_intervals
 
     if config is None:
@@ -2009,6 +2011,7 @@ def initialize(config=None):
     RESOURCE_PATH = config['paths']['agent_directory']
     WORLD_PATH = config['paths']['world_directory']
     DEVICE_PATH = os.path.join(WORLD_PATH, "devices")
+    DEVICE_PERSISTENCY_PATH = config['paths']['device_settings_path']
 
     sys.path.append(WORLD_PATH)
 

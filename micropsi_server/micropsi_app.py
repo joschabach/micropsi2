@@ -667,6 +667,7 @@ def edit_nodenet():
 
     return template("nodenet_form.tpl", title=title,
         # nodenet_uid=nodenet_uid,
+        devices=runtime.get_devices(),
         nodenets=runtime.get_available_nodenets(),
         worldtypes=runtime.get_available_world_types(),
         templates=runtime.get_available_nodenets(),
@@ -680,10 +681,15 @@ def write_nodenet():
     params = dict((key, request.forms.getunicode(key)) for key in request.forms)
     worldadapter_name = params['nn_worldadapter']
     wa_params = {}
+    device_map = {}
     for key in params:
         if key.startswith('worldadapter_%s_' % worldadapter_name):
             strip = len("worldadapter_%s_" % worldadapter_name)
             wa_params[key[strip:]] = params[key]
+        elif key.startswith('device-map-'):
+            uid = key[11:]
+            device_map[key] = params['device-name-%s' % uid]
+
     if "manage nodenets" in permissions:
         result, nodenet_uid = runtime.new_nodenet(
             params['nn_name'],
@@ -693,7 +699,8 @@ def write_nodenet():
             owner=user_id,
             world_uid=params.get('nn_world'),
             use_modulators=params.get('nn_modulators', False),
-            worldadapter_config=wa_params)
+            worldadapter_config=wa_params,
+            device_map=device_map)
         if result:
             return dict(status="success", msg="Agent created", nodenet_uid=nodenet_uid)
         else:
@@ -786,8 +793,9 @@ def edit_runner_properties():
         return template("runner_form", action="/config/runner", value=runtime.get_runner_properties())
 
 
+@micropsi_app.route("/create_worldadapter_selector/")
 @micropsi_app.route("/create_worldadapter_selector/<world_uid>")
-def create_worldadapter_selector(world_uid):
+def create_worldadapter_selector(world_uid=None):
     return template("worldadapter_selector",
         world_uid=world_uid,
         nodenets=runtime.get_available_nodenets(),

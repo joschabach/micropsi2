@@ -688,7 +688,7 @@ def write_nodenet():
             wa_params[key[strip:]] = params[key]
         elif key.startswith('device-map-'):
             uid = key[11:]
-            device_map[key] = params['device-name-%s' % uid]
+            device_map[uid] = params['device-name-%s' % uid]
 
     if "manage nodenets" in permissions:
         result, nodenet_uid = runtime.new_nodenet(

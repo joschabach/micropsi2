@@ -836,7 +836,7 @@ def get_nodes(nodenet_uid, nodespaces=[], include_links=True, links_to_nodespace
 
 
 @rpc("new_nodenet")
-def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadapter=None, world_uid=None, use_modulators=None, worldadapter_config={}):
+def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadapter=None, world_uid=None, use_modulators=None, worldadapter_config={}, device_map={}):
     """ Create a new nodenet with the given configuration """
     if owner is None:
         owner, _, _ = get_request_data()
@@ -848,7 +848,8 @@ def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadap
         owner=owner,
         world_uid=world_uid,
         use_modulators=use_modulators,
-        worldadapter_config=worldadapter_config)
+        worldadapter_config=worldadapter_config,
+        device_map=device_map)
 
 
 @rpc("get_calculation_state")
@@ -917,9 +918,9 @@ def delete_nodenet(nodenet_uid):
 
 
 @rpc("set_nodenet_properties", permission_required="manage nodenets")
-def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None, worldadapter_config={}):
+def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None, worldadapter_config={}, device_map={}):
     """ Set the nodenet's properties. """
-    return runtime.set_nodenet_properties(nodenet_uid, nodenet_name=nodenet_name, worldadapter=worldadapter, world_uid=world_uid, owner=owner, worldadapter_config=worldadapter_config)
+    return runtime.set_nodenet_properties(nodenet_uid, nodenet_name=nodenet_name, worldadapter=worldadapter, world_uid=world_uid, owner=owner, worldadapter_config=worldadapter_config, device_map=device_map)
 
 
 @rpc("set_node_state")

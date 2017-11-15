@@ -230,7 +230,6 @@ try:
 
         def __init__(self, world, uid=None, **data):
             WorldAdapter.__init__(self, world, uid=uid, **data)
-
             precision = settings['theano']['precision']
             self.floatX = np.float32
             if precision == "64":

@@ -435,7 +435,7 @@ def load_nodenet(nodenet_uid):
                         logging.getLogger("system").warning("Environment %s for agent %s not found" % (data.world, data.uid))
 
                 if world_uid:
-                    result, worldadapter_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet_uid, nodenet_name=data['name'], config=data.get('worldadapter_config', {}))
+                    result, worldadapter_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet_uid, nodenet_name=data['name'], config=data.get('worldadapter_config', {}), device_map=data.get('device_map', {}))
                     if not result:
                         logging.getLogger('system').warning(worldadapter_instance)
                         worldadapter_instance = None
@@ -627,7 +627,8 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
         settings={},
         engine=engine,
         use_modulators=use_modulators,
-        worldadapter_config=worldadapter_config)
+        worldadapter_config=worldadapter_config,
+        device_map=device_map)
 
     nodenet_data[data['uid']] = Bunch(**data)
 
@@ -1673,6 +1674,8 @@ def parse_definition(json, filename=None):
             result['version'] = json['version']
         else:
             result['version'] = 1
+        if 'device_map' in json:
+            result['device_map'] = json.get('device_map', {})
         return Bunch(**result)
 
 

@@ -188,3 +188,40 @@ def test_node_show_plot_and_close_plot(runtime, test_nodenet):
     runtime.unload_nodenet(test_nodenet)
     assert plt.get_fignums() == []
 
+
+def test_start_stop_hooks(runtime, test_nodenet, resourcepath):
+    import os
+    from time import sleep
+    with open(os.path.join(resourcepath, 'nodetypes', 'foobar.py'), 'w') as fp:
+        fp.write("""
+nodetype_definition = {
+    "name": "foobar",
+    "slottypes": ["gen"],
+    "gatetypes": ["gen"],
+    "nodefunction_name": "foobar",
+}
+
+def hook(node):
+    node.hook_runs += 1
+
+def antihook(node):
+    node.hook_runs -= 1
+
+def foobar(netapi, node, **_):
+    if not hasattr(node, 'initialized'):
+        node.initialized = True
+        node.hook_runs = 0
+        node.on_start = hook
+        node.on_stop = antihook
+""")
+
+    runtime.reload_code()
+    netapi = runtime.nodenets[test_nodenet].netapi
+    foobar = netapi.create_node('foobar')
+    runtime.step_nodenet(test_nodenet)
+    assert foobar.initialized
+    runtime.start_nodenetrunner(test_nodenet)
+    sleep(0.001)
+    assert foobar.hook_runs == 1
+    runtime.stop_nodenetrunner(test_nodenet)
+    assert foobar.hook_runs == 0

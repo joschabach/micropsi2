@@ -144,10 +144,10 @@ class World(object):
             self.logger.warning("Wrong version of the world data")
             return False
 
-    def simulation_started(self):
+    def on_start(self):
         self.is_active = True
 
-    def simulation_stopped(self):
+    def on_stop(self):
         self.is_active = False
 
     def get_available_worldadapters(self):

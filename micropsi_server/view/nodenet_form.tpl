@@ -212,11 +212,12 @@ checkboxes.each(function(idx, el){
     var $el = $(el);
     $el.on('change', update_label);
     if(el.checked){
-        var textfield = $('device-name-'+$el.val());
-        if(!assigned_prefixes[textfield.data().prefix]){
-            assigned_prefixes[textfield.data().prefix] = [];
+        var textfield = $('#device-name-'+$el.val());
+        var prefix = textfield.data().prefix;
+        if(!assigned_prefixes[prefix]){
+            assigned_prefixes[prefix] = [];
         }
-        assigned_prefixes[textfield].push(parseInt(textfield.val().substr(prefix.length + 1)));
+        assigned_prefixes[prefix].push(parseInt(textfield.val().substr(prefix.length + 1)));
     }
 });
 

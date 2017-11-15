@@ -664,9 +664,8 @@ def edit_nodenet():
     user_id, permissions, token = get_request_data()
     nodenet_uid = request.params.get('id')
     title = 'Edit Agent' if nodenet_uid is not None else 'New Agent'
-
     return template("nodenet_form.tpl", title=title,
-        # nodenet_uid=nodenet_uid,
+        nodenet=None if not nodenet_uid else runtime.get_nodenet(nodenet_uid).metadata,
         devices=runtime.get_devices(),
         nodenets=runtime.get_available_nodenets(),
         worldtypes=runtime.get_available_world_types(),
@@ -691,20 +690,34 @@ def write_nodenet():
             device_map[uid] = params['device-name-%s' % uid]
 
     if "manage nodenets" in permissions:
-        result, nodenet_uid = runtime.new_nodenet(
-            params['nn_name'],
-            engine=params['nn_engine'],
-            worldadapter=params['nn_worldadapter'],
-            template=params.get('nn_template'),
-            owner=user_id,
-            world_uid=params.get('nn_world'),
-            use_modulators=params.get('nn_modulators', False),
-            worldadapter_config=wa_params,
-            device_map=device_map)
-        if result:
-            return dict(status="success", msg="Agent created", nodenet_uid=nodenet_uid)
+        if not params.get('nodenet_uid'):
+            result, nodenet_uid = runtime.new_nodenet(
+                params['nn_name'],
+                engine=params['nn_engine'],
+                worldadapter=params['nn_worldadapter'],
+                template=params.get('nn_template'),
+                owner=user_id,
+                world_uid=params.get('nn_world'),
+                use_modulators=params.get('nn_modulators', False),
+                worldadapter_config=wa_params,
+                device_map=device_map)
+            if result:
+                return dict(status="success", msg="Agent created", nodenet_uid=nodenet_uid)
+            else:
+                return dict(status="error", msg="Error saving agent: %s" % nodenet_uid)
         else:
-            return dict(status="error", msg="Error saving agent: %s" % nodenet_uid)
+            result = runtime.set_nodenet_properties(
+                params['nodenet_uid'],
+                nodenet_name=params['nn_name'],
+                worldadapter=params['nn_worldadapter'],
+                world_uid=params['nn_world'],
+                owner=user_id,
+                worldadapter_config=wa_params,
+                device_map=device_map)
+            if result:
+                return dict(status="success", msg="Changes saved")
+            else:
+                return dict(status="error", msg="Error saving changes!")
     return dict(status="error", msg="Insufficient rights to write agent")
 
 

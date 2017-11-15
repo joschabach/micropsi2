@@ -252,7 +252,15 @@ $(function() {
             window.location.reload();
         });
     });
-
+    $('.navbar a.nodenet_edit').on('click', function(event){
+        event.preventDefault();
+        console.log($(event.target).attr('href') + currentNodenet);
+        dialogs.remote_form_dialog($(event.target).attr('href') + currentNodenet, function(data){
+            dialogs.notification('Changes saved', 'success');
+            window.location.reload();
+            // $(document).trigger("runner_stepped");
+        });
+    });
     $('.navbar a.nodenet_delete').on('click', function(){
         dialogs.confirm("Do you really want to delete this agent?", function(){
             api.call('delete_nodenet', {nodenet_uid: currentNodenet}, function(data){
@@ -263,11 +271,6 @@ $(function() {
                 window.location.reload();
             });
         });
-    });
-
-    $('.navbar a.nodenet_edit').on('click', function(event){
-        event.preventDefault();
-        api.call('edit_nodenet', {nodenet_uid: currentNodenet});
     });
 
     $('.navbar a.nodenet_save').on('click', function(event){

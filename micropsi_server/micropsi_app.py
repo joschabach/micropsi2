@@ -120,7 +120,6 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                         except json.JSONDecodeError:
                             response.status = 400
                             return {'status': 'error', 'data': "Malformed arguments for remote procedure call: %s" % str(request.params.__dict__)}
-
             user_id, permissions, token = get_request_data()
             if permission_required and permission_required not in permissions:
                 response.status = 401

@@ -492,7 +492,7 @@ class Gate(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     def __repr__(self):
-        return "<Gate %s of node %s)>" % (self.type, self.node)
+        return "<Gate %s of node %s>" % (self.type, self.node)
 
 
 class Slot(metaclass=ABCMeta):
@@ -550,7 +550,7 @@ class Slot(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     def __repr__(self):
-        return "<Slot %s of node %s)>" % (self.type, self.node)
+        return "<Slot %s of node %s>" % (self.type, self.node)
 
 
 class Nodetype(object):

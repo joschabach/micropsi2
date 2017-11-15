@@ -324,6 +324,7 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
 
 
 @pytest.mark.engine("dict_engine")
+@pytest.mark.engine("numpy_engine")
 def test_node_states(runtime, test_nodenet, node):
     nodenet = runtime.get_nodenet(test_nodenet)
     node = nodenet.get_node(node)
@@ -579,6 +580,75 @@ def test_runtime_autosave_dict(runtime, test_nodenet, resourcepath):
             assert restored[key] == original[key]
 
 
+@pytest.mark.engine("numpy_engine")
+def test_runtime_autosave_numpy(runtime, test_nodenet, resourcepath):
+    import os
+    import tempfile
+    import zipfile
+    import numpy as np
+    from time import sleep
+    with open(os.path.join(resourcepath, "nodetypes", "Source.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "name": "Source",
+    "run_function_name": "source",
+    "inputs": [],
+    "outputs": ["X"]
+}
+
+import numpy as np
+
+def source(netapi, node, parameters):
+    return np.random.rand(8).astype(netapi.floatX)
+""")
+    with open(os.path.join(resourcepath, "nodetypes", "Target.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "python",
+    "name": "Target",
+    "run_function_name": "target",
+    "inputs": ["X"],
+    "outputs": [],
+    "inputdims": [1]
+}
+
+def target(X, netapi, node, parameters):
+    node.set_state("incoming", X)
+""")
+    runtime.reload_code()
+    nodenet = runtime.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    source = netapi.create_node("Source", None, "Source")
+    target = netapi.create_node("Target", None, "Target")
+    netapi.flow(source, "X", target, "X")
+    neuron = netapi.create_node("Neuron", None, "Neuron")
+    netapi.link(neuron, 'gen', target, 'sub')
+    neuron.activation = 1
+    runtime.set_runner_condition(test_nodenet, steps=100)
+    runtime.start_nodenetrunner(test_nodenet)
+    count = 0
+    while runtime.nodenets[test_nodenet].is_active:
+        sleep(.1)
+        count += 1
+        assert count < 20  # quit if not done after 2 sec
+    filename = os.path.join(resourcepath, "nodenets", "__autosave__", "%s_%d.zip" % (test_nodenet, 100))
+    assert os.path.isfile(filename)
+    with zipfile.ZipFile(filename, 'r') as archive:
+        assert set(archive.namelist()) == {"nodenet.json", "flowgraph.pickle", "%s_numpystate.npz" % target.uid}
+        from micropsi_core.nodenet.numpy_engine.numpy_nodenet import NumpyNodenet
+        tmp = tempfile.TemporaryDirectory()
+        archive.extractall(tmp.name)
+        net = NumpyNodenet(tmp.name, "restored", uid=test_nodenet, native_modules=runtime.native_modules)
+        net.load()
+        nsource = net.netapi.get_node(source.uid)
+        ntarget = net.netapi.get_node(target.uid)
+        nneuron = net.netapi.get_node(neuron.uid)
+        assert nsource.name == "Source"
+        assert nsource.outputmap == {'X': {(ntarget.uid, 'X')}}
+        assert np.all(ntarget.get_state("incoming") == target.get_state("incoming"))
+        assert nneuron.get_gate('gen').get_links()[0].target_node == ntarget
+
+
 @pytest.mark.engine("theano_engine")
 def test_runtime_autosave_theano(runtime, test_nodenet, resourcepath):
     import os
@@ -653,3 +723,17 @@ def target(X, netapi, node, parameters):
         assert np.all(nsource.get_theta("weights").get_value() == source.get_theta("weights").get_value())
         assert np.all(ntarget.get_state("incoming") == target.get_state("incoming"))
         assert nneuron.get_gate('gen').get_links()[0].target_node == ntarget
+
+
+@pytest.mark.engine("dict_engine")
+def test_last_uid_is_persisted(runtime, test_nodenet):
+    nodenet = runtime.nodenets[test_nodenet]
+    n1 = nodenet.netapi.create_node("Neuron")
+    ns1 = nodenet.netapi.create_nodespace(None)
+    assert len(n1.uid) == 2
+    assert len(ns1.uid) == 2
+    last_id = nodenet._last_assigned_node_id
+    runtime.save_nodenet(test_nodenet)
+    runtime.revert_nodenet(test_nodenet)
+    nodenet = runtime.get_nodenet(test_nodenet)
+    assert nodenet._last_assigned_node_id == last_id

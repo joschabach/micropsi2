@@ -80,7 +80,7 @@ class TheanoNode(Node):
 
     @property
     def name(self):
-        return self._nodenet.names.get(self.uid, self.uid)
+        return self._nodenet.names.get(self.uid, "")
 
     @name.setter
     def name(self, name):

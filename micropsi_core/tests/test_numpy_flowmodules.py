@@ -758,6 +758,12 @@ def test_flownode_generate_netapi_fragment(runtime, engine, test_nodenet, resour
     and runs the result"""
     import os
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, resourcepath)
+    datasources, datatargets = None, None
+    for node in netapi.get_nodes():
+        if node.name == 'datasources':
+            datasources = node
+        elif node.name == 'datatargets':
+            datatargets = node
 
     twoout = netapi.create_node("TwoOutputs", None, "twoout")
     double = netapi.create_node("Double", None, "double")
@@ -776,9 +782,10 @@ def test_flownode_generate_netapi_fragment(runtime, engine, test_nodenet, resour
     netapi.link(source, 'gen', source, 'gen')
     netapi.link(source, 'gen', add, 'sub')
 
-    nodes = [twoout, double, numpy, add, source]
+    nodes = [twoout, double, numpy, add, source, datasources, datatargets]
     fragment = runtime.generate_netapi_fragment(test_nodenet, [n.uid for n in nodes])
-
+    assert "datasources" not in fragment
+    assert "datatargets" not in fragment
     source_values = np.random.randn(5).astype(worldadapter.floatX)
     worldadapter.set_flow_datasource('foo', source_values)
     nodenet.step()
@@ -788,8 +795,6 @@ def test_flownode_generate_netapi_fragment(runtime, engine, test_nodenet, resour
     code = """
 def foo(netapi):
     %s
-    netapi.flow("worldadapter", "foo", twoout, "X")
-    netapi.flow(add, "outputs", "worldadapter", "bar")
 
 """ % "\n    ".join(fragment.split('\n'))
     # save the fragment as recipe & run

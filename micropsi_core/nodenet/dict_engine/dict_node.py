@@ -51,28 +51,22 @@ class DictNode(NetEntity, Node):
 
     @activation.setter
     def activation(self, activation):
-        #activation_to_set = float(activation)
-        #gengate = self.get_gate('gen')
-        #if gengate is not None:
-        #    activation_to_set = gengate.gate_function(float(activation))
-        #self.__activation = activation_to_set
         self.__activation = float(activation)
         gengate = self.get_gate('gen')
         if gengate is not None:
             gengate.activation = float(activation)
 
     def __init__(self, nodenet, parent_nodespace, position, state=None, activation=0,
-                 name="", type="Concept", uid=None, index=None, parameters=None, gate_activations=None, gate_configuration=None, **_):
+                 name="", type="Concept", uid=None, index=None, parameters=None, gate_activations={}, gate_configuration=None, **_):
 
         Node.__init__(self, nodenet, type, nodenet.get_nodetype(type))
 
         NetEntity.__init__(self, nodenet, parent_nodespace,
             name=name, entitytype="nodes", uid=uid, index=index)
-
         self.position = position
 
         self._state = {}
-        self.__activation = 0
+        self.__activation = activation
 
         self.__gates = {}
         self.__slots = {}
@@ -86,12 +80,13 @@ class DictNode(NetEntity, Node):
 
         for gate in self.nodetype.gatetypes:
             self.__gates[gate] = DictGate(gate, self)
+            if gate in gate_activations:
+                self.__gates[gate].activation = gate_activations[gate]
         for slot in self.nodetype.slottypes:
             self.__slots[slot] = DictSlot(slot, self)
         if state:
             self._state = state
         nodenet._register_node(self)
-        self.activation = activation
 
     def node_function(self):
         """Called whenever the node is activated or active.

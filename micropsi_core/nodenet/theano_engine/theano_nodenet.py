@@ -863,6 +863,9 @@ class TheanoNodenetCore(Nodenet):
                 self.get_node(uid).set_parameter("datatarget", parameters['datatarget'])
                 if name is None or name == "" or name == uid:
                     name = parameters['datatarget']
+        elif nodetype in self.native_modules:
+            if name is None or name == "" or name == uid:
+                name = nodetype
 
         if name is not None and name != "" and name != uid:
             self.names[uid] = name
@@ -1671,7 +1674,7 @@ class TheanoNodenetCore(Nodenet):
                 ids.append(uid)
         self.group_nodes_by_ids(nodespace_uid, ids, group_name, gatetype, sortby)
 
-    def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gatetype="gen", sortby='id'):
+    def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gatetype="gen", sortby=None):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
         partition = self.get_partition(nodespace_uid)

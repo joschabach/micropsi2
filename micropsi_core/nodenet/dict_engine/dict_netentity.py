@@ -57,7 +57,7 @@ class NetEntity(object):
         self.__name = None
         self.__parent_nodespace = None
 
-        self.uid = uid or micropsi_core.tools.generate_uid()
+        self.uid = uid or nodenet.generate_uid(entitytype)
         self.nodenet = nodenet
         self.index = index or len(nodenet.get_node_uids()) + len(nodenet.get_nodespace_uids())
         self.entitytype = entitytype

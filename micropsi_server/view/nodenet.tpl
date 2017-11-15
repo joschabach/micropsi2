@@ -83,10 +83,6 @@
                     <tr>
                         <td colspan="2" class="worldadapter_config">
                     </tr>
-                    <tr>
-                        <td><label for="ui_snap">Snap to grid</label></td>
-                        <td><input type="checkbox" name="ui_snap" id="ui_snap" /></td>
-                    </tr>
                 </table>
                 <div class="controls">
                     <button type="submit" class="btn btn-primary">Apply</button>

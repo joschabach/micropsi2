@@ -49,7 +49,7 @@ var viewProperties = {
     yMax: 13500,
     xMax: 13500,
     copyPasteOffset: 50,
-    snap_to_grid: false,
+    snap_to_grid: true,
     load_link_threshold: 1000
 };
 
@@ -239,7 +239,6 @@ function setNodenetValues(data){
     $('#nodenet_world_uid').val(data.world);
     $('#nodenet_uid').val(currentNodenet);
     $('#nodenet_nodenet_name').val(data.name);
-    $('#ui_snap').attr('checked', data.snap_to_grid);
     if (!jQuery.isEmptyObject(worldadapters)) {
         var worldadapter_select = $('#nodenet_worldadapter');
         worldadapter_select.val(data.worldadapter);
@@ -307,7 +306,6 @@ function setCurrentNodenet(uid, nodespace, changed){
             $('.world_step').text(data.current_world_step || 0);
 
             nodenet_data = data;
-            nodenet_data['snap_to_grid'] = $.cookie('snap_to_grid') || viewProperties.snap_to_grid;
 
             showDefaultForm();
 
@@ -2537,7 +2535,7 @@ function onMouseDrag(event) {
     if(selectionStart){
         updateSelection(event);
     }
-    function moveNode(uid, snap, offset){
+    function moveNode(uid, offset){
         var canvas = $('#nodenet');
         var pos = canvas.offset();
         var rounded = {
@@ -2545,7 +2543,7 @@ function onMouseDrag(event) {
             'y': Math.round(event.event.layerY / 10) * 10
         };
         if(event.event.clientX < pos.left || event.event.clientY < pos.top) return false;
-        if(!snap){
+        if(!viewProperties.snap_to_grid){
             nodeLayer.children[uid].position += event.delta;
         }
         nodeLayer.children[uid].nodeMoved = true;
@@ -2554,7 +2552,7 @@ function onMouseDrag(event) {
             'x': node.x,
             'y': node.y
         };
-        if(snap){
+        if(viewProperties.snap_to_grid){
             if(offset){
                 node.x += offset.x;
                 node.y += offset.y;
@@ -2572,7 +2570,7 @@ function onMouseDrag(event) {
             redrawNode(node, true);
         } else {
             node.bounds = calculateNodeBounds(node);
-            if(snap){
+            if(viewProperties.snap_to_grid){
                 redrawNode(node, true);
             }
             redrawNodeLinks(node);
@@ -2586,16 +2584,16 @@ function onMouseDrag(event) {
         path.nodeMoved = true;
         if(dragMultiples){
             var offset = null;
-            if(nodenet_data.snap_to_grid){
+            if(viewProperties.snap_to_grid){
                 offset = moveNode(path.name, true);
             }
             for(var uid in selection){
-                if(uid in nodes && (!nodenet_data.snap_to_grid || uid != path.name)){
-                    moveNode(uid, nodenet_data.snap_to_grid, offset);
+                if(uid in nodes && (!viewProperties.snap_to_grid || uid != path.name)){
+                    moveNode(uid, offset);
                 }
             }
         } else {
-            moveNode(path.name, nodenet_data.snap_to_grid);
+            moveNode(path.name);
         }
     }
 }
@@ -3127,7 +3125,7 @@ function handleContextMenu(event) {
                     break;
             }
             if(type) {
-                if(nodenet_data.snap_to_grid){
+                if(viewProperties.snap_to_grid){
                     var xpos = Math.round(clickPosition.x / 10) * 10;
                     var ypos = Math.round(clickPosition.y / 10) * 10;
                 } else {
@@ -4042,8 +4040,6 @@ function handleEditNodenet(event){
             reload = true;
         }
     }
-    nodenet_data.snap_to_grid = $('#ui_snap').attr('checked');
-    $.cookie('snap_to_grid', nodenet_data.snap_to_grid || '', {path: '/', expires: 7})
     api.call("set_nodenet_properties", data,
         success=function(data){
             dialogs.notification('Nodenet data saved', 'success');
@@ -4574,7 +4570,7 @@ function ApplyLineBreaks(strTextAreaId) {
 
 var drawGridLines = function(element) {
     gridLayer.removeChildren();
-    if(nodenet_data.snap_to_grid){
+    if(viewProperties.snap_to_grid){
         var size = 20 //* viewProperties.zoomFactor; //boundingRect.width / num_rectangles_wide;
         for (var i = 0; i <= element.width/size; i++) {
             var xPos = i * size;

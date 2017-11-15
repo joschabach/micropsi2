@@ -35,10 +35,10 @@ def test_add_node(runtime, test_nodenet):
 
     nodespace = runtime.get_nodes(test_nodenet)
     assert len(nodespace.get("nodes", [])) == 0
-    res, uid = runtime.add_node(test_nodenet, "Pipe", [200, 250, 10], None, state=None, name="A")
+    res, uid1 = runtime.add_node(test_nodenet, "Pipe", [200, 250, 10], None, state=None, name="A")
     nodespace = runtime.get_nodes(test_nodenet)
     assert len(nodespace["nodes"]) == 1
-    node1 = nodespace["nodes"][uid]
+    node1 = nodespace["nodes"][uid1]
     assert node1["name"] == "A"
     assert node1["position"] == [200, 250, 10]
 
@@ -164,7 +164,7 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
 """)
     runtime.reload_code()
     reg = netapi.create_node("Neuron", None, "reg")
-    test = netapi.create_node("Testnode", None, "test")
+    test = netapi.create_node("Testnode", None)
     netapi.link(reg, 'gen', test, 'gen')
     netapi.link(test, 'bar', reg, 'gen')
     data_before = runtime.nodenets[test_nodenet].export_json()

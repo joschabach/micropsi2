@@ -110,7 +110,7 @@ def testnodefunc(netapi, node=None, **prams):
         'type': 'Testnode',
         'position': [23, 23, 12],
         'nodespace': None,
-        'name': 'Testnode'
+        'name': ''
     })
     assert_success(response)
 

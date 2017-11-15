@@ -3430,6 +3430,9 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
         }
     }
     var method = "";
+    if (name == ""){
+        name = type;
+    }
     var params = {
         nodenet_uid: currentNodenet,
         nodespace: currentNodeSpace,

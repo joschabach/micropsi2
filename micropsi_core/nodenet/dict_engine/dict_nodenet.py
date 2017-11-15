@@ -563,6 +563,11 @@ class DictNodenet(Nodenet):
 
     def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_configuration=None):
         nodespace_uid = self.get_nodespace(nodespace_uid).uid
+
+        if nodetype in self.native_modules:
+            if name is None or name == "" or name == uid:
+                name = nodetype
+
         node = DictNode(
             self,
             nodespace_uid,

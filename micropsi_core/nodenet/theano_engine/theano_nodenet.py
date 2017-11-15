@@ -851,6 +851,9 @@ class TheanoNodenetCore(Nodenet):
                 self.get_node(uid).set_parameter("datatarget", parameters['datatarget'])
                 if name is None or name == "" or name == uid:
                     name = parameters['datatarget']
+        elif nodetype in self.native_modules:
+            if name is None or name == "" or name == uid:
+                name = nodetype
 
         if name is not None and name != "" and name != uid:
             self.names[uid] = name

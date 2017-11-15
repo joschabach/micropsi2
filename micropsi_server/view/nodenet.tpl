@@ -61,39 +61,13 @@
         </div>
         <div class="editor_field " id="nodenet_forms">
 
-            <form class="form-horizontal default_form hide" id="edit_nodenet_form">
-                <h4>Agent</h4>
-                <table>
-                    <tr>
-                        <td><label for="nodenet_uid">UID</label></td>
-                        <td><input type="text" name="nodenet_uid" disabled="disabled" id="nodenet_uid"></td>
-                    </tr>
-                    <tr>
-                        <td><label for="nodenet_nodenet_name">Name</label></td>
-                        <td><input type="text" name="nodenet_nodenet_name" id="nodenet_nodenet_name"></td>
-                    </tr>
-                    <tr>
-                        <td><label for="nodenet_world_uid">Environment</label></td>
-                        <td><select name="nodenet_world_uid" id="nodenet_world_uid"></select></td>
-                    </tr>
-                    <tr>
-                        <td><label for="nodenet_worldadapter">Worldadapter</label></td>
-                        <td><select name="nodenet_worldadapter" id="nodenet_worldadapter"></select></td>
-                    </tr>
-                    <tr>
-                        <td colspan="2" class="worldadapter_config">
-                    </tr>
-                </table>
-                <div class="controls">
-                    <button type="submit" class="btn btn-primary">Apply</button>
-                </div>
-                <p>&nbsp;</p>
+            <div class="default_form hide" id="modulators_container">
+                <h4>Modulators</h4>
                 <div class="modulators_container">
-                    <strong>global modulators</strong>
                     <table class="modulators table-striped table-condensed">
                     </table>
                 </div>
-            </form>
+            </div>
 
             <form class="form-horizontal default_form hide" id="edit_nodespace_form">
                 <h4>Nodespace</h4>

@@ -201,15 +201,19 @@ def test_get_partial_monitor_data(runtime, test_nodenet):
 
 
 def test_add_group_monitor(runtime, test_nodenet):
+    from random import shuffle
     nodenet = runtime.nodenets[test_nodenet]
     netapi = nodenet.netapi
     nodespace = netapi.get_nodespace(None)
-    nodes = []
-    for i in range(10):
+    nodes = [None] * 10
+    num = list(range(10))
+    shuffle(num)
+    for i in num:
         node = netapi.create_node('Neuron', None, "testnode_%d" % i)
-        nodes.append(node)
+        nodes[i] = node
+    for i in num:
         if i > 0:
-            netapi.link(nodes[i - 1], 'gen', node, 'gen')
+            netapi.link(nodes[i - 1], 'gen', nodes[i], 'gen')
     source = netapi.create_node("Neuron", None, "Source")
     netapi.link(source, 'gen', source, 'gen')
     netapi.link(source, 'gen', nodes[0], 'gen')

@@ -64,7 +64,7 @@ class GroupMonitor(Monitor):
         self.name_prefix = name_prefix
         self.gate = gate
         if len(node_uids) == 0:
-            self.nodenet.group_nodes_by_names(nodespace, name_prefix, gatetype=gate, group_name=name)
+            self.nodenet.group_nodes_by_names(nodespace, name_prefix, gatetype=gate, group_name=name, sortby='name')
             self.node_uids = self.nodenet.get_node_uids(nodespace, name)
         else:
             self.nodenet.group_nodes_by_ids(nodespace, node_uids, name, gatetype=gate)

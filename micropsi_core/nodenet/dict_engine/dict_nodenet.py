@@ -3,7 +3,6 @@ __author__ = 'rvuine'
 import json
 import os
 
-import micropsi_core
 from micropsi_core.tools import post_mortem
 from micropsi_core.nodenet import monitor
 from micropsi_core.nodenet.node import Nodetype
@@ -139,7 +138,6 @@ class DictNodenet(Nodenet):
         """
 
         super().__init__(persistency_path, name, worldadapter, world, owner, uid, native_modules=native_modules, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance, version=version)
-
         try:
             import numpy
             self.numpy_available = True
@@ -154,6 +152,7 @@ class DictNodenet(Nodenet):
 
         self._nodes = {}
         self._nodespaces = {}
+        self._last_assigned_node_id = 0
 
         self.nodegroups = {}
 
@@ -170,6 +169,7 @@ class DictNodenet(Nodenet):
         data['nodes'] = self.construct_nodes_dict(**params)
         data['nodespaces'] = self.construct_nodespaces_dict("Root", transitive=True)
         data['modulators'] = self.construct_modulators_dict()
+        data['last_assigned_node_id'] = self._last_assigned_node_id
         return data
 
     def export_json(self):
@@ -355,10 +355,16 @@ class DictNodenet(Nodenet):
 
         if 'current_step' in initfrom:
             self._step = initfrom['current_step']
+        if 'last_assigned_node_id' in initfrom:
+            self._last_assigned_node_id = initfrom['last_assigned_node_id']
 
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)
             self.merge_data(initfrom, keep_uids=True)
+
+    def generate_uid(self, entitytype=None):
+        self._last_assigned_node_id += 1
+        return "n%d" % self._last_assigned_node_id
 
     def construct_links_list(self):
         data = []
@@ -494,7 +500,7 @@ class DictNodenet(Nodenet):
         for uid in nodenet_data.get('nodes', {}):
             data = nodenet_data['nodes'][uid]
             if not keep_uids:
-                newuid = micropsi_core.tools.generate_uid()
+                newuid = self.generate_uid("nodes")
             else:
                 newuid = uid
             data['uid'] = newuid
@@ -715,7 +721,7 @@ class DictNodenet(Nodenet):
             nodes = sorted(nodes, key=lambda node: node.name)
         self.nodegroups[nodespace_uid][group_name] = (nodes, gatetype)
 
-    def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gatetype="gen", sortby='id'):
+    def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gatetype="gen", sortby=None):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
 

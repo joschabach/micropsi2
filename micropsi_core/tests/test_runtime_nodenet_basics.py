@@ -723,3 +723,17 @@ def target(X, netapi, node, parameters):
         assert np.all(nsource.get_theta("weights").get_value() == source.get_theta("weights").get_value())
         assert np.all(ntarget.get_state("incoming") == target.get_state("incoming"))
         assert nneuron.get_gate('gen').get_links()[0].target_node == ntarget
+
+
+@pytest.mark.engine("dict_engine")
+def test_last_uid_is_persisted(runtime, test_nodenet):
+    nodenet = runtime.nodenets[test_nodenet]
+    n1 = nodenet.netapi.create_node("Neuron")
+    ns1 = nodenet.netapi.create_nodespace(None)
+    assert len(n1.uid) == 2
+    assert len(ns1.uid) == 2
+    last_id = nodenet._last_assigned_node_id
+    runtime.save_nodenet(test_nodenet)
+    runtime.revert_nodenet(test_nodenet)
+    nodenet = runtime.get_nodenet(test_nodenet)
+    assert nodenet._last_assigned_node_id == last_id

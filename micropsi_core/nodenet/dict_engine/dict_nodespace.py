@@ -27,7 +27,6 @@ class DictNodespace(NetEntity, Nodespace):
         """create a node space at a given position and within a given node space"""
         self.__activators = {}
         self.__netentities = {}
-        uid = uid or micropsi_core.tools.generate_uid()
         NetEntity.__init__(self, nodenet, parent_nodespace, name, "nodespaces", uid, index)
         self.last_changed = nodenet.current_step
         self.contents_last_changed = nodenet.current_step

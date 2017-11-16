@@ -2,6 +2,11 @@ from abc import ABCMeta, abstractmethod
 
 
 class Device(metaclass=ABCMeta):
+    """
+    The Device abstract base class. Do not inherit from this class immediately,
+    instead use one of the subclasses (InputDevice and OutputDevice),
+    that further specify the direction of the data flow
+    """
     def __init__(self, config):
         for item in self.__class__.get_options():
             if item['name'] not in config:
@@ -23,6 +28,10 @@ class Device(metaclass=ABCMeta):
         for key in config:
             setattr(self, key, config[key])
 
+    """
+    In case the device has further options they should be added by overriding
+    this method
+    """
     @classmethod
     def get_options(cls):
         options = [{
@@ -31,10 +40,18 @@ class Device(metaclass=ABCMeta):
                         'default': 'Device'}, ]
         return options
 
+    """
+    Should be implemented to return the size of the data that can be
+    read/written from/to devices in one iteration
+    """
     @abstractmethod
     def get_data_size(self):
         pass
 
+    """
+    Should be implemented to return the prefix used for mapping devices
+    to datasources/datatargets
+    """
     @abstractmethod
     def get_prefix(self):
         pass
@@ -44,6 +61,10 @@ class InputDevice(Device):
     def __init__(self, config):
         super().__init__(config)
 
+    """
+    Implementation should return the array (of size get_data_size())
+    with the data from the device
+    """
     @abstractmethod
     def read_data(self):
         pass
@@ -53,6 +74,10 @@ class OutputDevice(Device):
     def __init__(self, config):
         super().__init__(config)
 
+    """
+    Implementation should accept the array (of size get_data_size())
+    with the data sent to the device
+    """
     @abstractmethod
-    def write_data(self):
+    def write_data(self, data):
         pass

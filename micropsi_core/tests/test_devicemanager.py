@@ -1,3 +1,4 @@
+
 import pytest
 
 
@@ -59,3 +60,22 @@ def test_devices_with_worldadapters(runtime, test_nodenet, resourcepath, default
     assert 'dummy' in runtime.get_nodenet(test_nodenet).worldadapter_instance.get_available_flow_datasources()
 
     runtime.remove_device(uid)
+
+
+@pytest.mark.engine("theano_engine")
+@pytest.mark.engine("numpy_engine")
+def test_device_reload(runtime, test_nodenet, resourcepath, default_world):
+    import numpy as np
+    create_dummy_device(resourcepath)
+    res, errors = runtime.reload_code()
+
+    _, uid = runtime.add_device('DummyDevice', {'name': 'foo'})
+    runtime.set_nodenet_properties(test_nodenet, world_uid=default_world, worldadapter="ArrayWorldAdapter", device_map={uid: 'dummy'})
+
+    assert 'dummy' in runtime.get_nodenet(test_nodenet).worldadapter_instance.get_available_flow_datasources()
+    create_dummy_device(resourcepath, retval="[9,8,7,6,5]")
+    res, errors = runtime.reload_code()
+
+    # assert runtime.set_nodenet_properties(test_nodenet, world_uid=default_world, worldadapter="ArrayWorldAdapter", device_map={uid: 'new_device_name'})
+    runtime.step_nodenet(test_nodenet)
+    assert np.all(runtime.nodenets[test_nodenet].worldadapter_instance.get_flow_datasource("dummy") == np.asarray([9, 8, 7, 6, 5]))

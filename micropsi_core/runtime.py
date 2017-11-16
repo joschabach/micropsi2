@@ -1920,8 +1920,8 @@ def reload_code():
     worldadapter_classes['Default'] = Default
     worldobject_classes['TestObject'] = TestObject
     try:
-        from micropsi_core.world.worldadapter import DefaultArray
-        worldadapter_classes['DefaultArray'] = DefaultArray
+        from micropsi_core.world.worldadapter import ArrayWorldAdapter
+        worldadapter_classes['ArrayWorldAdapter'] = ArrayWorldAdapter
     except ImportError:
         pass
     native_modules = {}

@@ -248,7 +248,7 @@ try:
 
             for k in self.device_map:
                 if k not in devicemanager.devices:
-                    raise KeyError("Device not connected: %s" % k)
+                    raise KeyError("Device not connected: %s" % self.device_map[k])
                 if issubclass(devicemanager.devices[k].__class__, InputDevice):
                     self.add_flow_datasource(self.device_map[k],
                                              devicemanager.devices[k].get_data_size())

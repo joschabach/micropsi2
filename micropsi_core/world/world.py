@@ -84,6 +84,7 @@ class World(object):
 
     supported_worldadapters = []
     supported_worldobjects = []
+    is_realtime = False
 
     def __init__(self, filename, world_type="", name="", owner="", uid=None, engine=None, version=WORLD_VERSION, config={}):
         """Create a new MicroPsi world environment.
@@ -143,10 +144,10 @@ class World(object):
             self.logger.warning("Wrong version of the world data")
             return False
 
-    def simulation_started(self):
+    def on_start(self):
         self.is_active = True
 
-    def simulation_stopped(self):
+    def on_stop(self):
         self.is_active = False
 
     def get_available_worldadapters(self):
@@ -248,10 +249,10 @@ class World(object):
         world definition itself.
         """
         if nodenet_uid in self.agents:
-            if self.agents[nodenet_uid].__class__.__name__ == worldadapter:
-                return True, self.agents[nodenet_uid]
-            else:
+            if self.agents[nodenet_uid].__class__.__name__ != worldadapter:
                 return False, "Nodenet agent already exists in this world, but has the wrong type"
+            elif config == self.agents[nodenet_uid].config:
+                    return True, self.agents[nodenet_uid]
         return self.spawn_agent(worldadapter, nodenet_uid, nodenet_name=nodenet_name, config=config)
 
     def unregister_nodenet(self, nodenet_uid):

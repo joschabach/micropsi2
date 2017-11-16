@@ -110,7 +110,7 @@ def testnodefunc(netapi, node=None, **prams):
         'type': 'Testnode',
         'position': [23, 23, 12],
         'nodespace': None,
-        'name': 'Testnode'
+        'name': ''
     })
     assert_success(response)
 
@@ -170,17 +170,17 @@ def test_get_runner_properties(app):
     response = app.get_json('/rpc/get_runner_properties()')
     assert_success(response)
     assert 'timestep' in response.json_body['data']
-    assert 'factor' in response.json_body['data']
+    assert 'infguard' in response.json_body['data']
 
 
 def test_set_runner_properties(app):
     app.set_auth()
-    response = app.post_json('/rpc/set_runner_properties', params=dict(timestep=123, factor=1))
+    response = app.post_json('/rpc/set_runner_properties', params=dict(timestep=123, infguard=False))
     assert_success(response)
     response = app.get_json('/rpc/get_runner_properties()')
     assert_success(response)
     assert response.json_body['data']['timestep'] == 123
-    assert response.json_body['data']['factor'] == 1
+    assert not response.json_body['data']['infguard']
 
 
 def test_get_is_calculation_running(app, default_nodenet):
@@ -551,6 +551,8 @@ def test_set_world_properties(app, default_world):
     assert_success(response)
     response = app.get_json('/rpc/get_world_properties(world_uid="%s")' % default_world)
     assert response.json_body['data']['name'] == "asdf"
+    response = app.get_json('/rpc/get_available_worlds()')
+    assert response.json_body['data'][default_world]['name'] == 'asdf'
 
 
 def test_revert_world(app, default_world):
@@ -651,6 +653,7 @@ def test_add_gate_monitor(app, test_nodenet, node):
 
 
 @pytest.mark.engine("dict_engine")
+@pytest.mark.engine("numpy_engine")
 def test_add_slot_monitor(app, test_nodenet, node):
     response = app.post_json('/rpc/add_slot_monitor', params={
         'nodenet_uid': test_nodenet,
@@ -1192,13 +1195,33 @@ def test_user_prompt_response(app, test_nodenet, resourcepath):
     nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
     with open(nodetype_file, 'w') as fp:
         fp.write("""nodetype_definition = {
-            "name": "Testnode",
-            "slottypes": ["gen", "foo", "bar"],
-            "nodefunction_name": "testnodefunc",
-            "gatetypes": ["gen", "foo", "bar"],
-            "symbol": "t"}
+    "name": "Testnode",
+    "slottypes": ["gen", "foo", "bar"],
+    "gatetypes": ["gen", "foo", "bar"],
+    "nodefunction_name": "testnodefunc",
+    "user_prompts": {
+        "promptident": {
+            "callback": "user_prompt_callback",
+            "parameters": [
+                {"name": "foo", "description": "value for foo", "default": 23},
+                {"name": "bar", "description": "value for bar", "default": 42}
+            ]
+        }
+    }
+}
 
-def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+def testnodefunc(netapi, node=None, **prams):
+    if not hasattr(node, 'foo'):
+        node.foo = 0
+        node.bar = 1
+        netapi.show_user_prompt(node, "promptident")
+    node.get_gate("foo").gate_function(node.foo)
+    node.get_gate("bar").gate_function(node.bar)
+
+def user_prompt_callback(netapi, node, user_prompt_params):
+    \"\"\"Elaborate explanation as to what this user prompt is for\"\"\"
+    node.foo = int(user_prompt_params['foo'])
+    node.bar = int(user_prompt_params['bar'])
 """)
     response = app.get_json('/rpc/reload_code()')
     assert_success(response)
@@ -1211,20 +1234,38 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
         'name': 'Testnode'
     })
     assert_success(response)
-
     uid = response.json_body['data']
+
+    response = app.get_json('/rpc/step_calculation(nodenet_uid="%s")' % test_nodenet)
+    assert_success(response)
+
+    response = app.post_json('/rpc/get_calculation_state', {'nodenet_uid': test_nodenet})
+    assert_success(response)
+
+    prompt_data = response.json_body['data']['user_prompt']
+    assert prompt_data['key'] == 'promptident'
+    assert prompt_data['node']['uid'] == uid
+    assert len(prompt_data['parameters']) == 2
 
     response = app.post_json('/rpc/user_prompt_response', {
         'nodenet_uid': test_nodenet,
         'node_uid': uid,
-        'values': {'foo': 'bar'},
-        'resume_nodenet': True
+        'key': prompt_data['key'],
+        'parameters': {
+            'foo': '77',
+            'bar': '99'
+        },
+        'resume_nodenet': False
     })
     assert_success(response)
-    response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
-    data = json.loads(response.json_body['data'])
-    assert data['nodes'][uid]['parameters']['foo'] == 'bar'
-    assert data['is_active']
+
+    response = app.get_json('/rpc/step_calculation(nodenet_uid="%s")' % test_nodenet)
+    assert_success(response)
+
+    response = app.get_json('/rpc/get_nodes(nodenet_uid="%s")' % test_nodenet)
+    data = response.json_body['data']
+    assert data['nodes'][uid]['gate_activations']['foo'] == 77
+    assert data['nodes'][uid]['gate_activations']['bar'] == 99
 
 
 def test_set_logging_levels(app):
@@ -1776,6 +1817,9 @@ def double(inputs, netapi, node, parameters):
     runtime.set_nodenet_properties(test_nodenet, worldadapter="SimpleArrayWA", world_uid=wuid)
     worldadapter = nodenet.worldadapter_instance
 
+    datasource_uid = nodenet.worldadapter_flow_nodes['datasources']
+    datatarget_uid = nodenet.worldadapter_flow_nodes['datatargets']
+
     # create one flow_module, wire to sources & targets
     result = app.post_json('/rpc/add_node', {
         'nodenet_uid': test_nodenet,
@@ -1810,16 +1854,19 @@ def double(inputs, netapi, node, parameters):
     result = app.post_json('/rpc/flow', inward)
     assert_success(result)
 
-    response = app.post_json('/rpc/get_calculation_state', params={'nodenet_uid': test_nodenet, 'nodenet': {'nodespaces': [None]}, 'monitors': True})
-    data = response.json_body['data']
-
-    assert data['nodenet']['nodes'][flow_uid]
-
     sources = np.array(np.random.randn(2, 3), dtype=nodenet.numpyfloatX)
     worldadapter.flow_datasources['foo'][:] = sources
 
     runtime.step_nodenet(test_nodenet)
     assert np.all(worldadapter.get_flow_datatarget_feedback('bar') == sources * 2)
+
+    response = app.post_json('/rpc/get_calculation_state', params={'nodenet_uid': test_nodenet, 'nodenet': {'nodespaces': [None]}, 'monitors': True})
+    data = response.json_body['data']
+
+    assert data['nodenet']['nodes'][flow_uid]
+    assert data['nodenet']['nodes'][flow_uid]['activation'] == 1.0
+    assert data['nodenet']['nodes'][datasource_uid]['activation'] == 1.0
+    assert data['nodenet']['nodes'][datatarget_uid]['activation'] == 1.0
 
     # disconnect first flow_module from datatargets, create a second one, and chain them
     result = app.post_json('/rpc/unflow', outward)
@@ -1862,3 +1909,41 @@ def test_start_behavior(app, test_nodenet):
     from micropsi_core import runtime
     assert runtime.nodenets[test_nodenet].current_step == 3
     assert not runtime.nodenets[test_nodenet].is_active
+
+
+def test_gate_activation_is_persisted(app, runtime, test_nodenet, resourcepath):
+    import os
+    with open(os.path.join(resourcepath, 'nodetypes', 'foobar.py'), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "name": "foobar",
+    "nodefunction_name": "foobar",
+    "slottypes": ["gen", "foo", "bar"],
+    "gatetypes": ["gen", "foo", "bar"]
+}
+def foobar(node, netapi, **_):
+    node.get_gate('gen').gate_function(0.1)
+    node.get_gate('foo').gate_function(0.3)
+    node.get_gate('bar').gate_function(0.5)
+""")
+    res, err = runtime.reload_code()
+    netapi = runtime.nodenets[test_nodenet].netapi
+    source = netapi.create_node("Neuron")
+    target = netapi.create_node("Neuron")
+    netapi.link(source, 'gen', target, 'gen')
+    source.activation = 0.73
+    foobar = netapi.create_node("foobar")
+    ns_uid = netapi.get_nodespace(None).uid
+    runtime.step_nodenet(test_nodenet)
+    runtime.save_nodenet(test_nodenet)
+    runtime.revert_nodenet(test_nodenet)
+    result = app.post_json('/rpc/get_nodes', {
+        'nodenet_uid': test_nodenet,
+        'nodespaces': [ns_uid],
+        'include_links': True
+    })
+    data = result.json_body['data']['nodes']
+    assert round(data[target.uid]['gate_activations']['gen'], 2) == 0.73
+    assert round(data[source.uid]['gate_activations']['gen'], 2) == 0
+    assert round(data[foobar.uid]['gate_activations']['gen'], 2) == 0.1
+    assert round(data[foobar.uid]['gate_activations']['foo'], 2) == 0.3
+    assert round(data[foobar.uid]['gate_activations']['bar'], 2) == 0.5

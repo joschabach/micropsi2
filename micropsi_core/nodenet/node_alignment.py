@@ -16,6 +16,7 @@ import math
 BORDER = 50.0
 GRID = 170.0
 PREFERRED_WIDTH = 8.0
+FLOWGRID = 270.0
 
 
 def align(nodenet, nodespace, entity_uids=False):
@@ -29,10 +30,15 @@ def align(nodenet, nodespace, entity_uids=False):
     """
     nodespace = nodenet.get_nodespace(nodespace).uid
 
+    # treat flowmodules seperately
+    flownodes = []
+    if hasattr(nodenet, "flow_module_instances"):
+        flownodes = nodenet.flow_module_instances.keys()
+
     unaligned_nodespaces = sorted(nodenet.get_nodespace(nodespace).get_known_ids('nodespaces'),
         key=lambda i: nodenet.get_nodespace(i).index)
-    unaligned_nodes = sorted(nodenet.get_nodespace(nodespace).get_known_ids('nodes'),
-        key=lambda i: nodenet.get_node(i).index)
+    unaligned_nodes = [x for x in sorted(nodenet.get_nodespace(nodespace).get_known_ids('nodes'),
+        key=lambda i: nodenet.get_node(i).index) if x not in flownodes]
 
     if entity_uids:
         unaligned_nodespaces = [id for id in unaligned_nodespaces if id in entity_uids]
@@ -40,9 +46,12 @@ def align(nodenet, nodespace, entity_uids=False):
         sensors = []
         actuators = []
         activators = []
-        ymin = min(nodenet.get_node(n).position[1] for n in unaligned_nodes + unaligned_nodespaces)
-        xmin = min(nodenet.get_node(n).position[0] for n in unaligned_nodes + unaligned_nodespaces)
-        start_position = (xmin, ymin, 0)
+        if unaligned_nodes or unaligned_nodespaces:
+            ymin = min(nodenet.get_node(n).position[1] for n in unaligned_nodes + unaligned_nodespaces)
+            xmin = min(nodenet.get_node(n).position[0] for n in unaligned_nodes + unaligned_nodespaces)
+            start_position = (xmin, ymin, 0)
+        else:
+            start_position = (BORDER + GRID / 2, BORDER, 0)
 
     else:
         sensors = [s for s in unaligned_nodes if nodenet.get_node(s).type == "Sensor"]
@@ -70,6 +79,12 @@ def align(nodenet, nodespace, entity_uids=False):
     actviator_group = HorizontalGroup([DisplayNode(i) for i in activators])
     por_groups.append(sensor_group)
     por_groups.append(actviator_group)
+
+    if len(flownodes):
+        flow_groups = align_flow_nodes(nodenet, entity_uids)
+        for g in flow_groups:
+            por_groups.append(g)
+
     # calculate actual coordinates by traversing the group structure
     por_groups.arrange(nodenet, start_position)
 
@@ -113,7 +128,8 @@ class DisplayNode(object):
         return 1
 
     def arrange(self, nodenet, starting_point=[0, 0, 0]):
-        nodenet.get_node(self.uid).position = starting_point
+        if self.uid is not None:
+            nodenet.get_node(self.uid).position = starting_point
 
 
 def unify_links(nodenet, node_id_list):
@@ -296,6 +312,51 @@ def _fix_link_inheritance(group, excluded_nodes):
                 del group.directions[d]
 
 
+def align_flow_nodes(nodenet, entity_uids):
+    toposort = nodenet.flow_toposort
+    startnode = None
+    i = 0
+    while True:
+        n = nodenet.get_node(toposort[i])
+        if n.inputmap == {}:
+            startnode = n
+            break
+        i += 1
+    if startnode is not None:
+        hopmap = OrderedDict()
+        hopmap[startnode.uid] = 0
+        for uid in toposort:
+            if uid not in hopmap:
+                node = nodenet.get_node(uid)
+                hop = 0
+                for key in node.inputmap:
+                    if node.inputmap[key]:
+                        source_uid = node.inputmap[key][0]
+                        hop = max(hopmap[source_uid] + 1, hop)
+                hopmap[uid] = hop
+        buckets = {}
+        highest = 1
+        farthest = 1
+        for uid in hopmap:
+            if not entity_uids or uid in entity_uids:
+                hops = hopmap[uid]
+                if hops not in buckets:
+                    buckets[hops] = []
+                buckets[hops].append(uid)
+                highest = max(len(buckets[hops]), highest)
+                farthest = max(hops, farthest)
+        flow_groups = [[]] * highest
+        nodes = hopmap
+        for i in range(highest):
+            flow_groups[i] = HorizontalGroup([DisplayNode(None)] * (farthest + 1), hspace=FLOWGRID)
+            for j, nodes in buckets.items():
+                if len(nodes) == highest - i:
+                    flow_groups[i][j] = DisplayNode(buckets[j].pop())
+        return flow_groups
+    else:
+        return [HorizontalGroup([DisplayNode(i) for i in toposort], hspace=FLOWGRID)]
+
+
 class UnorderedGroup(list):
 
     @property
@@ -305,9 +366,11 @@ class UnorderedGroup(list):
                 return False
         return True
 
-    def __init__(self, elements=None, parent=None):
+    def __init__(self, elements=None, parent=None, hspace=GRID, vspace=GRID):
         self.directions = {}
         self.parent = parent
+        self.hspace = hspace
+        self.vspace = vspace
         if elements:
             list.__init__(self, elements)
             for i in elements:
@@ -363,7 +426,7 @@ class UnorderedGroup(list):
         x, y, z = start_position
         for i in self:
             i.arrange(nodenet, [x, y, z])
-            y += i.height() * GRID
+            y += i.height() * self.vspace
 
 
 class HorizontalGroup(UnorderedGroup):
@@ -385,7 +448,7 @@ class HorizontalGroup(UnorderedGroup):
         for i in self:
             i.arrange(nodenet, [x, y, z])
             xshift = 1 if self.stackable else i.width()
-            x += xshift * GRID
+            x += xshift * self.hspace
 
 
 class VerticalGroup(UnorderedGroup):
@@ -406,7 +469,7 @@ class VerticalGroup(UnorderedGroup):
         x, y, z = start_position
         for i in self:
             i.arrange(nodenet, [x, y, z])
-            y += i.height() * GRID
+            y += i.height() * self.vspace
 
 
 def calculate_grid_position(index, start_position=[0, 0, 0]):

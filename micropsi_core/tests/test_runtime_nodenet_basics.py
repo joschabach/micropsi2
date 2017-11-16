@@ -61,41 +61,51 @@ def test_user_prompt(runtime, test_nodenet, resourcepath):
     "parameters": ["testparam"],
     "parameter_defaults": {
         "testparam": 13
-      }
+    },
+    "user_prompts": {
+        "promptident": {
+            "callback": "user_prompt_callback",
+            "parameters": [
+                {"name": "foo", "description": "value for foo", "default": 23},
+                {"name": "bar", "description": "value for bar", "default": 42}
+            ]
+        }
     }
-def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+}
+
+def testnodefunc(netapi, node=None, **prams):
+    if not hasattr(node, 'foo'):
+        node.foo = 0
+        node.bar = 1
+        netapi.show_user_prompt(node, "promptident")
+    node.get_gate("foo").gate_function(node.foo)
+    node.get_gate("bar").gate_function(node.bar)
+
+def user_prompt_callback(netapi, node, user_prompt_params):
+    \"\"\"Elaborate explanation as to what this user prompt is for\"\"\"
+    node.foo = int(user_prompt_params['foo'])
+    node.bar = int(user_prompt_params['bar'])
 """)
 
     runtime.reload_code()
     res, node_uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test")
+    runtime.reload_code()  # this breaks, if the nodetype overwrites the definition
     nativemodule = nodenet.get_node(node_uid)
-
-    options = [{'key': 'foo_parameter', 'label': 'Please give value for "foo"', 'values': [23, 42]}]
-    nodenet.netapi.ask_user_for_parameter(
-        nativemodule,
-        "foobar",
-        options
-    )
+    runtime.step_nodenet(test_nodenet)
     result, data = runtime.get_calculation_state(test_nodenet, nodenet={})
     assert 'user_prompt' in data
-    assert data['user_prompt']['msg'] == 'foobar'
+    assert data['user_prompt']['key'] == "promptident"
+    assert data['user_prompt']['msg'] == 'Elaborate explanation as to what this user prompt is for'
     assert data['user_prompt']['node']['uid'] == node_uid
-    assert data['user_prompt']['options'] == options
+    assert len(data['user_prompt']['parameters']) == 2
+    assert nativemodule.get_gate('foo').activation == 0
+    assert nativemodule.get_gate('bar').activation == 1
+
     # response
-    runtime.user_prompt_response(test_nodenet, node_uid, {'foo_parameter': 42}, True)
-    assert nodenet.get_node(node_uid).get_parameter('foo_parameter') == 42
-    assert nodenet.is_active
-    from micropsi_core.nodenet import nodefunctions
-    tmp = nodefunctions.concept
-    nodefunc = mock.Mock()
-    nodefunctions.concept = nodefunc
-    nodenet.step()
-    foo = nodenet.get_node(node_uid).clone_parameters()
-    foo.update({'foo_parameter': 42})
-    assert nodefunc.called_with(nodenet.netapi, nodenet.get_node(node_uid), foo)
-    nodenet.get_node(node_uid).clear_parameter('foo_parameter')
-    assert nodenet.get_node(node_uid).get_parameter('foo_parameter') is None
-    nodefunctions.concept = tmp
+    runtime.user_prompt_response(test_nodenet, node_uid, "promptident", {'foo': '111', 'bar': '222'}, False)
+    runtime.step_nodenet(test_nodenet)
+    assert nativemodule.get_gate('foo').activation == 111
+    assert nativemodule.get_gate('bar').activation == 222
 
 
 def test_user_notification(runtime, test_nodenet, node):
@@ -314,6 +324,7 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
 
 
 @pytest.mark.engine("dict_engine")
+@pytest.mark.engine("numpy_engine")
 def test_node_states(runtime, test_nodenet, node):
     nodenet = runtime.get_nodenet(test_nodenet)
     node = nodenet.get_node(node)
@@ -324,10 +335,9 @@ def test_node_states(runtime, test_nodenet, node):
     assert node.get_state('foobar') == 42
 
 
-@pytest.mark.engine("theano_engine")
 def test_node_states_numpy(runtime, test_nodenet, node, resourcepath):
+    np = pytest.importorskip("numpy")
     import os
-    import numpy as np
 
     nodenet = runtime.get_nodenet(test_nodenet)
     node = nodenet.get_node(node)
@@ -349,7 +359,7 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
 """)
 
     assert runtime.reload_code()
-    res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test", parameters={"threshold": "", "protocol_mode": "most_active_one"})
+    res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test")
 
     testnode = runtime.nodenets[test_nodenet].get_node(uid)
     testnode.set_state("string", "hugo")
@@ -367,6 +377,11 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
     assert testnode.get_state("list")[0]["eins"] == 1
     assert testnode.get_state("list")[1] == "boing"
     assert testnode.get_state("numpy").sum() == 10  # only numpy arrays have ".sum()"
+
+    testnode.set_state("wrong", (np.asarray([1, 2, 3]), 'tuple'))
+
+    with pytest.raises(ValueError):
+        runtime.save_nodenet(test_nodenet)
 
 
 def test_delete_linked_nodes(runtime, test_nodenet):
@@ -516,7 +531,7 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
 """)
 
     assert runtime.reload_code()
-    res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test", parameters={"threshold": "", "protocol_mode": "most_active_one"})
+    res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10], name="Test")
     res, neuron_uid = runtime.add_node(test_nodenet, 'Neuron', [10, 10])
     runtime.add_link(test_nodenet, neuron_uid, 'gen', uid, 'gen')
     runtime.add_link(test_nodenet, uid, 'gen', neuron_uid, 'gen')
@@ -565,6 +580,75 @@ def test_runtime_autosave_dict(runtime, test_nodenet, resourcepath):
             assert restored[key] == original[key]
 
 
+@pytest.mark.engine("numpy_engine")
+def test_runtime_autosave_numpy(runtime, test_nodenet, resourcepath):
+    import os
+    import tempfile
+    import zipfile
+    import numpy as np
+    from time import sleep
+    with open(os.path.join(resourcepath, "nodetypes", "Source.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "name": "Source",
+    "run_function_name": "source",
+    "inputs": [],
+    "outputs": ["X"]
+}
+
+import numpy as np
+
+def source(netapi, node, parameters):
+    return np.random.rand(8).astype(netapi.floatX)
+""")
+    with open(os.path.join(resourcepath, "nodetypes", "Target.py"), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "flow_module": True,
+    "implementation": "python",
+    "name": "Target",
+    "run_function_name": "target",
+    "inputs": ["X"],
+    "outputs": [],
+    "inputdims": [1]
+}
+
+def target(X, netapi, node, parameters):
+    node.set_state("incoming", X)
+""")
+    runtime.reload_code()
+    nodenet = runtime.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    source = netapi.create_node("Source", None, "Source")
+    target = netapi.create_node("Target", None, "Target")
+    netapi.flow(source, "X", target, "X")
+    neuron = netapi.create_node("Neuron", None, "Neuron")
+    netapi.link(neuron, 'gen', target, 'sub')
+    neuron.activation = 1
+    runtime.set_runner_condition(test_nodenet, steps=100)
+    runtime.start_nodenetrunner(test_nodenet)
+    count = 0
+    while runtime.nodenets[test_nodenet].is_active:
+        sleep(.1)
+        count += 1
+        assert count < 20  # quit if not done after 2 sec
+    filename = os.path.join(resourcepath, "nodenets", "__autosave__", "%s_%d.zip" % (test_nodenet, 100))
+    assert os.path.isfile(filename)
+    with zipfile.ZipFile(filename, 'r') as archive:
+        assert set(archive.namelist()) == {"nodenet.json", "flowgraph.pickle", "%s_numpystate.npz" % target.uid}
+        from micropsi_core.nodenet.numpy_engine.numpy_nodenet import NumpyNodenet
+        tmp = tempfile.TemporaryDirectory()
+        archive.extractall(tmp.name)
+        net = NumpyNodenet(tmp.name, "restored", uid=test_nodenet, native_modules=runtime.native_modules)
+        net.load()
+        nsource = net.netapi.get_node(source.uid)
+        ntarget = net.netapi.get_node(target.uid)
+        nneuron = net.netapi.get_node(neuron.uid)
+        assert nsource.name == "Source"
+        assert nsource.outputmap == {'X': {(ntarget.uid, 'X')}}
+        assert np.all(ntarget.get_state("incoming") == target.get_state("incoming"))
+        assert nneuron.get_gate('gen').get_links()[0].target_node == ntarget
+
+
 @pytest.mark.engine("theano_engine")
 def test_runtime_autosave_theano(runtime, test_nodenet, resourcepath):
     import os
@@ -589,7 +673,7 @@ def source_init(netapi, node, parameters):
     node.set_theta("weights", w_array)
 
 def source(netapi, node, parameters):
-    return node.get_theta("weights")
+    return node.get_theta("weights").get_value()
 """)
     with open(os.path.join(resourcepath, "nodetypes", "Target.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
@@ -603,7 +687,7 @@ def source(netapi, node, parameters):
 }
 
 def target(X, netapi, node, parameters):
-    node.set_state("incoming", X.get_value())
+    node.set_state("incoming", X)
 """)
 
     runtime.reload_code()
@@ -639,3 +723,17 @@ def target(X, netapi, node, parameters):
         assert np.all(nsource.get_theta("weights").get_value() == source.get_theta("weights").get_value())
         assert np.all(ntarget.get_state("incoming") == target.get_state("incoming"))
         assert nneuron.get_gate('gen').get_links()[0].target_node == ntarget
+
+
+@pytest.mark.engine("dict_engine")
+def test_last_uid_is_persisted(runtime, test_nodenet):
+    nodenet = runtime.nodenets[test_nodenet]
+    n1 = nodenet.netapi.create_node("Neuron")
+    ns1 = nodenet.netapi.create_nodespace(None)
+    assert len(n1.uid) == 2
+    assert len(ns1.uid) == 2
+    last_id = nodenet._last_assigned_node_id
+    runtime.save_nodenet(test_nodenet)
+    runtime.revert_nodenet(test_nodenet)
+    nodenet = runtime.get_nodenet(test_nodenet)
+    assert nodenet._last_assigned_node_id == last_id

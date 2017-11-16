@@ -35,10 +35,10 @@ def test_add_node(runtime, test_nodenet):
 
     nodespace = runtime.get_nodes(test_nodenet)
     assert len(nodespace.get("nodes", [])) == 0
-    res, uid = runtime.add_node(test_nodenet, "Pipe", [200, 250, 10], None, state=None, name="A")
+    res, uid1 = runtime.add_node(test_nodenet, "Pipe", [200, 250, 10], None, state=None, name="A")
     nodespace = runtime.get_nodes(test_nodenet)
     assert len(nodespace["nodes"]) == 1
-    node1 = nodespace["nodes"][uid]
+    node1 = nodespace["nodes"][uid1]
     assert node1["name"] == "A"
     assert node1["position"] == [200, 250, 10]
 
@@ -164,7 +164,7 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
 """)
     runtime.reload_code()
     reg = netapi.create_node("Neuron", None, "reg")
-    test = netapi.create_node("Testnode", None, "test")
+    test = netapi.create_node("Testnode", None)
     netapi.link(reg, 'gen', test, 'gen')
     netapi.link(test, 'bar', reg, 'gen')
     data_before = runtime.nodenets[test_nodenet].export_json()
@@ -236,6 +236,7 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
 
 
 @pytest.mark.engine("dict_engine")
+@pytest.mark.engine("numpy_engine")
 def test_engine_specific_nodetype_dict(runtime, test_nodenet, resourcepath):
     import os
     nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
@@ -365,3 +366,39 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
     runtime.revert_nodenet(test_nodenet)
     node = runtime.nodenets[test_nodenet].get_node(uid)
     assert node.get_parameter("testparam") == 42
+
+
+def test_change_node_parameters(runtime, test_nodenet, resourcepath):
+    import os
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
+
+    def write_nodetypedef(params=[]):
+        with open(nodetype_file, 'w') as fp:
+            fp.write("""nodetype_definition = {
+                "name": "Testnode",
+                "slottypes": ["gen", "foo", "bar"],
+                "gatetypes": ["gen", "foo", "bar"],
+                "nodefunction_name": "testnodefunc",
+                "parameters": %s}
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+    """ % str(params))
+
+    write_nodetypedef(params=["foo", "bar"])
+    runtime.reload_code()
+    res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10, 10], name="Test")
+    node = runtime.nodenets[test_nodenet].get_node(uid)
+    keys = node.clone_parameters().keys()
+    assert "foo" in keys
+    assert "bar" in keys
+    node.set_parameter("foo", 42)
+
+    write_nodetypedef(params=["spam", "eggs"])
+    runtime.reload_code()
+    node = runtime.nodenets[test_nodenet].get_node(uid)
+    keys = node.clone_parameters().keys()
+    assert "foo" not in keys
+    assert "bar" not in keys
+    assert "spam" in keys
+    assert "eggs" in keys
+    assert node.get_parameter('spam') is None
+    assert node.get_parameter('eggs') is None

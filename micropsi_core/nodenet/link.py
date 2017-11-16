@@ -71,3 +71,6 @@ class Link(metaclass=ABCMeta):
                 "source_node_uid": self.source_node.uid,
             })
         return data
+
+    def __repr__(self):
+        return "<%s %s:%s -> %s:%s>" % (type(self).__name__, self.source_node, self.source_gate.type, self.target_slot.type, self.target_node)

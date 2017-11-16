@@ -37,10 +37,6 @@ def test_node_netapi_create_neuron_node(runtime, test_nodenet):
     assert data['name'] == node.name
     assert data['type'] == node.type
 
-    node = netapi.create_node("Neuron", None)
-    # TODO: teh weirdness, server-internally, we return uids as names, clients don't see this, confusion ensues
-    # assert data['name'] == node.name
-
 
 def test_node_netapi_create_pipe_node(runtime, test_nodenet):
     # test concept node generation
@@ -82,6 +78,7 @@ def test_node_netapi_create_optional_arguments(runtime, test_nodenet):
 
 
 @pytest.mark.engine("dict_engine")
+@pytest.mark.engine("numpy_engine")
 def test_node_netapi_create_concept_node(runtime, test_nodenet):
     # test concept node generation
     net, netapi, source = prepare(runtime, test_nodenet)
@@ -550,6 +547,7 @@ def test_node_netapi_link_with_reciprocal(runtime, test_nodenet):
 
 
 @pytest.mark.engine("dict_engine")
+@pytest.mark.engine("numpy_engine")
 def test_node_netapi_link_with_reciprocal_and_concepts(runtime, test_nodenet):
     # test linking pipe and concept nodes with reciprocal links
     net, netapi, source = prepare(runtime, test_nodenet)
@@ -722,7 +720,7 @@ def test_copy_nodes(runtime, test_nodenet):
     a3 = netapi.create_node('Pipe', None, "a3")
     netapi.link(a3, 'gen', a1, 'gen')
     netapi.link(a1, 'por', a2, 'por')
-    a1.set_parameter('expecation', 0.6)
+    a1.set_parameter('expectation', 0.6)
     a1.set_gate_configuration('gen', 'sigmoid', {'bias': 1.3})
     mapping = netapi.copy_nodes([a1, a2], nodespace.uid)
     assert a1 in mapping
@@ -966,6 +964,7 @@ def test_add_gate_monitor(runtime, test_nodenet, node):
 
 
 @pytest.mark.engine("dict_engine")
+@pytest.mark.engine("numpy_engine")
 def test_add_slot_monitor(runtime, test_nodenet, node):
     nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi

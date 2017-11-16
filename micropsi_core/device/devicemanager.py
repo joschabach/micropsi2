@@ -18,10 +18,11 @@ device_json_path = None
 def reload_device_types(path):
     global ignore_list, device_types
     if not os.path.isdir(path):
-        return
+        return []
     if path not in sys.path:
         sys.path.append(path)
     device_types = {}
+    errors = []
     for subdir in os.scandir(path):
         if subdir.is_dir() and subdir.name not in ignore_list:
             for sources in os.scandir(os.path.join(path, subdir.name)):
@@ -39,7 +40,8 @@ def reload_device_types(path):
                             if Device in inspect.getmro(cls) and not inspect.isabstract(cls):
                                 device_types[name] = cls
                     except Exception as e:
-                        raise e
+                        errors.append("%s when importing device file %s: %s" % (e.__class__.__name__, modpath, str(e)))
+    return errors
 
 
 def get_devices():

@@ -1931,7 +1931,7 @@ def reload_code():
     errors = []
 
     # load devices
-    devicemanager.reload_device_types(DEVICE_PATH)
+    errors.extend(devicemanager.reload_device_types(DEVICE_PATH))
     devicemanager.reload_devices(DEVICE_PERSISTENCY_PATH)
 
     # load builtins:

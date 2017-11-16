@@ -1,5 +1,5 @@
 from micropsi_core.device.device import Device
-from micropsi_core.tools import generate_uid
+from micropsi_core.tools import generate_uid, post_mortem
 import inspect
 import importlib
 import importlib.util
@@ -40,6 +40,7 @@ def reload_device_types(path):
                             if Device in inspect.getmro(cls) and not inspect.isabstract(cls):
                                 device_types[name] = cls
                     except Exception as e:
+                        post_mortem()
                         errors.append("%s when importing device file %s: %s" % (e.__class__.__name__, modpath, str(e)))
     return errors
 

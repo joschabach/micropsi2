@@ -79,6 +79,6 @@ def reload_devices(json_path):
                     continue
                 devices[k] = device_types[data[k]['type']](data[k]['config'])
     except FileNotFoundError:
-        logging.getLogger('system').warning("Device persistency file not found: %s" % json_path)
+        logging.getLogger('system').info("Device persistency file not found: %s" % json_path)
     except ValueError:
         raise ValueError("Malforfmed JSON file: %s" % json_path)

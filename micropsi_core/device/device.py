@@ -46,7 +46,7 @@ class Device(metaclass=ABCMeta):
         Should be implemented to return the size of the data that can be
         read/written from/to devices in one iteration
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get_prefix(self):
@@ -54,7 +54,7 @@ class Device(metaclass=ABCMeta):
         Should be implemented to return the prefix used for mapping devices
         to datasources/datatargets
         """
-        pass
+        pass  # pragma: no cover
 
 
 class InputDevice(Device):
@@ -67,7 +67,7 @@ class InputDevice(Device):
         Implementation should return the array (of size get_data_size())
         with the data from the device
         """
-        pass
+        pass  # pragma: no cover
 
 
 class OutputDevice(Device):
@@ -80,4 +80,4 @@ class OutputDevice(Device):
         Implementation should accept the array (of size get_data_size())
         with the data sent to the device
         """
-        pass
+        pass  # pragma: no cover

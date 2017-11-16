@@ -30,8 +30,6 @@ def reload_device_types(path):
                     try:
                         modpath = os.path.join(path, subdir.name, sources.name)
                         modname = subdir.name + '.' + sources.name.strip('.py')
-                        if modname in sys.modules.keys():
-                            del sys.modules[modname]
                         spec = importlib.util.spec_from_file_location(modname, modpath)
                         module = importlib.util.module_from_spec(spec)
                         spec.loader.exec_module(module)

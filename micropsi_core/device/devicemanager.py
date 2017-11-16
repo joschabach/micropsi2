@@ -7,9 +7,10 @@ import os
 import sys
 import json
 import logging
+import shutil
 
 
-ignore_list = ['__pycache__', '__init__.py']
+ignore_list = ['__init__.py']
 device_types = {}
 devices = {}
 device_json_path = None
@@ -25,11 +26,16 @@ def reload_device_types(path):
     errors = []
     for subdir in os.scandir(path):
         if subdir.is_dir() and subdir.name not in ignore_list:
+            # first, remove pycache folders
+            for entry in os.scandir(os.path.join(path, subdir.name)):
+                if entry.is_dir() and entry.name == '__pycache__':
+                    shutil.rmtree(os.path.join(path, subdir.name, entry.name))
+            # then, load modules
             for sources in os.scandir(os.path.join(path, subdir.name)):
-                if sources.is_file() and sources.name not in ignore_list:
+                if sources.is_file() and sources.name not in ignore_list and sources.name.endswith('.py'):
                     try:
                         modpath = os.path.join(path, subdir.name, sources.name)
-                        modname = subdir.name + '.' + sources.name.strip('.py')
+                        modname = 'devices.' + subdir.name + '.' + sources.name.strip('.py')
                         spec = importlib.util.spec_from_file_location(modname, modpath)
                         module = importlib.util.module_from_spec(spec)
                         spec.loader.exec_module(module)

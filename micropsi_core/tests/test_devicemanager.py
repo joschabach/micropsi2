@@ -27,6 +27,8 @@ class DummyDevice(InputDevice):
         fp.write(dummy_device)
 
 
+@pytest.mark.engine("theano_engine")
+@pytest.mark.engine("numpy_engine")
 def test_devicemanager(runtime, test_nodenet, resourcepath):
     create_dummy_device(resourcepath)
 
@@ -44,6 +46,8 @@ def test_devicemanager(runtime, test_nodenet, resourcepath):
     assert uid not in runtime.get_devices()
 
 
+@pytest.mark.engine("theano_engine")
+@pytest.mark.engine("numpy_engine")
 def test_devices_with_worldadapters(runtime, test_nodenet, resourcepath, default_world):
     create_dummy_device(resourcepath)
 

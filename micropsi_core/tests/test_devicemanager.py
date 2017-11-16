@@ -11,7 +11,7 @@ class DummyDevice(InputDevice):
 
     def read_data(self):
         import numpy as np
-        return np.array("""+retval+""")
+        return np.array("""+retval+""").astype(self.floatX)
 
     def get_data_size(self):
         return 5

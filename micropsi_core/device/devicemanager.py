@@ -55,7 +55,7 @@ def add_device(device_type, config):
         with open(device_json_path, 'w', encoding='utf-8') as devices_json:
             devices_json.write(json.dumps(get_devices()))
         return True, uid
-    return False
+    return False, "Unknown device type"
 
 
 def remove_device(device_uid):

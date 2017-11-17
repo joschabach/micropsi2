@@ -422,7 +422,8 @@ try:
                     raise KeyError("Device not connected: %s" % k)
                 if issubclass(devicemanager.devices[k].__class__, InputDevice):
                     data = devicemanager.devices[k].read_data()
-                    self.set_flow_datasource(self.device_map[k], data)
+                    assert isinstance(data, np.ndarray), "device %s must provide numpy array" % self.device_map[key]
+                    self.set_flow_datasource(self.device_map[k], data.astype(self.floatX))
 
         def write_to_world(self):
             for k in self.device_map:

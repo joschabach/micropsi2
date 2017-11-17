@@ -1,12 +1,5 @@
 from abc import ABCMeta, abstractmethod
 
-# configure dtype for value arrays.
-# TODO: Move this and the config in theano_nodenet to one central point
-# see worldadapter.py
-from configuration import config as settings
-
-import numpy as np
-
 
 class Device(metaclass=ABCMeta):
     """
@@ -20,10 +13,6 @@ class Device(metaclass=ABCMeta):
                 config[item['name']] = item.get('default')
         for key in config:
             setattr(self, key, config[key])
-        self.floatX = np.float32
-        if settings['theano']['precision'] == "64":
-            self.floatX = np.float64
-
 
     def get_config(self):
         config = dict()

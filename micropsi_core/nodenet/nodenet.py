@@ -73,7 +73,8 @@ class Nodenet(metaclass=ABCMeta):
             'runner_condition': self._runner_condition,
             'use_modulators': self.use_modulators,
             'nodespace_ui_properties': self._nodespace_ui_properties,
-            'worldadapter_config': {} if not self.worldadapter_instance else self.worldadapter_instance.config
+            'worldadapter_config': {} if not self.worldadapter_instance else self.worldadapter_instance.config,
+            'device_map': {} if not self.worldadapter_instance else self.worldadapter_instance.device_map
         }
         return data
 

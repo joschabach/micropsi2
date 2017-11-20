@@ -15,6 +15,7 @@
                     <ul class="dropdown-menu">
                         <li><a href="/agent/edit" class="nodenet_new">New...</a></li>
                         <li class="divider"></li>
+                        <li data="nodenet-needed"><a href="/agent/edit?id=" class="nodenet_edit">Edit</a></li>
                         <li data="nodenet-needed"><a href="#" class="nodenet_delete">Delete</a></li>
                         <li data="nodenet-needed"><a href="#" class="nodenet_save">Save</a></li>
                         <li data="nodenet-needed"><a href="#" class="nodenet_revert">Revert</a></li>
@@ -39,8 +40,9 @@
                     <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_world">Environment
                         <b class="caret"></b></a>
                     <ul class="dropdown-menu">
-                        <li><a href="/environment/edit" class="world_new">New...</a></li>
-                        <li data="world-needed"><a href="/environment/edit" class="world_edit">Edit</a></li>
+                        <li><a href="/environment/edit" class="world_manage">Manage worlds</a></li>
+                        <li class="divider"></li>
+                        <li><a href="/device/edit" class="device_manage">Manage devices</a></li>
                         <li class="divider"></li>
                         <li data="world-needed"><a href="#" class="world_delete">Delete</a></li>
                         <li data="world-needed"><a href="#" class="world_save">Save</a></li>

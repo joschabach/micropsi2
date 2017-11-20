@@ -235,7 +235,7 @@ class World(object):
                     objects[uid] = obj
         return objects
 
-    def register_nodenet(self, worldadapter, nodenet_uid, nodenet_name=None, config={}):
+    def register_nodenet(self, worldadapter, nodenet_uid, nodenet_name=None, config={}, device_map={}):
         """Attempts to register a nodenet at this world.
 
         Returns True, spawned_agent_instance if successful,
@@ -253,7 +253,7 @@ class World(object):
                 return False, "Nodenet agent already exists in this world, but has the wrong type"
             elif config == self.agents[nodenet_uid].config:
                     return True, self.agents[nodenet_uid]
-        return self.spawn_agent(worldadapter, nodenet_uid, nodenet_name=nodenet_name, config=config)
+        return self.spawn_agent(worldadapter, nodenet_uid, nodenet_name=nodenet_name, config=config, device_map=device_map)
 
     def unregister_nodenet(self, nodenet_uid):
         """Removes the connection between a nodenet and its incarnation in this world; may remove the corresponding
@@ -266,7 +266,7 @@ class World(object):
         if nodenet_uid in self.data['agents']:
             del self.data['agents'][nodenet_uid]
 
-    def spawn_agent(self, worldadapter_name, nodenet_uid, nodenet_name=None, config={}):
+    def spawn_agent(self, worldadapter_name, nodenet_uid, nodenet_name=None, config={}, device_map={}):
         """Creates an agent object,
 
         Returns True, spawned_agent_instance if successful,
@@ -278,7 +278,8 @@ class World(object):
                 uid=nodenet_uid,
                 type=worldadapter_name,
                 name=nodenet_name or worldadapter_name,
-                config=config)
+                config=config,
+                device_map=device_map)
             return True, self.agents[nodenet_uid]
         else:
             self.logger.error("World %s does not support Worldadapter %s" % (self.name, worldadapter_name))
@@ -338,5 +339,5 @@ class World(object):
 
 
 class DefaultWorld(World):
-    supported_worldadapters = ['Default', 'DefaultArray']
+    supported_worldadapters = ['Default', 'ArrayWorldAdapter']
     supported_worldobjects = ['TestObject']

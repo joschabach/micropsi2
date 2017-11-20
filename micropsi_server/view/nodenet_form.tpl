@@ -209,9 +209,10 @@
 
 updateWorldAdapterSelector();
 var device_section = $('.worldadapter-device-config');
+var engine_field = $('#nn_engine');
 function wa_changed(evt){
     var $el = $(event.target);
-    if($el.val()){
+    if($el.val() && engine_field.val() != "dict_engine"){
         device_section.show();
     } else {
         device_section.hide();

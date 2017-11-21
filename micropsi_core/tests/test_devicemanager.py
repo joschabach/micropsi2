@@ -7,8 +7,19 @@ def create_dummy_device(resourcepath, retval="[1,2,3,4,5]"):
 from micropsi_core.device.device import InputDevice
 
 class DummyDevice(InputDevice):
+
+    @classmethod
+    def get_options(cls):
+        opts = super().get_options()
+        opts.append({
+            'name': 'foobar',
+            'default': 42
+        })
+        return opts
+
     def __init__(self, config):
         super().__init__(config)
+        self.init_foobar = config['foobar']
 
     def read_data(self):
         import numpy as np
@@ -39,9 +50,14 @@ def test_devicemanager(runtime, test_nodenet, resourcepath):
 
     _, uid = runtime.add_device('DummyDevice', {'name': 'foo'})
     assert uid in runtime.get_devices()
+    assert runtime.get_devices()[uid]['config']['name'] == 'foo'
+    assert runtime.get_devices()[uid]['config']['foobar'] == 42
+    assert runtime.devicemanager.devices[uid].init_foobar == 42
 
-    runtime.set_device_properties(uid, {'name': 'bar'})
+    runtime.set_device_properties(uid, {'name': 'bar', 'foobar': 23})
     assert runtime.get_devices()[uid]['config']['name'] == 'bar'
+    assert runtime.get_devices()[uid]['config']['foobar'] == 23
+    assert runtime.devicemanager.devices[uid].init_foobar == 23
 
     runtime.remove_device(uid)
     assert uid not in runtime.get_devices()

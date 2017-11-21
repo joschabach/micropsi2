@@ -53,10 +53,13 @@ def get_devices():
     return dict((k, devices[k].get_config()) for k in devices)
 
 
-def add_device(device_type, config):
+def add_device(device_type, config, dev_uid=None):
     if device_type in device_types:
         dev = device_types[device_type](config)
-        uid = generate_uid()
+        if dev_uid is None:
+            uid = generate_uid()
+        else:
+            uid = dev_uid
         devices[uid] = dev
         with open(device_json_path, 'w', encoding='utf-8') as devices_json:
             devices_json.write(json.dumps(get_devices()))

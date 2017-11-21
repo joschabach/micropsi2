@@ -24,10 +24,6 @@ class Device(metaclass=ABCMeta):
         info['prefix'] = self.get_prefix()
         return info
 
-    def set_config(self, config):
-        for key in config:
-            setattr(self, key, config[key])
-
     @classmethod
     def get_options(cls):
         """

@@ -1810,15 +1810,39 @@ def parse_native_module_file(path):
 def nodedef_sanity_check(nodetype_definition):
     """ catch some common errors in nodetype definitions """
     nd = nodetype_definition
+    missing_keys = []
+    mistyped_keys = {}
+    errors = []
+    if 'name' not in nd:
+        missing_keys.append('name')
+    if nd.get('flow_module', False):
+        if nd.get('implementation') == 'theano':
+            # chedck for mismatch between nr of inputdims and nr of inputs
+            nd['engine'] = 'theano_engine'
+            n_in = len(nd.get('inputs', []))
+            n_indims = len(nd.get('inputdims', []))
+            if n_in != n_indims:
+                errors.append('%s inputs but %s inputdims have been given' % (n_in, n_indims))
+            if 'build_function_name' not in nd:
+                missing_keys.append('build_function_name')
+        else:
+            missing_keys.extend([key for key in ['run_function_name', 'inputs', 'outputs'] if key not in nd])
+    else:
+        if 'nodefunction_name' not in nd:
+            missing_keys.append('nodefunction_name')
 
-    if nd.get('flow_module', False) and nd.get('implementation') == 'theano':
-        # chedck for mismatch between nr of inputdims and nr of inputs
-        nd['engine'] = 'theano_engine'
-        n_in = len(nd.get('inputs', []))
-        n_indims = len(nd.get('inputdims', []))
-        if n_in != n_indims:
-            raise Exception('Node takes %s inputs but %s inputdims have been given' % (n_in, n_indims))
-
+    if type(nd.get('parameters', [])) != list:
+        mistyped_keys['parameters'] = 'list'
+    if type(nd.get('parameter_defaults', {})) != dict:
+        mistyped_keys['parameter_defaults'] = 'dict'
+    if type(nd.get('parameter_values', {})) != dict:
+        mistyped_keys['parameter_values'] = 'dict'
+    for key in missing_keys:
+        errors.append("Nodetypedefinition needs key '%s'" % key)
+    for key in mistyped_keys:
+        errors.append("%s must be given as type %s" % (key, mistyped_keys[key]))
+    if errors:
+        raise RuntimeError("\n  ".join(errors))
     return nodetype_definition
 
 

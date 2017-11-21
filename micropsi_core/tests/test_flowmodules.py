@@ -1291,3 +1291,17 @@ def test_flow_overlapping_graphs(runtime, test_nodenet, default_world, resourcep
     oldval = worldadapter.flow_datasources['vision']
     nodenet.step()
     assert np.all(worldadapter.flow_datatargets['motor'] == oldval * 6)
+
+
+@pytest.mark.engine("theano_engine")
+@pytest.mark.engine("numpy_engine")
+def test_malformed_flownodetype_defintion(runtime, test_nodenet, resourcepath):
+    import os
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
+    with open(nodetype_file, 'w') as fp:
+        fp.write("""nodetype_definition = {
+            "flow_module": True,
+            "name": "broken"}""")
+    res, errors = runtime.reload_code()
+    assert not res
+    assert "run_function_name" in errors[0]

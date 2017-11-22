@@ -1,3 +1,4 @@
+html5lib==0.9999999
 beautifulsoup4==4.4.1
 CherryPy==5.4.0
 coloredlogs==6.0

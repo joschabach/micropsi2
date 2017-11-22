@@ -664,9 +664,9 @@ def edit_nodenet():
     user_id, permissions, token = get_request_data()
     nodenet_uid = request.params.get('id')
     title = 'Edit Agent' if nodenet_uid is not None else 'New Agent'
-
     return template("nodenet_form.tpl", title=title,
-        # nodenet_uid=nodenet_uid,
+        nodenet=None if not nodenet_uid else runtime.get_nodenet(nodenet_uid).metadata,
+        devices=runtime.get_devices(),
         nodenets=runtime.get_available_nodenets(),
         worldtypes=runtime.get_available_world_types(),
         templates=runtime.get_available_nodenets(),
@@ -680,24 +680,44 @@ def write_nodenet():
     params = dict((key, request.forms.getunicode(key)) for key in request.forms)
     worldadapter_name = params['nn_worldadapter']
     wa_params = {}
+    device_map = {}
     for key in params:
         if key.startswith('worldadapter_%s_' % worldadapter_name):
             strip = len("worldadapter_%s_" % worldadapter_name)
             wa_params[key[strip:]] = params[key]
+        elif key.startswith('device-map-'):
+            uid = key[11:]
+            device_map[uid] = params['device-name-%s' % uid]
+
     if "manage nodenets" in permissions:
-        result, nodenet_uid = runtime.new_nodenet(
-            params['nn_name'],
-            engine=params['nn_engine'],
-            worldadapter=params['nn_worldadapter'],
-            template=params.get('nn_template'),
-            owner=user_id,
-            world_uid=params.get('nn_world'),
-            use_modulators=params.get('nn_modulators', False),
-            worldadapter_config=wa_params)
-        if result:
-            return dict(status="success", msg="Agent created", nodenet_uid=nodenet_uid)
+        if not params.get('nodenet_uid'):
+            result, nodenet_uid = runtime.new_nodenet(
+                params['nn_name'],
+                engine=params['nn_engine'],
+                worldadapter=params['nn_worldadapter'],
+                template=params.get('nn_template'),
+                owner=user_id,
+                world_uid=params.get('nn_world'),
+                use_modulators=params.get('nn_modulators', False),
+                worldadapter_config=wa_params,
+                device_map=device_map)
+            if result:
+                return dict(status="success", msg="Agent created", nodenet_uid=nodenet_uid)
+            else:
+                return dict(status="error", msg="Error saving agent: %s" % nodenet_uid)
         else:
-            return dict(status="error", msg="Error saving agent: %s" % nodenet_uid)
+            result = runtime.set_nodenet_properties(
+                params['nodenet_uid'],
+                nodenet_name=params['nn_name'],
+                worldadapter=params['nn_worldadapter'],
+                world_uid=params['nn_world'],
+                owner=user_id,
+                worldadapter_config=wa_params,
+                device_map=device_map)
+            if result:
+                return dict(status="success", msg="Changes saved")
+            else:
+                return dict(status="error", msg="Error saving changes!")
     return dict(status="error", msg="Insufficient rights to write agent")
 
 
@@ -730,44 +750,27 @@ def export_world(world_uid):
 @micropsi_app.route("/environment/edit")
 def edit_world_form():
     token = request.get_cookie("token")
-    world_uid = request.params.get('id', None)
-    world = None
-    if world_uid:
-        world = runtime.worlds.get(world_uid)
-    title = 'Edit Environment' if world is not None else 'New Environment'
     worldtypes = runtime.get_available_world_types()
-    return template("world_form.tpl", title=title,
+    world_data = runtime.world_data
+    return template("world_form.tpl",
         worldtypes=worldtypes,
-        world=world,
+        world_data=world_data,
         version=VERSION,
         user_id=usermanager.get_user_id_for_session_token(token),
         permissions=usermanager.get_permissions_for_session_token(token))
 
 
-@micropsi_app.route("/environment/edit", method="POST")
-def edit_world():
-    params = dict((key, request.forms.getunicode(key)) for key in request.forms)
-    world_uid = params.get('world_uid')
-    if world_uid:
-        world_type = runtime.worlds[world_uid].__class__.__name__
-    else:
-        world_type = params['world_type']
-    config = {}
-    for p in params:
-        if p.startswith(world_type + '_'):
-            config[p[len(world_type) + 1:]] = params[p]
-    user_id, permissions, token = get_request_data()
-    if "manage worlds" in permissions:
-        if world_uid:
-            runtime.set_world_properties(world_uid, world_name=params['world_name'], config=config)
-            return dict(status="success", msg="Environment changes saved")
-        else:
-            result, uid = runtime.new_world(params['world_name'], world_type, user_id, config=config)
-            if result:
-                return dict(status="success", msg="Environment created", world_uid=uid)
-            else:
-                return dict(status="error", msg=": %s" % result)
-    return dict(status="error", msg="Insufficient rights to create environment")
+@micropsi_app.route("/device/edit")
+def edit_device_form():
+    token = request.get_cookie("token")
+    device_types = runtime.get_device_types()
+    device_data = runtime.get_devices()
+    return template("device_form.tpl",
+        device_types=device_types,
+        device_data=device_data,
+        version=VERSION,
+        user_id=usermanager.get_user_id_for_session_token(token),
+        permissions=usermanager.get_permissions_for_session_token(token))
 
 
 @micropsi_app.route("/agent_list/")
@@ -803,8 +806,9 @@ def edit_runner_properties():
         return template("runner_form", action="/config/runner", value=runtime.get_runner_properties())
 
 
+@micropsi_app.route("/create_worldadapter_selector/")
 @micropsi_app.route("/create_worldadapter_selector/<world_uid>")
-def create_worldadapter_selector(world_uid):
+def create_worldadapter_selector(world_uid=None):
     return template("worldadapter_selector",
         world_uid=world_uid,
         nodenets=runtime.get_available_nodenets(),
@@ -845,7 +849,7 @@ def get_nodes(nodenet_uid, nodespaces=[], include_links=True, links_to_nodespace
 
 
 @rpc("new_nodenet")
-def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadapter=None, world_uid=None, use_modulators=None, worldadapter_config={}):
+def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadapter=None, world_uid=None, use_modulators=None, worldadapter_config={}, device_map={}):
     """ Create a new nodenet with the given configuration """
     if owner is None:
         owner, _, _ = get_request_data()
@@ -857,7 +861,8 @@ def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadap
         owner=owner,
         world_uid=world_uid,
         use_modulators=use_modulators,
-        worldadapter_config=worldadapter_config)
+        worldadapter_config=worldadapter_config,
+        device_map=device_map)
 
 
 @rpc("get_calculation_state")
@@ -926,9 +931,9 @@ def delete_nodenet(nodenet_uid):
 
 
 @rpc("set_nodenet_properties", permission_required="manage nodenets")
-def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None, worldadapter_config={}):
+def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None, worldadapter_config={}, device_map={}):
     """ Set the nodenet's properties. """
-    return runtime.set_nodenet_properties(nodenet_uid, nodenet_name=nodenet_name, worldadapter=worldadapter, world_uid=world_uid, owner=owner, worldadapter_config=worldadapter_config)
+    return runtime.set_nodenet_properties(nodenet_uid, nodenet_name=nodenet_name, worldadapter=worldadapter, world_uid=world_uid, owner=owner, worldadapter_config=worldadapter_config, device_map=device_map)
 
 
 @rpc("set_node_state")
@@ -1062,6 +1067,41 @@ def get_behavior_state_rpc(token):
 def abort_behavior_rpc(token):
     """ Abort behavior identified with the token """
     return runtime.abort_behavior(token)
+
+
+# Device
+
+@rpc("get_device_types")
+def get_device_types():
+    """ Return a dict with device types as keys and config dict as value """
+    data = runtime.get_device_types()
+    return True, data
+
+
+@rpc("get_devices")
+def get_devices():
+    """ Return a dict with device uids as keys and config dict as value """
+    data = runtime.get_devices()
+    return True, data
+
+
+@rpc("add_device")
+def add_device(device_type, config={}):
+    """ Create a new device of the given type with the given configuration """
+    return runtime.add_device(device_type, config)
+
+
+@rpc("remove_device")
+def remove_device(device_uid):
+    """ Remove the device specified by the uid """
+    return runtime.remove_device(device_uid)
+
+
+@rpc("set_device_properties")
+def set_device_properties(device_uid, config):
+    """ Reconfigure the device specified by the uid """
+    return runtime.set_device_properties(device_uid, config)
+
 
 # World
 

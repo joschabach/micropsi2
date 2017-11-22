@@ -60,6 +60,7 @@ data_path = os.path.abspath(data_path)
 config.add_section('paths')
 config['paths']['usermanager_path'] = os.path.join(dirinfo.user_data_dir, 'user-db.json')
 config['paths']['server_settings_path'] = os.path.join(dirinfo.user_data_dir, 'server-config.json')
+config['paths']['device_settings_path'] = os.path.join(dirinfo.user_data_dir, 'devices.json')
 
 for key in ['agent_directory', 'world_directory', 'persistency_directory']:
     if key in config['micropsi2']:

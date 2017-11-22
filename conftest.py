@@ -35,6 +35,7 @@ cfg['paths']['world_directory'] = testpath
 cfg['paths']['persistency_directory'] = testpath
 cfg['paths']['server_settings_path'] = os.path.join(testpath, 'server_cfg.json')
 cfg['paths']['usermanager_path'] = os.path.join(testpath, 'user-db.json')
+cfg['paths']['device_settings_path'] = os.path.join(testpath, 'devices.json')
 
 if 'logfile' in cfg['logging']:
     del cfg['logging']['logfile']

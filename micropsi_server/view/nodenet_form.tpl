@@ -39,6 +39,9 @@
                     <label class="control-label" for="nn_engine">Engine</label>
                     <div class="controls">
                         <select class="input-xlarge" id="nn_engine" name="nn_engine">
+                            %if numpy_available:
+                            <option value="numpy_engine">numpy_engine</option>
+                            %end
                             %if theano_available:
                             <option value="theano_engine">theano_engine</option>
                             %end

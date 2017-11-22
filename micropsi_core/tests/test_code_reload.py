@@ -15,6 +15,7 @@ def test_code_reload(runtime, test_nodenet, resourcepath):
     worldjsonf = os.path.join(resourcepath, 'dummyworld', 'worlds.json')
     worldf = os.path.join(resourcepath, 'dummyworld', 'dummyworld.py')
     worldsharedf = os.path.join(resourcepath, 'shared_utils', 'stuff.py')
+    open(os.path.join(resourcepath, 'shared_utils', '__init__.py'), 'w').close()
 
     def write_resources(nodevalues, datasource_name, datatarget_name, worldvalues):
         with open(nodetypef, 'w') as fp:
@@ -80,7 +81,7 @@ def get_values():
 
     write_resources([3, 5, 7], "source", "target", [13, 15, 17, 19])
     res, errors = runtime.reload_code()
-    # assert res
+    assert res
 
     res, wuid = runtime.new_world("dummyworld", "DummyWorld")
     runtime.set_nodenet_properties(test_nodenet, world_uid=wuid, worldadapter="DummyWA")
@@ -120,6 +121,7 @@ def get_values():
 
 
 @pytest.mark.engine("theano_engine")
+@pytest.mark.engine("numpy_engine")
 def test_renaming_flow_datasources(runtime, test_nodenet, resourcepath):
     import os
 
@@ -153,9 +155,9 @@ class SimpleArrayWA(ArrayWorldAdapter):
     with open(os.path.join(resourcepath, "nodetypes", "Double.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
     "flow_module": True,
-    "implementation": "theano",
+    "implementation": "python",
     "name": "Double",
-    "build_function_name": "double",
+    "run_function_name": "double",
     "inputs": ["inputs"],
     "outputs": ["outputs"],
     "inputdims": [1]

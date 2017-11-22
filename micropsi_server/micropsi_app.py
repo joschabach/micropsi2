@@ -49,12 +49,18 @@ bottle.TEMPLATE_PATH.insert(1, os.path.join(APP_PATH, 'static', ''))
 bottle.BaseRequest.MEMFILE_MAX = 5 * 1024 * 1024
 
 theano_available = True
+numpy_available = True
 try:
     import theano
 except ImportError:
     theano_available = False
+try:
+    import numpy
+except ImportError:
+    numpy_available = False
 
 bottle.BaseTemplate.defaults['theano_available'] = theano_available
+bottle.BaseTemplate.defaults['numpy_available'] = numpy_available
 
 # runtime = micropsi_core.runtime.MicroPsiRuntime()
 usermanager = usermanagement.UserManager()
@@ -114,7 +120,6 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                         except json.JSONDecodeError:
                             response.status = 400
                             return {'status': 'error', 'data': "Malformed arguments for remote procedure call: %s" % str(request.params.__dict__)}
-
             user_id, permissions, token = get_request_data()
             if permission_required and permission_required not in permissions:
                 response.status = 401

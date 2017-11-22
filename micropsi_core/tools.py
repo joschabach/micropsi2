@@ -189,10 +189,45 @@ def create_function(source_string, parameters="", additional_symbols=None):
 
 
 class Bunch(dict):
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-        for i in kwargs:
-            self[i] = kwargs[i]
+    def __contains__(self, k):
+        try:
+            return dict.__contains__(self, k) or hasattr(self, k)
+        except:
+            return False
+
+    def __getattr__(self, k):
+        try:
+            # Throws exception if not in prototype chain
+            return object.__getattribute__(self, k)
+        except AttributeError:
+            try:
+                return self[k]
+            except KeyError:
+                raise AttributeError(k)
+
+    def __setattr__(self, k, v):
+        try:
+            # Throws exception if not in prototype chain
+            object.__getattribute__(self, k)
+        except AttributeError:
+            try:
+                self[k] = v
+            except:
+                raise AttributeError(k)
+        else:
+            object.__setattr__(self, k, v)
+
+    def __delattr__(self, k):
+        try:
+            # Throws exception if not in prototype chain
+            object.__getattribute__(self, k)
+        except AttributeError:
+            try:
+                del self[k]
+            except KeyError:
+                raise AttributeError(k)
+        else:
+            object.__delattr__(self, k)
 
 
 import collections

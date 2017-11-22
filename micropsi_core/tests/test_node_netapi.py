@@ -37,10 +37,6 @@ def test_node_netapi_create_neuron_node(runtime, test_nodenet):
     assert data['name'] == node.name
     assert data['type'] == node.type
 
-    node = netapi.create_node("Neuron", None)
-    # TODO: teh weirdness, server-internally, we return uids as names, clients don't see this, confusion ensues
-    # assert data['name'] == node.name
-
 
 def test_node_netapi_create_pipe_node(runtime, test_nodenet):
     # test concept node generation
@@ -82,6 +78,7 @@ def test_node_netapi_create_optional_arguments(runtime, test_nodenet):
 
 
 @pytest.mark.engine("dict_engine")
+@pytest.mark.engine("numpy_engine")
 def test_node_netapi_create_concept_node(runtime, test_nodenet):
     # test concept node generation
     net, netapi, source = prepare(runtime, test_nodenet)
@@ -550,6 +547,7 @@ def test_node_netapi_link_with_reciprocal(runtime, test_nodenet):
 
 
 @pytest.mark.engine("dict_engine")
+@pytest.mark.engine("numpy_engine")
 def test_node_netapi_link_with_reciprocal_and_concepts(runtime, test_nodenet):
     # test linking pipe and concept nodes with reciprocal links
     net, netapi, source = prepare(runtime, test_nodenet)
@@ -966,6 +964,7 @@ def test_add_gate_monitor(runtime, test_nodenet, node):
 
 
 @pytest.mark.engine("dict_engine")
+@pytest.mark.engine("numpy_engine")
 def test_add_slot_monitor(runtime, test_nodenet, node):
     nodenet = runtime.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
@@ -1152,43 +1151,3 @@ def phatNM(netapi, node, **_):
         assert links[0].target_slot.type == 'inbound%d' % i
     netapi.group_node_gates(node.uid, 'outbound', group_name='fat_out')
     assert np.all(netapi.get_activations(None, 'fat_out') == np.zeros(2))
-
-
-def test_netapi_events(runtime, test_nodenet):
-    from unittest.mock import MagicMock
-
-    net = runtime.get_nodenet(test_nodenet)
-    netapi = net.netapi
-
-    start = MagicMock()
-    stop = MagicMock()
-    unload = MagicMock()
-
-    netapi.register_handler(netapi.Event.NET_STARTED, start)
-    netapi.register_handler(netapi.Event.NET_STOPPED, stop)
-    netapi.register_handler(netapi.Event.NET_UNLOAD, unload)
-
-    runtime.start_nodenetrunner(test_nodenet)
-    assert netapi.is_running
-    start.assert_called_once_with()
-    for mock in [stop, unload]:
-        mock.assert_not_called()
-
-    runtime.stop_nodenetrunner(test_nodenet)
-    assert not netapi.is_running
-    start.assert_called_once_with()
-    stop.assert_called_once_with()
-    unload.assert_not_called()
-
-    netapi.unregister_handler(netapi.Event.NET_STARTED, start)
-    netapi.unregister_handler(netapi.Event.NET_STOPPED, stop)
-    with pytest.raises(ValueError):
-        # we can only remove it once
-        netapi.unregister_handler(netapi.Event.NET_STARTED, start)
-
-    runtime.start_nodenetrunner(test_nodenet)
-
-    runtime.unload_nodenet(test_nodenet)
-    start.assert_called_once_with()
-    stop.assert_called_once_with()
-    unload.assert_called_once_with()

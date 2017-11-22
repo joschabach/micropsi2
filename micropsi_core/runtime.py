@@ -1133,12 +1133,12 @@ def start_behavior(nodenet_uid, condition=None, worldadapter_param=None):
 
 def get_behavior_state(token):
     """ Return the state of the behavior execution identified by token """
-    return get_is_nodenet_running(behavior_token_map[token])
+    return True, get_is_nodenet_running(behavior_token_map[token])
 
 
 def abort_behavior(token):
     """ Abort behavior identified with the token """
-    return stop_nodenetrunner(behavior_token_map[token])
+    return True, stop_nodenetrunner(behavior_token_map[token])
 
 
 def __pythonify(name):

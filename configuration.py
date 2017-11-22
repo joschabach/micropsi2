@@ -51,7 +51,7 @@ except OSError:
     warnings.warn('Can not read config from inifile %s' % configini)
     raise RuntimeError('Can not read config from inifile %s' % configini)
 
-config['micropsi2']['version'] = "0.12-alpha10-dev"
+config['micropsi2']['version'] = "0.13-alpha11-dev"
 config['micropsi2']['apptitle'] = "MicroPsi"
 
 data_path = os.path.expanduser(config['micropsi2']['data_directory'])

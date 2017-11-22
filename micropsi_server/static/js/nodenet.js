@@ -163,6 +163,8 @@ globalDataTargets = [];
 
 available_operations = {};
 
+pos_correction = {'x': 0, 'y': 0};
+
 $(document).on('nodenet_changed', function(event, new_nodenet){
     setCurrentNodenet(new_nodenet, null, true);
 });
@@ -415,6 +417,8 @@ function setNodespaceData(data, changed){
         }
         var links_data = {}
         var flow_connections = {};
+        pos_correction.x = 0;
+        pos_correction.y = 0;
         for(uid in data.nodes){
             var node = data.nodes[uid]
             item = new Node(uid, node['position'][0], node['position'][1], node.parent_nodespace, node.name, node.type, node.activation, node.state, node.parameters, node.gate_activations, node.gate_configuration, node.is_highdimensional, node.inlinks, node.outlinks, node.inputmap);
@@ -436,22 +440,28 @@ function setNodespaceData(data, changed){
                     links_data[luid].source_gate_name = gate
                 }
             }
-            if(node.inputmap){
-                for(var name in node.inputmap){
-                    var source_uid = node.inputmap[name][0];
-                    var source_name = node.inputmap[name][1];
-                    if(source_uid && source_name){
-                        cid = source_uid + ":" + source_name + ":" + name + ":" + uid;
-                        links_data[cid] = {
-                            'source_node_uid': source_uid,
-                            'target_node_uid': uid,
-                            'source_name': source_name,
-                            'target_name': name,
-                            'is_flow_connection': true
-                        };
+            if(node.outputmap){
+                for(var name in node.outputmap){
+                    for (var idx in node.outputmap[name]){
+                        var pair = node.outputmap[name][idx];
+                        var target_uid = pair[0];
+                        var target_name = pair[1];
+                        if(target_uid && target_name){
+                            cid = uid + ":" + name + ":" + target_name + ":" + target_uid;
+                            links_data[cid] = {
+                                'source_node_uid': uid,
+                                'target_node_uid': target_uid,
+                                'source_name': name,
+                                'target_name': target_name,
+                                'is_flow_connection': true
+                            };
+                        }
                     }
                 }
             }
+        }
+        if(pos_correction.x != 0 || pos_correction.y != 0){
+            correct_node_positions();
         }
 
         if(nodespaceProperties[currentNodeSpace].renderlinks != 'none'){
@@ -512,9 +522,10 @@ function setNodespaceDiffData(data, changed){
                 delete nodespaces[uid]
             }
             links_data = {}
+            old_pos_correction = {x: pos_correction.x, y: pos_correction.y};
             for(var uid in data.changes.nodes_dirty){
                 var nodedata = data.changes.nodes_dirty[uid];
-                item = new Node(uid, nodedata['position'][0], nodedata['position'][1], nodedata.parent_nodespace, nodedata.name, nodedata.type, nodedata.activation, nodedata.state, nodedata.parameters, nodedata.gate_activations, nodedata.gate_configuration, nodedata.is_highdimensional, nodedata.inlinks, nodedata.outlinks);
+                item = new Node(uid, nodedata['position'][0] + pos_correction.x, nodedata['position'][1] + pos_correction.y, nodedata.parent_nodespace, nodedata.name, nodedata.type, nodedata.activation, nodedata.state, nodedata.parameters, nodedata.gate_activations, nodedata.gate_configuration, nodedata.is_highdimensional, nodedata.inlinks, nodedata.outlinks);
                 if(uid in nodes){
                     for (var gateName in nodes[uid].gates) {
                         for (linkUid in nodes[uid].gates[gateName].outgoing) {
@@ -553,8 +564,12 @@ function setNodespaceDiffData(data, changed){
                     }
                 }
             }
+            if(old_pos_correction.x != pos_correction.x || old_pos_correction.y != pos_correction.y){
+                correct_node_positions();
+            }
             addLinks(links_data);
         }
+
         // activations:
         for(var uid in nodes){
             activations = false
@@ -738,6 +753,12 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
 	this.uid = uid;
 	this.x = x;
 	this.y = y;
+    if(this.x < 0 && Math.abs(this.x) > pos_correction.x){
+        pos_correction.x = 200 -this.x;
+    }
+    if(this.y < 0 && Math.abs(this.y) > pos_correction.y){
+        pos_correction.y = 200 -this.y;
+    }
 	this.activation = activation || 0;
     this.state = state;
 	this.name = name;
@@ -850,6 +871,15 @@ function Link(uid, sourceNodeUid, gateName, targetNodeUid, slotName, weight, is_
 }
 
 // data manipulation ----------------------------------------------------------------
+
+// correct the positions of all nodes due to some negative coordinates
+function correct_node_positions(){
+    for(var uid in nodes){
+        nodes[uid].x += pos_correction.x;
+        nodes[uid].y += pos_correction.y;
+        redrawNode(nodes[uid], true);
+    }
+}
 
 // add or update link
 function addLink(link) {
@@ -2579,11 +2609,11 @@ function onMouseUp(event) {
             if(dragMultiples){
                 for(var uid in selection){
                     if(uid in nodes){
-                        movedNodes[uid] = [nodes[uid].x, nodes[uid].y];
+                        movedNodes[uid] = [nodes[uid].x - pos_correction.x, nodes[uid].y - pos_correction.y];
                     }
                 }
             } else {
-                movedNodes[path.name] = [nodes[path.name].x, nodes[path.name].y];
+                movedNodes[path.name] = [nodes[path.name].x - pos_correction.x, nodes[path.name].y - pos_correction.y];
             }
             moveNodesOnServer(movedNodes);
             movePath = false;

@@ -84,7 +84,7 @@ class DictNode(NetEntity, Node):
         self.__parameters = dict((key, self.nodetype.parameter_defaults.get(key)) for key in self.nodetype.parameters)
         if parameters is not None:
             for key in parameters:
-                if parameters[key] is not None:
+                if parameters[key] is not None and key in self.nodetype.parameters:
                     self.set_parameter(key, parameters[key])
 
         for gate in self.nodetype.gatetypes:
@@ -118,7 +118,8 @@ class DictNode(NetEntity, Node):
 
             #call node function
             try:
-                self.nodetype.nodefunction(netapi=self.nodenet.netapi, node=self, **self.__parameters)
+                params = self.clone_parameters()
+                self.nodetype.nodefunction(netapi=self.nodenet.netapi, node=self, **params)
             except Exception:
                 self.nodenet.is_active = False
                 self.activation = -1
@@ -198,12 +199,23 @@ class DictNode(NetEntity, Node):
                 self.__parameters[parameter] = None
 
     def set_parameter(self, parameter, value):
+        if self.type == "Sensor" and parameter == "datasource" and value not in self.nodenet.get_datasources():
+            self.logger.warning("Datasource %s not known, will not be assigned for sensor %s" % (value, self))
+            self.__parameters[parameter] = None
+            return
+        if self.type == "Actuator" and parameter == "datatarget" and value not in self.nodenet.get_datatargets():
+            self.logger.warning("Datatarget %s not known, will not be assigned for actuator %s" % (value, self))
+            self.__parameters[parameter] = None
+            return
         if (value == '' or value is None):
             if parameter in self.nodetype.parameter_defaults:
                 value = self.nodetype.parameter_defaults[parameter]
             else:
                 value = None
-        self.__parameters[parameter] = value
+        if parameter in self.nodetype.parameters:
+            self.__parameters[parameter] = value
+        else:
+            raise NameError("Parameter %s not defined for node %s" % (parameter, str(self)))
 
     def clone_parameters(self):
         return self.__parameters.copy()

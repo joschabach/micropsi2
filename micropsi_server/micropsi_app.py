@@ -109,7 +109,12 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                     kwargs = request.json
                 except ValueError:
                     if len(request.params) > 0:
-                        kwargs = dict((key.strip('[]'), json.loads(val)) for key, val in request.params.iteritems())
+                        try:
+                            kwargs = dict((key.strip('[]'), json.loads(val)) for key, val in request.params.iteritems())
+                        except json.JSONDecodeError:
+                            response.status = 400
+                            return {'status': 'error', 'data': "Malformed arguments for remote procedure call: %s" % str(request.params.__dict__)}
+
             user_id, permissions, token = get_request_data()
             if permission_required and permission_required not in permissions:
                 response.status = 401
@@ -787,7 +792,7 @@ def world_list(current_world=None):
 def edit_runner_properties():
     user_id, permissions, token = get_request_data()
     if len(request.params) > 0:
-        runtime.set_runner_properties(int(request.params['timestep']), int(request.params['factor']))
+        runtime.set_runner_properties(int(request.params['timestep']), bool(request.params.get('infguard')))
         return dict(status="success", msg="Settings saved")
     else:
         return template("runner_form", action="/config/runner", value=runtime.get_runner_properties())
@@ -963,16 +968,15 @@ def remove_runner_condition(nodenet_uid):
 
 
 @rpc("set_runner_properties", permission_required="manage server")
-def set_runner_properties(timestep, factor):
+def set_runner_properties(timestep, infguard):
     """ Configure the server-settings:
-    timestep: miliseconds per nodenet-step
-    factor: nodenet-steps per world-step"""
-    return runtime.set_runner_properties(timestep, factor)
+    timestep: miliseconds per nodenet-step"""
+    return runtime.set_runner_properties(timestep, infguard)
 
 
 @rpc("get_runner_properties")
 def get_runner_properties():
-    """ Return the server-settings, returning timestep and factor in a dict"""
+    """ Return the server-settings, returning timestep in a dict"""
     return True, runtime.get_runner_properties()
 
 
@@ -1453,9 +1457,9 @@ def reload_code():
 
 
 @rpc("user_prompt_response")
-def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
+def user_prompt_response(nodenet_uid, node_uid, key, parameters, resume_nodenet):
     """ Respond to a user-prompt issued by a node. """
-    runtime.user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet)
+    runtime.user_prompt_response(nodenet_uid, node_uid, key, parameters, resume_nodenet)
     return True
 
 

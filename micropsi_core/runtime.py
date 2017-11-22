@@ -34,7 +34,7 @@ from micropsi_core.tools import Bunch, post_mortem, generate_uid
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
 
-runner = {'timestep': 1000, 'runner': None, 'factor': 1}
+runner = {'timestep': 1000, 'runner': None, 'infguard': True}
 
 nodenet_lock = threading.Lock()
 
@@ -111,9 +111,36 @@ class NetapiShell(InteractiveConsole):
             InteractiveConsole.push(self, '\n')
         self.return_output()
         err = self.errcache.flush()
-        if err and err.startswith('Traceback'):
-            parts = err.strip().split('\n')
-            return False, "%s: %s" % (parts[-3], parts[-1])
+
+        if err:
+            parts = err.strip().split('\n\n')
+            if parts[0].startswith("Traceback"):
+                cleaned_parts = []
+                begin_exception_message = False
+                ignored_last = False
+                for part in parts[1:]:
+                    # ignore traceback items relating to the console itself or the toolkit:
+                    if 'in runcode' in part or '<console>"' in part or 'micropsi_core' in part:
+                        ignored_last = True
+                        continue
+                    if ignored_last and part.startswith('    '):
+                        # if ignoring a traceback line, also drop its continuation
+                        # in the next line if there is one.
+                        continue
+                    ignored_last = False
+                    # gather all lines of the exception message, but
+                    # none of the stuff after the next blank line:
+                    if ":" in part:
+                        begin_exception_message = True
+                    if begin_exception_message and len(part) == 0:
+                        break
+                    cleaned_parts.append(part.strip())
+                if len(cleaned_parts) > 1:
+                    cleaned_parts = ['\nTraceback:'] + cleaned_parts
+                return False, "\n\n".join(cleaned_parts)
+            else:
+                return False, err
+
         out = self.outcache.flush()
         return True, out.strip()
 
@@ -160,7 +187,6 @@ class MicropsiRunner(threading.Thread):
             start = datetime.now()
             log = False
             uids = [uid for uid in nodenets if nodenets[uid].is_active]
-            world_uids = {}
             nodenets_to_save = []
             if self.profiler:
                 self.profiler.enable()
@@ -174,7 +200,7 @@ class MicropsiRunner(threading.Thread):
                             continue
                         log = True
                         try:
-                            nodenet.timed_step()
+                            nodenet.timed_step(runner_config.data)
                             nodenet.update_monitors_and_recorders()
                         except:
                             stop_nodenetrunner(uid)
@@ -182,10 +208,6 @@ class MicropsiRunner(threading.Thread):
                             logging.getLogger("agent.%s" % uid).error("Exception in Agent:", exc_info=1)
                             post_mortem()
                             MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
-                        if nodenet.world and nodenet.current_step % runner['factor'] == 0:
-                            if nodenet.world not in world_uids:
-                                world_uids[nodenet.world] = []
-                            world_uids[nodenet.world].append(uid)
 
                         if auto_save_intervals is not None:
                             for val in auto_save_intervals:
@@ -219,13 +241,14 @@ class MicropsiRunner(threading.Thread):
 
             if self.profiler:
                 self.profiler.enable()
-            for wuid, nodenet_uids in world_uids.items():
-                if wuid in worlds:
+            for wuid, world in worlds.items():
+                if world.is_active:
+                    uids.append(wuid)
                     try:
-                        worlds[wuid].step()
+                        world.step()
                     except:
-                        for uid in nodenet_uids:
-                            if uid in nodenets:
+                        for uid in nodenets:
+                            if nodenets[uid].world == wuid and nodenets[uid].is_active:
                                 stop_nodenetrunner(uid)
                         logging.getLogger("world").error("Exception in Environment:", exc_info=1)
                         MicropsiRunner.last_world_exception[nodenets[uid].world] = sys.exc_info()
@@ -241,13 +264,15 @@ class MicropsiRunner(threading.Thread):
                 self.sum_of_step_durations += step_ms
                 self.number_of_samples += 1
                 self.total_steps += 1
-                if self.total_steps % self.granularity == 0:
-                    average_calc_duration = self.sum_of_calc_durations / self.number_of_samples
+                if self.total_steps % (self.granularity/10) == 0:
                     average_step_duration = self.sum_of_step_durations / self.number_of_samples
                     if average_step_duration > 0:
                         nodenet.frequency = round((1 / average_step_duration) * 1000)
                     else:
                         nodenet.frequency = 0
+
+                if self.total_steps % self.granularity == 0:
+                    average_calc_duration = self.sum_of_calc_durations / self.number_of_samples
                     if self.profiler:
                         import pstats
                         import io
@@ -500,17 +525,13 @@ def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=No
     nodenet_obj = get_nodenet(nodenet_uid)
     if nodenet_obj is not None:
         if nodenet_uid in MicropsiRunner.last_nodenet_exception:
-            import traceback
             t, err, tb = MicropsiRunner.last_nodenet_exception[nodenet_uid]
             del MicropsiRunner.last_nodenet_exception[nodenet_uid]
             raise err
-            # return False, "%s: %s \r\n%s" % (type(err).__name__, str(err), '\n'.join(traceback.format_tb(tb)))
         if nodenet_obj.world is not None and nodenet_obj.world in MicropsiRunner.last_world_exception:
-            import traceback
             t, err, tb = MicropsiRunner.last_world_exception[nodenet_obj.world]
             del MicropsiRunner.last_world_exception[nodenet_obj.world]
             raise err
-            # return False, "%s: %s \r\n%s" % (type(err).__name__, str(err), '\n'.join(traceback.format_tb(tb)))
         condition = nodenet_obj.get_runner_condition()
         if condition:
             data['calculation_condition'] = condition
@@ -520,7 +541,7 @@ def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=No
                     data['calculation_condition']['monitor']['color'] = monitor.color
                 else:
                     del data['calculation_condition']['monitor']
-        data['calculation_running'] = nodenet_obj.is_active
+        data['calculation_running'] = nodenet_obj.is_active or (nodenet_obj.world and worlds[nodenet_obj.world].is_active)
         data['current_nodenet_step'] = nodenet_obj.current_step
         data['current_world_step'] = worlds[nodenet_obj.world].current_step if nodenet_obj.world else 0
         data['control_frequency'] = nodenet_obj.frequency
@@ -536,9 +557,9 @@ def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=No
             }
             if activations['has_changes']:
                 data['nodenet_diff']['changes'] = nodenet_obj.get_nodespace_changes(nodenet_diff.get('nodespaces', []), nodenet_diff['step'], include_links=nodenet_diff.get('include_links', True))
-        if nodenet_obj.user_prompt:
-            data['user_prompt'] = nodenet_obj.user_prompt
-            nodenet_obj.user_prompt = None
+        prompt = nodenet_obj.consume_user_prompt()
+        if prompt:
+            data['user_prompt'] = prompt
         if world is not None and nodenet_obj.world:
             if not type(world) == dict:
                 world = {}
@@ -569,7 +590,7 @@ def unload_nodenet(nodenet_uid):
         del netapi_consoles[nodenet_uid]
     stop_nodenetrunner(nodenet_uid)
     nodenet = nodenets[nodenet_uid]
-    nodenet.close_figures()
+    nodenet.on_unload()
     if nodenet.world:
         worlds[nodenet.world].unregister_nodenet(nodenet.uid)
     del nodenets[nodenet_uid]
@@ -638,7 +659,7 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
     nodenet = get_nodenet(nodenet_uid)
     if world_uid == '':
         world_uid = None
-    if nodenet.world and (nodenet.world != world_uid or nodenet.worldadapter != worldadapter or worldadapter_config != nodenet.worldadapter_instance.config):
+    if nodenet.world and (nodenet.world != world_uid or nodenet.worldadapter != worldadapter):
         worlds[nodenet.world].unregister_nodenet(nodenet.uid)
         nodenet.world = None
         nodenet.worldadapter_instance = None
@@ -665,22 +686,23 @@ def start_nodenetrunner(nodenet_uid):
     nodenet.simulation_started()
     # nodenets[nodenet_uid].is_active = True
     if nodenet.world:
+        worlds[nodenet.world].is_active = True
         worlds[nodenet.world].simulation_started()
     if runner['runner'].paused:
         runner['runner'].resume()
     return True
 
 
-def set_runner_properties(timestep, factor):
+def set_runner_properties(timestep, infguard=False):
     """Sets the speed of the nodenet calculation in ms.
 
     Argument:
         timestep: sets the calculation speed.
     """
     runner_config['runner_timestep'] = timestep
+    runner_config['runner_infguard'] = bool(infguard)
     runner['timestep'] = timestep
-    runner_config['runner_factor'] = int(factor)
-    runner['factor'] = int(factor)
+    runner['infguard'] = bool(infguard)
     return True
 
 
@@ -711,7 +733,7 @@ def get_runner_properties():
     """Returns the speed that has been configured for the nodenet runner (in ms)."""
     return {
         'timestep': runner_config['runner_timestep'],
-        'factor': runner_config['runner_factor']
+        'infguard': runner_config['runner_infguard']
     }
 
 
@@ -728,6 +750,7 @@ def stop_nodenetrunner(nodenet_uid):
     if nodenet.world:
         test_world = {nodenets[uid].is_active and nodenets[uid].world == nodenet.world for uid in nodenets}
         if True not in test_world:
+            worlds[nodenet.world].is_active = False
             worlds[nodenet.world].simulation_stopped()
     if True not in test:
         runner['runner'].pause()
@@ -741,13 +764,47 @@ def step_nodenet(nodenet_uid):
         nodenet_uid: The uid of the nodenet
     """
     nodenet = get_nodenet(nodenet_uid)
+    if nodenet.is_active:
+        nodenet.is_active = False
 
     if runtime_config['micropsi2'].get('profile_runner'):
         import cProfile
         profiler = cProfile.Profile()
         profiler.enable()
 
-    nodenet.timed_step()
+    if nodenet.world:
+        if type(worlds[nodenet.world]).is_realtime and not worlds[nodenet.world].is_active:
+            if runner['runner'].paused:
+                runner['runner'].resume()
+            worlds[nodenet.world].is_active = True
+            worlds[nodenet.world].simulation_started()
+
+    nodenet.timed_step(runner_config.data)
+
+    if runtime_config['micropsi2'].get('profile_runner'):
+        profiler.disable()
+        import pstats
+        import io
+        s = io.StringIO()
+        sortby = 'cumtime'
+        ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
+        ps.print_stats('micropsi_')
+        logging.getLogger("agent.%s" % nodenet_uid).debug(s.getvalue())
+
+    if nodenet.world and not type(worlds[nodenet.world]).is_realtime:
+        worlds[nodenet.world].step()
+    nodenet.update_monitors_and_recorders()
+    return nodenet.current_step
+
+
+def single_step_nodenet_only(nodenet_uid):
+    nodenet = get_nodenet(nodenet_uid)
+    if runtime_config['micropsi2'].get('profile_runner'):
+        import cProfile
+        profiler = cProfile.Profile()
+        profiler.enable()
+
+    nodenet.timed_step(runner_config.data)
 
     if runtime_config['micropsi2'].get('profile_runner'):
         profiler.disable()
@@ -760,8 +817,6 @@ def step_nodenet(nodenet_uid):
         logging.getLogger("agent.%s" % nodenet_uid).debug(s.getvalue())
 
     nodenet.update_monitors_and_recorders()
-    if nodenet.world and nodenet.current_step % runner_config['runner_factor'] == 0:
-        worlds[nodenet.world].step()
     return nodenet.current_step
 
 
@@ -769,17 +824,22 @@ def step_nodenets_in_world(world_uid, nodenet_uid=None, steps=1):
     """ Advances all nodenets registered in the given world
     (or, only the given nodenet) by the given number of steps"""
     nodenet = None
+    if world_uid in worlds and not worlds[world_uid].is_active:
+        worlds[world_uid].is_active = True
+        worlds[world_uid].simulation_started()
+    if runner['runner'].paused:
+        runner['runner'].resume()
     if nodenet_uid is not None:
         nodenet = get_nodenet(nodenet_uid)
     if nodenet and nodenet.world == world_uid:
         for i in range(steps):
-            nodenet.timed_step()
+            nodenet.timed_step(runner_config.data)
             nodenet.update_monitors_and_recorders()
     else:
         for i in range(steps):
             for uid in worlds[world_uid].agents:
                 nodenet = get_nodenet(uid)
-                nodenet.timed_step()
+                nodenet.timed_step(runner_config.data)
                 nodenet.update_monitors_and_recorders()
     return True
 
@@ -1397,14 +1457,13 @@ def align_nodes(nodenet_uid, nodespace):
     return result
 
 
-def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
+def user_prompt_response(nodenet_uid, node_uid, key, parameters, resume_nodenet):
     nodenet = get_nodenet(nodenet_uid)
-    for key, value in values.items():
-        nodenet.get_node(node_uid).set_parameter(key, value)
+    if key and parameters:
+        nodenet.set_user_prompt_response(node_uid, key, parameters)
     if resume_nodenet:
         start_nodenetrunner(nodenet_uid)
     # nodenet.is_active = resume_nodenet
-    nodenet.user_prompt = None
 
 
 def get_available_recipes():
@@ -1469,7 +1528,8 @@ def run_recipe(nodenet_uid, name, parameters):
 
 def run_operation(nodenet_uid, name, parameters, selection_uids):
     """ Calls the given operation on the selection"""
-    netapi = get_nodenet(nodenet_uid).netapi
+    nodenet = get_nodenet(nodenet_uid)
+    netapi = nodenet.netapi
     params = {}
     for key in parameters:
         if parameters[key] != '':
@@ -1477,7 +1537,8 @@ def run_operation(nodenet_uid, name, parameters, selection_uids):
     if name in custom_operations:
         func = custom_operations[name]['function']
         result = {}
-        ret = func(netapi, selection_uids, **params)
+        with nodenet.netlock:
+            ret = func(netapi, selection_uids, **params)
         if ret:
             result.update(ret)
         return True, result
@@ -1495,9 +1556,11 @@ def get_agent_dashboard(nodenet_uid):
 
 
 def run_netapi_command(nodenet_uid, command):
-    get_nodenet(nodenet_uid)
+    nodenet = get_nodenet(nodenet_uid)
     shell = netapi_consoles[nodenet_uid]
-    return shell.push(command)
+    with nodenet.netlock:
+        result = shell.push(command)
+    return result
 
 
 def get_netapi_autocomplete_data(nodenet_uid, name=None):
@@ -1769,7 +1832,6 @@ def parse_world_definitions(path):
 def parse_native_module_file(path):
     import importlib
     global native_modules
-    import os
     try:
         base_path = os.path.join(RESOURCE_PATH, 'nodetypes')
         relpath = os.path.relpath(path, start=base_path)
@@ -1781,7 +1843,7 @@ def parse_native_module_file(path):
                 category = ''
             moduledef = nodedef_sanity_check(module.nodetype_definition)
             moduledef['path'] = path
-            moduledef['category'] = category
+            moduledef['category'] = category.replace(os.sep, '/')
             if moduledef['name'] in native_modules:
                 logging.getLogger("system").warning("Native module names must be unique. %s is not." % moduledef['name'])
             native_modules[moduledef['name']] = moduledef
@@ -1813,7 +1875,12 @@ def parse_recipe_or_operations_file(path, mode, category_overwrite=False):
     category = category_overwrite or os.path.relpath(os.path.dirname(path), start=base_path)
     if category == '.':
         category = ''  # relapth in rootfolder
-    relpath = os.path.relpath(path, start=base_path)
+    category = category.replace(os.sep, '/')
+    if path.startswith(base_path):
+        relpath = os.path.relpath(path, start=base_path)
+    else:
+        # builtin operations get their filename as relpath
+        relpath, _ = os.path.splitext(os.path.basename(path))
     name = os.path.basename(path)[:-3]
 
     try:
@@ -2034,12 +2101,10 @@ def initialize(config=None):
     # Initialize the threads for the continuous calculation of nodenets and worlds
     if 'runner_timestep' not in runner_config:
         runner_config['runner_timestep'] = 10
-        runner_config.save_configs()
-    if 'runner_factor' not in runner_config:
-        runner_config['runner_factor'] = 1
-        runner_config.save_configs()
+    if 'runner_infguard' not in runner_config:
+        runner_config['runner_infguard'] = True
 
-    set_runner_properties(runner_config['runner_timestep'], runner_config['runner_factor'])
+    set_runner_properties(runner_config['runner_timestep'], runner_config['runner_infguard'])
 
     runner['running'] = True
     if runner.get('runner') is None:

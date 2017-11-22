@@ -105,8 +105,8 @@ class TheanoNetAPI(NetAPI):
     def get_callable_flowgraph(self, nodes, requested_outputs=None, use_different_thetas=False, use_unique_input_names=False):
         """ Returns one callable for the given flow_modules.
         Parameters:
-            use_different_thetas (default: False) - Return a callable that excepts a parameter "thetas" that will be used instead of existing thetas
-            use_unique_input_names (default: False) - Return a callable that excepts input parameter names as "uid_name" where uid is the node_uid, and name is the input_name
+            use_different_thetas (default: False) - Return a callable that expects a parameter "thetas" that will be used instead of existing thetas
+            use_unique_input_names (default: False) - Return a callable that expects input parameter names as "uid_name" where uid is the node_uid, and name is the input_name
             requested_outputs (default:None) - Optional list of (node_uid, outputname) tuples, so that the callable will return only the given outputs
         """
         func, dangling_inputs, dangling_outputs = self.__nodenet.compile_flow_subgraph([n.uid for n in nodes], requested_outputs=requested_outputs, use_different_thetas=use_different_thetas, use_unique_input_names=use_unique_input_names)

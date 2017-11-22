@@ -16,6 +16,7 @@ from .netapi import NetAPI
 from . import monitor
 from . import recorder
 from .node import Nodetype, FlowNodetype, HighdimensionalNodetype
+from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
@@ -131,14 +132,14 @@ class Nodenet(metaclass=ABCMeta):
     @property
     def worldadapter_instance(self):
         """
-        Returns the uid of the currently connected world adapter
+        Returns the instance of the currently connected world adapter
         """
         return self._worldadapter_instance
 
     @worldadapter_instance.setter
     def worldadapter_instance(self, _worldadapter_instance):
         """
-        Connects the node net to the given world adapter uid, or disconnects if None is given
+        Connects the node net to the given worldadapter instance, or disconnects if None is given
         """
         self._worldadapter_instance = _worldadapter_instance
         if self._worldadapter_instance:
@@ -164,6 +165,7 @@ class Nodenet(metaclass=ABCMeta):
         self._uid = uid
         self._runner_condition = None
 
+        self.runner_config = {}
         self.owner = owner
         self._monitors = {}
         self._recorders = {}
@@ -176,6 +178,7 @@ class Nodenet(metaclass=ABCMeta):
         self.logger.info("Setting up nodenet %s with engine %s", self.name, self.engine)
 
         self.user_prompt = None
+        self.user_prompt_response = {}
 
         self.netapi = NetAPI(self)
 
@@ -183,6 +186,8 @@ class Nodenet(metaclass=ABCMeta):
         self.stepping_rate = []
         self.dashboard_values = {}
         self.figures = {}
+
+        self.netapi_event_handlers = dict((evt, []) for evt in self.netapi.Event)
 
         self.native_modules = {}
         for type, data in native_modules.items():
@@ -199,8 +204,7 @@ class Nodenet(metaclass=ABCMeta):
 
         self._modulators = {}
         if use_modulators:
-            from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators as emo
-            for modulator in emo.writeable_modulators + emo.readable_modulators:
+            for modulator in DoernerianEmotionalModulators.writeable_modulators + DoernerianEmotionalModulators.readable_modulators:
                 self._modulators[modulator] = 1
 
         if not os.path.isdir(self.persistency_path):
@@ -227,10 +231,37 @@ class Nodenet(metaclass=ABCMeta):
         return data
 
     def simulation_started(self):
+        for func in self.netapi_event_handlers[self.netapi.Event.NET_STARTED]:
+            func()
         self.is_active = True
 
     def simulation_stopped(self):
         self.is_active = False
+        for func in self.netapi_event_handlers[self.netapi.Event.NET_STOPPED]:
+            func()
+
+    def set_user_prompt(self, node, key, message, parameters={}):
+        if self.user_prompt is not None:
+            raise RuntimeError("Currently only one user prompt per nodenet step supported. node %s already registered one" % str(self.user_prompt['node']))
+        else:
+            self.user_prompt = {
+                'node': node,
+                'key': key,
+                'msg': message,
+                'parameters': parameters
+            }
+            self.is_active = False
+
+    def consume_user_prompt(self):
+        data = self.user_prompt
+        if data:
+            data['node'] = data['node'].get_data()
+        self.user_prompt = None
+        return data
+
+    def set_user_prompt_response(self, node_uid, key, parameters):
+        node = self.get_node(node_uid)
+        node.get_user_prompt(key)['callback'](self.netapi, node, parameters)
 
     @abstractmethod
     def get_nodes(self, nodespaces=[], node_uids=[], include_links=True, links_to_nodespaces=[]):
@@ -264,8 +295,9 @@ class Nodenet(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
-    def timed_step(self):
+    def timed_step(self, runner_config={}):
         start = datetime.now()
+        self.runner_config = runner_config
         self.step()
         elapsed = datetime.now() - start
         self.stepping_rate.append(elapsed.seconds + ((elapsed.microseconds // 1000) / 1000))
@@ -488,6 +520,24 @@ class Nodenet(metaclass=ABCMeta):
             if type(self.native_modules[key]) == FlowNodetype:
                 data[key] = self.native_modules[key].get_data()
         return data
+
+    def get_datasources(self):
+        """ Returns a sorted list of available datasources, including worldadapter datasources
+        and readable modulators"""
+        datasources = list(self.worldadapter_instance.get_available_datasources()) if self.worldadapter_instance else []
+        if self.use_modulators:
+            for item in sorted(DoernerianEmotionalModulators.readable_modulators):
+                datasources.append(item)
+        return datasources
+
+    def get_datatargets(self):
+        """ Returns a sorted list of available datatargets, including worldadapter datatargets
+        and writeable modulators"""
+        datatargets = list(self.worldadapter_instance.get_available_datatargets()) if self.worldadapter_instance else []
+        if self.use_modulators:
+            for item in sorted(DoernerianEmotionalModulators.writeable_modulators):
+                datatargets.append(item)
+        return datatargets
 
     @abstractmethod
     def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id', group_name=None):
@@ -789,3 +839,14 @@ class Nodenet(metaclass=ABCMeta):
                 self.figures = {}
         except ImportError:
             pass
+
+    def on_unload(self):
+        self.close_figures()
+        for func in self.netapi_event_handlers[self.netapi.Event.NET_UNLOAD]:
+            func()
+
+    def register_netapi_eventhandler(self, event, func):
+        self.netapi_event_handlers[event].append(func)
+
+    def unregister_netapi_eventhandler(self, event, func):
+        self.netapi_event_handlers[event].remove(func)

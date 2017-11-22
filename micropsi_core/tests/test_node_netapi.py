@@ -722,7 +722,7 @@ def test_copy_nodes(runtime, test_nodenet):
     a3 = netapi.create_node('Pipe', None, "a3")
     netapi.link(a3, 'gen', a1, 'gen')
     netapi.link(a1, 'por', a2, 'por')
-    a1.set_parameter('expecation', 0.6)
+    a1.set_parameter('expectation', 0.6)
     a1.set_gate_configuration('gen', 'sigmoid', {'bias': 1.3})
     mapping = netapi.copy_nodes([a1, a2], nodespace.uid)
     assert a1 in mapping
@@ -1152,3 +1152,43 @@ def phatNM(netapi, node, **_):
         assert links[0].target_slot.type == 'inbound%d' % i
     netapi.group_node_gates(node.uid, 'outbound', group_name='fat_out')
     assert np.all(netapi.get_activations(None, 'fat_out') == np.zeros(2))
+
+
+def test_netapi_events(runtime, test_nodenet):
+    from unittest.mock import MagicMock
+
+    net = runtime.get_nodenet(test_nodenet)
+    netapi = net.netapi
+
+    start = MagicMock()
+    stop = MagicMock()
+    unload = MagicMock()
+
+    netapi.register_handler(netapi.Event.NET_STARTED, start)
+    netapi.register_handler(netapi.Event.NET_STOPPED, stop)
+    netapi.register_handler(netapi.Event.NET_UNLOAD, unload)
+
+    runtime.start_nodenetrunner(test_nodenet)
+    assert netapi.is_running
+    start.assert_called_once_with()
+    for mock in [stop, unload]:
+        mock.assert_not_called()
+
+    runtime.stop_nodenetrunner(test_nodenet)
+    assert not netapi.is_running
+    start.assert_called_once_with()
+    stop.assert_called_once_with()
+    unload.assert_not_called()
+
+    netapi.unregister_handler(netapi.Event.NET_STARTED, start)
+    netapi.unregister_handler(netapi.Event.NET_STOPPED, stop)
+    with pytest.raises(ValueError):
+        # we can only remove it once
+        netapi.unregister_handler(netapi.Event.NET_STARTED, start)
+
+    runtime.start_nodenetrunner(test_nodenet)
+
+    runtime.unload_nodenet(test_nodenet)
+    start.assert_called_once_with()
+    stop.assert_called_once_with()
+    unload.assert_called_once_with()

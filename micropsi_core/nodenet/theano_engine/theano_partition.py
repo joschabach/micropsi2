@@ -822,7 +822,7 @@ class TheanoPartition():
         else:
             np.savez(os.path.join(base_path, filename), **data)
 
-    def load_data(self, nodes_data):
+    def load_data(self, nodes_data, invalid_uids=[]):
         """Load the node net from a file"""
         # try to access file
 
@@ -1017,11 +1017,28 @@ class TheanoPartition():
         else:
             self.logger.warning("no g_function_selector in file, falling back to defaults")
 
+        datafile.close()
+
+        for uid in invalid_uids:
+            if self.nodenet.get_partition(uid) == self:
+                w_matrix = self.w.get_value()
+                id = node_from_id(uid)
+                self.allocated_nodes[id] = 0
+                self.allocated_node_parents[id] = 0
+                els = self.allocated_elements_to_nodes[np.where(self.allocated_elements_to_nodes == id)]
+                w_matrix[els] = 0
+                self.allocated_elements_to_nodes[np.where(self.allocated_elements_to_nodes == id)] = 0
+                self.w.set_value(w_matrix)
+
         for id in np.nonzero(self.allocated_nodes)[0]:
             if self.allocated_nodes[id] > MAX_STD_NODETYPE:
                 uid = node_to_id(id, self.pid)
                 if uid in nodes_data:
-                    self.allocated_nodes[id] = get_numerical_node_type(nodes_data[uid]['type'], self.nodenet.native_modules)
+                    try:
+                        self.allocated_nodes[id] = get_numerical_node_type(nodes_data[uid]['type'], self.nodenet.native_modules)
+                    except ValueError:
+                        self.allocated_nodes[id] = 0
+                        self.allocated_elements_to_nodes[np.where(self.allocated_elements_to_nodes == id)] = 0
             if self.allocated_nodes[id] > MAX_STD_NODETYPE:
                 self.native_module_instances[uid] = self.nodenet.get_node(uid)
             elif self.allocated_nodes[id] == COMMENT:
@@ -1064,6 +1081,7 @@ class TheanoPartition():
                     datafile['from_ids'],
                     datafile['to_ids'],
                     weights)
+                datafile.close()
 
     def grow_number_of_nodespaces(self, growby):
 
@@ -1327,7 +1345,7 @@ class TheanoPartition():
                 self.allocated_node_offsets[self.allocated_nodespaces_exp_activators[nodespace_id]]
 
             if nto.parameter_defaults.get('expectation'):
-                value = int(parameters.get('expectation', nto.parameter_defaults['expectation']))
+                value = float(parameters.get('expectation', nto.parameter_defaults['expectation']))
                 g_expect_array = self.g_expect.get_value(borrow=True)
                 g_expect_array[offset + GEN] = float(value)
                 g_expect_array[offset + SUR] = float(value)
@@ -1975,10 +1993,13 @@ class TheanoPartition():
 
                 gate_activations[gate] = float(a[element])
 
+            activation = float(a[self.allocated_node_offsets[id] + GEN])
+
             state = None
             if uid in self.native_module_instances:
                 state, numpy_state = self.native_module_instances[uid].get_persistable_state()
                 node_numpy_data[uid] = numpy_state
+                activation = self.native_module_instances[uid].activation
 
             parameters = {}
             if strtype == "Sensor":
@@ -2030,7 +2051,7 @@ class TheanoPartition():
                     "type": strtype,
                     "parameters": parameters,
                     "state": state,
-                    "activation": float(a[self.allocated_node_offsets[id] + GEN]),
+                    "activation": activation,
                     "gate_activations": gate_activations,
                     "gate_configuration": gate_configurations,
                     "is_highdimensional": type(nodetype) == HighdimensionalNodetype}

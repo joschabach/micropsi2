@@ -1,7 +1,14 @@
 
+from enum import Enum
+
 
 class NetAPI(object):
     # Node Net API facade class for use from within the node net (in node functions)
+
+    class Event(Enum):
+        NET_STARTED = 1
+        NET_STOPPED = 2
+        NET_UNLOAD = 3
 
     @property
     def uid(self):
@@ -11,6 +18,10 @@ class NetAPI(object):
     def step(self):
         """ The current step of the nodenet """
         return self.__nodenet.current_step
+
+    @property
+    def is_running(self):
+        return self.__nodenet.is_active
 
     @property
     def worldadapter(self):
@@ -317,41 +328,11 @@ class NetAPI(object):
             node: the node object that emits this message
             msg: a string to display to the user
         """
-        self.__nodenet.user_prompt = {
-            'node': node.get_data(include_links=False),
-            'msg': msg,
-            'options': None
-        }
-        self.__nodenet.is_active = False
+        self.__nodenet.set_user_prompt(node, None, msg, [])
 
-    def ask_user_for_parameter(self, node, msg, options):
-        """
-        Stops the nodenetrunner for this nodenet, and asks the user for values to the given parameters.
-        These parameters will be passed into the nodefunction in the next step of the nodenet.
-        The user can choose to either continue or suspend running the nodenet
-        Parameters:
-            node: the node object that emits this message
-            msg: a string to display to the user
-            options: an array of objects representing the variables to set by the user. Needs key, label. Optional: type (textarea or text), values: an array or object of possible values
-
-        example usage:
-            options = [{
-                'key': 'where',
-                'label': 'Where should I go next?',
-                'values': {'north': 'North', 'east': 'East', 'south': 'South', 'west': 'west'}
-            }, {
-                'key': 'wait',
-                'label': 'How long should I wait until I go there?',
-                'type': 'textarea'
-            }]
-            netapi.ask_user_for_parameter(node, "Please decide what to do next", options)
-        """
-        self.__nodenet.user_prompt = {
-            'node': node.get_data(),
-            'msg': msg,
-            'options': options
-        }
-        self.__nodenet.is_active = False
+    def show_user_prompt(self, node, key):
+        promptinfo = node.get_user_prompt(key)
+        self.__nodenet.set_user_prompt(node, key, promptinfo['callback'].__doc__, promptinfo['parameters'])
 
     def autoalign_nodespace(self, nodespace):
         """ Calls the autoalignment on the given nodespace """
@@ -558,3 +539,12 @@ class NetAPI(object):
 
     def announce_nodes(self, nodespace_uid, numer_of_nodes, average_element_per_node):
         pass
+
+    def register_handler(self, event, func):
+        """ registers a callable to listen for the specified netapi Event.
+        event must be one of the defined netapi.Event enum entries"""
+        self.__nodenet.register_netapi_eventhandler(event, func)
+
+    def unregister_handler(self, event, func):
+        """ removes a registered callable from the event"""
+        self.__nodenet.unregister_netapi_eventhandler(event, func)

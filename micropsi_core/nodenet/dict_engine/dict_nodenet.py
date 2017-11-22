@@ -110,6 +110,23 @@ class DictNodenet(Nodenet):
     def current_step(self):
         return self._step
 
+    @property
+    def worldadapter_instance(self):
+        return self._worldadapter_instance
+
+    @worldadapter_instance.setter
+    def worldadapter_instance(self, _worldadapter_instance):
+        self._worldadapter_instance = _worldadapter_instance
+        if self._worldadapter_instance:
+            for uid, node in self._nodes.items():
+                # re-set parameters to filter for available datasources/-targets
+                if node.type == "Sensor":
+                    node.set_parameter('datasource', node.get_parameter('datasource'))
+                if node.type == "Actuator":
+                    node.set_parameter('datatarget', node.get_parameter('datatarget'))
+
+            self._worldadapter_instance.nodenet = self
+
     def __init__(self, persistency_path, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None):
         """Create a new MicroPsi agent.
 
@@ -211,7 +228,7 @@ class DictNodenet(Nodenet):
     def save(self, base_path=None, zipfile=None):
         if base_path is None:
             base_path = self.persistency_path
-        data = json.dumps(self.export_json(), sort_keys=True, indent=4)
+        data = json.dumps(self.export_json(), indent=4)
         if zipfile:
             zipfile.writestr('nodenet.json', data)
         else:
@@ -488,6 +505,7 @@ class DictNodenet(Nodenet):
                     break
                 else:
                     del self.deleted_items[i]
+        self.user_prompt_response = {}
 
     def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_configuration=None):
         nodespace_uid = self.get_nodespace(nodespace_uid).uid

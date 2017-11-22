@@ -26,6 +26,8 @@ from collections import OrderedDict
 from threading import Lock
 from micropsi_core.world.worldobject import WorldObject
 from abc import ABCMeta, abstractmethod
+from micropsi_core.device.device import InputDevice, OutputDevice
+from micropsi_core.device import devicemanager
 
 
 class WorldAdapterMixin(object):
@@ -87,6 +89,7 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
     def __init__(self, world, uid=None, config={}, **data):
         self.datasources = {}
         self.datatargets = {}
+        self.device_map = {}
         self.flow_datasources = OrderedDict()
         self.flow_datatargets = OrderedDict()
         self.flow_datatarget_feedbacks = OrderedDict()
@@ -213,7 +216,7 @@ try:
     # TODO: Move this and the config in theano_nodenet to one central point
     from configuration import config as settings
 
-    class ArrayWorldAdapter(WorldAdapter, metaclass=ABCMeta):
+    class ArrayWorldAdapter(WorldAdapter):
         """
         The ArrayWorldAdapter base class allows to avoid python dictionaries and loops for transmitting values
         to nodenet engines.
@@ -227,7 +230,6 @@ try:
 
         def __init__(self, world, uid=None, **data):
             WorldAdapter.__init__(self, world, uid=uid, **data)
-
             precision = settings['theano']['precision']
             self.floatX = np.float32
             if precision == "64":
@@ -241,6 +243,18 @@ try:
             self.datasource_values = np.zeros(0, dtype=self.floatX)
             self.datatarget_values = np.zeros(0, dtype=self.floatX)
             self.datatarget_feedback_values = np.zeros(0, dtype=self.floatX)
+            if data.get('device_map'):
+                self.device_map = data['device_map']
+
+            for k in self.device_map:
+                if k not in devicemanager.devices:
+                    raise KeyError("Device not connected: %s" % self.device_map[k])
+                if issubclass(devicemanager.devices[k].__class__, InputDevice):
+                    self.add_flow_datasource(self.device_map[k],
+                                             devicemanager.devices[k].get_data_size())
+                elif issubclass(devicemanager.devices[k].__class__, OutputDevice):
+                    self.add_flow_datatarget(self.device_map[k],
+                                             devicemanager.devices[k].get_data_size())
 
         def add_datasource(self, name, initial_value=0.):
             """ Adds a datasource, and returns the index
@@ -402,39 +416,26 @@ try:
             for name in self.flow_datatargets:
                 self.flow_datatargets[name] = np.zeros_like(self.flow_datatargets[name])
 
-        @abstractmethod
-        def update_data_sources_and_targets(self):
-            """
-            must be implemented by concrete world adapters to read and set the following arrays:
-            datasource_values
-            datatarget_values
-            datatarget_feedback_values
+        def read_from_world(self):
+            for k in self.device_map:
+                if k not in devicemanager.devices:
+                    raise KeyError("Device not connected: %s" % k)
+                if issubclass(devicemanager.devices[k].__class__, InputDevice):
+                    data = devicemanager.devices[k].read_data()
+                    assert isinstance(data, np.ndarray), "device %s must provide numpy array" % self.device_map[key]
+                    self.set_flow_datasource(self.device_map[k], data.astype(self.floatX))
 
-            Arrays sizes need to be equal to the corresponding responses of get_available_datasources() and
-            get_available_datatargets().
-            Values of the superclass' dict objects will be bypassed and ignored.
-            """
-            pass  # pragma: no cover
-
-    class DefaultArray(ArrayWorldAdapter):
-        """
-        A default ArrayWorldadapter, that provides example-datasources and -targets
-        """
-        def __init__(self, world, uid=None, config={}, **data):
-            super().__init__(world, uid=uid, config=config, **data)
-            self.add_datasource("test", initial_value=0)
-            self.add_flow_datasource("vision", (3, 7))
-            self.add_datatarget("test", initial_value=0)
-            self.add_flow_datatarget("action", (2, 3))
-            self.update_data_sources_and_targets()
+        def write_to_world(self):
+            for k in self.device_map:
+                if k not in devicemanager.devices:
+                    raise KeyError("Device not connected: %s" % k)
+                if issubclass(devicemanager.devices[k].__class__, OutputDevice):
+                    data = self.get_flow_datatarget(self.device_map[k])
+                    devicemanager.devices[k].write_data(data)
 
         def update_data_sources_and_targets(self):
-            import random
-            self.datatarget_feedback_values[:] = self.datatarget_values
-            self.datasource_values[:] = np.random.randn(len(self.datasource_values))
-            self.flow_datasources['vision'][:] = np.random.randn(*self.flow_datasources['vision'].shape)
-            self.flow_datatargets['action'][:] = np.zeros_like(self.flow_datatargets['action'])
-
+            self.write_to_world()
+            self.read_from_world()
 
 except ImportError:  # pragma: no cover
     pass

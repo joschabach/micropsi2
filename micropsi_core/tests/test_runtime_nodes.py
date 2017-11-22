@@ -342,6 +342,30 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
     assert node.get_parameter("testparam") == 13
 
 
+def test_malformed_nodetype_defintion(runtime, test_nodenet, resourcepath):
+    import os
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
+
+    with open(nodetype_file, 'w') as fp:
+        fp.write("""nodetype_definition = {
+            "slottypes": ["gen", "foo", "bar"],
+            "gatetypes": ["gen", "foo", "bar"],
+            "parameters": "stupid param",
+            "parameter_defaults": [13],
+            "parameter_values": [13, 14, 15],
+        }
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+""")
+
+    res, errors = runtime.reload_code()
+    assert not res
+    assert "parameters" in errors[0]
+    assert "parameter_values" in errors[0]
+    assert "parameter_defaults" in errors[0]
+    assert "name" in errors[0]
+    assert "nodefunction_name" in errors[0]
+
+
 def test_node_parameters_from_persistence(runtime, test_nodenet, resourcepath):
     import os
     nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')

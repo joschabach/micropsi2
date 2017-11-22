@@ -90,6 +90,7 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
         self.datasources = {}
         self.datatargets = {}
         self.device_map = {}
+        self.step_interval_ms = -1
         self.flow_datasources = OrderedDict()
         self.flow_datatargets = OrderedDict()
         self.flow_datatarget_feedbacks = OrderedDict()
@@ -162,8 +163,9 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
         """set feedback for the given datatarget"""
         self.datatarget_feedback[key] = value
 
-    def update(self):
+    def update(self, step_inteval_ms):
         """ Called by the world at each world iteration """
+        self.step_interval_ms = step_inteval_ms
         self.update_data_sources_and_targets()
         self.reset_datatargets()
 

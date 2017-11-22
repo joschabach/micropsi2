@@ -152,7 +152,7 @@ def test_agent_dying_unregisters_agent(runtime, default_world, default_nodenet):
     assert nodenet.uid in world.agents
     mockdead = mock.Mock(return_value=False)
     world.agents[nodenet.uid].is_alive = mockdead
-    world.step()
+    world.step(0)
     assert nodenet.uid not in world.agents
 
 

@@ -210,9 +210,17 @@
 updateWorldAdapterSelector();
 var device_section = $('.worldadapter-device-config');
 var engine_field = $('#nn_engine');
+
 function wa_changed(evt){
     var $el = $(event.target);
-    if($el.val() && engine_field.val() != "dict_engine"){
+    var option_supports_devices = true;
+    for(var i = 0; i < $el.children().length; i++){
+        if($el.children()[i].selected){
+            option_supports_devices = ($($el.children()[i]).data()['devices_supported'] == 'True');
+            break;
+        }
+    }
+    if($el.val() && engine_field.val() != "dict_engine" && option_supports_devices){
         device_section.show();
     } else {
         device_section.hide();

@@ -82,6 +82,10 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
     def get_config_options(cls):
         return []
 
+    @classmethod
+    def supports_devices(cls):
+        return False
+
     @property
     def generate_flow_modules(self):
         return False
@@ -225,6 +229,10 @@ try:
         Engines that bulk-query values, such as the theano_engine, will be faster.
         Numpy arrays can be passed directly into the engine.
         """
+
+        @classmethod
+        def supports_devices(cls):
+            return True
 
         @property
         def generate_flow_modules(self):

@@ -2,11 +2,11 @@
 import pytest
 
 
-def create_dummy_device(resourcepath, retval="[1,2,3,4,5]"):
+def create_dummy_device(resourcepath, name="dummy", retval="[1,2,3,4,5]"):
     dummy_device = """
 from micropsi_core.device.device import InputDevice
 
-class DummyDevice(InputDevice):
+class %sDevice(InputDevice):
 
     @classmethod
     def get_options(cls):
@@ -23,18 +23,18 @@ class DummyDevice(InputDevice):
 
     def read_data(self):
         import numpy as np
-        return np.array("""+retval+""")
+        return np.array(%s)
 
     def get_data_size(self):
         return 5
 
     def get_prefix(self):
-        return "dummy"
-"""
-    import os
-    os.makedirs(os.path.join(resourcepath, 'devices', 'dummy'), exist_ok=True)
+        return "%s"
+""" % (name.capitalize(), retval, name)
 
-    devicef = os.path.join(resourcepath, 'devices', 'dummy', 'dummy_device.py')
+    import os
+    os.makedirs(os.path.join(resourcepath, 'devices', name), exist_ok=True)
+    devicef = os.path.join(resourcepath, 'devices', name, "%s_device.py" % name)
     with open(devicef, 'w') as fp:
         fp.write(dummy_device)
 
@@ -95,3 +95,22 @@ def test_device_reload(runtime, test_nodenet, resourcepath, default_world):
     # assert runtime.set_nodenet_properties(test_nodenet, world_uid=default_world, worldadapter="ArrayWorldAdapter", device_map={uid: 'new_device_name'})
     runtime.step_nodenet(test_nodenet)
     assert np.all(runtime.nodenets[test_nodenet].worldadapter_instance.get_flow_datasource("dummy") == np.asarray([9, 8, 7, 6, 5]))
+
+
+@pytest.mark.engine("theano_engine")
+@pytest.mark.engine("numpy_engine")
+def test_changing_device_config(runtime, test_nodenet, resourcepath, default_world):
+    create_dummy_device(resourcepath)
+    create_dummy_device(resourcepath, name='anotherDummy')
+    res, errors = runtime.reload_code()
+    _, uid = runtime.add_device('DummyDevice', {'name': 'foo'})
+    nodenet = runtime.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+
+    runtime.set_nodenet_properties(test_nodenet, world_uid=default_world, worldadapter="ArrayWorldAdapter", device_map={uid: 'dummy'})
+    assert {'dummy'} == set(runtime.get_nodenet(test_nodenet).worldadapter_instance.get_available_flow_datasources())
+    assert netapi.get_nodes()[0].outputs == ['dummy']
+
+    runtime.set_nodenet_properties(test_nodenet, world_uid=default_world, worldadapter="ArrayWorldAdapter", device_map={uid: 'anotherDummy'})
+    assert {'anotherDummy'} == set(runtime.get_nodenet(test_nodenet).worldadapter_instance.get_available_flow_datasources())
+    assert netapi.get_nodes()[0].outputs == ['anotherDummy']

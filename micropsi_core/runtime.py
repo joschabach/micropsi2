@@ -248,7 +248,7 @@ class MicropsiRunner(threading.Thread):
                 if world.is_active:
                     uids.append(wuid)
                     try:
-                        world.step()
+                        world.step(runner_config['runner_timestep'])
                     except:
                         for uid in nodenets:
                             if nodenets[uid].world == wuid and nodenets[uid].is_active:
@@ -799,7 +799,7 @@ def step_nodenet(nodenet_uid):
         logging.getLogger("agent.%s" % nodenet_uid).debug(s.getvalue())
 
     if nodenet.world and not type(worlds[nodenet.world]).is_realtime:
-        worlds[nodenet.world].step()
+        worlds[nodenet.world].step(runner_config['runner_timestep'])
     nodenet.update_monitors_and_recorders()
     return nodenet.current_step
 

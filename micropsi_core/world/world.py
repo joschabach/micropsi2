@@ -172,14 +172,14 @@ class World(object):
             if uid not in micropsi_core.runtime.nodenet_data:
                 del self.data['agents'][uid]
 
-    def step(self):
+    def step(self, step_inteval_ms):
         """ advance the simluation """
         self.current_step += 1
         for uid in self.objects:
-            self.objects[uid].update()
+            self.objects[uid].update(step_inteval_ms)
         for uid in self.agents:
             with self.agents[uid].datasource_lock:
-                self.agents[uid].update()
+                self.agents[uid].update(step_inteval_ms)
         for uid in self.agents.copy():
             if not self.agents[uid].is_alive():
                 # remove from living agents for the moment

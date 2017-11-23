@@ -1051,6 +1051,24 @@ def merge_nodenet_rpc(nodenet_uid, nodenet_data):
     return runtime.merge_nodenet(nodenet_uid, nodenet_data)
 
 
+@rpc("start_behavior")
+def start_behavior_rpc(nodenet_uid, condition=None, worldadapter_param=None):
+    """ Start nodenet with the stop condition """
+    return runtime.start_behavior(nodenet_uid, condition, worldadapter_param)
+
+
+@rpc("get_behavior_state")
+def get_behavior_state_rpc(token):
+    """ Return the state of the behavior execution identified by token """
+    return runtime.get_behavior_state(token)
+
+
+@rpc("abort_behavior")
+def abort_behavior_rpc(token):
+    """ Abort behavior identified with the token """
+    return runtime.abort_behavior(token)
+
+
 # Device
 
 @rpc("get_device_types")

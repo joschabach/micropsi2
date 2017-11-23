@@ -1902,12 +1902,33 @@ def double(inputs, netapi, node, parameters):
 
 
 def test_start_behavior(app, test_nodenet):
-    result = app.post_json('/rpc/start_behavior', {'nodenet_uid':test_nodenet,'condition':{'steps':3}})
+    result = app.post_json('/rpc/start_behavior', {'nodenet_uid': test_nodenet, 'condition': {'steps': 3}})
     assert_success(result)
+    token = result.json_body['data']['token']
+    result = app.get_json('/rpc/get_behavior_state(token="%s")' % token)
+    assert_success(result)
+    assert result.json_body['data']
     import time
     time.sleep(1)
+    result = app.get_json('/rpc/get_behavior_state(token="%s")' % token)
+    assert_success(result)
     from micropsi_core import runtime
+    assert not result.json_body['data']
     assert runtime.nodenets[test_nodenet].current_step == 3
+    assert not runtime.nodenets[test_nodenet].is_active
+
+
+def test_abort_behavior(app, test_nodenet):
+    result = app.post_json('/rpc/start_behavior', {'nodenet_uid': test_nodenet, 'condition': {'steps': 500}})
+    assert_success(result)
+    token = result.json_body['data']['token']
+    result = app.get_json('/rpc/abort_behavior(token="%s")' % token)
+    assert_success(result)
+    result = app.get_json('/rpc/get_behavior_state(token="%s")' % token)
+    assert_success(result)
+    assert not result.json_body['data']
+    from micropsi_core import runtime
+    assert runtime.nodenets[test_nodenet].current_step < 500
     assert not runtime.nodenets[test_nodenet].is_active
 
 

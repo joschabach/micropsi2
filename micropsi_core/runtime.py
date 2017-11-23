@@ -1754,7 +1754,7 @@ def parse_world_definitions(path):
                         logging.getLogger("system").debug("Found world %s " % name)
             except Exception as e:
                 errors.append("%s when importing world file %s: %s" % (e.__class__.__name__, relpath, str(e)))
-                post_mortem()
+                post_mortem(ignore_types=[ImportError])
         for w in worldadapterfiles:
             relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
             name = w[:-3]
@@ -1767,7 +1767,7 @@ def parse_world_definitions(path):
                         # errors.append("Name collision in worldadapters: %s defined more than once" % name)
             except Exception as e:
                 errors.append("%s when importing worldadapter file %s: %s" % (e.__class__.__name__, relpath, str(e)))
-                post_mortem()
+                post_mortem(ignore_types=[ImportError])
         for w in worldobjectfiles:
             relpath = os.path.relpath(os.path.join(base_path, w), start=WORLD_PATH)
             name = w[:-3]
@@ -1780,7 +1780,7 @@ def parse_world_definitions(path):
                         # errors.append("Name collision in worldadapters: %s defined more than once" % name)
             except Exception as e:
                 errors.append("%s when importing worldobject file %s: %s" % (e.__class__.__name__, relpath, str(e)))
-                post_mortem()
+                post_mortem(ignore_types=[ImportError])
     return errors or None
 
 

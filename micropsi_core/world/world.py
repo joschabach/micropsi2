@@ -251,7 +251,7 @@ class World(object):
         if nodenet_uid in self.agents:
             if self.agents[nodenet_uid].__class__.__name__ != worldadapter:
                 return False, "Nodenet agent already exists in this world, but has the wrong type"
-            elif config == self.agents[nodenet_uid].config:
+            elif config == self.agents[nodenet_uid].config and device_map == self.agents[nodenet_uid].device_map:
                     return True, self.agents[nodenet_uid]
         return self.spawn_agent(worldadapter, nodenet_uid, nodenet_name=nodenet_name, config=config, device_map=device_map)
 

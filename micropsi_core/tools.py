@@ -18,13 +18,14 @@ except ImportError:
     import pdb
 
 
-def post_mortem():
+def post_mortem(ignore_types=[]):
     """ if desired, point a debugger to the origin of the last exception """
     from micropsi_core.runtime import runtime_config
     if runtime_config['micropsi2'].get('on_exception') == 'debug':
         exception_type, exception, tb = sys.exc_info()
-        print('\033[01m\033[31m%s: \033[32m%s\033[0m' % (exception_type.__name__, exception))
-        pdb.post_mortem(tb)
+        if type(exception) not in ignore_types:
+            print('\033[01m\033[31m%s: \033[32m%s\033[0m' % (exception_type.__name__, exception))
+            pdb.post_mortem(tb)
 
 
 def pid_exists(pid):

@@ -43,9 +43,11 @@ def reload_device_types(path):
                         for name, cls in inspect.getmembers(module, inspect.isclass):
                             if Device in inspect.getmro(cls) and not inspect.isabstract(cls):
                                 device_types[name] = cls
+                    except ImportError as e:
+                        logging.getLogger("system").error("%s when importing device file %s: %s" % (e.__class__.__name__, modpath, str(e)))
                     except Exception as e:
-                        post_mortem()
                         errors.append("%s when importing device file %s: %s" % (e.__class__.__name__, modpath, str(e)))
+                        post_mortem()
     return errors
 
 

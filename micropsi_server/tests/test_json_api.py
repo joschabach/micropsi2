@@ -1901,8 +1901,8 @@ def double(inputs, netapi, node, parameters):
     assert np.all(worldadapter.get_flow_datatarget_feedback('bar') == np.zeros(worldadapter.flow_datatargets['bar'].shape))
 
 
-def test_start_behavior(app, test_nodenet):
-    result = app.post_json('/rpc/start_behavior', {'nodenet_uid': test_nodenet, 'condition': {'steps': 3}})
+def test_start_behavior(app, default_nodenet):
+    result = app.post_json('/rpc/start_behavior', {'nodenet_uid': default_nodenet, 'condition': {'steps': 3}})
     assert_success(result)
     token = result.json_body['data']['token']
     result = app.get_json('/rpc/get_behavior_state(token="%s")' % token)
@@ -1914,12 +1914,12 @@ def test_start_behavior(app, test_nodenet):
     assert_success(result)
     from micropsi_core import runtime
     assert not result.json_body['data']
-    assert runtime.nodenets[test_nodenet].current_step == 3
-    assert not runtime.nodenets[test_nodenet].is_active
+    assert runtime.nodenets[default_nodenet].current_step == 3
+    assert not runtime.nodenets[default_nodenet].is_active
 
 
-def test_abort_behavior(app, test_nodenet):
-    result = app.post_json('/rpc/start_behavior', {'nodenet_uid': test_nodenet, 'condition': {'steps': 500}})
+def test_abort_behavior(app, default_nodenet):
+    result = app.post_json('/rpc/start_behavior', {'nodenet_uid': default_nodenet, 'condition': {'steps': 500}})
     assert_success(result)
     token = result.json_body['data']['token']
     result = app.get_json('/rpc/abort_behavior(token="%s")' % token)
@@ -1928,8 +1928,8 @@ def test_abort_behavior(app, test_nodenet):
     assert_success(result)
     assert not result.json_body['data']
     from micropsi_core import runtime
-    assert runtime.nodenets[test_nodenet].current_step < 500
-    assert not runtime.nodenets[test_nodenet].is_active
+    assert runtime.nodenets[default_nodenet].current_step < 500
+    assert not runtime.nodenets[default_nodenet].is_active
 
 
 def test_gate_activation_is_persisted(app, runtime, test_nodenet, resourcepath):

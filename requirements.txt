@@ -27,5 +27,5 @@ networkx==1.11
 git+https://github.com/micropsi-industries/spock.git
 tornado==4.4
 fysom==2.1.5
-protobuf==3.5.0
+protobuf==3.4.0
 tensorflow==1.4.0

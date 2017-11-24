@@ -69,7 +69,8 @@ def get_worldadapters(world_uid, nodenet_uid=None):
         data[name] = {
             'name': worldadapter.__name__,
             'description': worldadapter.__doc__,
-            'config_options': worldadapter.get_config_options()
+            'config_options': worldadapter.get_config_options(),
+            'supports_devices': worldadapter.supports_devices()
         }
     if world_uid in micropsi_core.runtime.worlds:
         world = micropsi_core.runtime.worlds[world_uid]

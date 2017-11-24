@@ -1,6 +1,10 @@
 
 0.13-alpha11 (unreleased)
 ==========
+ * Support for devices (cameras, etc)
+ * Numpy flow-engine
+ * Autoalign for flow nodes
+ * Netapi hooks for start/stop
 
 
 0.12-alpha10 (2017-09-04)

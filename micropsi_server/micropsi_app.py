@@ -1648,34 +1648,40 @@ def runtime_info():
 
 
 def ipython_kernel_thread():
-    try:
-        import mock
-        import IPython
-    except ImportError:
-        logging.getLogger('system').warning("Warning: IPython not installed")
-        return
+    import mock
+    import IPython
     with mock.patch('signal.signal'):
         IPython.embed_kernel()
+
+
+def start_ipython_console():
+    import sys
+    import time
+
+    Thread(target=ipython_kernel_thread).start()
+
+    count = 0
+    # wait until ipython hijacked the streams
+    while (sys.stderr == sys.__stderr__) and count < 10:
+        count += 1
+        time.sleep(0.1)
+
+    # revert input and error back to their original state
+    sys.stdin, sys.stderr = sys.__stdin__, sys.__stderr__
 
 
 def main(host=None, port=None):
     host = host or cfg['micropsi2']['host']
     port = port or cfg['micropsi2']['port']
+    try:
+        import IPython
+        import ipykernel
+        start_ipython_console()
+    except ImportError as err:
+        logging.getLogger('system').warning("Warning: IPython console not available: " + err.msg)
+
     print("Starting App on Port " + str(port))
-
     runtime.initialize()
-
-    Thread(target=ipython_kernel_thread).start()
-
-    import sys
-    import time
-
-    # wait until ipython hijacked the streams
-    while (sys.stderr == sys.__stderr__):
-        time.sleep(0.2)
-
-    # revert input and error back to their original state
-    sys.stdin, sys.stderr = sys.__stdin__, sys.__stderr__
 
     try:
         from cherrypy import wsgiserver

@@ -1,3 +1,4 @@
+html5lib==0.9999999
 beautifulsoup4==4.4.1
 CherryPy==5.4.0
 coloredlogs==6.0
@@ -25,3 +26,6 @@ Pillow==3.2.0
 networkx==1.11
 git+https://github.com/micropsi-industries/spock.git
 tornado==4.4
+fysom==2.1.5
+protobuf==3.4.0
+tensorflow==1.4.0

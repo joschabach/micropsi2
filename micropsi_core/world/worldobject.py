@@ -66,7 +66,7 @@ class WorldObject(object):
         """ sets the values from the data """
         pass
 
-    def update(self):
+    def update(self, step_inteval_ms):
         """ Called by the world at each world iteration """
         pass
 

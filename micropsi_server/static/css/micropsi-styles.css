@@ -380,9 +380,11 @@ graphs
 }
 
 label input[type="radio"], label input[type="checkbox"] {
-  padding: 0;
   vertical-align: text-top;
-  margin: 0;
+  margin-right: .5em;
+}
+label.inline {
+  display: inline-block;
 }
 
 .section .form-horizontal input[type="checkbox"] {
@@ -406,6 +408,7 @@ label input[type="radio"], label input[type="checkbox"] {
 div.modulators_container{
   max-height: 200px;
   overflow-y: auto;
+  padding: 10px;
 }
 
 table.modulators button { visibility: hidden;}
@@ -634,6 +637,9 @@ p.clear {
 
 .hint.small {
   font-size: 0.9em;
+}
+.hint.xsmall {
+  font-size: 0.8em;
 }
 
 table th {

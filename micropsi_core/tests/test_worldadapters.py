@@ -38,7 +38,9 @@ def test_default_worldadater(default_world):
     adapter.set_datatarget_values([0.7])
     assert adapter.datatargets["echo"] == 0.7
 
-    adapter.update()
+    adapter.update(17)
+
+    assert adapter.step_interval_ms == 17
 
     assert adapter.get_datatarget_feedback_value("echo") == 0.7
     assert adapter.get_datatarget_feedback_values() == [0.7]

@@ -17,12 +17,14 @@ import logging
 last_tb = None
 
 
-def post_mortem():
+def post_mortem(ignore_types=[]):
     """ store detailed traceback data for use in debuggers, if configured"""
     global last_tb
     from micropsi_core.runtime import runtime_config
     if runtime_config['micropsi2'].get('on_exception') == 'debug':
-        _, _, last_tb = sys.exc_info()
+        _, exc, tb = sys.exc_info()
+        if type(exc) not in ignore_types:
+            last_tb = tb
         logging.getLogger('system').debug("traceback stored. use micropsi_core.tools.interactive_pdb to inspect.")
 
 

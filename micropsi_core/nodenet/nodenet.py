@@ -73,7 +73,8 @@ class Nodenet(metaclass=ABCMeta):
             'runner_condition': self._runner_condition,
             'use_modulators': self.use_modulators,
             'nodespace_ui_properties': self._nodespace_ui_properties,
-            'worldadapter_config': {} if not self.worldadapter_instance else self.worldadapter_instance.config
+            'worldadapter_config': {} if not self.worldadapter_instance else self.worldadapter_instance.config,
+            'device_map': {} if not self.worldadapter_instance else self.worldadapter_instance.device_map
         }
         return data
 
@@ -188,8 +189,6 @@ class Nodenet(metaclass=ABCMeta):
         self.dashboard_values = {}
         self.figures = {}
 
-        self.netapi_event_handlers = dict((evt, []) for evt in self.netapi.Event)
-
         self.native_modules = self._load_nodetypes(native_modules)
         self.native_module_instances = {}
         self.native_module_definitions = dict((uid, native_modules[uid]) for uid in self.native_modules)
@@ -234,15 +233,15 @@ class Nodenet(metaclass=ABCMeta):
         })
         return data
 
-    def simulation_started(self):
-        for func in self.netapi_event_handlers[self.netapi.Event.NET_STARTED]:
-            func()
+    def on_start(self):
         self.is_active = True
+        for uid, node in self.native_module_instances.items():
+            node.on_start(node)
 
-    def simulation_stopped(self):
+    def on_stop(self):
         self.is_active = False
-        for func in self.netapi_event_handlers[self.netapi.Event.NET_STOPPED]:
-            func()
+        for uid, node in self.native_module_instances.items():
+            node.on_stop(node)
 
     def set_user_prompt(self, node, key, message, parameters={}):
         if self.user_prompt is not None:
@@ -864,14 +863,3 @@ class Nodenet(metaclass=ABCMeta):
                 self.figures = {}
         except ImportError:
             pass
-
-    def on_unload(self):
-        self.close_figures()
-        for func in self.netapi_event_handlers[self.netapi.Event.NET_UNLOAD]:
-            func()
-
-    def register_netapi_eventhandler(self, event, func):
-        self.netapi_event_handlers[event].append(func)
-
-    def unregister_netapi_eventhandler(self, event, func):
-        self.netapi_event_handlers[event].remove(func)

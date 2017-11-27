@@ -1,14 +1,7 @@
 
-from enum import Enum
-
 
 class NetAPI(object):
     # Node Net API facade class for use from within the node net (in node functions)
-
-    class Event(Enum):
-        NET_STARTED = 1
-        NET_STOPPED = 2
-        NET_UNLOAD = 3
 
     @property
     def uid(self):
@@ -38,27 +31,50 @@ class NetAPI(object):
 
     def get_nodespace(self, uid):
         """
-        Returns the nodespace with the given uid
+        Return the nodespace with the given uid
         """
         return self._nodenet.get_nodespace(uid)
 
     def get_nodespaces(self, parent=None):
         """
-        Returns a list of all nodespaces in the given nodespace
+        Return a list of all nodespaces inside the given nodespace
+
+        Params
+        ------
+            parent: uid (string), optional
+                consider only nodespaces inside this nodespace
         """
         return [self._nodenet.get_nodespace(uid) for
                 uid in self._nodenet.get_nodespace(parent).get_known_ids('nodespaces')]
 
     def get_node(self, uid):
         """
-        Returns the node with the given uid
+        Return the node with the given uid
         """
         return self._nodenet.get_node(uid)
 
     def get_nodes(self, nodespace=None, node_name_prefix=None, nodetype=None, sortby='ids'):
         """
-        Returns a list of nodes in the given nodespace (all Nodespaces if None) whose names start with
-        the given prefix (all if None)
+        Search for nodes by name, nodespace and nodetype
+
+        Params
+        ------
+            nodespace: uid (string), optional
+                return only nodes from this nodespace
+
+            node_name_prefix: string, optional
+                return only nodes whose name starts with this string
+
+            nodetype: string
+                return only nodes of the given type
+
+            sortby: string 'ids' or 'names'
+                sort returned list of nodes by node.uid or by node.name
+
+        Returns
+        -------
+            List of node instances
+
         """
         nodes = []
         all_ids = None
@@ -150,20 +166,47 @@ class NetAPI(object):
 
     def delete_node(self, node):
         """
-        Deletes a node and all links connected to it.
+        Delete a node and all links connected to it.
+
+        Params
+        ------
+            node: node instance
         """
         self._nodenet.delete_node(node.uid)
 
     def delete_nodespace(self, nodespace):
         """
-        Deletes a node and all nodes and nodespaces contained within, and all links connected to it.
+        Delete a nodesace and all nodes and nodespaces contained within, and all links connected to it.
+
+        Params
+        ------
+            nodespace: nodespace instance
         """
         self._nodenet.delete_nodespace(nodespace.uid)
 
     def create_node(self, nodetype, nodespace=None, name=None, **parameters):
         """
-        Creates a new node or node space of the given type, with the given name and in the given nodespace.
-        Returns the newly created entity.
+        Creates a new node of the given type
+
+        Params
+        ------
+            nodetype: string
+                the `name` field of the nodetype definition
+
+            nodespace: uid (string)
+                the nodespace that the new node should belong to.
+
+            name: string
+                name of the new node
+
+            **parameters:
+                additional keyword arguments will set the value of the corresponding
+                node parameter.
+
+        Returns
+        -------
+            the new node instance
+
         """
         if name is None:
             name = ""   # TODO: empty names crash the client right now, but really shouldn't
@@ -189,8 +232,26 @@ class NetAPI(object):
 
     def link(self, source_node, source_gate, target_node, target_slot, weight=1):
         """
-        Creates a link between two nodes. If the link already exists, it will be updated
+        Create a link between two nodes.
+
+        If the link already exists, it will be updated
         with the given weight (or the default 1 if not given)
+
+        Params
+        ------
+            source_node: node instance
+
+            source_gate: gate type (string)
+                selects from which of the source node's gates the link should originate
+
+            target_node: node instance
+
+            target_slot: slot type (string)
+                selects in which of the target node's slots the link should land
+
+            weight: numeric
+                the link weight
+
         """
         self._nodenet.create_link(source_node.uid, source_gate, target_node.uid, target_slot, weight)
 
@@ -224,6 +285,19 @@ class NetAPI(object):
     def unlink(self, source_node, source_gate=None, target_node=None, target_slot=None):
         """
         Deletes a link, or links, originating from the given node
+
+        Params
+        ------
+            source_node: node instance
+
+            source_gate: gate type (string)
+                origin of the to-be-deleted link on the source node
+
+            target_node: node instance
+
+            target_slot: slot type (string)
+                endpoint of the to-be-deleted link on the target node
+
         """
         target_node_uid = target_node.uid if target_node is not None else None
         source_node.unlink(source_gate, target_node_uid, target_slot)
@@ -322,15 +396,31 @@ class NetAPI(object):
 
     def notify_user(self, node, msg):
         """
-        Stops the nodenetrunner for this nodenet, and displays an information to the user,
-        who can then choose to continue or suspend running nodenet
-        Parameters:
-            node: the node object that emits this message
+        Stops the nodenetrunner for this nodenet and displays some information to the user,
+        who can then choose to continue running or keep it stopped.
+
+        Params
+        ------
+            node: node instance
+                the node object that emits this message
             msg: a string to display to the user
         """
         self._nodenet.set_user_prompt(node, None, msg, [])
 
     def show_user_prompt(self, node, key):
+        """
+        Stop the nodenetrunner and display a dialogue that collects user input
+
+        Params
+        ------
+            node: node instance
+                the node that wants to create this dialoge - must have a
+                `user_prompts` field in its nodetype definition
+
+            key: str
+                select a particular prompt from the nodetype's 'user_prompts' field.
+
+        """
         promptinfo = node.get_user_prompt(key)
         self._nodenet.set_user_prompt(node, key, promptinfo['callback'].__doc__, promptinfo['parameters'])
 
@@ -539,12 +629,3 @@ class NetAPI(object):
 
     def announce_nodes(self, nodespace_uid, numer_of_nodes, average_element_per_node):
         pass
-
-    def register_handler(self, event, func):
-        """ registers a callable to listen for the specified netapi Event.
-        event must be one of the defined netapi.Event enum entries"""
-        self._nodenet.register_netapi_eventhandler(event, func)
-
-    def unregister_handler(self, event, func):
-        """ removes a registered callable from the event"""
-        self._nodenet.unregister_netapi_eventhandler(event, func)

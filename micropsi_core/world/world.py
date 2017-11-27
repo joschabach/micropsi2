@@ -144,10 +144,10 @@ class World(object):
             self.logger.warning("Wrong version of the world data")
             return False
 
-    def simulation_started(self):
+    def on_start(self):
         self.is_active = True
 
-    def simulation_stopped(self):
+    def on_stop(self):
         self.is_active = False
 
     def get_available_worldadapters(self):
@@ -172,14 +172,14 @@ class World(object):
             if uid not in micropsi_core.runtime.nodenet_data:
                 del self.data['agents'][uid]
 
-    def step(self):
+    def step(self, step_inteval_ms):
         """ advance the simluation """
         self.current_step += 1
         for uid in self.objects:
-            self.objects[uid].update()
+            self.objects[uid].update(step_inteval_ms)
         for uid in self.agents:
             with self.agents[uid].datasource_lock:
-                self.agents[uid].update()
+                self.agents[uid].update(step_inteval_ms)
         for uid in self.agents.copy():
             if not self.agents[uid].is_alive():
                 # remove from living agents for the moment
@@ -235,7 +235,7 @@ class World(object):
                     objects[uid] = obj
         return objects
 
-    def register_nodenet(self, worldadapter, nodenet_uid, nodenet_name=None, config={}):
+    def register_nodenet(self, worldadapter, nodenet_uid, nodenet_name=None, config={}, device_map={}):
         """Attempts to register a nodenet at this world.
 
         Returns True, spawned_agent_instance if successful,
@@ -251,9 +251,9 @@ class World(object):
         if nodenet_uid in self.agents:
             if self.agents[nodenet_uid].__class__.__name__ != worldadapter:
                 return False, "Nodenet agent already exists in this world, but has the wrong type"
-            elif config == self.agents[nodenet_uid].config:
+            elif config == self.agents[nodenet_uid].config and device_map == self.agents[nodenet_uid].device_map:
                     return True, self.agents[nodenet_uid]
-        return self.spawn_agent(worldadapter, nodenet_uid, nodenet_name=nodenet_name, config=config)
+        return self.spawn_agent(worldadapter, nodenet_uid, nodenet_name=nodenet_name, config=config, device_map=device_map)
 
     def unregister_nodenet(self, nodenet_uid):
         """Removes the connection between a nodenet and its incarnation in this world; may remove the corresponding
@@ -266,7 +266,7 @@ class World(object):
         if nodenet_uid in self.data['agents']:
             del self.data['agents'][nodenet_uid]
 
-    def spawn_agent(self, worldadapter_name, nodenet_uid, nodenet_name=None, config={}):
+    def spawn_agent(self, worldadapter_name, nodenet_uid, nodenet_name=None, config={}, device_map={}):
         """Creates an agent object,
 
         Returns True, spawned_agent_instance if successful,
@@ -278,7 +278,8 @@ class World(object):
                 uid=nodenet_uid,
                 type=worldadapter_name,
                 name=nodenet_name or worldadapter_name,
-                config=config)
+                config=config,
+                device_map=device_map)
             return True, self.agents[nodenet_uid]
         else:
             self.logger.error("World %s does not support Worldadapter %s" % (self.name, worldadapter_name))
@@ -338,5 +339,5 @@ class World(object):
 
 
 class DefaultWorld(World):
-    supported_worldadapters = ['Default', 'DefaultArray']
+    supported_worldadapters = ['Default', 'ArrayWorldAdapter']
     supported_worldobjects = ['TestObject']

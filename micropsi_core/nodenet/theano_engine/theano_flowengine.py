@@ -29,7 +29,8 @@ class TheanoFlowEngine(FlowEngine):
     @worldadapter_instance.setter
     def worldadapter_instance(self, _worldadapter_instance):
         typechange = True
-        if self._worldadapter_instance and self.worldadapter == _worldadapter_instance.__class__.__name__:
+        if self._worldadapter_instance and self.worldadapter == _worldadapter_instance.__class__.__name__ and \
+                _worldadapter_instance.device_map == self._worldadapter_instance.device_map:
             typechange = False
         super(TheanoFlowEngine, self.__class__).worldadapter_instance.fset(self, _worldadapter_instance)
         if typechange:

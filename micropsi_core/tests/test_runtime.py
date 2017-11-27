@@ -290,7 +290,7 @@ def test_system_benchmark(runtime, test_nodenet):
     result = benchmark_system(n=10, repeat=1)
     assert "numpy version" in result
     assert "scipy version" in result
-    assert "theano version" in result
+    assert "tensorflow version" in result
     assert "numpy dot" in result
     assert "scipy dot" in result
-    assert "theano dot" in result
+    assert "tf matmul" in result

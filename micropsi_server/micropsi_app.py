@@ -1650,6 +1650,14 @@ def runtime_info():
 def ipython_kernel_thread():
     import mock
     import IPython
+    from ipykernel.zmqshell import ZMQInteractiveShell
+    from IPython.core.autocall import ZMQExitAutocall
+
+    class KeepAlive(ZMQExitAutocall):
+        def __call__(self):
+            super().__call__(True)
+
+    ZMQInteractiveShell.exiter = KeepAlive()
     with mock.patch('signal.signal'):
         IPython.embed_kernel()
 

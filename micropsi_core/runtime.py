@@ -2105,10 +2105,6 @@ def initialize(config=None):
     for e in errors:
         logging.getLogger("system").error(e)
 
-    # shut tornado up
-    for key in ["tornado.application", "tornado.access", "tornado", "tornado.general"]:
-        logging.getLogger(key).setLevel(logging.ERROR)
-
     # initialize runners
     # Initialize the threads for the continuous calculation of nodenets and worlds
     if 'runner_timestep' not in runner_config:

@@ -132,7 +132,6 @@ class TheanoFlowEngine(FlowEngine):
             position = instance.position
             name = instance.name
             partition = self.get_partition(uid)
-            self.close_figures(uid)
             flowdata = instance.get_flow_data(complete=True)
             new_instance = TheanoFlowModule(
                 self,

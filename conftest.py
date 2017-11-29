@@ -136,6 +136,7 @@ def pytest_runtest_setup(item):
         else:
             os.remove(path)
 
+    open(os.path.join(testpath, '__init__.py'), 'w').close()
     os.mkdir(os.path.join(testpath, 'worlds'))
     os.mkdir(os.path.join(testpath, 'nodenets'))
     os.mkdir(os.path.join(testpath, 'nodenets', '__autosave__'))

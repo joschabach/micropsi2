@@ -472,6 +472,7 @@ def load_nodenet(nodenet_uid):
                     from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
                     nodenets[nodenet_uid] = DictNodenet(**params)
                 elif engine == 'theano_engine':
+                    logging.getLogger("system").warning("Attention: The theano engine is deprecated and will be removed in the next release!")
                     from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
                     nodenets[nodenet_uid] = TheanoNodenet(**params)
                 elif engine == 'numpy_engine':

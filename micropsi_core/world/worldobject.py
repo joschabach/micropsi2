@@ -38,6 +38,14 @@ class WorldObject(object):
         self.data['name'] = name
 
     @property
+    def parameters(self):
+        return self.data.get('parameters', {})
+
+    @parameters.setter
+    def parameters(self, parameters={}):
+        self.data['parameters'] = parameters
+
+    @property
     def uid(self):
         return self.data['uid']
 
@@ -58,6 +66,10 @@ class WorldObject(object):
         """ sets the values from the data """
         pass
 
-    def update(self):
+    def update(self, step_inteval_ms):
         """ Called by the world at each world iteration """
         pass
+
+
+class TestObject(WorldObject):
+    pass

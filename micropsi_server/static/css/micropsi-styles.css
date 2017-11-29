@@ -22,6 +22,7 @@ h3 {
 .monitor_list input {display:inline;}
 .monitor_list label {display:inline;}
 .monitor_list li {padding: 2px 0;}
+#monitor input[type="checkbox"] {margin: 0;}
 
 #graph, #logs {
   overflow: auto;
@@ -36,10 +37,13 @@ h3 {
 .log_DEBUG {color: #1700FF;}
 .log_INFO {color: #4b4b4b;}
 .log_WARNING{color: #942628;}
-.log_ERROR {color: #e12628;}
+.log_ERROR, .log_CRITICAL, .log_ERROR:hover, .log_CRITICAL:hover {
+  background-color: #c22;
+  color: white;
+}
 
-.delete_monitor i { opacity: 0.5; }
-.delete_monitor:hover i { opacity: 1; }
+.monitor_action i { opacity: 0.5; }
+.monitor_action:hover i { opacity: 1; }
 
 .logentry{
   display:block;
@@ -376,9 +380,11 @@ graphs
 }
 
 label input[type="radio"], label input[type="checkbox"] {
-  padding: 0;
   vertical-align: text-top;
-  margin: 0;
+  margin-right: .5em;
+}
+label.inline {
+  display: inline-block;
 }
 
 .section .form-horizontal input[type="checkbox"] {
@@ -402,6 +408,7 @@ label input[type="radio"], label input[type="checkbox"] {
 div.modulators_container{
   max-height: 200px;
   overflow-y: auto;
+  padding: 10px;
 }
 
 table.modulators button { visibility: hidden;}
@@ -630,6 +637,13 @@ p.clear {
 
 .hint.small {
   font-size: 0.9em;
+}
+.hint.xsmall {
+  font-size: 0.8em;
+}
+
+table th {
+  text-align: left;
 }
 
 #console_input {

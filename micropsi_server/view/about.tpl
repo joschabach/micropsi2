@@ -1,32 +1,29 @@
 %include("menu.tpl", version=version)
 
 <div class="row-fluid">
-    <p>
-    <h2>About MicroPsi 2</h2>
+    <h2>MicroPsi Runtime</h2>
     <h3>Version {{version}}</h3>
-    </p>
 
     <div class="row-fluid">
-        <p><strong>MicroPsi</strong> is a cognitive architecture, based on Dietrich Dörner's <em>Psi Theory</em> and additional
-        concepts, as laid down in the book <em>Principles of Synthetic Intelligence</em> (OUP 2009). MicroPsi allows
-        the design of agents as hierarchical spreading activation networks, and includes a Multi Agent simulation
-        environment.</p>
-        <p>The first version of MicroPsi had been developed between 2003 and 2009 by Joscha Bach, Ronnie Vuine,
-        Matthias Füssel, David Salz, Markus Dietzsch, Colin Bauer, Daniel Küstner, Julia Böttcher. It was designed
-        as a PlugIn for the Eclipse IDE and written in Java.</p>
-        <p>MicroPsi 2 is a completely new implementation, this time in Python. To reduce maintenance and support cost
-        for different platforms, and to allow for easier access, MicroPsi 2 has been implemented as a web application.
-        </p>
-        <h3>License</h3>
-        MicroPsi 2 is under MIT license.
-    </div>
+    <p>
+       The MicroPsi Runtime is the execution environment for MicroPsi agents. It is distributed with the micropsi industries BDK, available from <a href="http://micropsi-industries.com/download">micropsi-industries.com/download</a> and documented at <a href="http://micropsi-industries.com/documentation/toc">micropsi-industries.com/documentation/toc</a>.<br/><br/>
 
-    <h2>Contact</h2>
-    <ul>
-        <li><a href="http://micropsi.com">micropsi.com</a></li>
-        <li><a href="http://micropsi-industries.com">micropsi-industries.com</a></li>
-        <li>#micropsi on freenode</li>
-    </ul>
+       An MIT-licensed stand-alone version of the Runtime is available from <a href="https://github.com/joschabach/micropsi2">github.com/joschabach/micropsi2</a>.<br/><br/>
+       The MicroPsi Runtime is built on Python 3, <a href="https://github.com/Theano/Theano">Theano</a>, and <a href="https://github.com/defnull/bottle">Bottle</a>.
+    </p>
+    <dl>
+      <dt>Agent-directory:</dt>
+      <dd>{{config['agent_directory']}}</dd>
+      <dt>World-directory:</dt>
+      <dd>{{config['world_directory']}}</dd>
+      <dt>Persistency-directory:</dt>
+      <dd>{{config['persistency_directory']}}</dd>
+    </dl>
+
+    <p>
+       © micropsi industries GmbH 2014-2017
+    </p>
+    </div>
 </div>
 
 

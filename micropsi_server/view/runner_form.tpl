@@ -31,19 +31,17 @@
                         %end
                     </div>
                 </div>
-                %if not defined("name_error"):
                 <div class="control-group">
-                %else:
-                <div class="control-group error">
-                %end
-                    <label class="control-label" for="factor">Nodenet-steps per world step:</label>
+                    <label class="control-label" for="infguard">NaN/Inf Guard</label>
                     <div class="controls">
-                        <input type="text" class="input-xlarge" maxlength="256" id="factor" name="factor" value="{{value['factor']}}" />
-                        %if defined("name_error"):
-                        <span class="help-inline">{{name_error}}</span>
+                        <input type="checkbox" class="input-xlarge" id="infguard" name="infguard"
+                        %if 'infguard' in value and value['infguard']:
+                            checked="checked"
                         %end
+                        />
                     </div>
                 </div>
+
             </fieldset>
     </div>
 

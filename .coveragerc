@@ -3,3 +3,6 @@ omit =
     */tests/*
     micropsi_server/bottle.py
     */conftest.py
+    micropsi_server/minidoc.py
+    */_test_*
+    */_demo_*

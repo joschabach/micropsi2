@@ -4,18 +4,28 @@
 Nodenet definition
 """
 import json
+import io
 import os
 import copy
 import math
 
+import theano
 from theano import tensor as T
 import numpy as np
 import scipy
 
+try:
+    import ipdb as pdb
+except ImportError:
+    import pdb
+
+from micropsi_core.tools import post_mortem
 from micropsi_core.nodenet import monitor
-from micropsi_core.nodenet.nodenet import Nodenet
-from micropsi_core.nodenet.node import Nodetype
+from micropsi_core.nodenet import recorder
+from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION
+from micropsi_core.nodenet.node import Nodetype, HighdimensionalNodetype
 from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators
+from micropsi_core.nodenet.theano_engine.theano_flowengine import TheanoFlowEngine
 from micropsi_core.nodenet.theano_engine.theano_node import *
 from micropsi_core.nodenet.theano_engine.theano_definitions import *
 from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
@@ -27,19 +37,16 @@ from configuration import config as settings
 
 
 STANDARD_NODETYPES = {
-    "Nodespace": {
-        "name": "Nodespace"
-    },
     "Comment": {
         "name": "Comment",
         "symbol": "#",
         'parameters': ['comment'],
         "shape": "Rectangle"
     },
-    "Register": {
-        "name": "Register",
+    "Neuron": {
+        "name": "Neuron",
         "slottypes": ["gen"],
-        "nodefunction_name": "register",
+        "nodefunction_name": "neuron",
         "gatetypes": ["gen"]
     },
     "Sensor": {
@@ -48,10 +55,10 @@ STANDARD_NODETYPES = {
         "nodefunction_name": "sensor",
         "gatetypes": ["gen"]
     },
-    "Actor": {
-        "name": "Actor",
+    "Actuator": {
+        "name": "Actuator",
         "parameters": ["datatarget"],
-        "nodefunction_name": "actor",
+        "nodefunction_name": "actuator",
         "slottypes": ["gen"],
         "gatetypes": ["gen"]
     },
@@ -60,50 +67,6 @@ STANDARD_NODETYPES = {
         "slottypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
         "nodefunction_name": "pipe",
         "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
-        "gate_defaults": {
-            "gen": {
-                "minimum": -1,
-                "maximum": 1,
-                "threshold": -1,
-                "spreadsheaves": 0
-            },
-            "por": {
-                "minimum": -1,
-                "maximum": 1,
-                "threshold": -1,
-                "spreadsheaves": 0
-            },
-            "ret": {
-                "minimum": -1,
-                "maximum": 1,
-                "threshold": -1,
-                "spreadsheaves": 0
-            },
-            "sub": {
-                "minimum": -1,
-                "maximum": 1,
-                "threshold": -1,
-                "spreadsheaves": True
-            },
-            "sur": {
-                "minimum": -1,
-                "maximum": 1,
-                "threshold": -1,
-                "spreadsheaves": 0
-            },
-            "cat": {
-                "minimum": -1,
-                "maximum": 1,
-                "threshold": -1,
-                "spreadsheaves": 1
-            },
-            "exp": {
-                "minimum": -1,
-                "maximum": 1,
-                "threshold": -1,
-                "spreadsheaves": 0
-            }
-        },
         "parameters": ["expectation", "wait"],
         "parameter_defaults": {
             "expectation": 1,
@@ -123,41 +86,12 @@ STANDARD_NODETYPES = {
         "slottypes": ["gen", "por", "gin", "gou", "gfg"],
         "gatetypes": ["gen", "por", "gin", "gou", "gfg"],
         "nodefunction_name": "lstm",
-        "symbol": "◷",
-        "gate_defaults": {
-            "gen": {
-                "minimum": -1000,
-                "maximum": 1000,
-                "threshold": -1000
-            },
-            "por": {
-                "minimum": -1000,
-                "maximum": 1000,
-                "threshold": -1000
-            },
-            "gin": {
-                "minimum": -1000,
-                "maximum": 1000,
-                "threshold": -1000
-            },
-            "gou": {
-                "minimum": -1000,
-                "maximum": 1000,
-                "threshold": -1000
-            },
-            "gfg": {
-                "minimum": -1000,
-                "maximum": 1000,
-                "threshold": -1000
-            }
-        }
+        "symbol": "◷"
     }
 }
 
-NODENET_VERSION = 1
 
-
-class TheanoNodenet(Nodenet):
+class TheanoNodenetCore(Nodenet):
     """
         theano runtime engine implementation
     """
@@ -172,14 +106,17 @@ class TheanoNodenet(Nodenet):
 
     @worldadapter_instance.setter
     def worldadapter_instance(self, _worldadapter_instance):
-        self._worldadapter_instance = _worldadapter_instance
-        self._rebuild_sensor_actor_indices()
+        if self._worldadapter_instance != _worldadapter_instance:
+            self._worldadapter_instance = _worldadapter_instance
+            self._rebuild_sensor_actuator_indices()
+        if self._worldadapter_instance:
+            self._worldadapter_instance.nodenet = self
 
     @property
     def current_step(self):
         return self._step
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None):
+    def __init__(self, persistency_path, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None):
 
         # map of string uids to positions. Not all nodes necessarily have an entry.
         self.positions = {}
@@ -193,34 +130,33 @@ class TheanoNodenet(Nodenet):
         # map of data targets to string node IDs
         self.actuatormap = {}
 
-        super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance)
+        super().__init__(persistency_path, name, worldadapter, world, owner, uid, native_modules=native_modules, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance, version=version)
+
+        self.nodetypes = {}
+        for type, data in STANDARD_NODETYPES.items():
+            self.nodetypes[type] = Nodetype(nodenet=self, **data)
 
         precision = settings['theano']['precision']
         if precision == "32":
             T.config.floatX = "float32"
+            self.theanofloatX = "float32"
             self.scipyfloatX = scipy.float32
             self.numpyfloatX = np.float32
             self.byte_per_float = 4
         elif precision == "64":
             T.config.floatX = "float64"
+            self.theanofloatX = "float64"
             self.scipyfloatX = scipy.float64
             self.numpyfloatX = np.float64
             self.byte_per_float = 8
-        else:  # pragma: no cover
-            self.logger.warn("Unsupported precision value from configuration: %s, falling back to float64", precision)
-            T.config.floatX = "float64"
-            self.scipyfloatX = scipy.float64
-            self.numpyfloatX = np.float64
-            self.byte_per_float = 8
+        else:
+            raise RuntimeError("Unsupported float precision value")
 
         device = T.config.device
         self.logger.info("Theano configured to use %s", device)
         if device.startswith("gpu"):
-            self.logger.info("Using CUDA with cuda_root=%s and theano_flags=%s", os.environ["CUDA_ROOT"], os.environ["THEANO_FLAGS"])
             if T.config.floatX != "float32":
-                self.logger.warn("Precision set to %s, but attempting to use gpu.", precision)
-
-        self.netapi = TheanoNetAPI(self)
+                self.logger.warning("Precision set to %s, but attempting to use gpu.", precision)
 
         self.partitions = {}
         self.last_allocated_partition = 0
@@ -230,14 +166,14 @@ class TheanoNodenet(Nodenet):
         try:
             average_elements_per_node_assumption = int(configured_elements_per_node_assumption)
         except:  # pragma: no cover
-            self.logger.warn("Unsupported elements_per_node_assumption value from configuration: %s, falling back to 4", configured_elements_per_node_assumption)
+            self.logger.warning("Unsupported elements_per_node_assumption value from configuration: %s, falling back to 4", configured_elements_per_node_assumption)
 
         initial_number_of_nodes = 2000
         configured_initial_number_of_nodes = settings['theano']['initial_number_of_nodes']
         try:
             initial_number_of_nodes = int(configured_initial_number_of_nodes)
         except:  # pragma: no cover
-            self.logger.warn("Unsupported initial_number_of_nodes value from configuration: %s, falling back to 2000", configured_initial_number_of_nodes)
+            self.logger.warning("Unsupported initial_number_of_nodes value from configuration: %s, falling back to 2000", configured_initial_number_of_nodes)
 
         sparse = True
         configuredsparse = settings['theano']['sparse_weight_matrix']
@@ -246,7 +182,7 @@ class TheanoNodenet(Nodenet):
         elif configuredsparse == "False":
             sparse = False
         else:  # pragma: no cover
-            self.logger.warn("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)
+            self.logger.warning("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)
             sparse = True
 
         rootpartition = TheanoPartition(self,
@@ -258,34 +194,40 @@ class TheanoNodenet(Nodenet):
         self.rootpartition = rootpartition
         self.partitionmap = {}
         self.inverted_partitionmap = {}
-        self._rebuild_sensor_actor_indices(rootpartition)
-
-        self._version = NODENET_VERSION  # used to check compatibility of the node net data
-        self._step = 0
+        self._rebuild_sensor_actuator_indices(rootpartition)
 
         self.proxycache = {}
 
         self.stepoperators = []
         self.initialize_stepoperators()
 
-        self._nodetypes = {}
-        for type, data in STANDARD_NODETYPES.items():
-            self._nodetypes[type] = Nodetype(nodenet=self, **data)
+        self.native_module_definitions = {}
+        for key in native_modules:
+            if native_modules[key].get('engine', self.engine) == self.engine:
+                self.native_module_definitions[key] = native_modules[key]
 
-        self.native_module_definitions = native_modules
-        self.native_modules = {}
-        for type, data in self.native_module_definitions.items():
-            self.native_modules[type] = Nodetype(nodenet=self, **data)
-
-        self.create_nodespace(None, None, "Root", nodespace_to_id(1, rootpartition.pid))
+        self.create_nodespace(None, "Root", nodespace_to_id(1, rootpartition.pid))
 
         self.initialize_nodenet({})
+
+    def _create_netapi(self):
+        self.netapi = TheanoNetAPI(self)
+
+    def on_start(self):
+        self.is_active = True
+        for partition in self.partitions.values():
+            for uid, node in partition.native_module_instances.items():
+                node.on_start(node)
+
+    def on_stop(self):
+        self.is_active = False
+        for partition in self.partitions.values():
+            for uid, node in partition.native_module_instances.items():
+                node.on_stop(node)
 
     def get_data(self, complete=False, include_links=True):
         data = super().get_data(complete=complete, include_links=include_links)
         data['nodes'] = self.construct_nodes_dict(complete=complete, include_links=include_links)
-        # for uid in data['nodes']:
-        #    data['nodes'][uid]['gate_parameters'] = self.get_node(uid).clone_non_default_gate_parameters()
         data['nodespaces'] = self.construct_nodespaces_dict(None, transitive=True)
         data['version'] = self._version
         data['modulators'] = self.construct_modulators_dict()
@@ -296,7 +238,7 @@ class TheanoNodenet(Nodenet):
         data['links'] = self.construct_links_list()
         return data
 
-    def get_nodes(self, nodespace_uids=[], include_links=True):
+    def get_nodes(self, nodespace_uids=[], include_links=True, links_to_nodespaces=[]):
         """
         Returns a dict with contents for the given nodespaces
         """
@@ -310,43 +252,211 @@ class TheanoNodenet(Nodenet):
             nodespace_uids = [self.get_nodespace(uid).uid for uid in nodespace_uids]
 
         if nodespace_uids:
-            nodespaces_by_partition = dict((spid, []) for spid in self.partitions)
+            nodespaces_by_partition = {}
             for nodespace_uid in nodespace_uids:
+                spid = self.get_partition(nodespace_uid).spid
                 data['nodespaces'].update(self.construct_nodespaces_dict(nodespace_uid))
-                nodespaces_by_partition[self.get_partition(nodespace_uid).spid].append(nodespace_from_id(nodespace_uid))
+                if spid not in nodespaces_by_partition:
+                    nodespaces_by_partition[spid] = []
+                nodespaces_by_partition[spid].append(nodespace_from_id(nodespace_uid))
 
-            followupuids = []
+            linked_nodespaces_by_partition = dict((spid, []) for spid in self.partitions)
+            if links_to_nodespaces:
+                # group by partition:
+                for uid in links_to_nodespaces:
+                    spid = self.get_partition(uid).spid
+                    linked_nodespaces_by_partition[spid].append(nodespace_from_id(uid))
+
             for spid in nodespaces_by_partition:
-                if nodespaces_by_partition[spid]:
-                    nodes, followups = self.partitions[spid].get_node_data(nodespace_ids=nodespaces_by_partition[spid], include_links=include_links)
-                    data['nodes'].update(nodes)
-                    followupuids.extend(followups)
-
-            followups_by_partition = dict((spid, []) for spid in self.partitions)
-            for uid in followupuids:
-                followups_by_partition[self.get_partition(uid).spid].append(node_from_id(uid))
-
-            for spid in followups_by_partition:
-                if followups_by_partition[spid]:
-                    nodes, _ = self.partitions[spid].get_node_data(ids=followups_by_partition[spid])
-                    for uid in nodes:
-                        for gate in list(nodes[uid]['links'].keys()):
-                            links = nodes[uid]['links'][gate]
-                            for idx, l in enumerate(links):
-                                p = self.get_partition(l['target_node_uid'])
-                                if p.allocated_node_parents[node_from_id(l['target_node_uid'])] not in nodespaces_by_partition.get(p.spid, []):
-                                    del links[idx]
-                            if len(nodes[uid]['links'][gate]) == 0:
-                                del nodes[uid]['links'][gate]
-                    data['nodes'].update(nodes)
+                nodes, links, _ = self.partitions[spid].get_node_data(nodespaces_by_partition=nodespaces_by_partition, include_links=include_links, linked_nodespaces_by_partition=linked_nodespaces_by_partition)
+                data['nodes'].update(nodes)
+                data['links'] = links
 
         else:
             data['nodespaces'] = self.construct_nodespaces_dict(None, transitive=True)
             for partition in self.partitions.values():
-                nodes, _ = partition.get_node_data(include_links=include_links, include_followupnodes=False)
+                nodes, _, _ = partition.get_node_data(nodespaces_by_partition=None, include_links=include_links)
                 data['nodes'].update(nodes)
 
         return data
+
+    def get_links_for_nodes(self, node_uids):
+
+        nodes = {}
+        links = []
+
+        def linkid(linkdict):
+            return "%s:%s:%s:%s" % (linkdict['source_node_uid'], linkdict['source_gate_name'], linkdict['target_slot_name'], linkdict['target_node_uid'])
+
+        innerlinks = {}
+        for uid in node_uids:
+            nid = node_from_id(uid)
+            partition = self.get_partition(uid)
+
+            ntype = partition.allocated_nodes[nid]
+            nofel = get_elements_per_type(ntype, self.native_modules)
+            offset = partition.allocated_node_offsets[nid]
+
+            elrange = np.asarray(range(offset, offset + nofel))
+            weights = None
+
+            num_nodetype = partition.allocated_nodes[nid]
+            str_nodetype = get_string_node_type(num_nodetype, self.native_modules)
+            obj_nodetype = self.get_nodetype(str_nodetype)
+
+            # inner partition links:
+            w_matrix = partition.w.get_value(borrow=True)
+
+            node_ids = []
+            for i, el in enumerate(elrange):
+                from_els = np.nonzero(w_matrix[el, :])[1]
+                to_els = np.nonzero(w_matrix[:, el])[0]
+                if len(from_els):
+                    slot_numerical = el - partition.allocated_node_offsets[nid]
+                    slot_type = get_string_slot_type(slot_numerical, obj_nodetype)
+                    if type(obj_nodetype) == HighdimensionalNodetype:
+                        if slot_type.rstrip('0123456789') in obj_nodetype.dimensionality['slots']:
+                            slot_type = slot_type.rstrip('0123456789') + '0'
+                    from_nids = partition.allocated_elements_to_nodes[from_els]
+                    node_ids.extend(from_nids)
+
+                    for j, from_el in enumerate(from_els):
+                        source_uid = node_to_id(from_nids[j], partition.pid)
+                        from_nodetype = partition.allocated_nodes[from_nids[j]]
+                        from_obj_nodetype = self.get_nodetype(get_string_node_type(from_nodetype, self.native_modules))
+                        gate_numerical = from_el - partition.allocated_node_offsets[from_nids[j]]
+                        gate_type = get_string_gate_type(gate_numerical, from_obj_nodetype)
+                        if type(from_obj_nodetype) == HighdimensionalNodetype:
+                            if gate_type.rstrip('0123456789') in from_obj_nodetype.dimensionality['gates']:
+                                gate_type = gate_type.rstrip('0123456789') + '0'
+                        ldict = {
+                            'source_node_uid': source_uid,
+                            'source_gate_name': gate_type,
+                            'target_node_uid': uid,
+                            'target_slot_name': slot_type,
+                            'weight': float(w_matrix[el, from_el])
+                        }
+                        innerlinks[linkid(ldict)] = ldict
+
+                if len(to_els):
+                    gate_numerical = el - partition.allocated_node_offsets[nid]
+                    gate_type = get_string_gate_type(gate_numerical, obj_nodetype)
+                    if type(obj_nodetype) == HighdimensionalNodetype:
+                        if gate_type.rstrip('0123456789') in obj_nodetype.dimensionality['gates']:
+                            gate_type = gate_type.rstrip('0123456789') + '0'
+                    to_nids = partition.allocated_elements_to_nodes[to_els]
+                    node_ids.extend(to_nids)
+                    for j, to_el in enumerate(to_els):
+                        target_uid = node_to_id(to_nids[j], partition.pid)
+                        to_nodetype = partition.allocated_nodes[to_nids[j]]
+                        to_obj_nodetype = self.get_nodetype(get_string_node_type(to_nodetype, self.native_modules))
+                        slot_numerical = to_el - partition.allocated_node_offsets[to_nids[j]]
+                        slot_type = get_string_slot_type(slot_numerical, to_obj_nodetype)
+                        if type(to_obj_nodetype) == HighdimensionalNodetype:
+                            if slot_type.rstrip('0123456789') in to_obj_nodetype.dimensionality['slots']:
+                                slot_type = slot_type.rstrip('0123456789') + '0'
+                        ldict = {
+                            'source_node_uid': uid,
+                            'source_gate_name': gate_type,
+                            'target_node_uid': target_uid,
+                            'target_slot_name': slot_type,
+                            'weight': float(w_matrix[to_el, el])
+                        }
+                        innerlinks[linkid(ldict)] = ldict
+
+            links = list(innerlinks.values())
+            nodes.update(partition.get_node_data(ids=[x for x in node_ids if x != nid], include_links=False)[0])
+
+            # search links originating from this node
+            for to_partition in self.partitions.values():
+                if partition.spid in to_partition.inlinks:
+                    inlinks = to_partition.inlinks[partition.spid]
+                    from_elements = inlinks[0].get_value(borrow=True)
+                    node_gates = np.intersect1d(elrange, from_elements)
+                    if len(node_gates):
+                        to_elements = inlinks[1].get_value(borrow=True)
+                        if inlinks[4] == 'identity':
+                            slots = np.arange(len(from_elements))
+                            gates = np.arange(len(from_elements))
+                            weights = 1
+                        elif inlinks[4] == 'dense':
+                            weights = inlinks[2].get_value(borrow=True)
+                            slots, gates = np.nonzero(weights)
+                        node_ids = set()
+                        for index, gate_index in enumerate(gates):
+                            if from_elements[gate_index] not in elrange:
+                                continue
+                            gate_numerical = from_elements[gate_index] - partition.allocated_node_offsets[nid]
+                            gate_type = get_string_gate_type(gate_numerical, obj_nodetype)
+                            slot_index = slots[index]
+                            target_nid = to_partition.allocated_elements_to_nodes[to_elements[slot_index]]
+                            node_ids.add(target_nid)
+                            to_nodetype = to_partition.allocated_nodes[target_nid]
+                            to_obj_nodetype = self.get_nodetype(get_string_node_type(to_nodetype, self.native_modules))
+                            slot_numerical = to_elements[slot_index] - to_partition.allocated_node_offsets[target_nid]
+                            slot_type = get_string_slot_type(slot_numerical, to_obj_nodetype)
+                            if type(to_obj_nodetype) == HighdimensionalNodetype:
+                                if slot_type.rstrip('0123456789') in to_obj_nodetype.dimensionality['slots']:
+                                    slot_type = slot_type.rstrip('0123456789') + '0'
+                            if type(obj_nodetype) == HighdimensionalNodetype:
+                                if gate_type.rstrip('0123456789') in obj_nodetype.dimensionality['gates']:
+                                    gate_type = gate_type.rstrip('0123456789') + '0'
+
+                            links.append({
+                                'source_node_uid': uid,
+                                'source_gate_name': gate_type,
+                                'target_node_uid': node_to_id(target_nid, to_partition.pid),
+                                'target_slot_name': slot_type,
+                                'weight': 1 if np.isscalar(weights) else float(weights[slot_index, gate_index])
+                            })
+                        nodes.update(to_partition.get_node_data(ids=list(node_ids), include_links=False)[0])
+
+            # search for links terminating at this node
+            for from_spid in partition.inlinks:
+                inlinks = partition.inlinks[from_spid]
+                from_partition = self.partitions[from_spid]
+                to_elements = inlinks[1].get_value(borrow=True)
+                node_slots = np.intersect1d(elrange, to_elements)
+                if len(node_slots):
+                    from_elements = inlinks[0].get_value(borrow=True)
+                    if inlinks[4] == 'identity':
+                        slots = np.arange(len(from_elements))
+                        gates = np.arange(len(from_elements))
+                        weights = 1
+                    elif inlinks[4] == 'dense':
+                        weights = inlinks[2].get_value(borrow=True)
+                        slots, gates = np.nonzero(weights)
+                    node_ids = set()
+                    for index, slot_index in enumerate(slots):
+                        if to_elements[slot_index] not in elrange:
+                            continue
+                        slot_numerical = to_elements[slot_index] - partition.allocated_node_offsets[nid]
+                        slot_type = get_string_slot_type(slot_numerical, obj_nodetype)
+                        gate_index = gates[index]
+                        source_nid = from_partition.allocated_elements_to_nodes[from_elements[gate_index]]
+                        node_ids.add(source_nid)
+                        from_nodetype = from_partition.allocated_nodes[source_nid]
+                        from_obj_nodetype = self.get_nodetype(get_string_node_type(from_nodetype, self.native_modules))
+                        gate_numerical = from_elements[gate_index] - from_partition.allocated_node_offsets[source_nid]
+                        gate_type = get_string_gate_type(gate_numerical, from_obj_nodetype)
+                        if type(from_obj_nodetype) == HighdimensionalNodetype:
+                            if gate_type.rstrip('0123456789') in from_obj_nodetype.dimensionality['gates']:
+                                gate_type = gate_type.rstrip('0123456789') + '0'
+                        if type(obj_nodetype) == HighdimensionalNodetype:
+                            if slot_type.rstrip('0123456789') in obj_nodetype.dimensionality['slots']:
+                                slot_type = slot_type.rstrip('0123456789') + '0'
+
+                        links.append({
+                            'source_node_uid': node_to_id(source_nid, from_partition.pid),
+                            'source_gate_name': gate_type,
+                            'target_node_uid': uid,
+                            'target_slot_name': slot_type,
+                            'weight': 1 if np.isscalar(weights) and weights == 1 else float(weights[slot_index, gate_index])
+                        })
+
+                    nodes.update(from_partition.get_node_data(ids=list(node_ids), include_links=False)[0])
+
+        return links, nodes
 
     def initialize_stepoperators(self):
         self.stepoperators = [
@@ -356,75 +466,124 @@ class TheanoNodenet(Nodenet):
             self.stepoperators.append(DoernerianEmotionalModulators())
         self.stepoperators.sort(key=lambda op: op.priority)
 
-    def save(self, filename):
+    def save(self, base_path=None, zipfile=None):
+        if base_path is None:
+            base_path = self.persistency_path
 
         # write json metadata, which will be used by runtime to manage the net
-        with open(filename, 'w+') as fp:
-            metadata = self.metadata
-            metadata['positions'] = self.positions
-            metadata['names'] = self.names
-            metadata['actuatormap'] = self.actuatormap
-            metadata['sensormap'] = self.sensormap
-            metadata['nodes'] = self.construct_native_modules_and_comments_dict()
-            metadata['monitors'] = self.construct_monitors_dict()
-            metadata['modulators'] = self.construct_modulators_dict()
-            metadata['partition_parents'] = self.inverted_partitionmap
-            fp.write(json.dumps(metadata, sort_keys=True, indent=4))
+        metadata = self.metadata
+        metadata['positions'] = self.positions
+        metadata['names'] = self.names
+        metadata['actuatormap'] = self.actuatormap
+        metadata['sensormap'] = self.sensormap
+        metadata['nodes'] = self.construct_native_modules_and_comments_dict()
+        metadata['monitors'] = self.construct_monitors_dict()
+        metadata['modulators'] = self.construct_modulators_dict()
+        metadata['partition_parents'] = self.inverted_partitionmap
+        metadata['recorders'] = self.construct_recorders_dict()
+
+        if zipfile:
+            zipfile.writestr('nodenet.json', json.dumps(metadata))
+        else:
+            with open(os.path.join(base_path, 'nodenet.json'), 'w+', encoding="utf-8") as fp:
+                fp.write(json.dumps(metadata, indent=4))
+
+        # write numpy states of native modules
+        numpy_states = self.construct_native_modules_numpy_state_dict()
+        for node_uid, states in numpy_states.items():
+            if len(states) > 0:
+                filename = "%s_numpystate.npz" % node_uid
+                if zipfile:
+                    stream = io.BytesIO()
+                    np.savez(stream, **states)
+                    stream.seek(0)
+                    zipfile.writestr(filename, stream.getvalue())
+                else:
+                    np.savez(os.path.join(base_path, filename), **states)
+
+        for recorder_uid in self._recorders:
+            self._recorders[recorder_uid].save()
 
         for partition in self.partitions.values():
-            # write bulk data to our own numpy-based file format
-            datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + partition.spid)
-            partition.save(datafilename)
+            # save partitions
+            partition.save(base_path=base_path, zipfile=zipfile)
 
-    def load(self, filename):
+    def load(self):
         """Load the node net from a file"""
-        # try to access file
 
+        if self._version != NODENET_VERSION:
+            self.logger.error("Wrong version of nodenet data in nodenet %s, cannot load." % self.uid)
+            return False
+
+        # try to access file
+        filename = os.path.join(self.persistency_path, 'nodenet.json')
         with self.netlock:
             initfrom = {}
             if os.path.isfile(filename):
                 try:
                     self.logger.info("Loading nodenet %s metadata from file %s", self.name, filename)
-                    with open(filename) as file:
+                    with open(filename, encoding="utf-8") as file:
                         initfrom.update(json.load(file))
                 except ValueError:  # pragma: no cover
-                    self.logger.warn("Could not read nodenet metadata from file %s", filename)
+                    self.logger.warning("Could not read nodenet metadata from file %s", filename)
                     return False
                 except IOError:  # pragma: no cover
-                    self.logger.warn("Could not open nodenet metadata file %s", filename)
+                    self.logger.warning("Could not open nodenet metadata file %s", filename)
                     return False
 
             # determine whether we have a complete json dump, or our theano npz partition files:
             nodes_data = initfrom.get('nodes', {})
 
+            # pop the monitors:
+            monitors = initfrom.pop('monitors', {})
+
             # initialize
-            self.initialize_nodenet(initfrom)
+            invalid_uids = self.initialize_nodenet(initfrom)
+
+            for uid in invalid_uids:
+                del nodes_data[uid]
 
             for partition in self.partitions.values():
-                datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + partition.spid + ".npz")
-                partition.load_data(datafilename, nodes_data)
+                partition.load_data(nodes_data, invalid_uids=invalid_uids)
 
             for partition in self.partitions.values():
-                datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + partition.spid + ".npz")
-                partition.load_inlinks(datafilename)
+                partition.load_inlinks()
 
             # reloading native modules ensures the types in allocated_nodes are up to date
             # (numerical native module types are runtime dependent and may differ from when allocated_nodes
             # was saved).
             self.reload_native_modules(self.native_module_definitions)
 
+            # recover numpy states for native modules
+            for partition in self.partitions.values():
+                nodeids = np.where((partition.allocated_nodes > MAX_STD_NODETYPE) | (partition.allocated_nodes == COMMENT))[0]
+                for node_id in nodeids:
+                    node_uid = node_to_id(node_id, partition.pid)
+                    file = os.path.join(self.persistency_path, '%s_numpystate.npz' % node_uid)
+                    if os.path.isfile(file):
+                        node = self.get_node(node_uid)
+                        numpy_states = np.load(file)
+                        node.set_persistable_state(node._state, numpy_states)
+                        numpy_states.close()
+
+            for monitorid in monitors:
+                data = monitors[monitorid]
+                if hasattr(monitor, data['classname']):
+                    mon = getattr(monitor, data['classname'])(self, **data)
+                    self._monitors[mon.uid] = mon
+                else:
+                    self.logger.warning('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], monitorid))
+
+            for recorder_uid in initfrom.get('recorders', {}):
+                data = initfrom['recorders'][recorder_uid]
+                self._recorders[recorder_uid] = getattr(recorder, data['classname'])(self, **data)
+
             # re-initialize step operators for theano recompile to new shared variables
             self.initialize_stepoperators()
 
-            self._rebuild_sensor_actor_indices()
+            self._rebuild_sensor_actuator_indices()
 
             return True
-
-    def remove(self, filename):
-        neighbors = os.listdir(os.path.dirname(filename))
-        for neighbor in neighbors:
-            if neighbor.startswith(self.uid):
-                os.remove(os.path.join(os.path.dirname(filename), neighbor))
 
     def initialize_nodenet(self, initfrom):
 
@@ -435,29 +594,26 @@ class TheanoNodenet(Nodenet):
 
         self._nodespace_ui_properties = initfrom.get('nodespace_ui_properties', {})
 
+        invalid_uids = []
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)
-            self.merge_data(initfrom, keep_uids=True, native_module_instances_only=True)
+            invalid_uids = self.merge_data(initfrom, keep_uids=True, native_module_instances_only=True)
             if 'names' in initfrom:
                 self.names = initfrom['names']
             if 'positions' in initfrom:
                 self.positions = initfrom['positions']
-                # compatibility:
-                for key in self.positions:
-                    if len(self.positions[key]) == 3:
-                        break  # already 3d coordinates
-                    self.positions[key] = (self.positions[key] + [0] * 3)[:3]
             if 'actuatormap' in initfrom:
                 self.actuatormap = initfrom['actuatormap']
             if 'sensormap' in initfrom:
                 self.sensormap = initfrom['sensormap']
             if 'current_step' in initfrom:
                 self._step = initfrom['current_step']
+        return invalid_uids
 
     def merge_data(self, nodenet_data, keep_uids=False, native_module_instances_only=False):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
         uidmap = {}
-        invalid_nodes = []
+        invalid_nodes = {}
 
         # for dict_engine compatibility
         uidmap["Root"] = self.rootpartition.rootnodespace_uid
@@ -491,6 +647,18 @@ class TheanoNodenet(Nodenet):
         for nodespace in nodespaces_to_merge:
             self.merge_nodespace_data(nodespace, nodenet_data['nodespaces'], uidmap, keep_uids)
 
+        # make sure rootpartition has enough NoN, NoE
+        if native_module_instances_only:
+            non = noe = 0
+            for uid in nodenet_data.get('nodes', {}):
+                non += 1
+                try:
+                    noe += get_elements_per_type(get_numerical_node_type(nodenet_data['nodes'][uid]['type'], self.native_modules), self.native_modules)
+                except ValueError:
+                    pass  # Unknown nodetype
+            if non > self.rootpartition.NoN or noe > self.rootpartition.NoE:
+                self.rootpartition.announce_nodes(non, math.ceil(noe / non))
+
         # merge in nodes
         for uid in nodenet_data.get('nodes', {}):
             data = nodenet_data['nodes'][uid]
@@ -499,18 +667,21 @@ class TheanoNodenet(Nodenet):
             if not keep_uids:
                 parent_uid = uidmap[data['parent_nodespace']]
                 id_to_pass = None
-            if data['type'] not in self._nodetypes and data['type'] not in self.native_modules:
-                self.logger.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
-                data['parameters'] = {
-                    'comment': 'There was a %s node here' % data['type']
-                }
-                data['type'] = 'Comment'
-                del data['gate_parameters']
-                invalid_nodes.append(uid)
+            if data['type'] not in self.nodetypes and data['type'] not in self.native_modules:
+                self.logger.error("Invalid nodetype %s for node %s" % (data['type'], uid))
+                invalid_nodes[uid] = data
+                continue
             if native_module_instances_only:
-                node = TheanoNode(self, self.get_partition(uid), parent_uid, uid, get_numerical_node_type(data['type'], nativemodules=self.native_modules), parameters=data.get('parameters'))
-                self.proxycache[node.uid] = node
-                new_uid = node.uid
+                if not data.get('flow_module'):
+                    if data['type'] in self.native_module_definitions and not self.native_module_definitions[data['type']].get('flow_module'):
+                        node = TheanoNode(self, self.get_partition(uid), parent_uid, uid, get_numerical_node_type(data['type'], nativemodules=self.native_modules), state=data.get('state', {}), parameters=data.get('parameters'))
+                    else:
+                        invalid_nodes[uid] = data
+                        continue
+                    self.proxycache[node.uid] = node
+                    new_uid = node.uid
+                else:
+                    continue
             else:
                 new_uid = self.create_node(
                     data['type'],
@@ -519,13 +690,12 @@ class TheanoNodenet(Nodenet):
                     name=data['name'],
                     uid=id_to_pass,
                     parameters=data.get('parameters'),
-                    gate_parameters=data.get('gate_parameters'),
-                    gate_functions=data.get('gate_functions'))
+                    gate_configuration=data.get('gate_configuration'))
             uidmap[uid] = new_uid
             node_proxy = self.get_node(new_uid)
-            for gatetype in data.get('gate_activations', {}):   # todo: implement sheaves
+            for gatetype in data.get('gate_activations', {}):
                 if gatetype in node_proxy.nodetype.gatetypes:
-                    node_proxy.get_gate(gatetype).activation = data['gate_activations'][gatetype]['default']['activation']
+                    node_proxy.get_gate(gatetype).activation = data['gate_activations'][gatetype]
             state = data.get('state', {})
             if state is not None:
                 for key, value in state.items():
@@ -533,9 +703,6 @@ class TheanoNodenet(Nodenet):
 
         # merge in links
         links = nodenet_data.get('links', [])
-        if isinstance(links, dict):
-            # compatibility
-            links = links.values()
         for link in links:
             if link['source_node_uid'] in invalid_nodes or link['target_node_uid'] in invalid_nodes:
                 continue
@@ -558,11 +725,13 @@ class TheanoNodenet(Nodenet):
                     mon = getattr(monitor, data['classname'])(self, **data)
                     self._monitors[mon.uid] = mon
                 else:
-                    self.logger.warn('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], monitorid))
+                    self.logger.warning('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], monitorid))
             else:
                 # Compatibility mode
                 mon = monitor.NodeMonitor(self, name=data['node_name'], **data)
                 self._monitors[mon.uid] = mon
+
+        return invalid_nodes.keys()
 
     def merge_nodespace_data(self, nodespace_uid, data, uidmap, keep_uids=False):
         """
@@ -581,7 +750,6 @@ class TheanoNodenet(Nodenet):
                         self.merge_nodespace_data(nodespace_to_id(parent_id, partition.pid), data, uidmap, keep_uids)
                 self.create_nodespace(
                     data[nodespace_uid].get('parent_nodespace'),
-                    data[nodespace_uid].get('position'),
                     name=data[nodespace_uid].get('name', 'Root'),
                     uid=nodespace_uid
                 )
@@ -612,6 +780,7 @@ class TheanoNodenet(Nodenet):
                     break
                 else:
                     del self.deleted_items[i]
+        self.user_prompt_response = {}
 
     def get_partition(self, uid):
         if uid is None:
@@ -621,7 +790,7 @@ class TheanoNodenet(Nodenet):
     def get_node(self, uid):
         partition = self.get_partition(uid)
         if partition is None:
-            raise KeyError("No node with id %s exists", uid)
+            raise KeyError("No node with id %s exists" % uid)
         if uid in partition.native_module_instances:
             return partition.native_module_instances[uid]
         elif uid in partition.comment_instances:
@@ -629,13 +798,16 @@ class TheanoNodenet(Nodenet):
         elif uid in self.proxycache:
             return self.proxycache[uid]
         elif self.is_node(uid):
-            id = node_from_id(uid)
-            parent_id = partition.allocated_node_parents[id]
-            node = TheanoNode(self, partition, nodespace_to_id(parent_id, partition.pid), uid, partition.allocated_nodes[id])
-            self.proxycache[node.uid] = node
-            return node
+            return self._create_node_proxy(partition, uid)
         else:
-            raise KeyError("No node with id %s exists", uid)
+            raise KeyError("No node with id %s exists" % uid)
+
+    def _create_node_proxy(self, partition, uid):
+        id = node_from_id(uid)
+        parent_id = partition.allocated_node_parents[id]
+        node = TheanoNode(self, partition, nodespace_to_id(parent_id, partition.pid), uid, partition.allocated_nodes[id])
+        self.proxycache[node.uid] = node
+        return node
 
     def get_node_uids(self, group_nodespace_uid=None, group=None):
         if group is not None:
@@ -662,7 +834,7 @@ class TheanoNodenet(Nodenet):
         partition = self.get_partition(nodespace_uid)
         partition.announce_nodes(number_of_nodes, average_elements_per_node)
 
-    def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_parameters=None, gate_functions=None):
+    def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_configuration=None):
         nodespace_uid = self.get_nodespace(nodespace_uid).uid
         partition = self.get_partition(nodespace_uid)
         nodespace_id = nodespace_from_id(nodespace_uid)
@@ -671,14 +843,12 @@ class TheanoNodenet(Nodenet):
         if uid is not None:
             id_to_pass = node_from_id(uid)
 
-        id = partition.create_node(nodetype, nodespace_id, id_to_pass, parameters, gate_parameters, gate_functions)
+        id = partition.create_node(nodetype, nodespace_id, id_to_pass, parameters, gate_configuration)
         uid = node_to_id(id, partition.pid)
 
         if position is not None:
             position = (position + [0] * 3)[:3]
             self.positions[uid] = position
-        if name is not None and name != "" and name != uid:
-            self.names[uid] = name
 
         if parameters is None:
             parameters = {}
@@ -686,14 +856,24 @@ class TheanoNodenet(Nodenet):
         if nodetype == "Sensor":
             if 'datasource' in parameters:
                 self.get_node(uid).set_parameter("datasource", parameters['datasource'])
-        elif nodetype == "Actor":
+                if name is None or name == "" or name == uid:
+                    name = parameters['datasource']
+        elif nodetype == "Actuator":
             if 'datatarget' in parameters:
                 self.get_node(uid).set_parameter("datatarget", parameters['datatarget'])
+                if name is None or name == "" or name == uid:
+                    name = parameters['datatarget']
+        elif nodetype in self.native_modules:
+            if name is None or name == "" or name == uid:
+                name = nodetype
+
+        if name is not None and name != "" and name != uid:
+            self.names[uid] = name
 
         return uid
 
     def delete_node(self, uid):
-
+        self.close_figures(uid)
         partition = self.get_partition(uid)
         node_id = node_from_id(uid)
 
@@ -709,27 +889,35 @@ class TheanoNodenet(Nodenet):
                 element = partition.allocated_node_offsets[node_id] + numeric_slot
                 from_elements = inlinks[0].get_value(borrow=True)
                 to_elements = inlinks[1].get_value(borrow=True)
-                weights = inlinks[2].get_value(borrow=True)
+
                 if element in to_elements:
-                    from_partition = self.partitions[partition_from_spid]
-                    element_index = np.where(to_elements == element)[0][0]
-                    slotrow = weights[element_index]
-                    links_indices = np.nonzero(slotrow)[0]
-                    for link_index in links_indices:
-                        source_id = from_partition.allocated_elements_to_nodes[from_elements[link_index]]
-                        associated_uids.append(node_to_id(source_id, from_partition.pid))
-                    # set all weights for this element to 0
-                    new_weights = np.delete(weights, element_index, 0)
-                    if len(new_weights) == 0:
-                        # if this was the last link, remove whole inlinks information for this partition pair
-                        del partition.inlinks[partition_from_spid]
-                        break
-                    # find empty columns (elements linking only to this element)
-                    zero_columns = np.where(~new_weights.any(axis=0))[0]
-                    # remove empty columns from weight matrix:
-                    new_weights = np.delete(new_weights, zero_columns, 1)
-                    # save new weight matrix
-                    partition.inlinks[partition_from_spid][2].set_value(new_weights)
+                    inlink_type = inlinks[4]
+                    if inlink_type == "dense":
+                        weights = inlinks[2].get_value(borrow=True)
+                        from_partition = self.partitions[partition_from_spid]
+                        element_index = np.where(to_elements == element)[0][0]
+                        slotrow = weights[element_index]
+                        links_indices = np.nonzero(slotrow)[0]
+                        for link_index in links_indices:
+                            source_id = from_partition.allocated_elements_to_nodes[from_elements[link_index]]
+                            associated_uids.append(node_to_id(source_id, from_partition.pid))
+                        # set all weights for this element to 0
+                        new_weights = np.delete(weights, element_index, 0)
+                        if len(new_weights) == 0:
+                            # if this was the last link, remove whole inlinks information for this partition pair
+                            del partition.inlinks[partition_from_spid]
+                            break
+
+                        # find empty columns (elements linking only to this element)
+                        zero_columns = np.where(~new_weights.any(axis=0))[0]
+                        # remove empty columns from weight matrix:
+                        new_weights = np.delete(new_weights, zero_columns, 1)
+                        # save new weight matrix
+                        partition.inlinks[partition_from_spid][2].set_value(new_weights)
+                    elif inlink_type == "identity":
+                        element_index = np.where(to_elements == element)[0][0]
+                        zero_columns = element_index
+
                     # remove this element
                     partition.inlinks[partition_from_spid][1].set_value(np.delete(to_elements, element_index))
                     # remove from_elements
@@ -743,26 +931,35 @@ class TheanoNodenet(Nodenet):
                     inlinks = to_partition.inlinks[partition.spid]
                     from_elements = inlinks[0].get_value(borrow=True)
                     to_elements = inlinks[1].get_value(borrow=True)
-                    weights = inlinks[2].get_value(borrow=True)
+
                     if element in from_elements:
-                        element_index = np.where(from_elements == element)[0][0]
-                        gatecolumn = weights[:, element_index]
-                        links_indices = np.nonzero(gatecolumn)[0]
-                        for link_index in links_indices:
-                            target_id = to_partition.allocated_elements_to_nodes[to_elements[link_index]]
-                            associated_uids.append(node_to_id(target_id, to_partition.pid))
-                        # set all weights for this element to 0
-                        new_weights = np.delete(weights, element_index, 1)
-                        if len(new_weights) == 0:
-                            # if this was the last link, remove whole inlinks information for target partition
-                            del to_partition.inlinks[partition.spid]
-                            break
-                        # find empty rows (elements linked only by this node)
-                        zero_rows = np.where(~new_weights.any(axis=1))[0]
-                        # remove empty rows from weight matrix
-                        new_weights = np.delete(new_weights, zero_rows, 0)
-                        # save new weights
-                        to_partition.inlinks[partition.spid][2].set_value(new_weights)
+                        inlink_type = inlinks[4]
+                        if inlink_type == "dense":
+                            weights = inlinks[2].get_value(borrow=True)
+                            element_index = np.where(from_elements == element)[0][0]
+                            gatecolumn = weights[:, element_index]
+                            links_indices = np.nonzero(gatecolumn)[0]
+                            for link_index in links_indices:
+                                target_id = to_partition.allocated_elements_to_nodes[to_elements[link_index]]
+                                associated_uids.append(node_to_id(target_id, to_partition.pid))
+                            # set all weights for this element to 0
+                            new_weights = np.delete(weights, element_index, 1)
+                            if len(new_weights) == 0:
+                                # if this was the last link, remove whole inlinks information for target partition
+                                del to_partition.inlinks[partition.spid]
+                                break
+
+                            # find empty rows (elements linked only by this node)
+                            zero_rows = np.where(~new_weights.any(axis=1))[0]
+                            # remove empty rows from weight matrix
+                            new_weights = np.delete(new_weights, zero_rows, 0)
+                            # save new weights
+                            to_partition.inlinks[partition.spid][2].set_value(new_weights)
+
+                        elif inlink_type == "identity":
+                            element_index = np.where(from_elements == element)[0][0]
+                            zero_columns = element_index
+
                         # remove this element
                         to_partition.inlinks[partition.spid][0].set_value(np.delete(from_elements, element_index))
                         # remove to_elements
@@ -793,16 +990,6 @@ class TheanoNodenet(Nodenet):
                     proxy.get_slot(s).invalidate_caches()
             if uid_to_clear in self.proxycache:
                 del self.proxycache[uid_to_clear]
-
-    def set_node_gate_parameter(self, uid, gate_type, parameter, value):
-        partition = self.get_partition(uid)
-        id = node_from_id(uid)
-        partition.set_node_gate_parameter(id, gate_type, parameter, value)
-
-    def set_node_gatefunction_name(self, uid, gate_type, gatefunction_name):
-        partition = self.get_partition(uid)
-        id = node_from_id(uid)
-        partition.set_node_gatefunction_name(id, gate_type, gatefunction_name)
 
     def set_nodespace_gatetype_activator(self, nodespace_uid, gate_type, activator_uid):
         partition = self.get_partition(nodespace_uid)
@@ -846,7 +1033,7 @@ class TheanoNodenet(Nodenet):
     def is_nodespace(self, uid):
         return uid in self.get_nodespace_uids()
 
-    def set_entity_positions(self, positions):
+    def set_node_positions(self, positions):
         for uid in positions:
             pos = (positions[uid] + [0] * 3)[:3]
             self.positions[uid] = pos
@@ -870,7 +1057,7 @@ class TheanoNodenet(Nodenet):
             self.partitionmap[parent_uid] = []
         self.partitionmap[parent_uid].append(partition)
         self.inverted_partitionmap[partition.spid] = parent_uid
-        self._rebuild_sensor_actor_indices(partition)
+        self._rebuild_sensor_actuator_indices(partition)
         return partition.spid
 
     def delete_partition(self, pid):
@@ -896,7 +1083,7 @@ class TheanoNodenet(Nodenet):
                     for s in node.get_slot_types():
                         node.get_slot(s).invalidate_caches()
 
-    def create_nodespace(self, parent_uid, position, name="", uid=None, options=None):
+    def create_nodespace(self, parent_uid, name="", uid=None, options=None):
         if options is None:
             options = {}
         new_partition = options.get('new_partition', False)
@@ -927,7 +1114,7 @@ class TheanoNodenet(Nodenet):
                 try:
                     average_elements_per_node_assumption = int(configured_elements_per_node_assumption)
                 except:
-                    self.logger.warn("Unsupported elements_per_node_assumption value from configuration: %s, falling back to 4", configured_elements_per_node_assumption)  # pragma: no cover
+                    self.logger.warning("Unsupported elements_per_node_assumption value from configuration: %s, falling back to 4", configured_elements_per_node_assumption)  # pragma: no cover
 
             initial_number_of_nodes = 2000
             if "initial_number_of_nodes" in options:
@@ -937,7 +1124,7 @@ class TheanoNodenet(Nodenet):
                 try:
                     initial_number_of_nodes = int(configured_initial_number_of_nodes)
                 except:
-                    self.logger.warn("Unsupported initial_number_of_nodes value from configuration: %s, falling back to 2000", configured_initial_number_of_nodes)  # pragma: no cover
+                    self.logger.warning("Unsupported initial_number_of_nodes value from configuration: %s, falling back to 2000", configured_initial_number_of_nodes)  # pragma: no cover
 
             sparse = True
             if "sparse" in options:
@@ -949,7 +1136,7 @@ class TheanoNodenet(Nodenet):
                 elif configuredsparse == "False":
                     sparse = False
                 else:
-                    self.logger.warn("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)  # pragma: no cover
+                    self.logger.warning("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)  # pragma: no cover
                     sparse = True
 
             self.last_allocated_partition += 1
@@ -969,9 +1156,6 @@ class TheanoNodenet(Nodenet):
 
         if name is not None and len(name) > 0 and name != uid:
             self.names[uid] = name
-        if position is not None:
-            position = (position + [0] * 3)[:3]
-            self.positions[uid] = position
 
         return uid
 
@@ -1009,7 +1193,7 @@ class TheanoNodenet(Nodenet):
                 sensors[uid] = self.get_node(uid)
         return sensors
 
-    def get_actors(self, nodespace=None, datatarget=None):
+    def get_actuators(self, nodespace=None, datatarget=None):
         actuators = {}
         actuatorlist = []
         if datatarget is None:
@@ -1021,10 +1205,11 @@ class TheanoNodenet(Nodenet):
                 actuators[uid] = self.get_node(uid)
         return actuators
 
-    def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
-        return self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight)
+    def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1):
+        result = self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight)
+        return result
 
-    def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
+    def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1):
 
         source_partition = self.get_partition(source_node_uid)
         target_partition = self.get_partition(target_node_uid)
@@ -1072,29 +1257,50 @@ class TheanoNodenet(Nodenet):
         return True
 
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):
-        return self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, 0)
+        result = self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, 0)
+        return result
+
+    def _load_nodetypes(self, nodetype_data):
+        newnative_modules = {}
+        for key, data in nodetype_data.items():
+            if data.get('engine', self.engine) == self.engine:
+                try:
+                    if data.get('dimensionality'):
+                        newnative_modules[key] = HighdimensionalNodetype(nodenet=self, **data)
+                    else:
+                        newnative_modules[key] = Nodetype(nodenet=self, **data)
+                except Exception as err:
+                    self.logger.error("Can not instantiate node type %s: %s: %s" % (key, err.__class__.__name__, str(err)))
+                    post_mortem()
+        return newnative_modules
 
     def reload_native_modules(self, native_modules):
-
-        self.native_module_definitions = native_modules
 
         # check which instances need to be recreated because of gate/slot changes and keep their .data
         instances_to_recreate = {}
         instances_to_delete = {}
+
+        # create the new nodetypes
+        self.native_module_definitions = {}
+        newnative_modules = self._load_nodetypes(native_modules)
+        self.native_module_definitions = dict((uid, native_modules[uid]) for uid in newnative_modules)
+
         for partition in self.partitions.values():
             for uid, instance in partition.native_module_instances.items():
-                if instance.type not in native_modules:
-                    self.logger.warn("No more definition available for node type %s, deleting instance %s" %
-                                    (instance.type, uid))
+                if instance.type not in newnative_modules:
+                    self.logger.warning("No more definition available for node type %s, deleting instance %s" %
+                                (instance.type, uid))
                     instances_to_delete[uid] = instance
                     continue
 
                 numeric_id = node_from_id(uid)
+
+                # else:
                 number_of_elements = len(np.where(partition.allocated_elements_to_nodes == numeric_id)[0])
-                new_numer_of_elements = max(len(native_modules[instance.type].get('slottypes', [])), len(native_modules[instance.type].get('gatetypes', [])))
-                if number_of_elements != new_numer_of_elements:
-                    self.logger.warn("Number of elements changed for node type %s from %d to %d, recreating instance %s" %
-                                    (instance.type, number_of_elements, new_numer_of_elements, uid))
+                new_number_of_elements = max(len(newnative_modules[instance.type].slottypes), len(newnative_modules[instance.type].gatetypes))
+                if number_of_elements != new_number_of_elements:
+                    self.logger.warning("Number of elements changed for node type %s from %d to %d, recreating instance %s" %
+                                    (instance.type, number_of_elements, new_number_of_elements, uid))
                     instances_to_recreate[uid] = instance.get_data(complete=True, include_links=False)
 
             # actually remove the instances
@@ -1103,65 +1309,59 @@ class TheanoNodenet(Nodenet):
             for uid in instances_to_recreate.keys():
                 self.delete_node(uid)
 
-            # update the node functions of all Nodetypes
-            self.native_modules = {}
-            for type, data in native_modules.items():
-                self.native_modules[type] = Nodetype(nodenet=self, **native_modules[type])
+            self.native_modules = newnative_modules
 
             # update the living instances that have the same slot/gate numbers
-            new_instances = {}
-            for id, instance in partition.native_module_instances.items():
+            new_native_module_instances = {}
+            for uid in list(partition.native_module_instances.keys()):
+                instance = partition.native_module_instances[uid]
+                if not isinstance(instance._nodetype, type(self.native_modules[instance.type])):
+                    self.logger.warning("Nature of nodetype changed for node %s. Deleting" % instance)
+                    self.delete_node(uid)
+                    continue
                 parameters = instance.clone_parameters()
                 state = instance.clone_state()
                 position = instance.position
                 name = instance.name
-                partition = self.get_partition(id)
-                new_native_module_instance = TheanoNode(self, partition, instance.parent_nodespace, id, partition.allocated_nodes[node_from_id(id)])
-                new_native_module_instance.position = position
-                new_native_module_instance.name = name
+                partition = self.get_partition(uid)
+                self.close_figures(uid)
+                new_instance = TheanoNode(self, partition, instance.parent_nodespace, uid, partition.allocated_nodes[node_from_id(uid)])
+
+                new_native_module_instances[uid] = new_instance
+                new_instance.position = position
+                new_instance.name = name
                 for key, value in parameters.items():
-                    new_native_module_instance.set_parameter(key, value)
+                    try:
+                        new_instance.set_parameter(key, value)
+                    except NameError:
+                        pass  # parameter not defined anymore
                 for key, value in state.items():
-                    new_native_module_instance.set_state(key, value)
-                new_instances[id] = new_native_module_instance
-            partition.native_module_instances = new_instances
+                    new_instance.set_state(key, value)
 
-            # recreate the deleted ones. Gate configurations and links will not be transferred.
-            for uid, data in instances_to_recreate.items():
-                new_uid = self.create_node(
-                    data['type'],
-                    data['parent_nodespace'],
-                    data['position'],
-                    name=data['name'],
-                    uid=uid,
-                    parameters=data['parameters'])
+            partition.native_module_instances = new_native_module_instances
 
-            # update native modules numeric types, as these may have been set with a different native module
-            # node types list
+        self.update_numeric_native_module_types()
+
+        # recreate the deleted ones. Gate configurations and links will not be transferred.
+        for uid, data in instances_to_recreate.items():
+            new_uid = self.create_node(
+                data['type'],
+                data['parent_nodespace'],
+                data['position'],
+                name=data['name'],
+                uid=uid,
+                parameters=data['parameters'])
+
+    def update_numeric_native_module_types(self):
+        """
+        update native modules numeric types if the types have been updated
+        either due to reload_native_modules, or due to changing the worldadapter
+        """
+        for key, partition in self.partitions.items():
             native_module_ids = np.where(partition.allocated_nodes > MAX_STD_NODETYPE)[0]
             for id in native_module_ids:
                 instance = self.get_node(node_to_id(id, partition.pid))
                 partition.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
-
-    def get_nodespace_data(self, nodespace_uid, include_links=True):
-        partition = self.get_partition(nodespace_uid)
-        data = {
-            'nodes': self.construct_nodes_dict(nodespace_uid, 1000, include_links=include_links),
-            'nodespaces': self.construct_nodespaces_dict(nodespace_uid),
-            'monitors': self.construct_monitors_dict(),
-            'modulators': self.construct_modulators_dict()
-        }
-        if include_links:
-            followupnodes = []
-            for uid in data['nodes']:
-                followupnodes.extend(self.get_node(uid).get_associated_node_uids())
-
-            for uid in followupnodes:
-                followup_partition = self.get_partition(uid)
-                if followup_partition.pid != partition.pid or (partition.allocated_node_parents[node_from_id(uid)] != nodespace_from_id(nodespace_uid)):
-                    data['nodes'][uid] = self.get_node(uid).get_data(complete=False, include_links=include_links)
-
-        return data
 
     def get_activation_data(self, nodespace_uids=[], rounded=1):
         if rounded is not None:
@@ -1174,9 +1374,13 @@ class TheanoNodenet(Nodenet):
                     elements = get_elements_per_type(partition.allocated_nodes[id], self.native_modules)
                     offset = partition.allocated_node_offsets[id]
                     if rounded is None:
-                        activations[node_to_id(id, partition.pid)] = [n.item() for n in partition.a.get_value()[offset:offset+elements]]
+                        act = [n.item() for n in partition.a.get_value()[offset:offset+elements]]
+                        if set(act) != {0}:
+                            activations[node_to_id(id, partition.pid)] = act
                     else:
-                        activations[node_to_id(id, partition.pid)] = [n.item() / mult for n in np.rint(partition.a.get_value()[offset:offset+elements]*mult)]
+                        act = [n.item() / mult for n in np.rint(partition.a.get_value()[offset:offset+elements]*mult)]
+                        if set(act) != {0}:
+                            activations[node_to_id(id, partition.pid)] = act
         else:
             for nsuid in nodespace_uids:
                 nodespace = self.get_nodespace(nsuid)
@@ -1187,14 +1391,18 @@ class TheanoNodenet(Nodenet):
                     elements = get_elements_per_type(partition.allocated_nodes[id], self.native_modules)
                     offset = partition.allocated_node_offsets[id]
                     if rounded is None:
-                        activations[node_to_id(id, partition.pid)] = [n.item() for n in partition.a.get_value()[offset:offset+elements]]
+                        act = [n.item() for n in partition.a.get_value()[offset:offset+elements]]
+                        if set(act) != {0}:
+                            activations[node_to_id(id, partition.pid)] = act
                     else:
-                        activations[node_to_id(id, partition.pid)] = [n.item() / mult for n in np.rint(partition.a.get_value()[offset:offset+elements]*mult)]
+                        act = [n.item() / mult for n in np.rint(partition.a.get_value()[offset:offset+elements]*mult)]
+                        if set(act) != {0}:
+                            activations[node_to_id(id, partition.pid)] = act
         return activations
 
     def get_nodetype(self, type):
-        if type in self._nodetypes:
-            return self._nodetypes[type]
+        if type in self.nodetypes:
+            return self.nodetypes[type]
         else:
             return self.native_modules.get(type)
 
@@ -1206,36 +1414,39 @@ class TheanoNodenet(Nodenet):
                 nspartition = self.get_partition(nodespace_uid)
                 if nspartition != partition:
                     continue
-                parent = nodespace_from_id(nodespace_uid)
-                node_ids = np.where(partition.allocated_node_parents == parent)[0]
-            else:
-                node_ids = np.nonzero(partition.allocated_nodes)[0]
+
             w_matrix = partition.w.get_value(borrow=True)
-            for node_id in node_ids:
+            link_to_indices, link_from_indices = np.nonzero(w_matrix)
 
-                source_type = partition.allocated_nodes[node_id]
-                for gate_type in range(get_gates_per_type(source_type, self.native_modules)):
-                    gatecolumn = w_matrix[:, partition.allocated_node_offsets[node_id] + gate_type]
-                    links_indices = np.nonzero(gatecolumn)[0]
-                    for index in links_indices:
-                        target_id = partition.allocated_elements_to_nodes[index]
-                        target_type = partition.allocated_nodes[target_id]
-                        target_slot_numerical = index - partition.allocated_node_offsets[target_id]
-                        target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
-                        source_gate_type = get_string_gate_type(gate_type, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
-                        if partition.sparse:               # sparse matrices return matrices of dimension (1,1) as values
-                            weight = float(gatecolumn[index].data)
-                        else:
-                            weight = gatecolumn[index].item()
+            for i, link_from_index in enumerate(link_from_indices):
+                link_to_index = link_to_indices[i]
 
-                        data.append({
-                            "weight": weight,
-                            "certainty": 1,
-                            "target_slot_name": target_slot_type,
-                            "target_node_uid": node_to_id(target_id, partition.pid),
-                            "source_gate_name": source_gate_type,
-                            "source_node_uid": node_to_id(node_id, partition.pid)
-                        })
+                source_id = partition.allocated_elements_to_nodes[link_from_index]
+                source_type = partition.allocated_nodes[source_id]
+
+                if nodespace_uid is not None:
+                    nid = nodespace_from_id(nodespace_uid)
+                    if partition.allocated_node_parents[source_id] != nid:
+                        continue
+
+                target_id = partition.allocated_elements_to_nodes[link_to_index]
+                target_type = partition.allocated_nodes[target_id]
+
+                target_slot_numerical = link_to_index - partition.allocated_node_offsets[target_id]
+                target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
+
+                source_gate_numerical = link_from_index - partition.allocated_node_offsets[source_id]
+                source_gate_type = get_string_gate_type(source_gate_numerical, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
+
+                weight = w_matrix[link_to_index, link_from_index].item()
+
+                data.append({
+                    "weight": weight,
+                    "target_slot_name": target_slot_type,
+                    "target_node_uid": node_to_id(target_id, partition.pid),
+                    "source_gate_name": source_gate_type,
+                    "source_node_uid": node_to_id(source_id, partition.pid)
+                })
 
             # find links going out to other partitions
             for partition_to_spid, to_partition in self.partitions.items():
@@ -1243,12 +1454,34 @@ class TheanoNodenet(Nodenet):
                     inlinks = to_partition.inlinks[partition.spid]
                     from_elements = inlinks[0].get_value(borrow=True)
                     to_elements = inlinks[1].get_value(borrow=True)
-                    weights = inlinks[2].get_value(borrow=True)
-                    for i, element in enumerate(to_elements):
-                        slotrow = weights[i]
-                        links_indices = np.nonzero(slotrow)[0]
-                        for link_index in links_indices:
-                            source_id = partition.allocated_elements_to_nodes[from_elements[link_index]]
+
+                    inlink_type = inlinks[4]
+                    if inlink_type == "dense":
+                        weights = inlinks[2].get_value(borrow=True)
+                        for i, element in enumerate(to_elements):
+                            slotrow = weights[i]
+                            links_indices = np.nonzero(slotrow)[0]
+                            for link_index in links_indices:
+                                source_id = partition.allocated_elements_to_nodes[from_elements[link_index]]
+                                source_type = partition.allocated_nodes[source_id]
+                                source_gate_numerical = from_elements[link_index] - partition.allocated_node_offsets[source_id]
+                                source_gate_type = get_string_gate_type(source_gate_numerical, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
+
+                                target_id = to_partition.allocated_elements_to_nodes[element]
+                                target_type = to_partition.allocated_nodes[target_id]
+                                target_slot_numerical = element - to_partition.allocated_node_offsets[target_id]
+                                target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
+
+                                data.append({
+                                    "weight": float(weights[i, link_index]),
+                                    "target_slot_name": target_slot_type,
+                                    "target_node_uid": node_to_id(target_id, to_partition.pid),
+                                    "source_gate_name": source_gate_type,
+                                    "source_node_uid": node_to_id(source_id, partition.pid)
+                                })
+                    elif inlink_type == "identity":
+                        for i, element in enumerate(to_elements):
+                            source_id = partition.allocated_elements_to_nodes[from_elements[i]]
                             source_type = partition.allocated_nodes[source_id]
                             source_gate_numerical = from_elements[link_index] - partition.allocated_node_offsets[source_id]
                             source_gate_type = get_string_gate_type(source_gate_numerical, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
@@ -1259,8 +1492,7 @@ class TheanoNodenet(Nodenet):
                             target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
 
                             data.append({
-                                "weight": float(weights[i, link_index]),
-                                "certainty": 1,
+                                "weight": 1.,
                                 "target_slot_name": target_slot_type,
                                 "target_node_uid": node_to_id(target_id, to_partition.pid),
                                 "source_gate_name": source_gate_type,
@@ -1280,9 +1512,18 @@ class TheanoNodenet(Nodenet):
                 data[node_uid] = self.get_node(node_uid).get_data(complete=True)
         return data
 
-    def construct_nodes_dict(self, nodespace_uid=None, max_nodes=-1, complete=False, include_links=True):
-        data = {}
+    def construct_native_modules_numpy_state_dict(self):
+        numpy_states = {}
         i = 0
+        for partition in self.partitions.values():
+            nodeids = np.where((partition.allocated_nodes > MAX_STD_NODETYPE) | (partition.allocated_nodes == COMMENT))[0]
+            for node_id in nodeids:
+                node_uid = node_to_id(node_id, partition.pid)
+                numpy_states[node_uid] = self.get_node(node_uid).get_persistable_state()[1]
+        return numpy_states
+
+    def construct_nodes_dict(self, nodespace_uid=None, complete=False, include_links=True):
+        data = {}
         for partition in self.partitions.values():
             if nodespace_uid is not None:
                 nodespace_partition = self.get_partition(nodespace_uid)
@@ -1294,11 +1535,8 @@ class TheanoNodenet(Nodenet):
                 parent_id = nodespace_from_id(nodespace_uid)
                 nodeids = np.where(partition.allocated_node_parents == parent_id)[0]
             for node_id in nodeids:
-                i += 1
                 node_uid = node_to_id(node_id, partition.pid)
                 data[node_uid] = self.get_node(node_uid).get_data(complete=complete, include_links=include_links)
-                if max_nodes > 0 and i > max_nodes:
-                    break
         return data
 
     def construct_nodespaces_dict(self, nodespace_uid, transitive=False):
@@ -1368,19 +1606,22 @@ class TheanoNodenet(Nodenet):
 
         for partition in self.partitions.values():
             a_array = partition.a.get_value(borrow=True)
-            a_array[partition.sensor_indices] = sensor_values
-            a_array[partition.actuator_indices] = actuator_feedback_values
+            valid = np.where(partition.sensor_indices >= 0)[0]
+            a_array[partition.sensor_indices[valid]] = sensor_values[valid]
+            valid = np.where(partition.actuator_indices >= 0)[0]
+            a_array[partition.actuator_indices[valid]] = actuator_feedback_values[valid]
             partition.a.set_value(a_array, borrow=True)
 
     def set_actuator_values(self):
         """
         Writes the values from the actuators to datatargets and modulators
         """
-        actuator_values_to_write = np.zeros_like(self.rootpartition.actuator_indices)
+        actuator_values_to_write = np.zeros(self.rootpartition.actuator_indices.shape)
         for partition in self.partitions.values():
             a_array = partition.a.get_value(borrow=True)
-            actuator_values_to_write = actuator_values_to_write + a_array[partition.actuator_indices]
-        if self.use_modulators and bool(self.actuatormap):
+            valid = np.where(partition.actuator_indices >= 0)
+            actuator_values_to_write[valid] += a_array[partition.actuator_indices[valid]]
+        if self.use_modulators:
             writeables = sorted(DoernerianEmotionalModulators.writeable_modulators)
             # remove modulators from actuator values
             modulator_values = actuator_values_to_write[-len(writeables):]
@@ -1389,19 +1630,21 @@ class TheanoNodenet(Nodenet):
                 if key in self.actuatormap:
                     self.set_modulator(key, modulator_values[idx])
         if self._worldadapter_instance:
-            self._worldadapter_instance.set_datatarget_values(actuator_values_to_write)
+            self._worldadapter_instance.add_datatarget_values(actuator_values_to_write)
 
-    def _rebuild_sensor_actor_indices(self, partition=None):
+    def _rebuild_sensor_actuator_indices(self, partition=None):
         """
-        Rebuilds the actor and sensor indices of the given partition or all partitions if None
+        Rebuilds the actuator and sensor indices of the given partition or all partitions if None
         """
         if partition is not None:
             partitions = [partition]
         else:
             partitions = self.partitions.values()
         for partition in partitions:
-            partition.sensor_indices = np.zeros(len(self.get_datasources()), np.int32)
-            partition.actuator_indices = np.zeros(len(self.get_datatargets()), np.int32)
+            partition.sensor_indices = np.empty(len(self.get_datasources()), np.int32)
+            partition.sensor_indices.fill(-1)
+            partition.actuator_indices = np.empty(len(self.get_datatargets()), np.int32)
+            partition.actuator_indices.fill(-1)
             for datatarget, node_id in self.actuatormap.items():
                 if not isinstance(node_id, str):
                     node_id = node_id[0]
@@ -1413,24 +1656,6 @@ class TheanoNodenet(Nodenet):
                     node_id = node_id[0]
                 if self.get_partition(node_id) == partition:
                     self.get_node(node_id).set_parameter("datasource", datasource)
-
-    def get_datasources(self):
-        """ Returns a sorted list of available datasources, including worldadapter datasources
-        and readable modulators"""
-        datasources = self.worldadapter_instance.get_available_datasources() if self.worldadapter_instance else []
-        if self.use_modulators:
-            for item in sorted(DoernerianEmotionalModulators.readable_modulators):
-                datasources.append(item)
-        return datasources
-
-    def get_datatargets(self):
-        """ Returns a sorted list of available datatargets, including worldadapter datatargets
-        and writeable modulators"""
-        datatargets = self.worldadapter_instance.get_available_datatargets() if self.worldadapter_instance else []
-        if self.use_modulators:
-            for item in sorted(DoernerianEmotionalModulators.writeable_modulators):
-                datatargets.append(item)
-        return datatargets
 
     def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id', group_name=None):
         if nodespace_uid is None:
@@ -1449,7 +1674,7 @@ class TheanoNodenet(Nodenet):
                 ids.append(uid)
         self.group_nodes_by_ids(nodespace_uid, ids, group_name, gatetype, sortby)
 
-    def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gatetype="gen", sortby='id'):
+    def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gatetype="gen", sortby=None):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
         partition = self.get_partition(nodespace_uid)
@@ -1462,23 +1687,15 @@ class TheanoNodenet(Nodenet):
 
         partition.group_nodes_by_ids(nodespace_uid, ids, group_name, gatetype)
 
+    def group_highdimensional_elements(self, node_uid, gate=None, slot=None, group_name=None):
+        partition = self.get_partition(node_uid)
+        partition.group_highdimensional_elements(node_uid, gate=gate, slot=slot, group_name=group_name)
+
     def ungroup_nodes(self, nodespace_uid, group):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
         partition = self.get_partition(nodespace_uid)
         partition.ungroup_nodes(nodespace_uid, group)
-
-    def dump_group(self, nodespace_uid, group):
-        if nodespace_uid is None:
-            nodespace_uid = self.get_nodespace(None).uid
-        partition = self.get_partition(nodespace_uid)
-
-        ids = partition.nodegroups[nodespace_uid][group]
-        for element in ids:
-            nid = partition.allocated_elements_to_nodes[element]
-            uid = node_to_id(nid, partition.pid)
-            node = self.get_node(uid)
-            print("%s %s" % (node.uid, node.name))
 
     def get_activations(self, nodespace_uid, group):
         if nodespace_uid is None:
@@ -1492,17 +1709,17 @@ class TheanoNodenet(Nodenet):
         partition = self.get_partition(nodespace_uid)
         partition.set_activations(nodespace_uid, group, new_activations)
 
-    def get_thetas(self, nodespace_uid, group):
+    def get_gate_configurations(self, nodespace_uid, group, gatefunction_parameter=None):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
         partition = self.get_partition(nodespace_uid)
-        return partition.get_thetas(nodespace_uid, group)
+        return partition.get_gate_configurations(nodespace_uid, group, gatefunction_parameter)
 
-    def set_thetas(self, nodespace_uid, group, new_thetas):
+    def set_gate_configurations(self, nodespace_uid, group, gatefunction, gatefunction_parameter=None, parameter_values=None):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
         partition = self.get_partition(nodespace_uid)
-        partition.set_thetas(nodespace_uid, group, new_thetas)
+        partition.set_gate_configurations(nodespace_uid, group, gatefunction, gatefunction_parameter, parameter_values)
 
     def get_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to):
         if nodespace_from_uid is None:
@@ -1518,10 +1735,26 @@ class TheanoNodenet(Nodenet):
             if nodespace_to_uid not in partition_to.nodegroups or group_to not in partition_to.nodegroups[nodespace_to_uid]:
                 raise ValueError("Group %s does not exist in nodespace %s." % (group_to, nodespace_to_uid))
 
+            from_els = partition_from.nodegroups[nodespace_from_uid][group_from]
+            to_els = partition_to.nodegroups[nodespace_to_uid][group_to]
+            zero_weights = np.zeros((len(to_els), len(from_els)))
+
+            if partition_from.spid not in partition_to.inlinks:
+                return zero_weights
+
             inlinks = partition_to.inlinks[partition_from.spid]
-            indices_from = np.searchsorted(inlinks[0].get_value(borrow=True), partition_from.nodegroups[nodespace_from_uid][group_from])
-            indices_to = np.searchsorted(inlinks[1].get_value(borrow=True), partition_to.nodegroups[nodespace_to_uid][group_to])
-            cols, rows = np.meshgrid(indices_from, indices_to)
+            from_indices = inlinks[0].get_value(borrow=True)
+            to_indices = inlinks[1].get_value(borrow=True)
+
+            if len(np.union1d(from_indices, from_els)) > len(from_indices) or len(np.union1d(to_indices, to_els)) > len(to_indices):
+                self.set_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to, zero_weights)
+                inlinks = partition_to.inlinks[partition_from.spid]
+                from_indices = inlinks[0].get_value(borrow=True)
+                to_indices = inlinks[1].get_value(borrow=True)
+
+            search_from = np.searchsorted(from_indices, from_els)
+            search_to = np.searchsorted(to_indices, to_els)
+            cols, rows = np.meshgrid(search_from, search_to)
             return inlinks[2].get_value(borrow=True)[rows, cols]
         else:
             return partition_from.get_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to)
@@ -1541,8 +1774,8 @@ class TheanoNodenet(Nodenet):
             if nodespace_to_uid not in partition_to.nodegroups or group_to not in partition_to.nodegroups[nodespace_to_uid]:
                 raise ValueError("Group %s does not exist in nodespace %s." % (group_to, nodespace_to_uid))
 
-            elements_from_indices = partition_from.nodegroups[nodespace_from_uid][group_from]
-            elements_to_indices = partition_to.nodegroups[nodespace_to_uid][group_to]
+            elements_from_indices = np.array(partition_from.nodegroups[nodespace_from_uid][group_from], dtype='int32')
+            elements_to_indices = np.array(partition_to.nodegroups[nodespace_to_uid][group_to], dtype='int32')
 
             partition_to.set_inlink_weights(partition_from.spid, elements_from_indices, elements_to_indices, new_w)
         else:
@@ -1550,15 +1783,21 @@ class TheanoNodenet(Nodenet):
 
         self.proxycache.clear()
 
-        # uids_to_invalidate = self.get_node_uids(nodespace_from_uid, group_from)
-        # uids_to_invalidate.extend(self.get_node_uids(nodespace_to_uid, group_to))
-
-        # for uid in uids_to_invalidate:
-        #     if uid in self.proxycache:
-        #         del self.proxycache[uid]
-
     def get_available_gatefunctions(self):
-        return ["identity", "absolute", "sigmoid", "tanh", "rect", "one_over_x"]
+        return {
+            "identity": {},
+            "absolute": {},
+            "sigmoid": {'bias': 0},
+            "elu": {'bias': 0},
+            "relu": {'bias': 0},
+            "one_over_x": {},
+            "threshold": {
+                "minimum": 0,
+                "maximum": 1,
+                "amplification": 1,
+                "threshold": 0
+            }
+        }
 
     def add_slot_monitor(self, node_uid, slot, **_):
         raise RuntimeError("Theano engine does not support slot monitors")
@@ -1574,7 +1813,7 @@ class TheanoNodenet(Nodenet):
                 return True
         return False
 
-    def get_nodespace_changes(self, nodespace_uids=[], since_step=0):
+    def get_nodespace_changes(self, nodespace_uids=[], since_step=0, include_links=True):
         result = {
             'nodes_dirty': {},
             'nodespaces_dirty': {},
@@ -1585,6 +1824,14 @@ class TheanoNodenet(Nodenet):
         if nodespace_uids == []:
             nodespace_uids = self.get_nodespace_uids()
 
+        nodespaces_by_partition = {}
+        for nodespace_uid in nodespace_uids:
+            spid = self.get_partition(nodespace_uid).spid
+            if spid not in nodespaces_by_partition:
+                nodespaces_by_partition[spid] = []
+            nodespace_uid = self.get_nodespace(nodespace_uid).uid  # b/c of None == Root
+            nodespaces_by_partition[spid].append(nodespace_from_id(nodespace_uid))
+
         for nsuid in nodespace_uids:
             nodespace = self.get_nodespace(nsuid)
             partition = self.get_partition(nodespace.uid)
@@ -1593,16 +1840,33 @@ class TheanoNodenet(Nodenet):
                     result['nodespaces_deleted'].extend(self.deleted_items[i].get('nodespaces_deleted', []))
                     result['nodes_deleted'].extend(self.deleted_items[i].get('nodes_deleted', []))
             changed_nodes, changed_nodespaces = partition.get_nodespace_changes(nodespace.uid, since_step)
-            for uid in changed_nodes:
-                uid = node_to_id(uid, partition.pid)
-                result['nodes_dirty'][uid] = self.get_node(uid).get_data(include_links=True)
+            nodes, _, _ = partition.get_node_data(ids=changed_nodes, nodespaces_by_partition=nodespaces_by_partition, include_links=include_links)
+            result['nodes_dirty'].update(nodes)
             for uid in changed_nodespaces:
                 uid = nodespace_to_id(uid, partition.pid)
                 result['nodespaces_dirty'][uid] = self.get_nodespace(uid).get_data()
         return result
 
+    def add_gate_activation_recorder(self, group_definition, name, interval=1):
+        """ Adds an activation recorder to a group of nodes."""
+        rec = recorder.GateActivationRecorder(self, group_definition, name, interval=interval)
+        self._recorders[rec.uid] = rec
+        return rec
+
+    def add_node_activation_recorder(self, group_definition, name, interval=1):
+        """ Adds an activation recorder to a group of nodes."""
+        rec = recorder.NodeActivationRecorder(self, group_definition, name, interval=interval)
+        self._recorders[rec.uid] = rec
+        return rec
+
+    def add_linkweight_recorder(self, from_group_definition, to_group_definition, name, interval=1):
+        """ Adds a linkweight recorder to links between to groups."""
+        rec = recorder.LinkweightRecorder(self, from_group_definition, to_group_definition, name, interval=interval)
+        self._recorders[rec.uid] = rec
+        return rec
+
     def get_dashboard(self):
-        data = super(TheanoNodenet, self).get_dashboard()
+        data = super().get_dashboard()
         data['count_nodes'] = 0
         data['count_links'] = -1
         data['count_positive_nodes'] = 0
@@ -1660,3 +1924,7 @@ class TheanoNodenet(Nodenet):
         data['schemas']['total'] = sum(data['schemas'].values())
         data['concepts']['total'] = sum(data['concepts'].values())
         return data
+
+
+class TheanoNodenet(TheanoFlowEngine, TheanoNodenetCore):
+    pass

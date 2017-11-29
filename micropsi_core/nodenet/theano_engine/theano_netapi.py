@@ -1,24 +1,17 @@
 __author__ = 'rvuine'
 
-from micropsi_core.nodenet.netapi import NetAPI
+from micropsi_core.nodenet.flow_netapi import FlowNetAPI
 
 
-class TheanoNetAPI(NetAPI):
+class TheanoNetAPI(FlowNetAPI):
     """
-    Theano / numpy extension of the NetAPI, giving native modules access to bulk operations and efficient
+    Theano extension of the NetAPI, giving native modules access to bulk operations and efficient
     data structures for machine learning purposes.
     """
 
-    def __init__(self, nodenet):
-        super(TheanoNetAPI, self).__init__(nodenet)
-        self.__nodenet = nodenet
-
-    @property
-    def floatX(self):
-        return self.__nodenet.numpyfloatX
-
     def announce_nodes(self, nodespace_uid, numer_of_nodes, average_element_per_node):
-        self.__nodenet.announce_nodes(nodespace_uid, numer_of_nodes, average_element_per_node)
+        """ announce a new number of nodes and grow the internal matrices before adding the nodes """
+        self._nodenet.announce_nodes(nodespace_uid, numer_of_nodes, average_element_per_node)
 
     def decay_por_links(self, nodespace_uid):
         """ Decays all por-links in the given nodespace """
@@ -29,7 +22,7 @@ class TheanoNetAPI(NetAPI):
         import numpy as np
         from .theano_definitions import node_from_id, PIPE, POR
         nodespace_uid = self.get_nodespace(nodespace_uid).uid
-        porretdecay = self.__nodenet.get_modulator('base_porret_decay_factor')
+        porretdecay = self._nodenet.get_modulator('base_porret_decay_factor')
         ns = self.get_nodespace(nodespace_uid)
         partition = ns._partition
         if partition.has_pipes and porretdecay != 0:
@@ -45,3 +38,51 @@ class TheanoNetAPI(NetAPI):
             w_update *= (1 - porretdecay)
             w[rows, cols] = w_update
             partition.w.set_value(w, borrow=True)
+
+    def add_gate_activation_recorder(self, group_definition, name, interval=1):
+        """ Adds an activation recorder to a group of nodes."""
+        return self._nodenet.add_gate_activation_recorder(group_definition, name, interval)
+
+    def add_node_activation_recorder(self, group_definition, name, interval=1):
+        """ Adds an activation recorder to a group of nodes."""
+        return self._nodenet.add_node_activation_recorder(group_definition, name, interval)
+
+    def add_linkweight_recorder(self, from_group_definition, to_group_definition, name, interval=1):
+        """ Adds a linkweight recorder to links between to groups."""
+        return self._nodenet.add_linkweight_recorder(from_group_definition, to_group_definition, name, interval)
+
+    def get_recorder(self, uid):
+        """Returns the recorder with the given uid"""
+        return self._nodenet.get_recorder(uid)
+
+    def remove_recorder(self, uid):
+        """Removes the recorder with the given uid"""
+        return self._nodenet.remove_recorder(uid)
+
+    def group_node_gates(self, node_uid, gate_prefix, group_name=None):
+        """ Creates a group of the high-dimensional gates of the given node"""
+        self._nodenet.group_highdimensional_elements(node_uid, gate=gate_prefix, group_name=group_name)
+
+    def group_node_slots(self, node_uid, slot_prefix, group_name=None):
+        """ Creates a group of the high-dimensional slots of the given node"""
+        self._nodenet.group_highdimensional_elements(node_uid, slot=slot_prefix, group_name=group_name)
+
+    def get_callable_flowgraph(self, nodes, requested_outputs=None, use_different_thetas=False, use_unique_input_names=False):
+        """ Returns one callable for the given flow_modules.
+        Parameters:
+            use_different_thetas (default: False) - Return a callable that expects a parameter "thetas" that will be used instead of existing thetas
+            use_unique_input_names (default: False) - Return a callable that expects input parameter names as "uid_name" where uid is the node_uid, and name is the input_name
+            requested_outputs (default:None) - Optional list of (node_uid, outputname) tuples, so that the callable will return only the given outputs
+        """
+        func, dangling_inputs, dangling_outputs = self._nodenet.compile_flow_subgraph([n.uid for n in nodes], requested_outputs=requested_outputs, use_different_thetas=use_different_thetas, use_unique_input_names=use_unique_input_names)
+        return func
+
+    def collect_thetas(self, nodes):
+        """ Returns a list of thetas, sorted by node first, alphabetically second """
+        return self._nodenet.collect_thetas([n.uid for n in nodes])
+
+    def shadow_flowgraph(self, flow_modules):
+        """ Creates a shallow copy of the given flow_modules, copying instances and internal connections.
+        Shallow copies will always have the parameters and shared variables of their originals
+        """
+        return self._nodenet.shadow_flowgraph(flow_modules)

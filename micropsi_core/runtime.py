@@ -94,10 +94,17 @@ class FileCacher():
 class NetapiShell(InteractiveConsole):
     """Wrapper around Python that can filter input/output to the shell"""
     def __init__(self, netapi):
+        try:
+            # theano messes with the formatting of exceptions
+            import theano
+            self.err_line_separator = '\n\n'
+        except ImportError:
+            self.err_line_separator = '\n'
         self.stdout = sys.stdout
         self.stderr = sys.stderr
         self.outcache = FileCacher()
         self.errcache = FileCacher()
+
         InteractiveConsole.__init__(self, locals={'netapi': netapi})
         return
 
@@ -118,7 +125,7 @@ class NetapiShell(InteractiveConsole):
         err = self.errcache.flush()
 
         if err:
-            parts = err.strip().split('\n\n')
+            parts = err.strip().split(self.err_line_separator)
             if parts[0].startswith("Traceback"):
                 cleaned_parts = []
                 begin_exception_message = False

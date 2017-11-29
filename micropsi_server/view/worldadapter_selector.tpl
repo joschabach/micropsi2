@@ -3,11 +3,12 @@
 % if not world_uid in worlds:
                             <option value="None">None</option>
 % else:
-   % for type in sorted(worldtypes[worlds[world_uid].world_type]['class'].get_supported_worldadapters().keys()):
+   % worldadapters = worldtypes[worlds[world_uid].world_type]['class'].get_supported_worldadapters()
+   % for type in sorted(worldadapters.keys()):
        % if defined("nodenet_uid") and nodenet_uid in nodenets and nodenets[nodenet_uid].worldadapter == type:
-                            <option value="{{type}}" selected="selected">{{type}}</option>
+                            <option data-devices_supported="{{worldadapters[type].supports_devices()}}" value="{{type}}" selected="selected">{{type}}</option>
        % else:
-                            <option value="{{type}}">{{type}}</option>
+                            <option data-devices_supported="{{worldadapters[type].supports_devices()}}" value="{{type}}">{{type}}</option>
        %end
    %end
 

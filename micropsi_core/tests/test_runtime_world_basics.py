@@ -152,7 +152,7 @@ def test_agent_dying_unregisters_agent(runtime, default_world, default_nodenet):
     assert nodenet.uid in world.agents
     mockdead = mock.Mock(return_value=False)
     world.agents[nodenet.uid].is_alive = mockdead
-    world.step()
+    world.step(0)
     assert nodenet.uid not in world.agents
 
 
@@ -307,12 +307,12 @@ class MyWorld(World):
         super().__init__(filename, **kwargs)
         self.custom_state = None
 
-    def simulation_started(self):
-        super().simulation_started()
+    def on_start(self):
+        super().on_start()
         self.custom_state = 'runner started'
 
-    def simulation_stopped(self):
-        super().simulation_stopped()
+    def on_stop(self):
+        super().on_stop()
         self.custom_state = 'runner stopped'
 
 class MyCustomWA(WorldAdapter):
@@ -348,3 +348,4 @@ class MyCustomWA(WorldAdapter):
     assert laststep == runtime.nodenets[default_nodenet].current_step
     assert not runtime.nodenets[default_nodenet].is_active
     assert runtime.worlds[world_uid].is_active
+    runtime.stop_nodenetrunner(default_nodenet)

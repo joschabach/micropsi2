@@ -110,7 +110,7 @@ def testnodefunc(netapi, node=None, **prams):
         'type': 'Testnode',
         'position': [23, 23, 12],
         'nodespace': None,
-        'name': 'Testnode'
+        'name': ''
     })
     assert_success(response)
 
@@ -551,6 +551,8 @@ def test_set_world_properties(app, default_world):
     assert_success(response)
     response = app.get_json('/rpc/get_world_properties(world_uid="%s")' % default_world)
     assert response.json_body['data']['name'] == "asdf"
+    response = app.get_json('/rpc/get_available_worlds()')
+    assert response.json_body['data'][default_world]['name'] == 'asdf'
 
 
 def test_revert_world(app, default_world):
@@ -651,6 +653,7 @@ def test_add_gate_monitor(app, test_nodenet, node):
 
 
 @pytest.mark.engine("dict_engine")
+@pytest.mark.engine("numpy_engine")
 def test_add_slot_monitor(app, test_nodenet, node):
     response = app.post_json('/rpc/add_slot_monitor', params={
         'nodenet_uid': test_nodenet,
@@ -1814,6 +1817,9 @@ def double(inputs, netapi, node, parameters):
     runtime.set_nodenet_properties(test_nodenet, worldadapter="SimpleArrayWA", world_uid=wuid)
     worldadapter = nodenet.worldadapter_instance
 
+    datasource_uid = nodenet.worldadapter_flow_nodes['datasources']
+    datatarget_uid = nodenet.worldadapter_flow_nodes['datatargets']
+
     # create one flow_module, wire to sources & targets
     result = app.post_json('/rpc/add_node', {
         'nodenet_uid': test_nodenet,
@@ -1848,16 +1854,19 @@ def double(inputs, netapi, node, parameters):
     result = app.post_json('/rpc/flow', inward)
     assert_success(result)
 
-    response = app.post_json('/rpc/get_calculation_state', params={'nodenet_uid': test_nodenet, 'nodenet': {'nodespaces': [None]}, 'monitors': True})
-    data = response.json_body['data']
-
-    assert data['nodenet']['nodes'][flow_uid]
-
     sources = np.array(np.random.randn(2, 3), dtype=nodenet.numpyfloatX)
     worldadapter.flow_datasources['foo'][:] = sources
 
     runtime.step_nodenet(test_nodenet)
     assert np.all(worldadapter.get_flow_datatarget_feedback('bar') == sources * 2)
+
+    response = app.post_json('/rpc/get_calculation_state', params={'nodenet_uid': test_nodenet, 'nodenet': {'nodespaces': [None]}, 'monitors': True})
+    data = response.json_body['data']
+
+    assert data['nodenet']['nodes'][flow_uid]
+    assert data['nodenet']['nodes'][flow_uid]['activation'] == 1.0
+    assert data['nodenet']['nodes'][datasource_uid]['activation'] == 1.0
+    assert data['nodenet']['nodes'][datatarget_uid]['activation'] == 1.0
 
     # disconnect first flow_module from datatargets, create a second one, and chain them
     result = app.post_json('/rpc/unflow', outward)
@@ -1890,3 +1899,72 @@ def double(inputs, netapi, node, parameters):
 
     runtime.step_nodenet(test_nodenet)
     assert np.all(worldadapter.get_flow_datatarget_feedback('bar') == np.zeros(worldadapter.flow_datatargets['bar'].shape))
+
+
+def test_start_behavior(app, default_nodenet):
+    result = app.post_json('/rpc/start_behavior', {'nodenet_uid': default_nodenet, 'condition': {'steps': 3}})
+    assert_success(result)
+    token = result.json_body['data']['token']
+    result = app.get_json('/rpc/get_behavior_state(token="%s")' % token)
+    assert_success(result)
+    assert result.json_body['data']
+    import time
+    time.sleep(1)
+    result = app.get_json('/rpc/get_behavior_state(token="%s")' % token)
+    assert_success(result)
+    from micropsi_core import runtime
+    assert not result.json_body['data']
+    assert runtime.nodenets[default_nodenet].current_step == 3
+    assert not runtime.nodenets[default_nodenet].is_active
+
+
+def test_abort_behavior(app, default_nodenet):
+    result = app.post_json('/rpc/start_behavior', {'nodenet_uid': default_nodenet, 'condition': {'steps': 500}})
+    assert_success(result)
+    token = result.json_body['data']['token']
+    result = app.get_json('/rpc/abort_behavior(token="%s")' % token)
+    assert_success(result)
+    result = app.get_json('/rpc/get_behavior_state(token="%s")' % token)
+    assert_success(result)
+    assert not result.json_body['data']
+    from micropsi_core import runtime
+    assert runtime.nodenets[default_nodenet].current_step < 500
+    assert not runtime.nodenets[default_nodenet].is_active
+
+
+def test_gate_activation_is_persisted(app, runtime, test_nodenet, resourcepath):
+    import os
+    with open(os.path.join(resourcepath, 'nodetypes', 'foobar.py'), 'w') as fp:
+        fp.write("""nodetype_definition = {
+    "name": "foobar",
+    "nodefunction_name": "foobar",
+    "slottypes": ["gen", "foo", "bar"],
+    "gatetypes": ["gen", "foo", "bar"]
+}
+def foobar(node, netapi, **_):
+    node.get_gate('gen').gate_function(0.1)
+    node.get_gate('foo').gate_function(0.3)
+    node.get_gate('bar').gate_function(0.5)
+""")
+    res, err = runtime.reload_code()
+    netapi = runtime.nodenets[test_nodenet].netapi
+    source = netapi.create_node("Neuron")
+    target = netapi.create_node("Neuron")
+    netapi.link(source, 'gen', target, 'gen')
+    source.activation = 0.73
+    foobar = netapi.create_node("foobar")
+    ns_uid = netapi.get_nodespace(None).uid
+    runtime.step_nodenet(test_nodenet)
+    runtime.save_nodenet(test_nodenet)
+    runtime.revert_nodenet(test_nodenet)
+    result = app.post_json('/rpc/get_nodes', {
+        'nodenet_uid': test_nodenet,
+        'nodespaces': [ns_uid],
+        'include_links': True
+    })
+    data = result.json_body['data']['nodes']
+    assert round(data[target.uid]['gate_activations']['gen'], 2) == 0.73
+    assert round(data[source.uid]['gate_activations']['gen'], 2) == 0
+    assert round(data[foobar.uid]['gate_activations']['gen'], 2) == 0.1
+    assert round(data[foobar.uid]['gate_activations']['foo'], 2) == 0.3
+    assert round(data[foobar.uid]['gate_activations']['bar'], 2) == 0.5

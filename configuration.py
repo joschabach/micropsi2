@@ -51,7 +51,7 @@ except OSError:
     warnings.warn('Can not read config from inifile %s' % configini)
     raise RuntimeError('Can not read config from inifile %s' % configini)
 
-config['micropsi2']['version'] = "0.12-alpha10"
+config['micropsi2']['version'] = "0.13-alpha11"
 config['micropsi2']['apptitle'] = "MicroPsi"
 
 data_path = os.path.expanduser(config['micropsi2']['data_directory'])
@@ -60,6 +60,7 @@ data_path = os.path.abspath(data_path)
 config.add_section('paths')
 config['paths']['usermanager_path'] = os.path.join(dirinfo.user_data_dir, 'user-db.json')
 config['paths']['server_settings_path'] = os.path.join(dirinfo.user_data_dir, 'server-config.json')
+config['paths']['device_settings_path'] = os.path.join(dirinfo.user_data_dir, 'devices.json')
 
 for key in ['agent_directory', 'world_directory', 'persistency_directory']:
     if key in config['micropsi2']:

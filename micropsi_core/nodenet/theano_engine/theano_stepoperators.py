@@ -1,5 +1,5 @@
 
-from micropsi_core.nodenet.stepoperators import Propagate, Calculate
+from micropsi_core.nodenet.stepoperators import Propagate, Calculate, CalculateFlowmodules
 import numpy as np
 from micropsi_core.nodenet.theano_engine.theano_node import *
 from micropsi_core.nodenet.theano_engine.theano_definitions import *
@@ -67,41 +67,7 @@ class TheanoCalculate(Calculate):
             self.count_success_and_failure(nodenet)
 
 
-class TheanoCalculateFlowmodules(Propagate):
-
-    @property
-    def priority(self):
-        return 0
-
-    def __init__(self, nodenet):
-        self.nodenet = nodenet
-
-    def value_guard(self, value, source, name):
-        if value is None:
-            return None
-        if self.nodenet.runner_config.get('runner_infguard'):
-            if type(value) == list:
-                for val in value:
-                    self._guard(val, source, name)
-            else:
-                self._guard(value, source, name)
-        return value
-
-    def _guard(self, value, source, name):
-        if np.isnan(np.sum(value)):
-            raise ValueError("NAN value in flow datected: %s" % self.format_error(source, name))
-        elif np.isinf(np.sum(value)):
-            raise ValueError("INF value in flow datected: %s" % self.format_error(source, name))
-
-    def format_error(self, source, name):
-        if type(source) == dict:
-            if len(source['members']) == 1:
-                msg = "output %s of %s" % (name, source['members'][0])
-            else:
-                msg = "output %s of graph %s" % (name, str(source['members']))
-        else:
-            msg = "output %s of %s" % (name, str(source))
-        return msg
+class CalculateTheanoFlowmodules(CalculateFlowmodules):
 
     def execute(self, nodenet, nodes, netapi):
         if not nodenet.flow_module_instances:
@@ -113,12 +79,15 @@ class TheanoCalculateFlowmodules(Propagate):
         if nodenet.worldadapter_instance:
             if 'datasources' in nodenet.worldadapter_flow_nodes:
                 sourcenode = nodenet.get_node(nodenet.worldadapter_flow_nodes['datasources'])
+                sourcenode.is_part_of_active_graph = True
                 flowio[sourcenode.uid] = {}
                 for key in sourcenode.outputs:
                     flowio[sourcenode.uid][key] = self.value_guard(nodenet.worldadapter_instance.get_flow_datasource(key), nodenet.worldadapter, key)
 
                     for target_uid, target_name in sourcenode.outputmap[key]:
-                        if target_uid == nodenet.worldadapter_flow_nodes.get('datatargets', False):
+                        datatarget_uid = nodenet.worldadapter_flow_nodes.get('datatargets')
+                        if target_uid == datatarget_uid:
+                            nodenet.flow_module_instances[datatarget_uid].is_part_of_active_graph = True
                             nodenet.worldadapter_instance.add_to_flow_datatarget(target_name, flowio[sourcenode.uid][key])
 
         for func in nodenet.flowfunctions:
@@ -151,5 +120,6 @@ class TheanoCalculateFlowmodules(Propagate):
                         targetnode = nodenet.get_node(nodenet.worldadapter_flow_nodes['datatargets'])
                         for uid, name in nodenet.get_node(node_uid).outputmap[out_name]:
                             if uid == targetnode.uid and node_uid != nodenet.worldadapter_flow_nodes.get('datasources', False):
+                                targetnode.is_part_of_active_graph = True
                                 nodenet.worldadapter_instance.add_to_flow_datatarget(name, out[index])
                     flowio[node_uid][out_name] = self.value_guard(out[index], func, out_name) if out is not None else None

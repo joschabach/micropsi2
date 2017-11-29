@@ -35,10 +35,10 @@ def test_add_node(runtime, test_nodenet):
 
     nodespace = runtime.get_nodes(test_nodenet)
     assert len(nodespace.get("nodes", [])) == 0
-    res, uid = runtime.add_node(test_nodenet, "Pipe", [200, 250, 10], None, state=None, name="A")
+    res, uid1 = runtime.add_node(test_nodenet, "Pipe", [200, 250, 10], None, state=None, name="A")
     nodespace = runtime.get_nodes(test_nodenet)
     assert len(nodespace["nodes"]) == 1
-    node1 = nodespace["nodes"][uid]
+    node1 = nodespace["nodes"][uid1]
     assert node1["name"] == "A"
     assert node1["position"] == [200, 250, 10]
 
@@ -164,7 +164,7 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
 """)
     runtime.reload_code()
     reg = netapi.create_node("Neuron", None, "reg")
-    test = netapi.create_node("Testnode", None, "test")
+    test = netapi.create_node("Testnode", None)
     netapi.link(reg, 'gen', test, 'gen')
     netapi.link(test, 'bar', reg, 'gen')
     data_before = runtime.nodenets[test_nodenet].export_json()
@@ -236,6 +236,7 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
 
 
 @pytest.mark.engine("dict_engine")
+@pytest.mark.engine("numpy_engine")
 def test_engine_specific_nodetype_dict(runtime, test_nodenet, resourcepath):
     import os
     nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
@@ -339,6 +340,30 @@ def testnodefunc(netapi, node=None, **prams):\r\n    return 17
     res, uid = runtime.add_node(test_nodenet, "Testnode", [10, 10, 10], name="Test")
     node = runtime.nodenets[test_nodenet].get_node(uid)
     assert node.get_parameter("testparam") == 13
+
+
+def test_malformed_nodetype_defintion(runtime, test_nodenet, resourcepath):
+    import os
+    nodetype_file = os.path.join(resourcepath, 'nodetypes', 'Test', 'testnode.py')
+
+    with open(nodetype_file, 'w') as fp:
+        fp.write("""nodetype_definition = {
+            "slottypes": ["gen", "foo", "bar"],
+            "gatetypes": ["gen", "foo", "bar"],
+            "parameters": "stupid param",
+            "parameter_defaults": [13],
+            "parameter_values": [13, 14, 15],
+        }
+def testnodefunc(netapi, node=None, **prams):\r\n    return 17
+""")
+
+    res, errors = runtime.reload_code()
+    assert not res
+    assert "parameters" in errors[0]
+    assert "parameter_values" in errors[0]
+    assert "parameter_defaults" in errors[0]
+    assert "name" in errors[0]
+    assert "nodefunction_name" in errors[0]
 
 
 def test_node_parameters_from_persistence(runtime, test_nodenet, resourcepath):

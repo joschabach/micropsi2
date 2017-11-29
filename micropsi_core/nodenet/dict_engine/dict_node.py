@@ -51,31 +51,22 @@ class DictNode(NetEntity, Node):
 
     @activation.setter
     def activation(self, activation):
-        #activation_to_set = float(activation)
-        #gengate = self.get_gate('gen')
-        #if gengate is not None:
-        #    activation_to_set = gengate.gate_function(float(activation))
-        #self.__activation = activation_to_set
         self.__activation = float(activation)
         gengate = self.get_gate('gen')
         if gengate is not None:
             gengate.activation = float(activation)
 
     def __init__(self, nodenet, parent_nodespace, position, state=None, activation=0,
-                 name="", type="Concept", uid=None, index=None, parameters=None, gate_activations=None, gate_configuration=None, **_):
-
-        if nodenet.is_node(uid):
-            raise KeyError("Node with uid %s already exists" % uid)
+                 name="", type="Concept", uid=None, index=None, parameters=None, gate_activations={}, gate_configuration=None, **_):
 
         Node.__init__(self, nodenet, type, nodenet.get_nodetype(type))
 
         NetEntity.__init__(self, nodenet, parent_nodespace,
             name=name, entitytype="nodes", uid=uid, index=index)
-
         self.position = position
 
-        self.__state = {}
-        self.__activation = 0
+        self._state = {}
+        self.__activation = activation
 
         self.__gates = {}
         self.__slots = {}
@@ -89,12 +80,13 @@ class DictNode(NetEntity, Node):
 
         for gate in self.nodetype.gatetypes:
             self.__gates[gate] = DictGate(gate, self)
+            if gate in gate_activations:
+                self.__gates[gate].activation = gate_activations[gate]
         for slot in self.nodetype.slottypes:
             self.__slots[slot] = DictSlot(slot, self)
         if state:
-            self.__state = state
+            self._state = state
         nodenet._register_node(self)
-        self.activation = activation
 
     def node_function(self):
         """Called whenever the node is activated or active.
@@ -199,6 +191,14 @@ class DictNode(NetEntity, Node):
                 self.__parameters[parameter] = None
 
     def set_parameter(self, parameter, value):
+        if self.type == "Sensor" and parameter == "datasource" and value not in self.nodenet.get_datasources():
+            self.logger.warning("Datasource %s not known, will not be assigned for sensor %s" % (value, self))
+            self.__parameters[parameter] = None
+            return
+        if self.type == "Actuator" and parameter == "datatarget" and value not in self.nodenet.get_datatargets():
+            self.logger.warning("Datatarget %s not known, will not be assigned for actuator %s" % (value, self))
+            self.__parameters[parameter] = None
+            return
         if (value == '' or value is None):
             if parameter in self.nodetype.parameter_defaults:
                 value = self.nodetype.parameter_defaults[parameter]
@@ -211,18 +211,6 @@ class DictNode(NetEntity, Node):
 
     def clone_parameters(self):
         return self.__parameters.copy()
-
-    def get_state(self, state_element):
-        if state_element in self.__state:
-            return self.__state[state_element]
-        else:
-            return None
-
-    def set_state(self, state_element, value):
-        self.__state[state_element] = value
-
-    def clone_state(self):
-        return self.__state.copy()
 
     def link(self, gate_name, target_node_uid, slot_name, weight=1):
         """Ensures a link exists with the given weight and returns it

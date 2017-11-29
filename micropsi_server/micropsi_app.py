@@ -638,27 +638,6 @@ def export_nodenet(nodenet_uid):
     return runtime.export_nodenet(nodenet_uid)
 
 
-@micropsi_app.route("/recorder/export/<nodenet_uid>-<recorder_uid>")
-def export_recorder(nodenet_uid, recorder_uid):
-    data = runtime.export_recorders(nodenet_uid, [recorder_uid])
-    recorder = runtime.get_recorder(nodenet_uid, recorder_uid)
-    response.set_header('Content-type', 'application/octet-stream')
-    response.set_header('Content-Disposition', 'attachment; filename="recorder_%s.npz"' % recorder.name)
-    return data
-
-
-@micropsi_app.route("/recorder/export/<nodenet_uid>", method="POST")
-def export_recorders(nodenet_uid):
-    uids = []
-    for param in request.params.allitems():
-        if param[0] == 'recorder_uids[]':
-            uids.append(param[1])
-    data = runtime.export_recorders(nodenet_uid, uids)
-    response.set_header('Content-type', 'application/octet-stream')
-    response.set_header('Content-Disposition', 'attachment; filename="recorders_%s.npz"' % nodenet_uid)
-    return data
-
-
 @micropsi_app.route("/agent/edit")
 def edit_nodenet():
     user_id, permissions, token = get_request_data()
@@ -866,17 +845,16 @@ def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadap
 
 
 @rpc("get_calculation_state")
-def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None, recorders=None):
-    """ Return the current simulation state for any of the following: the given nodenet, world, monitors, dashboard, recorders
+def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
+    """ Return the current simulation state for any of the following: the given nodenet, world, monitors, dashboard
     Return values depend on the parameters:
         if you provide the nodenet-parameter (a dict, with all-optional keys: nodespaces, include_links, links_to_nodespaces) you will get the contents of the nodenet
         if you provide the nodenet_diff-parameter (a dict, with key "step" (the step to which the diff is calculated, and optional nodespaces) you will get a diff of the nodenet
         if you provide the world-parameter (anything) you will get the state of the nodenet's environment
         if you provide the monitor-parameter (anything), you will get data of all monitors registered in the nodenet
         if you provide the dashboard-parameter (anything) you will get a dict of dashboard data
-        if you provide the recorder-parameter (anything), you will get data of all recorders registered in the nodenet
     """
-    return runtime.get_calculation_state(nodenet_uid, nodenet=nodenet, nodenet_diff=nodenet_diff, world=world, monitors=monitors, dashboard=dashboard, recorders=recorders)
+    return runtime.get_calculation_state(nodenet_uid, nodenet=nodenet, nodenet_diff=nodenet_diff, world=world, monitors=monitors, dashboard=dashboard)
 
 
 @rpc("get_nodenet_changes")
@@ -1516,44 +1494,6 @@ def get_emoexpression_parameters(nodenet_uid):
     return True, emoexpression.calc_emoexpression_parameters(nodenet)
 
 
-# --------- recorder --------
-
-
-@rpc("add_gate_activation_recorder")
-def add_gate_activation_recorder(nodenet_uid, group_definition, name, interval=1):
-    """ Add an activation recorder to a group of nodes."""
-    return runtime.add_gate_activation_recorder(nodenet_uid, group_definition, name, interval)
-
-
-@rpc("add_node_activation_recorder")
-def add_node_activation_recorder(nodenet_uid, group_definition, name, interval=1):
-    """ Add an activation recorder to a group of nodes."""
-    return runtime.add_node_activation_recorder(nodenet_uid, group_definition, name, interval)
-
-
-@rpc("add_linkweight_recorder")
-def add_linkweight_recorder(nodenet_uid, from_group_definition, to_group_definition, name, interval=1):
-    """ Add a linkweight recorder to links between to groups."""
-    return runtime.add_linkweight_recorder(nodenet_uid, from_group_definition, to_group_definition, name, interval)
-
-
-@rpc("remove_recorder")
-def remove_recorder(nodenet_uid, recorder_uid):
-    """ Delete a recorder."""
-    return runtime.remove_recorder(nodenet_uid, recorder_uid)
-
-
-@rpc("clear_recorder")
-def clear_recorder(nodenet_uid, recorder_uid):
-    """ Clear the recorder's history """
-    return runtime.clear_recorder(nodenet_uid, recorder_uid)
-
-
-@rpc("get_recorders")
-def get_recorders(nodenet_uid):
-    """ Return a dict of recorders"""
-    return runtime.get_recorder_data(nodenet_uid)
-
 # --------- logging --------
 
 
@@ -1577,9 +1517,9 @@ def get_logger_messages(logger=[], after=0):
 
 
 @rpc("get_monitoring_info")
-def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor_count=-1, with_recorders=False):
-    """ Return monitor, logger, recorder data """
-    data = runtime.get_monitoring_info(nodenet_uid, logger, after, monitor_from, monitor_count, with_recorders=with_recorders)
+def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor_count=-1):
+    """ Return monitor, logger data """
+    data = runtime.get_monitoring_info(nodenet_uid, logger, after, monitor_from, monitor_count)
     return True, data
 
 

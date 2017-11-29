@@ -39,26 +39,6 @@ class TheanoNetAPI(FlowNetAPI):
             w[rows, cols] = w_update
             partition.w.set_value(w, borrow=True)
 
-    def add_gate_activation_recorder(self, group_definition, name, interval=1):
-        """ Adds an activation recorder to a group of nodes."""
-        return self._nodenet.add_gate_activation_recorder(group_definition, name, interval)
-
-    def add_node_activation_recorder(self, group_definition, name, interval=1):
-        """ Adds an activation recorder to a group of nodes."""
-        return self._nodenet.add_node_activation_recorder(group_definition, name, interval)
-
-    def add_linkweight_recorder(self, from_group_definition, to_group_definition, name, interval=1):
-        """ Adds a linkweight recorder to links between to groups."""
-        return self._nodenet.add_linkweight_recorder(from_group_definition, to_group_definition, name, interval)
-
-    def get_recorder(self, uid):
-        """Returns the recorder with the given uid"""
-        return self._nodenet.get_recorder(uid)
-
-    def remove_recorder(self, uid):
-        """Removes the recorder with the given uid"""
-        return self._nodenet.remove_recorder(uid)
-
     def group_node_gates(self, node_uid, gate_prefix, group_name=None):
         """ Creates a group of the high-dimensional gates of the given node"""
         self._nodenet.group_highdimensional_elements(node_uid, gate=gate_prefix, group_name=group_name)

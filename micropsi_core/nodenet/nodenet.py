@@ -14,7 +14,6 @@ from abc import ABCMeta, abstractmethod
 import micropsi_core.tools
 from .netapi import NetAPI
 from . import monitor
-from . import recorder
 from .node import Nodetype, FlowNodetype, HighdimensionalNodetype
 from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators
 
@@ -170,7 +169,6 @@ class Nodenet(metaclass=ABCMeta):
         self.owner = owner
         self._step = 0
         self._monitors = {}
-        self._recorders = {}
         self._adhoc_monitors = {}
         self._nodespace_ui_properties = {}
 
@@ -754,14 +752,9 @@ class Nodenet(metaclass=ABCMeta):
     def get_monitor(self, uid):
         return self._monitors.get(uid)
 
-    def get_recorder(self, uid):
-        return self._recorders.get(uid)
-
-    def update_monitors_and_recorders(self):
+    def update_monitors(self):
         for uid in self._monitors:
             self._monitors[uid].step(self.current_step)
-        for uid in self._recorders:
-            self._recorders[uid].step(self.current_step)
         for name in self._adhoc_monitors:
             self._adhoc_monitors[name].step(self.current_step)
 
@@ -769,12 +762,6 @@ class Nodenet(metaclass=ABCMeta):
         data = {}
         for monitor_uid in self._monitors:
             data[monitor_uid] = self._monitors[monitor_uid].get_data(with_values=with_values)
-        return data
-
-    def construct_recorders_dict(self):
-        data = {}
-        for uid in self._recorders:
-            data[uid] = self._recorders[uid].get_data()
         return data
 
     def construct_adhoc_monitors_dict(self, with_values=True):
@@ -785,24 +772,6 @@ class Nodenet(metaclass=ABCMeta):
 
     def remove_monitor(self, monitor_uid):
         del self._monitors[monitor_uid]
-
-    def add_gate_activation_recorder(self, group_definition, name, interval=1):
-        """ Adds an activation recorder to a group of nodes."""
-        raise NotImplementedError("Recorders are not implemented in the this engine")
-
-    def add_node_activation_recorder(self, group_definition, name, interval=1):
-        """ Adds an activation recorder to a group of nodes."""
-        raise NotImplementedError("Recorders are not implemented in the this engine")
-
-    def add_linkweight_recorder(self, from_group_definition, to_group_definition, name, interval=1):
-        """ Adds a linkweight recorder to links between to groups."""
-        raise NotImplementedError("Recorders are not implemented in the this engine")
-
-    def remove_recorder(self, recorder_uid):
-        filename = self._recorders[recorder_uid].filename
-        if os.path.isfile(filename):
-            os.remove(filename)
-        del self._recorders[recorder_uid]
 
     def get_dashboard(self):
         data = self.dashboard_values.copy()

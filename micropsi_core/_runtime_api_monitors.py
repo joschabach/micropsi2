@@ -68,7 +68,7 @@ def clear_monitor(nodenet_uid, monitor_uid):
     return True
 
 
-def get_monitor_data(nodenet_uid, step=0, from_step=0, count=-1, with_recorders=False):
+def get_monitor_data(nodenet_uid, step=0, from_step=0, count=-1):
     """Returns monitor and nodenet data for drawing monitor plots for the current step,
     if the current step is newer than the supplied calculation step."""
     nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
@@ -101,61 +101,4 @@ def get_monitor_data(nodenet_uid, step=0, from_step=0, count=-1, with_recorders=
                     i += 1
                 monitor_data[uid]['values'] = values
         data['monitors'] = monitor_data
-        if with_recorders:
-            data['recorders'] = nodenet.construct_recorders_dict()
         return data
-
-
-def add_gate_activation_recorder(nodenet_uid, group_definition, name, interval=1):
-    """ Adds an activation recorder to a group of nodes."""
-    nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
-    rec = nodenet.add_gate_activation_recorder(group_definition, name, interval)
-    return True, rec.uid
-
-
-def add_node_activation_recorder(nodenet_uid, group_definition, name, interval=1):
-    """ Adds an activation recorder to a group of nodes."""
-    nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
-    rec = nodenet.add_node_activation_recorder(group_definition, name, interval)
-    return True, rec.uid
-
-
-def add_linkweight_recorder(nodenet_uid, from_group_definition, to_group_definition, name, interval=1):
-    """ Adds a linkweight recorder to links between to groups."""
-    nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
-    rec = nodenet.add_linkweight_recorder(from_group_definition, to_group_definition, name, interval)
-    return True, rec.uid
-
-
-def remove_recorder(nodenet_uid, recorder_uid):
-    """Deletes a recorder."""
-    micropsi_core.runtime.get_nodenet(nodenet_uid).remove_recorder(recorder_uid)
-    return True
-
-
-def clear_recorder(nodenet_uid, recorder_uid):
-    """Leaves the recorder intact, but deletes the current list of stored values."""
-    micropsi_core.runtime.get_nodenet(nodenet_uid).get_recorder(recorder_uid).clear()
-    return True
-
-
-def get_recorder_data(nodenet_uid):
-    return True, micropsi_core.runtime.get_nodenet(nodenet_uid).construct_recorders_dict()
-
-
-def get_recorder(nodenet_uid, recorder_uid):
-    return micropsi_core.runtime.get_nodenet(nodenet_uid).get_recorder(recorder_uid)
-
-
-def export_recorders(nodenet_uid, recorder_uids):
-    """ Returns a bytestream containing an npz export for the given recorders"""
-    import numpy as np
-    from io import BytesIO
-    nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
-    data = {}
-    stream = BytesIO()
-    for uid in recorder_uids:
-        recorder = nodenet.get_recorder(uid)
-        data.update(recorder.export_data())
-    np.savez(stream, **data)
-    return stream.getvalue()

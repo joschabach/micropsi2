@@ -598,7 +598,6 @@ def unload_nodenet(nodenet_uid):
         del netapi_consoles[nodenet_uid]
     stop_nodenetrunner(nodenet_uid)
     nodenet = nodenets[nodenet_uid]
-    nodenet.close_figures()
     if nodenet.world:
         worlds[nodenet.world].unregister_nodenet(nodenet.uid)
     del nodenets[nodenet_uid]
@@ -2104,10 +2103,6 @@ def initialize(config=None):
     load_definitions()
     for e in errors:
         logging.getLogger("system").error(e)
-
-    # shut tornado up
-    for key in ["tornado.application", "tornado.access", "tornado", "tornado.general"]:
-        logging.getLogger(key).setLevel(logging.ERROR)
 
     # initialize runners
     # Initialize the threads for the continuous calculation of nodenets and worlds

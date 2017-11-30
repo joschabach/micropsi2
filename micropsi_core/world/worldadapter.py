@@ -56,10 +56,10 @@ class WorldAdapterMixin(object):
         pass  # pragma: no cover
 
     def write_to_world(self):
-        pass  # pragma: no cover
+        super().write_to_world()
 
     def read_from_world(self):
-        pass  # pragma: no cover
+        super().read_from_world()
 
     def on_start(self):
         pass  # pragma: no cover

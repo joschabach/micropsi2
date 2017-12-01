@@ -63,8 +63,12 @@ def add_device(device_type, config, dev_uid=None):
         else:
             uid = dev_uid
         devices[uid] = dev
+        data = read_persistence(device_json_path)
         with open(device_json_path, 'w', encoding='utf-8') as devices_json:
-            devices_json.write(json.dumps(get_devices()))
+            if data is None:
+                devices_json.write(json.dumps(get_devices()))
+            else:
+                devices_json.write(json.dumps({**data, **get_devices()}))
         return True, uid
     return False, "Unknown device type"
 
@@ -72,25 +76,51 @@ def add_device(device_type, config, dev_uid=None):
 def remove_device(device_uid):
     if device_uid in devices:
         del devices[device_uid]
+        data = read_persistence(device_json_path)
         with open(device_json_path, 'w', encoding='utf-8') as devices_json:
-            devices_json.write(json.dumps(get_devices()))
+            if data is None:
+                devices_json.write(json.dumps(get_devices()))
+            else:
+                tmp = {**data, **get_devices()}
+                if device_uid in tmp:
+                    del tmp[device_uid]
+                devices_json.write(json.dumps(tmp))
         return True
     return False
+
+
+def read_persistence(json_path):
+    try:
+        devices_json = open(json_path)
+    except FileNotFoundError:
+        logging.getLogger('system').info("Device persistency file not found: %s" % json_path)
+        return None
+    try:
+            data = json.load(devices_json)
+    except ValueError:
+        logging.getLogger('system').error("Malforfmed JSON file: %s" % json_path)
+        return None
+    return data
 
 
 def reload_devices(json_path):
     global device_json_path, devices
     device_json_path = json_path
+
+    for d in list(devices.keys()):
+        devices[d].deinit()
+        del devices[d]
+
     devices = {}
-    try:
-        with open(json_path) as devices_json:
-            data = json.load(devices_json)
-            for k in data:
-                if data[k]['type'] not in device_types:
-                    logging.getLogger('system').warning("Device type %s not found!" % data[k]['type'])
-                    continue
-                devices[k] = device_types[data[k]['type']](data[k]['config'])
-    except FileNotFoundError:
-        logging.getLogger('system').info("Device persistency file not found: %s" % json_path)
-    except ValueError:
-        raise ValueError("Malforfmed JSON file: %s" % json_path)
+    data = read_persistence(json_path)
+    if data is None:
+        return
+
+    for k in data:
+        if data[k]['type'] not in device_types:
+            logging.getLogger('system').warning("Device type %s not found!" % data[k]['type'])
+            continue
+        try:
+            devices[k] = device_types[data[k]['type']](data[k]['config'])
+        except Exception as e:
+            logging.getLogger('system').error("Error when loading device %s with uid %s: %s" % (data[k]['type'], k, e))

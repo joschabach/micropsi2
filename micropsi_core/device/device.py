@@ -52,6 +52,13 @@ class Device(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
+    def deinit(self):
+        """
+        Should be implemented in case the device requires specific
+        deinitialization sequence
+        """
+        pass  # pragma: no cover
+
 
 class InputDevice(Device):
     def __init__(self, config):

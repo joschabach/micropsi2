@@ -2,7 +2,7 @@
 import pytest
 
 
-def create_dummy_device(resourcepath, name="dummy", retval="[1,2,3,4,5]"):
+def create_dummy_device(resourcepath, name="dummy", retval="[1,2,3,4,5]", connected="True"):
     dummy_device = """
 from micropsi_core.device.device import InputDevice
 
@@ -19,6 +19,9 @@ class %sDevice(InputDevice):
 
     def __init__(self, config):
         super().__init__(config)
+        connected = %s
+        if not connected:
+            raise RuntimeError("Failed to connect")
         self.init_foobar = config['foobar']
 
     def read_data(self):
@@ -30,7 +33,7 @@ class %sDevice(InputDevice):
 
     def get_prefix(self):
         return "%s"
-""" % (name.capitalize(), retval, name)
+""" % (name.capitalize(), connected, retval, name)
 
     import os
     os.makedirs(os.path.join(resourcepath, 'devices', name), exist_ok=True)
@@ -129,3 +132,38 @@ def test_changing_device_config(runtime, test_nodenet, resourcepath, default_wor
     runtime.set_nodenet_properties(test_nodenet, world_uid=default_world, worldadapter="ArrayWorldAdapter", device_map={uid: 'anotherDummy'})
     assert {'anotherDummy'} == set(runtime.get_nodenet(test_nodenet).worldadapter_instance.get_available_flow_datasources())
     assert netapi.get_nodes()[0].outputs == ['anotherDummy']
+
+
+@pytest.mark.engine("theano_engine")
+@pytest.mark.engine("numpy_engine")
+def test_unconnected_or_removed_devices(runtime, test_nodenet, resourcepath, default_world):
+    import os
+    import shutil
+    import numpy as np
+    create_dummy_device(resourcepath)
+    res, errors = runtime.reload_code()
+
+    _, uid = runtime.add_device('DummyDevice', {'name': 'foo'})
+    nodenet = runtime.nodenets[test_nodenet]
+
+    runtime.set_nodenet_properties(test_nodenet, world_uid=default_world, worldadapter="ArrayWorldAdapter", device_map={uid: 'dummy'})
+    assert {'dummy'} == set(runtime.get_nodenet(test_nodenet).worldadapter_instance.get_available_flow_datasources())
+    runtime.save_nodenet(test_nodenet)
+    runtime.unload_nodenet(test_nodenet)
+
+    # mock disconnected device by
+    create_dummy_device(resourcepath, connected='False')
+    res, errors = runtime.reload_code()
+
+    nodenet = runtime.get_nodenet(test_nodenet)
+    assert {'dummy'} == set(nodenet.worldadapter_instance.get_available_flow_datasources())
+    runtime.step_nodenet(test_nodenet)
+    assert np.all(nodenet.worldadapter_instance.get_flow_datasource('dummy') == np.zeros(5))
+    runtime.unload_nodenet(test_nodenet)
+
+    # remove dummy device
+    shutil.rmtree(os.path.join(resourcepath, 'devices'))
+    res, errors = runtime.reload_code()
+
+    nodenet = runtime.get_nodenet(test_nodenet)
+    assert 'dummy' not in nodenet.worldadapter_instance.get_available_flow_datasources()

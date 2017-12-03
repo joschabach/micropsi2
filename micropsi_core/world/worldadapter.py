@@ -254,17 +254,16 @@ try:
             self.datatarget_values = np.zeros(0, dtype=self.floatX)
             self.datatarget_feedback_values = np.zeros(0, dtype=self.floatX)
             if data.get('device_map'):
-                self.device_map = data['device_map']
-
-            for k in self.device_map:
-                if k not in devicemanager.devices:
-                    raise KeyError("Device not connected: %s" % self.device_map[k])
-                if issubclass(devicemanager.devices[k].__class__, InputDevice):
-                    self.add_flow_datasource(self.device_map[k],
-                                             devicemanager.devices[k].get_data_size())
-                elif issubclass(devicemanager.devices[k].__class__, OutputDevice):
-                    self.add_flow_datatarget(self.device_map[k],
-                                             devicemanager.devices[k].get_data_size())
+                for k in data['device_map']:
+                    if k not in devicemanager.get_known_devices():
+                        self.logger.error("Device %s (uid: %s) not found, not adding datasource or datatarget" % (data['device_map'][k], k))
+                    else:
+                        self.device_map[k] = data['device_map'][k]
+                        device_data = devicemanager.get_known_devices()[k]
+                        if device_data['nature'] == InputDevice.__name__:
+                            self.add_flow_datasource(self.device_map[k], device_data['data_size'])
+                        elif device_data['nature'] == OutputDevice.__name__:
+                            self.add_flow_datatarget(self.device_map[k], device_data['data_size'])
 
         def add_datasource(self, name, initial_value=0.):
             """ Adds a datasource, and returns the index
@@ -428,20 +427,23 @@ try:
 
         def read_from_world(self):
             for k in self.device_map:
-                if k not in devicemanager.devices:
-                    raise KeyError("Device not connected: %s" % k)
-                if issubclass(devicemanager.devices[k].__class__, InputDevice):
-                    data = devicemanager.devices[k].read_data()
+                if k in devicemanager.online_devices and issubclass(devicemanager.online_devices[k].__class__, InputDevice):
+                    data = devicemanager.online_devices[k].read_data()
                     assert isinstance(data, np.ndarray), "device %s must provide numpy array" % self.device_map[k]
                     self.set_flow_datasource(self.device_map[k], data.astype(self.floatX))
+                else:
+                    self.logger.error("Device %s is not connected. Using zeros." % self.device_map[k])
+                    data_size = devicemanager.get_known_devices()[k]['data_size']
+                    self.set_flow_datasource(self.device_map[k], np.zeros(data_size, dtype=self.floatX))
 
         def write_to_world(self):
             for k in self.device_map:
-                if k not in devicemanager.devices:
-                    raise KeyError("Device not connected: %s" % k)
-                if issubclass(devicemanager.devices[k].__class__, OutputDevice):
-                    data = self.get_flow_datatarget(self.device_map[k])
-                    devicemanager.devices[k].write_data(data)
+                if k in devicemanager.online_devices:
+                    if issubclass(devicemanager.online_devices[k].__class__, OutputDevice):
+                        data = self.get_flow_datatarget(self.device_map[k])
+                        devicemanager.devices[k].write_data(data)
+                elif k in devicemanager.known_devices:
+                    self.logger.error("Device %s is not connected." % self.device_map[k])
 
         def update_data_sources_and_targets(self):
             self.write_to_world()

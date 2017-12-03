@@ -12,18 +12,19 @@ import shutil
 
 ignore_list = ['__init__.py']
 device_types = {}
-devices = {}
+online_devices = {}  # holds instances of active devices
+known_devices = {}  # holds config-dicts of all devices
 device_json_path = None
 
 
 def reload_device_types(path):
     global ignore_list, device_types
-    if not os.path.isdir(path):
-        return []
-    if path not in sys.path:
-        sys.path.append(path)
     device_types = {}
     errors = []
+    if not os.path.isdir(path):
+        return errors
+    if path not in sys.path:
+        sys.path.append(path)
     for subdir in os.scandir(path):
         if subdir.is_dir() and subdir.name not in ignore_list:
             # first, remove pycache folders
@@ -51,8 +52,14 @@ def reload_device_types(path):
     return errors
 
 
-def get_devices():
-    return dict((k, devices[k].get_config()) for k in devices)
+def get_known_devices():
+    """ Returns a dict of all known devices"""
+    return known_devices
+
+
+def get_online_devices():
+    """ Returns a dict of online device instances"""
+    return dict((k, online_devices[k].get_config()) for k in online_devices)
 
 
 def add_device(device_type, config, dev_uid=None):
@@ -62,26 +69,29 @@ def add_device(device_type, config, dev_uid=None):
             uid = generate_uid()
         else:
             uid = dev_uid
-        devices[uid] = dev
+        known_devices[uid] = dev.get_config()
+        online_devices[uid] = dev
         data = read_persistence(device_json_path)
         with open(device_json_path, 'w', encoding='utf-8') as devices_json:
             if data is None:
-                devices_json.write(json.dumps(get_devices()))
+                devices_json.write(json.dumps(get_known_devices()))
             else:
-                devices_json.write(json.dumps({**data, **get_devices()}))
+                devices_json.write(json.dumps({**data, **get_known_devices()}))
         return True, uid
     return False, "Unknown device type"
 
 
 def remove_device(device_uid):
-    if device_uid in devices:
-        del devices[device_uid]
+    if device_uid in known_devices:
+        del known_devices[device_uid]
+        if device_uid in online_devices:
+            del online_devices[device_uid]
         data = read_persistence(device_json_path)
         with open(device_json_path, 'w', encoding='utf-8') as devices_json:
             if data is None:
-                devices_json.write(json.dumps(get_devices()))
+                devices_json.write(json.dumps(get_known_devices()))
             else:
-                tmp = {**data, **get_devices()}
+                tmp = {**data, **get_known_devices()}
                 if device_uid in tmp:
                     del tmp[device_uid]
                 devices_json.write(json.dumps(tmp))
@@ -104,23 +114,25 @@ def read_persistence(json_path):
 
 
 def reload_devices(json_path):
-    global device_json_path, devices
+    global device_json_path, known_devices, online_devices
     device_json_path = json_path
 
-    for d in list(devices.keys()):
-        devices[d].deinit()
-        del devices[d]
+    for d in list(online_devices.keys()):
+        online_devices[d].deinit()
+        del online_devices[d]
 
-    devices = {}
+    known_devices = {}
+    online_devices = {}
     data = read_persistence(json_path)
     if data is None:
         return
-
+    known_devices = data.copy()
     for k in data:
         if data[k]['type'] not in device_types:
+            del known_devices[k]
             logging.getLogger('system').warning("Device type %s not found!" % data[k]['type'])
             continue
         try:
-            devices[k] = device_types[data[k]['type']](data[k]['config'])
+            online_devices[k] = device_types[data[k]['type']](data[k]['config'])
         except Exception as e:
             logging.getLogger('system').error("Error when loading device %s with uid %s: %s" % (data[k]['type'], k, e))

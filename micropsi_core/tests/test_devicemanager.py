@@ -42,6 +42,7 @@ class %sDevice(InputDevice):
 @pytest.mark.engine("theano_engine")
 @pytest.mark.engine("numpy_engine")
 def test_devicemanager(runtime, test_nodenet, resourcepath):
+    from micropsi_core.device import devicemanager
     create_dummy_device(resourcepath)
 
     res, errors = runtime.reload_code()
@@ -49,18 +50,32 @@ def test_devicemanager(runtime, test_nodenet, resourcepath):
     assert 'DummyDevice' in runtime.get_device_types()
 
     _, uid = runtime.add_device('DummyDevice', {'name': 'foo'})
-    assert uid in runtime.get_devices()
-    assert runtime.get_devices()[uid]['config']['name'] == 'foo'
-    assert runtime.get_devices()[uid]['config']['foobar'] == 42
-    assert runtime.devicemanager.devices[uid].init_foobar == 42
+    online_devices = runtime.get_devices()
+    assert uid in online_devices
+    assert online_devices[uid]['config']['name'] == 'foo'
+    assert online_devices[uid]['config']['foobar'] == 42
+    assert online_devices[uid]['type'] == 'DummyDevice'
+    assert online_devices[uid]['nature'] == 'InputDevice'
+    known_devices = devicemanager.get_known_devices()
+    assert uid in known_devices
+    assert known_devices[uid]['config']['name'] == 'foo'
+    assert known_devices[uid]['config']['foobar'] == 42
+    assert online_devices[uid]['type'] == 'DummyDevice'
+    assert online_devices[uid]['nature'] == 'InputDevice'
+    assert runtime.devicemanager.online_devices[uid].init_foobar == 42
 
     runtime.set_device_properties(uid, {'name': 'bar', 'foobar': 23})
-    assert runtime.get_devices()[uid]['config']['name'] == 'bar'
-    assert runtime.get_devices()[uid]['config']['foobar'] == 23
-    assert runtime.devicemanager.devices[uid].init_foobar == 23
+    online_devices = runtime.get_devices()
+    assert online_devices[uid]['config']['name'] == 'bar'
+    assert online_devices[uid]['config']['foobar'] == 23
+    known_devices = devicemanager.get_known_devices()
+    assert known_devices[uid]['config']['name'] == 'bar'
+    assert known_devices[uid]['config']['foobar'] == 23
+    assert runtime.devicemanager.online_devices[uid].init_foobar == 23
 
     runtime.remove_device(uid)
     assert uid not in runtime.get_devices()
+    assert uid not in devicemanager.get_known_devices()
 
 
 @pytest.mark.engine("theano_engine")

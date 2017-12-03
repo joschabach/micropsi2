@@ -19,9 +19,16 @@ class Device(metaclass=ABCMeta):
         info = dict()
         for item in self.__class__.get_options():
             config[item['name']] = getattr(self, item['name'])
+        if InputDevice in self.__class__.mro():
+            info['nature'] = "InputDevice"
+        elif OutputDevice in self.__class__.mro():
+            info['nature'] = "OutputDevice"
+        else:
+            raise TypeError("Devices must inherit from either InputDevice or OutputDevice")
         info['type'] = self.__class__.__name__
         info['config'] = config
         info['prefix'] = self.get_prefix()
+        info['data_size'] = self.get_data_size()
         return info
 
     @classmethod

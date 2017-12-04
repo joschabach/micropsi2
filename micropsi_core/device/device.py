@@ -19,9 +19,9 @@ class Device(metaclass=ABCMeta):
         info = dict()
         for item in self.__class__.get_options():
             config[item['name']] = getattr(self, item['name'])
-        if InputDevice in self.__class__.mro():
+        if isinstance(self, InputDevice):
             info['nature'] = "InputDevice"
-        elif OutputDevice in self.__class__.mro():
+        elif isinstance(self, OutputDevice):
             info['nature'] = "OutputDevice"
         else:
             raise TypeError("Devices must inherit from either InputDevice or OutputDevice")

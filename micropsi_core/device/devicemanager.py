@@ -36,7 +36,7 @@ def reload_device_types(path):
                 if sources.is_file() and sources.name not in ignore_list and sources.name.endswith('.py'):
                     try:
                         modpath = os.path.join(path, subdir.name, sources.name)
-                        modname = 'devices.' + subdir.name + '.' + sources.name.strip('.py')
+                        modname = 'devices.' + subdir.name + '.' + sources.name[:-3]  # remove ".py" from name
                         spec = importlib.util.spec_from_file_location(modname, modpath)
                         module = importlib.util.module_from_spec(spec)
                         spec.loader.exec_module(module)

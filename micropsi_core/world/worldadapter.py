@@ -259,11 +259,16 @@ try:
                         self.logger.error("Device %s (uid: %s) not found, not adding datasource or datatarget" % (data['device_map'][k], k))
                     else:
                         self.device_map[k] = data['device_map'][k]
-                        device_data = devicemanager.get_known_devices()[k]
-                        if device_data['nature'] == InputDevice.__name__:
+                        if k in devicemanager.online_devices:
+                            device_data = devicemanager.online_devices[k].get_config()
+                        else:
+                            device_data = devicemanager.known_devices[k]
+                        if device_data.get('nature') == InputDevice.__name__:
                             self.add_flow_datasource(self.device_map[k], device_data['data_size'])
-                        elif device_data['nature'] == OutputDevice.__name__:
+                        elif device_data.get('nature') == OutputDevice.__name__:
                             self.add_flow_datatarget(self.device_map[k], device_data['data_size'])
+                        else:
+                            self.logger.error("Device %s (uid: %s) not found, not adding datasource or datatarget" % (data['device_map'][k], k))
 
         def add_datasource(self, name, initial_value=0.):
             """ Adds a datasource, and returns the index

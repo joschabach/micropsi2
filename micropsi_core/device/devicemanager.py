@@ -12,18 +12,19 @@ import shutil
 
 ignore_list = ['__init__.py']
 device_types = {}
-devices = {}
+online_devices = {}  # holds instances of active devices
+known_devices = {}  # holds config-dicts of all devices
 device_json_path = None
 
 
 def reload_device_types(path):
     global ignore_list, device_types
-    if not os.path.isdir(path):
-        return []
-    if path not in sys.path:
-        sys.path.append(path)
     device_types = {}
     errors = []
+    if not os.path.isdir(path):
+        return errors
+    if path not in sys.path:
+        sys.path.append(path)
     for subdir in os.scandir(path):
         if subdir.is_dir() and subdir.name not in ignore_list:
             # first, remove pycache folders
@@ -51,8 +52,14 @@ def reload_device_types(path):
     return errors
 
 
-def get_devices():
-    return dict((k, devices[k].get_config()) for k in devices)
+def get_known_devices():
+    """ Returns a dict of all known devices"""
+    return known_devices
+
+
+def get_online_devices():
+    """ Returns a dict of online device instances"""
+    return dict((k, online_devices[k].get_config()) for k in online_devices)
 
 
 def add_device(device_type, config, dev_uid=None):
@@ -62,35 +69,59 @@ def add_device(device_type, config, dev_uid=None):
             uid = generate_uid()
         else:
             uid = dev_uid
-        devices[uid] = dev
+        known_devices[uid] = dev.get_config()
+        online_devices[uid] = dev
         with open(device_json_path, 'w', encoding='utf-8') as devices_json:
-            devices_json.write(json.dumps(get_devices()))
+            devices_json.write(json.dumps(get_known_devices()))
         return True, uid
     return False, "Unknown device type"
 
 
 def remove_device(device_uid):
-    if device_uid in devices:
-        del devices[device_uid]
+    if device_uid in known_devices:
+        del known_devices[device_uid]
+        if device_uid in online_devices:
+            del online_devices[device_uid]
         with open(device_json_path, 'w', encoding='utf-8') as devices_json:
-            devices_json.write(json.dumps(get_devices()))
+            devices_json.write(json.dumps(get_known_devices()))
         return True
     return False
 
 
-def reload_devices(json_path):
-    global device_json_path, devices
-    device_json_path = json_path
-    devices = {}
+def read_persistence(json_path):
     try:
-        with open(json_path) as devices_json:
-            data = json.load(devices_json)
-            for k in data:
-                if data[k]['type'] not in device_types:
-                    logging.getLogger('system').warning("Device type %s not found!" % data[k]['type'])
-                    continue
-                devices[k] = device_types[data[k]['type']](data[k]['config'])
+        devices_json = open(json_path)
     except FileNotFoundError:
         logging.getLogger('system').info("Device persistency file not found: %s" % json_path)
+        return None
+    try:
+            data = json.load(devices_json)
     except ValueError:
-        raise ValueError("Malforfmed JSON file: %s" % json_path)
+        logging.getLogger('system').error("Malforfmed JSON file: %s" % json_path)
+        return None
+    return data
+
+
+def reload_devices(json_path):
+    global device_json_path, known_devices, online_devices
+    device_json_path = json_path
+
+    for d in list(online_devices.keys()):
+        online_devices[d].deinit()
+        del online_devices[d]
+
+    known_devices = {}
+    online_devices = {}
+    data = read_persistence(json_path)
+    if data is None:
+        return
+    known_devices = data.copy()
+    for k in data:
+        if data[k]['type'] not in device_types:
+            del known_devices[k]
+            logging.getLogger('system').warning("Device type %s not found!" % data[k]['type'])
+            continue
+        try:
+            online_devices[k] = device_types[data[k]['type']](data[k]['config'])
+        except Exception as e:
+            logging.getLogger('system').error("Error when loading device %s with uid %s: %s" % (data[k]['type'], k, e))

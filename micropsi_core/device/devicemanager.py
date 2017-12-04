@@ -71,12 +71,8 @@ def add_device(device_type, config, dev_uid=None):
             uid = dev_uid
         known_devices[uid] = dev.get_config()
         online_devices[uid] = dev
-        data = read_persistence(device_json_path)
         with open(device_json_path, 'w', encoding='utf-8') as devices_json:
-            if data is None:
-                devices_json.write(json.dumps(get_known_devices()))
-            else:
-                devices_json.write(json.dumps({**data, **get_known_devices()}))
+            devices_json.write(json.dumps(get_known_devices()))
         return True, uid
     return False, "Unknown device type"
 
@@ -86,15 +82,8 @@ def remove_device(device_uid):
         del known_devices[device_uid]
         if device_uid in online_devices:
             del online_devices[device_uid]
-        data = read_persistence(device_json_path)
         with open(device_json_path, 'w', encoding='utf-8') as devices_json:
-            if data is None:
-                devices_json.write(json.dumps(get_known_devices()))
-            else:
-                tmp = {**data, **get_known_devices()}
-                if device_uid in tmp:
-                    del tmp[device_uid]
-                devices_json.write(json.dumps(tmp))
+            devices_json.write(json.dumps(get_known_devices()))
         return True
     return False
 

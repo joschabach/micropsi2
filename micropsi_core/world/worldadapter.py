@@ -437,7 +437,7 @@ try:
                         data = devicemanager.online_devices[k].read_data()
                         assert isinstance(data, np.ndarray), "device %s must provide numpy array" % self.device_map[k]
                         self.set_flow_datasource(self.device_map[k], data.astype(self.floatX))
-                else:
+                elif devicemanager.known_devices[k].get('nature') == "InputDevice":
                     self.logger.error("Device %s is not connected. Using zeros." % self.device_map[k])
 
         def write_to_world(self):
@@ -446,7 +446,7 @@ try:
                     if issubclass(devicemanager.online_devices[k].__class__, OutputDevice):
                         data = self.get_flow_datatarget(self.device_map[k])
                         devicemanager.online_devices[k].write_data(data)
-                elif k in devicemanager.known_devices:
+                elif devicemanager.known_devices[k].get('nature') == "OutputDevice":
                     self.logger.error("Device %s is not connected." % self.device_map[k])
 
         def update_data_sources_and_targets(self):

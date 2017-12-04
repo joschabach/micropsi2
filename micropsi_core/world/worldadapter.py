@@ -445,7 +445,7 @@ try:
                 if k in devicemanager.online_devices:
                     if issubclass(devicemanager.online_devices[k].__class__, OutputDevice):
                         data = self.get_flow_datatarget(self.device_map[k])
-                        devicemanager.devices[k].write_data(data)
+                        devicemanager.online_devices[k].write_data(data)
                 elif k in devicemanager.known_devices:
                     self.logger.error("Device %s is not connected." % self.device_map[k])
 

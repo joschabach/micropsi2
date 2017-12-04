@@ -90,12 +90,11 @@ def remove_device(device_uid):
 
 def read_persistence(json_path):
     try:
-        devices_json = open(json_path)
+        with open(json_path) as fp:
+            data = json.load(fp)
     except FileNotFoundError:
         logging.getLogger('system').info("Device persistency file not found: %s" % json_path)
         return None
-    try:
-            data = json.load(devices_json)
     except ValueError:
         logging.getLogger('system').error("Malforfmed JSON file: %s" % json_path)
         return None

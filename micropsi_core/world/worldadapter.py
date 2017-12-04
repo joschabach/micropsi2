@@ -427,14 +427,13 @@ try:
 
         def read_from_world(self):
             for k in self.device_map:
-                if k in devicemanager.online_devices and issubclass(devicemanager.online_devices[k].__class__, InputDevice):
-                    data = devicemanager.online_devices[k].read_data()
-                    assert isinstance(data, np.ndarray), "device %s must provide numpy array" % self.device_map[k]
-                    self.set_flow_datasource(self.device_map[k], data.astype(self.floatX))
+                if k in devicemanager.online_devices:
+                    if issubclass(devicemanager.online_devices[k].__class__, InputDevice):
+                        data = devicemanager.online_devices[k].read_data()
+                        assert isinstance(data, np.ndarray), "device %s must provide numpy array" % self.device_map[k]
+                        self.set_flow_datasource(self.device_map[k], data.astype(self.floatX))
                 else:
                     self.logger.error("Device %s is not connected. Using zeros." % self.device_map[k])
-                    data_size = devicemanager.get_known_devices()[k]['data_size']
-                    self.set_flow_datasource(self.device_map[k], np.zeros(data_size, dtype=self.floatX))
 
         def write_to_world(self):
             for k in self.device_map:

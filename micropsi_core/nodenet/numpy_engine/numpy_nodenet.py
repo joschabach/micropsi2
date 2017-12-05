@@ -81,6 +81,8 @@ class NumpyNodenet(FlowEngine, DictNodenet):
             return super().create_node(nodetype, nodespace_uid, position, name, uid, parameters, gate_configuration)
 
     def update_flow_graphs(self, node_uids=None):
+        if self.is_flowbuilder_active:
+            return
         self.flow_toposort = nx.topological_sort(self.flowgraph)
         self.flow_graphs = []
         endpoints = []

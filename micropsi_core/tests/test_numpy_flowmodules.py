@@ -251,26 +251,27 @@ def test_multiple_flowgraphs(runtime, test_nodenet, resourcepath):
     """ Testing a flow from datasources to datatargets """
     nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, resourcepath)
 
-    double = netapi.create_node("Double", None, "Double")
-    add = netapi.create_node("Add", None, "Add")
-    bisect = netapi.create_node("Bisect", None, "Bisect")
+    with netapi.flowbuilder:
+        double = netapi.create_node("Double", None, "Double")
+        add = netapi.create_node("Add", None, "Add")
+        bisect = netapi.create_node("Bisect", None, "Bisect")
 
-    # create a first graph
-    # link datasources to double & add
-    nodenet.flow('worldadapter', 'foo', double.uid, "inputs")
-    nodenet.flow('worldadapter', 'foo', add.uid, "input2")
-    # link double to add:
-    nodenet.flow(double.uid, "outputs", add.uid, "input1")
+        # create a first graph
+        # link datasources to double & add
+        nodenet.flow('worldadapter', 'foo', double.uid, "inputs")
+        nodenet.flow('worldadapter', 'foo', add.uid, "input2")
+        # link double to add:
+        nodenet.flow(double.uid, "outputs", add.uid, "input1")
 
-    # link add to datatargets
-    nodenet.flow(add.uid, "outputs", 'worldadapter', 'bar')
+        # link add to datatargets
+        nodenet.flow(add.uid, "outputs", 'worldadapter', 'bar')
 
-    # assert len(nodenet.flowfunctions) == 0
+        # create a second graph
+        nodenet.flow('worldadapter', 'foo', bisect.uid, "inputs")
+        nodenet.flow(bisect.uid, "outputs", 'worldadapter', 'bar')
 
-    # create a second graph
-    nodenet.flow('worldadapter', 'foo', bisect.uid, "inputs")
-    nodenet.flow(bisect.uid, "outputs", 'worldadapter', 'bar')
-
+        assert not hasattr(double, 'initfunction_ran')
+    assert double.initfunction_ran
     # assert len(nodenet.flowfunctions) == 0
 
     sources = np.zeros((5), dtype=nodenet.numpyfloatX)

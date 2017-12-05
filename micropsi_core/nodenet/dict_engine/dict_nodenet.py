@@ -141,8 +141,13 @@ class DictNodenet(Nodenet):
         try:
             import numpy
             self.numpy_available = True
-            self.numpyfloatX = numpy.float32
-            self.floatX = 'float32'
+            from micropsi_core.runtime import runtime_config
+            if runtime_config['theano']['precision'] == "32":
+                self.floatX = "float32"
+                self.numpyfloatX = numpy.float32
+            elif runtime_config['theano']['precision'] == "64":
+                self.numpyfloatX = numpy.float64
+                self.floatX = 'float64'
         except ImportError:
             self.numpy_available = False
 

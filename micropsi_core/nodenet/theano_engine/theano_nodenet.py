@@ -136,12 +136,7 @@ class TheanoNodenetCore(Nodenet):
         for type, data in STANDARD_NODETYPES.items():
             self.nodetypes[type] = Nodetype(nodenet=self, **data)
 
-        if T.config.floatX == "float64":
-            self.scipyfloatX = scipy.float64
-            self.numpyfloatX = np.float64
-        elif T.config.floatX == "float32":
-            self.scipyfloatX = scipy.float32
-            self.numpyfloatX = np.float32
+        self.numpyfloatX = getattr(np, T.config.floatX)
 
         self.byte_per_float = 8
 

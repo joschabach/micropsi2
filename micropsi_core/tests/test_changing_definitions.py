@@ -71,9 +71,9 @@ class SimpleArrayWA(ArrayWorldAdapter):
 
     def update_data_sources_and_targets(self):
         for key in self.flow_datatargets:
-            self.flow_datatarget_feedbacks[key] = np.copy(self.flow_datatargets[key]).astype(self.floatX)
+            self.flow_datatarget_feedbacks[key] = np.copy(self.flow_datatargets[key])
         for key in self.flow_datasources:
-            self.flow_datasources[key] = np.random.rand(len(self.flow_datasources[key])).astype(self.floatX)
+            self.flow_datasources[key] = np.random.rand(len(self.flow_datasources[key]))
 """)
     write_flowmodule('foonode.py', 'foonode')
     write_flowmodule('foo2node.py', 'foo2node')

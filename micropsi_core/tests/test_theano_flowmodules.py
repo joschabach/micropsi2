@@ -30,7 +30,7 @@ def prepare(runtime, test_nodenet, default_world, resourcepath, wa_class=None):
 def out12345(netapi, node, parameters):
     import numpy as np
     assert parameters['default_test'] == 'defaultvalue'
-    return np.asarray([1,2,3,4,5]).astype(netapi.floatX)
+    return np.asarray([1,2,3,4,5])
 """)
 
     with open(os.path.join(foodir, "Double.py"), 'w') as fp:
@@ -124,8 +124,8 @@ import theano
 
 def thetas_init(netapi, node, parameters):
     import numpy as np
-    w_array = np.random.rand(parameters['weights_shape']).astype(netapi.floatX)
-    b_array = np.random.rand(parameters['weights_shape']).astype(netapi.floatX)
+    w_array = np.random.rand(parameters['weights_shape'])
+    b_array = np.random.rand(parameters['weights_shape'])
 
     node.set_theta('weights', w_array)
     node.set_theta('bias', theano.shared(b_array))
@@ -220,7 +220,7 @@ def trpoinpython(X, Y, netapi, node, parameters):
 import numpy as np
 
 def infmaker(netapi, node, parameters):
-    data = np.ones(12).astype(netapi.floatX)
+    data = np.ones(12)
     what = np.nan
     if parameters['what'] == 'inf':
         what = np.inf
@@ -258,9 +258,9 @@ class SimpleArrayWA(ArrayWorldAdapter):
 
     def update_data_sources_and_targets(self):
         for key in self.flow_datatargets:
-            self.flow_datatarget_feedbacks[key] = np.copy(self.flow_datatargets[key]).astype(self.floatX)
+            self.flow_datatarget_feedbacks[key] = np.copy(self.flow_datatargets[key])
         for key in self.flow_datasources:
-            self.flow_datasources[key] = np.random.rand(len(self.flow_datasources[key])).astype(self.floatX)
+            self.flow_datasources[key] = np.random.rand(len(self.flow_datasources[key]))
 """)
 
     nodenet = runtime.nodenets[test_nodenet]
@@ -509,12 +509,12 @@ def test_flowmodule_persistency(runtime, test_nodenet, default_world, resourcepa
     netapi.link(source, 'gen', source, 'gen')
     netapi.link(source, 'gen', thetas, 'sub')
     source.activation = 1
-    custom_theta = np.random.rand(5).astype(netapi.floatX)
+    custom_theta = np.random.rand(5)
     thetas.set_theta("weights", custom_theta)
 
     assert double.initfunction_ran
 
-    sources = np.zeros((5), dtype=netapi.floatX)
+    sources = np.zeros((5))
     sources[:] = np.random.randn(*sources.shape)
     worldadapter.set_flow_datasource('foo', sources)
 
@@ -577,8 +577,8 @@ import theano
 
 def thetas_init(netapi, node, parameters):
     import numpy as np
-    w_array = np.random.rand(parameters['weights_shape']).astype(netapi.floatX)
-    b_array = np.random.rand(parameters['weights_shape']).astype(netapi.floatX)
+    w_array = np.random.rand(parameters['weights_shape'])
+    b_array = np.random.rand(parameters['weights_shape'])
     node.initfunction_ran = 'yep'
     node.set_theta('weights', w_array)
     node.set_theta('bias', theano.shared(b_array))
@@ -615,7 +615,7 @@ def double(inputs, netapi, node, parameters):
     assert weights.shape == node.get_theta('weights').get_value().shape
     assert node.initfunction_ran == 'yep'
     worldadapter = nodenet.worldadapter_instance
-    sources = np.zeros((5), dtype=worldadapter.floatX)
+    sources = np.zeros((5))
     sources[:] = np.random.randn(*sources.shape)
     worldadapter.set_flow_datasource('foo', sources)
     nodenet.step()
@@ -796,9 +796,9 @@ def test_collect_thetas(runtime, test_nodenet, default_world, resourcepath):
 
     func = netapi.get_callable_flowgraph([module], use_different_thetas=True)
 
-    x = np.ones(5).astype(netapi.floatX)
-    weights = np.random.rand(5).astype(netapi.floatX)
-    bias = np.ones(5).astype(netapi.floatX)
+    x = np.ones(5)
+    weights = np.random.rand(5)
+    bias = np.ones(5)
 
     result = func(thetas=[bias, weights], X=x)
 
@@ -822,8 +822,8 @@ def test_flow_edgecase(runtime, test_nodenet, default_world, resourcepath):
 
     function = netapi.get_callable_flowgraph([twoout, double, numpy, add])
 
-    x = np.array([1, 2, 3], dtype=netapi.floatX)
-    result = np.array([5, 8, 11], dtype=netapi.floatX)
+    x = np.array([1, 2, 3])
+    result = np.array([5, 8, 11])
     assert np.all(function(X=x) == result)
 
 
@@ -840,7 +840,7 @@ def test_flow_trpo_modules(runtime, test_nodenet, default_world, resourcepath):
 
     function = netapi.get_callable_flowgraph([trpoin, trpoout])
 
-    x = np.array([1, 2, 3], dtype=netapi.floatX)
+    x = np.array([1, 2, 3])
     result = sum([np.exp(x), x, x * 2, x + 1])
     assert np.all(function(X=x) == result)
 
@@ -913,7 +913,7 @@ def test_shadow_flowgraph(runtime, test_nodenet, default_world, resourcepath):
 
     function = netapi.get_callable_flowgraph([node1, node2])
 
-    x = np.array([1, 2, 3, 4, 5], dtype=netapi.floatX)
+    x = np.array([1, 2, 3, 4, 5])
     result = function(X=x)[0]
 
     copies = netapi.shadow_flowgraph([node1, node2])
@@ -1139,8 +1139,8 @@ def test_flownode_generate_netapi_fragment(runtime, test_nodenet, default_world,
 
     function = pastnetapi.get_callable_flowgraph(netapi.get_nodes())
 
-    x = np.array([1, 2, 3], dtype=netapi.floatX)
-    result = np.array([5, 8, 11], dtype=netapi.floatX)
+    x = np.array([1, 2, 3])
+    result = np.array([5, 8, 11])
     assert np.all(function(X=x) == result)
 
 

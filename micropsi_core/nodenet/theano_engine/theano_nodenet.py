@@ -136,21 +136,14 @@ class TheanoNodenetCore(Nodenet):
         for type, data in STANDARD_NODETYPES.items():
             self.nodetypes[type] = Nodetype(nodenet=self, **data)
 
-        precision = settings['theano']['precision']
-        if precision == "32":
-            T.config.floatX = "float32"
-            self.theanofloatX = "float32"
-            self.scipyfloatX = scipy.float32
-            self.numpyfloatX = np.float32
-            self.byte_per_float = 4
-        elif precision == "64":
-            T.config.floatX = "float64"
-            self.theanofloatX = "float64"
+        if T.config.floatX == "float64":
             self.scipyfloatX = scipy.float64
             self.numpyfloatX = np.float64
-            self.byte_per_float = 8
-        else:
-            raise RuntimeError("Unsupported float precision value")
+        elif T.config.floatX == "float32":
+            self.scipyfloatX = scipy.float32
+            self.numpyfloatX = np.float32
+
+        self.byte_per_float = 8
 
         device = T.config.device
         self.logger.info("Theano configured to use %s", device)

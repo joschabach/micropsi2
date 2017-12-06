@@ -2109,20 +2109,6 @@ def initialize(config=None):
             'world': config['logging']['level_world']
         }, config['logging'].get('logfile'))
 
-    try:
-        import theano
-        precision = config['theano']['precision']
-        if precision == "32":
-            theano.config.floatX = "float32"
-        elif precision == "64":
-            theano.config.floatX = "float64"
-        else:  # pragma: no cover
-            logging.getLogger("system").warning("Unsupported precision value from configuration: %s, falling back to float64", precision)
-            theano.config.floatX = "float64"
-            config['theano']['precision'] = "64"
-    except ImportError:
-        pass
-
     result, errors = reload_code()
     load_definitions()
     for e in errors:

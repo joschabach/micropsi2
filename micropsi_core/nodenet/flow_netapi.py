@@ -9,11 +9,6 @@ class FlowNetAPI(NetAPI):
     """
 
     @property
-    def floatX(self):
-        """ configured numpy float datatype (either numpy.float32 or numpy.float64"""
-        return self._nodenet.numpyfloatX
-
-    @property
     @contextmanager
     def flowbuilder(self):
         """ Contextmanager to prevent the nodenet from compiling flow-graphs.

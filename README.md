@@ -42,4 +42,3 @@ Attribution
  * [bottle](https://github.com/defnull/bottle)
  * [spock](https://github.com/nickelpro/spock)
  * [paperjs](http://github.com/paperjs/paper.js)
- * [theano](https://github.com/Theano/Theano)

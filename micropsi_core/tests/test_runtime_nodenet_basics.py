@@ -599,7 +599,7 @@ def test_runtime_autosave_numpy(runtime, test_nodenet, resourcepath):
 import numpy as np
 
 def source(netapi, node, parameters):
-    return np.random.rand(8).astype(netapi.floatX)
+    return np.random.rand(8)
 """)
     with open(os.path.join(resourcepath, "nodetypes", "Target.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
@@ -669,7 +669,7 @@ def test_runtime_autosave_theano(runtime, test_nodenet, resourcepath):
 
 def source_init(netapi, node, parameters):
     import numpy as np
-    w_array = np.random.rand(8).astype(netapi.floatX)
+    w_array = np.random.rand(8)
     node.set_theta("weights", w_array)
 
 def source(netapi, node, parameters):

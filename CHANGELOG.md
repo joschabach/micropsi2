@@ -1,5 +1,8 @@
+0.14-alpha12 (unreleased)
+==========
 
-0.13-alpha11 (unreleased)
+
+0.13-alpha11 (2017-11-29)
 ==========
  * Support for devices (cameras, etc)
  * Numpy flow-engine

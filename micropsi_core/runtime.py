@@ -94,10 +94,17 @@ class FileCacher():
 class NetapiShell(InteractiveConsole):
     """Wrapper around Python that can filter input/output to the shell"""
     def __init__(self, netapi):
+        try:
+            # theano messes with the formatting of exceptions
+            import theano
+            self.err_line_separator = '\n\n'
+        except ImportError:
+            self.err_line_separator = '\n'
         self.stdout = sys.stdout
         self.stderr = sys.stderr
         self.outcache = FileCacher()
         self.errcache = FileCacher()
+
         InteractiveConsole.__init__(self, locals={'netapi': netapi})
         return
 
@@ -118,7 +125,7 @@ class NetapiShell(InteractiveConsole):
         err = self.errcache.flush()
 
         if err:
-            parts = err.strip().split('\n\n')
+            parts = err.strip().split(self.err_line_separator)
             if parts[0].startswith("Traceback"):
                 cleaned_parts = []
                 begin_exception_message = False
@@ -465,6 +472,7 @@ def load_nodenet(nodenet_uid):
                     from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
                     nodenets[nodenet_uid] = DictNodenet(**params)
                 elif engine == 'theano_engine':
+                    logging.getLogger("system").warning("Attention: The theano engine is deprecated and will be removed in the next release!")
                     from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
                     nodenets[nodenet_uid] = TheanoNodenet(**params)
                 elif engine == 'numpy_engine':
@@ -2084,20 +2092,6 @@ def initialize(config=None):
             'system': config['logging']['level_system'],
             'world': config['logging']['level_world']
         }, config['logging'].get('logfile'))
-
-    try:
-        import theano
-        precision = config['theano']['precision']
-        if precision == "32":
-            theano.config.floatX = "float32"
-        elif precision == "64":
-            theano.config.floatX = "float64"
-        else:  # pragma: no cover
-            logging.getLogger("system").warning("Unsupported precision value from configuration: %s, falling back to float64", precision)
-            theano.config.floatX = "float64"
-            config['theano']['precision'] = "64"
-    except ImportError:
-        pass
 
     result, errors = reload_code()
     load_definitions()

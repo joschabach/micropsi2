@@ -8,8 +8,9 @@ def get_device_types():
 
 
 def get_devices():
-    """ Return a dict with device uids as keys and config dict as value """
-    return devicemanager.get_devices()
+    """ Return a dict of online devices
+    with device uids as keys and config dict as value """
+    return devicemanager.get_online_devices()
 
 
 def add_device(device_type, config):
@@ -24,8 +25,8 @@ def remove_device(device_uid):
 
 def set_device_properties(device_uid, config):
     """ Reconfigure the device specified by the uid """
-    if device_uid in devicemanager.devices:
-        devtype = devicemanager.devices[device_uid].__class__.__name__
+    if device_uid in devicemanager.online_devices:
+        devtype = devicemanager.online_devices[device_uid].__class__.__name__
         devicemanager.remove_device(device_uid)
         devicemanager.add_device(devtype, config, device_uid)
         return True

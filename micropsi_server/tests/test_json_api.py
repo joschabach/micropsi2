@@ -1281,11 +1281,11 @@ def test_set_logging_levels(app):
     assert logging.getLogger('system').getEffectiveLevel() == logging.INFO
 
 
-def test_get_logger_messages(app, test_nodenet):
+def test_get_logger_messages(app, default_nodenet):
     response = app.get_json('/rpc/get_logger_messages(logger=["system"])')
     assert_success(response)
     assert 'servertime' in response.json_body['data']
-    assert response.json_body['data']['logs'] == []
+    assert type(response.json_body['data']['logs']) == list
 
 
 def test_get_nodenet_logger_messages(app, test_nodenet):
@@ -1854,7 +1854,7 @@ def double(inputs, netapi, node, parameters):
     result = app.post_json('/rpc/flow', inward)
     assert_success(result)
 
-    sources = np.array(np.random.randn(2, 3), dtype=nodenet.numpyfloatX)
+    sources = np.array(np.random.randn(2, 3))
     worldadapter.flow_datasources['foo'][:] = sources
 
     runtime.step_nodenet(test_nodenet)

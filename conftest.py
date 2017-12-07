@@ -71,13 +71,6 @@ def pytest_cmdline_main(config):
         config.addinivalue_line('python_functions', '_test*')
         cfg['paths']['agent_directory'] = orig_agent_dir
         micropsi_runtime.initialize(config=cfg)
-        if theano_available and theano.config.floatX != "float32":
-            logging.getLogger("system").warning("""
-#############################################
-#                                           #
-#     WARNING: Running tests on %s!    #
-#                                           #
-#############################################""" % theano.config.floatX)
     elif config.getoption('worlds'):
         config.args = [orig_world_dir]
         config.addinivalue_line('python_functions', 'test_*')
@@ -136,6 +129,7 @@ def pytest_runtest_setup(item):
         else:
             os.remove(path)
 
+    open(os.path.join(testpath, '__init__.py'), 'w').close()
     os.mkdir(os.path.join(testpath, 'worlds'))
     os.mkdir(os.path.join(testpath, 'nodenets'))
     os.mkdir(os.path.join(testpath, 'nodenets', '__autosave__'))

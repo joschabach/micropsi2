@@ -141,8 +141,6 @@ class DictNodenet(Nodenet):
         try:
             import numpy
             self.numpy_available = True
-            self.numpyfloatX = numpy.float32
-            self.floatX = 'float32'
         except ImportError:
             self.numpy_available = False
 

@@ -14,10 +14,7 @@ from theano import tensor as T
 import numpy as np
 import scipy
 
-try:
-    import ipdb as pdb
-except ImportError:
-    import pdb
+import pdb
 
 from micropsi_core.tools import post_mortem
 from micropsi_core.nodenet import monitor
@@ -861,7 +858,6 @@ class TheanoNodenetCore(Nodenet):
         return uid
 
     def delete_node(self, uid):
-        self.close_figures(uid)
         partition = self.get_partition(uid)
         node_id = node_from_id(uid)
 
@@ -1312,7 +1308,6 @@ class TheanoNodenetCore(Nodenet):
                 position = instance.position
                 name = instance.name
                 partition = self.get_partition(uid)
-                self.close_figures(uid)
                 new_instance = TheanoNode(self, partition, instance.parent_nodespace, uid, partition.allocated_nodes[node_from_id(uid)])
 
                 new_native_module_instances[uid] = new_instance

@@ -411,19 +411,6 @@ class Node(metaclass=ABCMeta):
             data[gate_name] = self.get_gate(gate_name).activation
         return data
 
-    def show_plot(self, figure=None):
-        try:
-            from matplotlib import pyplot as plt
-            if figure is None:
-                figure = plt.gca().figure
-            plt.show()
-            self._nodenet.register_figure(self.uid, figure)
-        except ImportError:
-            self.logger.error("Matplotlib is needed for plotting")
-
-    def close_figures(self):
-        self._nodenet.close_figures(node_uid=self.uid)
-
     def __repr__(self):
         return "<%s \"%s\" (%s)>" % (self.nodetype.name, self.name, self.uid)
 

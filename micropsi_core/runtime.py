@@ -606,7 +606,6 @@ def unload_nodenet(nodenet_uid):
         del netapi_consoles[nodenet_uid]
     stop_nodenetrunner(nodenet_uid)
     nodenet = nodenets[nodenet_uid]
-    nodenet.close_figures()
     if nodenet.world:
         worlds[nodenet.world].unregister_nodenet(nodenet.uid)
     del nodenets[nodenet_uid]
@@ -1576,7 +1575,6 @@ def get_netapi_autocomplete_data(nodenet_uid, name=None):
 
     shell = netapi_consoles[nodenet_uid]
     res, locs = shell.push("[k for k in locals() if not k.startswith('_')]")
-    locs = eval(locs)
 
     def parsemembers(members):
         data = {}
@@ -1605,7 +1603,9 @@ def get_netapi_autocomplete_data(nodenet_uid, name=None):
         'types': {},
         'autocomplete_options': {}
     }
-
+    if not locs:
+        return data
+    locs = eval(locs)
     for n in locs:
         if name is None or n == name:
             res, typedescript = shell.push(n)
@@ -2087,22 +2087,6 @@ def initialize(config=None):
         AUTOSAVE_PATH = os.path.join(PERSISTENCY_PATH, "nodenets", "__autosave__")
         os.makedirs(AUTOSAVE_PATH, exist_ok=True)
 
-    # bring up plotting infrastructure
-    try:
-        import matplotlib
-        matplotlib.rcParams['webagg.port'] = int(config['micropsi2'].get('webagg_port', 6545))
-        matplotlib.rcParams['webagg.open_in_browser'] = False
-        matplotlib.use('WebAgg')
-
-        def plotter_initializer():
-            from matplotlib import pyplot as plt
-            plt.show()
-
-        plt_thread = threading.Thread(target=plotter_initializer, args=(), daemon=True)
-        plt_thread.start()
-    except ImportError:
-        pass
-
     if logger is None:
         logger = MicropsiLogger({
             'system': config['logging']['level_system'],
@@ -2113,10 +2097,6 @@ def initialize(config=None):
     load_definitions()
     for e in errors:
         logging.getLogger("system").error(e)
-
-    # shut tornado up
-    for key in ["tornado.application", "tornado.access", "tornado", "tornado.general"]:
-        logging.getLogger(key).setLevel(logging.ERROR)
 
     # initialize runners
     # Initialize the threads for the continuous calculation of nodenets and worlds

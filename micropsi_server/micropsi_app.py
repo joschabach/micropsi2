@@ -32,6 +32,8 @@ import logging
 
 from configuration import config as cfg
 
+from threading import Thread
+
 VERSION = cfg['micropsi2']['version']
 APPTITLE = cfg['micropsi2']['apptitle']
 
@@ -146,21 +148,8 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                     response.status = 500
                     import traceback
                     logging.getLogger('system').error("Error: " + str(err) + " \n " + traceback.format_exc())
-
-                    # either drop to debugger in the offending stack frame, or just display a message and the trace.
-                    on_exception = cfg['micropsi2'].get('on_exception', None)
-                    if on_exception == 'debug':
-                        import sys
-                        # use the nice ipdb if it is there, but don't throw a fit if it isnt:
-                        try:
-                            import ipdb as pdb
-                        except ImportError:
-                            import pdb
-                        _, _, tb = sys.exc_info()
-                        pdb.post_mortem(tb)
-                    else:
-                        return {'status': 'error', 'data': str(err), 'traceback': traceback.format_exc()}
-
+                    tools.post_mortem()
+                    return {'status': 'error', 'data': str(err), 'traceback': traceback.format_exc()}
                 # except TypeError as err:
                 #     response.status = 400
                 #     return {"Error": "Bad parameters in remote procedure call: %s" % err}
@@ -1658,11 +1647,50 @@ def runtime_info():
 # -----------------------------------------------------------------------------------------------
 
 
+def ipython_kernel_thread():
+    import mock
+    import IPython
+    from ipykernel.zmqshell import ZMQInteractiveShell
+    from IPython.core.autocall import ZMQExitAutocall
+
+    class KeepAlive(ZMQExitAutocall):
+        def __call__(self):
+            super().__call__(True)
+
+    ZMQInteractiveShell.exiter = KeepAlive()
+    with mock.patch('signal.signal'):
+        IPython.embed_kernel()
+
+
+def start_ipython_console():
+    import sys
+    import time
+
+    Thread(target=ipython_kernel_thread).start()
+
+    count = 0
+    # wait until ipython hijacked the streams
+    while (sys.stderr == sys.__stderr__) and count < 10:
+        count += 1
+        time.sleep(0.1)
+
+    # revert input and error back to their original state
+    sys.stdin, sys.stderr = sys.__stdin__, sys.__stderr__
+
+
 def main(host=None, port=None):
     host = host or cfg['micropsi2']['host']
     port = port or cfg['micropsi2']['port']
+    try:
+        import IPython
+        import ipykernel
+        start_ipython_console()
+    except ImportError as err:
+        logging.getLogger('system').warning("Warning: IPython console not available: " + err.msg)
+
     print("Starting App on Port " + str(port))
     runtime.initialize()
+
     try:
         from cherrypy import wsgiserver
         server = 'cherrypy'

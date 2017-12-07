@@ -28,7 +28,7 @@ def prepare(runtime, test_nodenet, resourcepath, wa_class=None):
 def out12345(netapi, node, parameters):
     import numpy as np
     assert parameters['default_test'] == 'defaultvalue'
-    return np.asarray([1,2,3,4,5]).astype(netapi.floatX)
+    return np.asarray([1,2,3,4,5])
 """)
 
     with open(os.path.join(foodir, "Double.py"), 'w') as fp:
@@ -142,7 +142,7 @@ def list_inf_maker(X, netapi, node, parameters):
 import numpy as np
 
 def infmaker(netapi, node, parameters):
-    data = np.ones(12).astype(netapi.floatX)
+    data = np.ones(12)
     what = np.nan
     if parameters['what'] == 'inf':
         what = np.inf
@@ -180,9 +180,9 @@ class SimpleArrayWA(ArrayWorldAdapter):
 
     def update_data_sources_and_targets(self):
         for key in self.flow_datatargets:
-            self.flow_datatarget_feedbacks[key] = np.copy(self.flow_datatargets[key]).astype(self.floatX)
+            self.flow_datatarget_feedbacks[key] = np.copy(self.flow_datatargets[key])
         for key in self.flow_datasources:
-            self.flow_datasources[key] = np.random.rand(len(self.flow_datasources[key])).astype(self.floatX)
+            self.flow_datasources[key] = np.random.rand(len(self.flow_datasources[key]))
 """)
 
     nodenet = runtime.nodenets[test_nodenet]
@@ -212,7 +212,7 @@ def test_flowmodule_definition(runtime, test_nodenet, resourcepath):
     nodenet.flow('worldadapter', 'foo', flowmodule.uid, "inputs")
     nodenet.flow(flowmodule.uid, "outputs", 'worldadapter', 'bar')
 
-    sources = np.zeros((5), dtype=nodenet.numpyfloatX)
+    sources = np.zeros((5))
     sources[:] = np.random.randn(*sources.shape)
     datasources = netapi.get_node(nodenet.worldadapter_flow_nodes['datasources'])
     datatargets = netapi.get_node(nodenet.worldadapter_flow_nodes['datatargets'])
@@ -228,7 +228,7 @@ def test_flowmodule_definition(runtime, test_nodenet, resourcepath):
     assert datasources.activation == 1
     assert datatargets.activation == 0
 
-    assert np.all(worldadapter.get_flow_datatarget('bar') == np.zeros(5, dtype=nodenet.numpyfloatX))
+    assert np.all(worldadapter.get_flow_datatarget('bar') == np.zeros(5))
 
     # create activation source:
     source = netapi.create_node("Neuron", None)
@@ -274,7 +274,7 @@ def test_multiple_flowgraphs(runtime, test_nodenet, resourcepath):
     assert double.initfunction_ran
     # assert len(nodenet.flowfunctions) == 0
 
-    sources = np.zeros((5), dtype=nodenet.numpyfloatX)
+    sources = np.zeros((5))
     sources[:] = np.random.randn(*sources.shape)
 
     worldadapter.set_flow_datasource('foo', sources)
@@ -331,7 +331,7 @@ def test_disconnect_flowmodules(runtime, test_nodenet, resourcepath):
     # we still have one graph, but it doesn't do anything
     # assert len(nodenet.flowfunctions) == 1
 
-    sources = np.zeros((5), dtype=nodenet.numpyfloatX)
+    sources = np.zeros((5))
     sources[:] = np.random.randn(*sources.shape)
     worldadapter.set_flow_datasource('foo', sources)
 
@@ -360,7 +360,7 @@ def test_diverging_flowgraph(runtime, test_nodenet, resourcepath):
     nodenet.flow(double.uid, "outputs", 'worldadapter', 'bar')
     nodenet.flow(add.uid, "outputs", 'worldadapter', 'bar')
 
-    sources = np.zeros((5), dtype=nodenet.numpyfloatX)
+    sources = np.zeros((5))
     sources[:] = np.random.randn(*sources.shape)
     worldadapter.set_flow_datasource('foo', sources)
 
@@ -401,7 +401,7 @@ def test_converging_flowgraphs(runtime, test_nodenet, resourcepath):
     # link add to targets.
     nodenet.flow(add.uid, "outputs", 'worldadapter', 'bar')
 
-    sources = np.zeros((5), dtype=nodenet.numpyfloatX)
+    sources = np.zeros((5))
     sources[:] = np.random.randn(*sources.shape)
     worldadapter.set_flow_datasource('foo', sources)
 
@@ -431,7 +431,7 @@ def test_flowmodule_persistency(runtime, test_nodenet, resourcepath):
 
     assert double.initfunction_ran
 
-    sources = np.zeros((5), dtype=netapi.floatX)
+    sources = np.zeros((5))
     sources[:] = np.random.randn(*sources.shape)
     worldadapter.set_flow_datasource('foo', sources)
 
@@ -491,7 +491,7 @@ def double(inputs, netapi, node, parameters):
     assert double.initfunction_ran == 'yep'
     assert np.all(double.get_state('teststate') == np.ones(3))
     worldadapter = nodenet.worldadapter_instance
-    sources = np.zeros((5), dtype=worldadapter.floatX)
+    sources = np.zeros((5))
     sources[:] = np.random.randn(*sources.shape)
     worldadapter.set_flow_datasource('foo', sources)
     nodenet.step()
@@ -530,7 +530,7 @@ def test_delete_flowmodule(runtime, test_nodenet, resourcepath):
 
     assert not nodenet.flow_module_instances[bisect.uid].is_output_connected()
 
-    sources = np.zeros((5), dtype=nodenet.numpyfloatX)
+    sources = np.zeros((5))
     sources[:] = np.random.randn(*sources.shape)
     worldadapter.set_flow_datasource('foo', sources)
 
@@ -561,7 +561,7 @@ def test_link_large_graph(runtime, test_nodenet, resourcepath):
     netapi.link(source, 'gen', add, 'sub')
     # assert len(nodenet.flowfunctions) == 1
 
-    sources = np.zeros((5), dtype=nodenet.numpyfloatX)
+    sources = np.zeros((5))
     sources[:] = np.random.randn(*sources.shape)
     worldadapter.set_flow_datasource('foo', sources)
 
@@ -590,7 +590,7 @@ def test_flow_edgecase(runtime, test_nodenet, resourcepath):
     source.activation = 1
     netapi.link(source, 'gen', add, 'sub')
 
-    worldadapter.set_flow_datasource('foo', np.ones(5).astype(worldadapter.floatX))
+    worldadapter.set_flow_datasource('foo', np.ones(5))
     nodenet.timed_step()
     assert np.all(worldadapter.get_flow_datatarget("bar") == np.asarray([5, 5, 5, 5, 5]))
 
@@ -618,7 +618,7 @@ def test_none_output_skips_following_graphs(runtime, test_nodenet, resourcepath)
         netapi.link(source, 'gen', bisect, 'sub')
         # assert len(nodenet.flowfunctions) == 0
 
-    sources = np.zeros((5), dtype=nodenet.numpyfloatX)
+    sources = np.zeros((5))
     sources[:] = np.random.randn(*sources.shape)
     worldadapter.set_flow_datasource('foo', sources)
 
@@ -670,10 +670,10 @@ def test_connect_flow_modules_to_structured_flow_datasource(runtime, test_nodene
     assert in_node_found
     assert out_node_found
 
-    sources = np.zeros((6), dtype=nodenet.numpyfloatX)
+    sources = np.zeros((6))
     sources[:] = np.random.randn(*sources.shape)
     worldadapter.set_flow_datasource('vision', sources)
-    worldadapter.set_flow_datasource('start', np.asarray([0.73]).astype(nodenet.numpyfloatX))
+    worldadapter.set_flow_datasource('start', np.asarray([0.73]))
 
     double = netapi.create_node("Double", None, "Double")
     netapi.flow('worldadapter', 'vision', double, 'inputs')
@@ -697,10 +697,10 @@ def test_connect_flow_modules_to_structured_flow_datasource(runtime, test_nodene
 
     assert len(nodenet.flow_module_instances) == 3
 
-    sources = np.zeros((6), dtype=nodenet.numpyfloatX)
+    sources = np.zeros((6))
     sources[:] = np.random.randn(*sources.shape)
     worldadapter.set_flow_datasource('vision', sources)
-    worldadapter.set_flow_datasource('start', np.asarray([0.64]).astype(nodenet.numpyfloatX))
+    worldadapter.set_flow_datasource('start', np.asarray([0.64]))
     runtime.step_nodenet(test_nodenet)
     assert np.all(worldadapter.get_flow_datatarget_feedback('motor') == np.zeros(6))
     assert np.allclose(worldadapter.get_flow_datatarget_feedback('stop'), [0.64])
@@ -787,7 +787,7 @@ def test_flownode_generate_netapi_fragment(runtime, engine, test_nodenet, resour
     fragment = runtime.generate_netapi_fragment(test_nodenet, [n.uid for n in nodes])
     assert "datasources" not in fragment
     assert "datatargets" not in fragment
-    source_values = np.random.randn(5).astype(worldadapter.floatX)
+    source_values = np.random.randn(5)
     worldadapter.set_flow_datasource('foo', source_values)
     nodenet.step()
     result = worldadapter.get_flow_datatarget('bar')

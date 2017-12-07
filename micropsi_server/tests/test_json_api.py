@@ -1854,7 +1854,7 @@ def double(inputs, netapi, node, parameters):
     result = app.post_json('/rpc/flow', inward)
     assert_success(result)
 
-    sources = np.array(np.random.randn(2, 3), dtype=nodenet.numpyfloatX)
+    sources = np.array(np.random.randn(2, 3))
     worldadapter.flow_datasources['foo'][:] = sources
 
     runtime.step_nodenet(test_nodenet)

@@ -150,10 +150,12 @@ class NetapiShell(InteractiveConsole):
                         begin_exception_message = True
                     if begin_exception_message and len(part) == 0:
                         break
-                    cleaned_parts.append(part.strip())
+                    if part.strip():
+                        cleaned_parts.append(part.strip())
+
                 if len(cleaned_parts) > 1:
                     cleaned_parts = ['\nTraceback:'] + cleaned_parts
-                return False, "\n\n".join(cleaned_parts)
+                return False, "\n".join(cleaned_parts)
             else:
                 return False, err
 

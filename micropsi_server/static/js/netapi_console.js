@@ -160,7 +160,7 @@ $(function(){
         if(name){
             params['name'] = name;
         }
-        api.call('get_netapi_signatures', params, function(data){
+        api.call('get_netapi_autocomplete_data', params, function(data){
             if(name){
                 var type = data.types[name]
                 nametypes[name] = type

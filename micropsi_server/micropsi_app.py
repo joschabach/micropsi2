@@ -1561,7 +1561,7 @@ def run_netapi_command(nodenet_uid, command):
         raise RuntimeError("Netapi console only available if serving to localhost only")
 
 
-@rpc("get_netapi_signatures")
+@rpc("get_netapi_autocomplete_data")
 def get_netapi_autocomplete_data(nodenet_uid, name=None):
     """ Return autocomplete-options for the netapi console. """
     return True, runtime.get_netapi_autocomplete_data(nodenet_uid, name=None)

@@ -100,8 +100,8 @@ class NetapiShell(InteractiveConsole):
             self.err_line_separator = '\n\n'
         except ImportError:
             self.err_line_separator = '\n'
-        self.stdout = sys.stdout
-        self.stderr = sys.stderr
+        self.stdout = sys.__stdout__
+        self.stderr = sys.__stderr__
         self.outcache = FileCacher()
         self.errcache = FileCacher()
 
@@ -109,10 +109,14 @@ class NetapiShell(InteractiveConsole):
         return
 
     def get_output(self):
+        sys.__stdout__ = self.outcache
+        sys.__stderr__ = self.errcache
         sys.stdout = self.outcache
         sys.stderr = self.errcache
 
     def return_output(self):
+        sys.__stdout__ = self.stdout
+        sys.__stderr__ = self.stderr
         sys.stdout = self.stdout
         sys.stderr = self.stderr
 

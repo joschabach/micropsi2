@@ -1,4 +1,5 @@
-0.14-alpha12 (unreleased)
+
+0.14-alpha12 (2017-12-08)
 ==========
 * Ipython console
 * Remove theano

@@ -1,5 +1,7 @@
 0.14-alpha12 (unreleased)
 ==========
+* Ipython console
+* Remove theano
 
 
 0.13-alpha11 (2017-11-29)

@@ -14,5 +14,9 @@ if [ "$1" == '--console' ]; then
 )&
 fi
 
-./start_micropsi_server.py
+if [ "$1" == '--no-console' ]; then
+    ./start_micropsi_server.py --no-console
+else
+    ./start_micropsi_server.py
+fi
 

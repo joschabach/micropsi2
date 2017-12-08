@@ -1618,15 +1618,18 @@ def start_ipython_console():
     sys.stdin, sys.stderr = sys.__stdin__, sys.__stderr__
 
 
-def main(host=None, port=None):
+def main(host=None, port=None, console=True):
     host = host or cfg['micropsi2']['host']
     port = port or cfg['micropsi2']['port']
-    try:
-        import IPython
-        import ipykernel
-        start_ipython_console()
-    except ImportError as err:
-        logging.getLogger('system').warning("Warning: IPython console not available: " + err.msg)
+    if console:
+        try:
+            import IPython
+            import ipykernel
+            start_ipython_console()
+        except ImportError as err:
+            logging.getLogger('system').warning("Warning: IPython console not available: " + err.msg)
+    else:
+        logging.getLogger("system").info("Starting without ipython console")
 
     print("Starting App on Port " + str(port))
     runtime.initialize()
@@ -1646,5 +1649,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Start the %s server." % APPTITLE)
     parser.add_argument('-d', '--host', type=str, default=cfg['micropsi2']['host'])
     parser.add_argument('-p', '--port', type=int, default=cfg['micropsi2']['port'])
+    parser.add_argument('--console', dest='console', action='store_true')
+    parser.add_argument('--no-console', dest='console', action='store_false')
+    parser.set_defaults(console=True)
     args = parser.parse_args()
-    main(host=args.host, port=args.port)
+    main(host=args.host, port=args.port, console=args.console)

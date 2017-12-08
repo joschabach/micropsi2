@@ -1560,8 +1560,11 @@ def run_netapi_command(nodenet_uid, command):
     nodenet = get_nodenet(nodenet_uid)
     shell = netapi_consoles[nodenet_uid]
     with nodenet.netlock:
-        result = shell.push(command)
-    return result
+        success, msg = shell.push("last_result = %s" % command)
+        if success:
+            return shell.push("print(last_result)")
+        else:
+            return success, msg
 
 
 def get_netapi_autocomplete_data(nodenet_uid, name=None):
@@ -1572,7 +1575,7 @@ def get_netapi_autocomplete_data(nodenet_uid, name=None):
     nodetypes = get_available_node_types(nodenet_uid)
 
     shell = netapi_consoles[nodenet_uid]
-    res, locs = shell.push("[k for k in locals() if not k.startswith('_')]")
+    res, locs = shell.push("print([k for k in locals() if not k.startswith('_')])")
 
     def parsemembers(members):
         data = {}
@@ -1606,7 +1609,7 @@ def get_netapi_autocomplete_data(nodenet_uid, name=None):
     locs = eval(locs)
     for n in locs:
         if name is None or n == name:
-            res, typedescript = shell.push(n)
+            res, typedescript = shell.push("print(%s)" % n)
             if 'netapi' in typedescript:
                 data['types'][n] = 'netapi'
             else:

@@ -4,8 +4,6 @@
 """
 
 """
-import os
-import mock
 import pytest
 from micropsi_core import runtime
 

@@ -4,7 +4,6 @@ CherryPy==5.4.0
 coloredlogs==6.0
 coverage==4.0.3
 matplotlib==2.0.2
-mock==2.0.0
 nose-parameterized==0.5.0
 numpy==1.13.1
 pycrypto==2.6.1

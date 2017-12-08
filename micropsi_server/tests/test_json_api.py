@@ -1316,7 +1316,7 @@ def test_get_monitoring_info(app, test_nodenet):
 
 @pytest.mark.engine("theano_engine")
 def test_get_benchmark_info(app, test_nodenet):
-    import mock
+    from unittest import mock
     with mock.patch("micropsi_core.benchmark_system.benchmark_system", return_value="testbench") as benchmock:
         response = app.get_json('/rpc/benchmark_info()')
         assert_success(response)

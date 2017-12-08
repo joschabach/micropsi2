@@ -5,7 +5,6 @@
 
 """
 import os
-import mock
 import pytest
 
 __author__ = 'joscha'

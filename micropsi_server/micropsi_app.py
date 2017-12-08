@@ -1588,7 +1588,7 @@ def runtime_info():
 
 
 def ipython_kernel_thread():
-    import mock
+    from unittest import mock
     import IPython
     from ipykernel.zmqshell import ZMQInteractiveShell
     from IPython.core.autocall import ZMQExitAutocall

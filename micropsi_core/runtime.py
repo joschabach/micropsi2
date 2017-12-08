@@ -213,7 +213,7 @@ class MicropsiRunner(threading.Thread):
                         log = True
                         try:
                             nodenet.timed_step(runner_config.data)
-                            nodenet.update_monitors_and_recorders()
+                            nodenet.update_monitors()
                         except:
                             stop_nodenetrunner(uid)
                             # nodenet.is_active = False
@@ -352,9 +352,9 @@ def get_logger_messages(loggers=[], after=0):
     return logger.get_logs(loggers, after)
 
 
-def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor_count=-1, with_recorders=False):
+def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor_count=-1):
     """ Returns log-messages and monitor-data for the given nodenet."""
-    data = get_monitor_data(nodenet_uid, 0, monitor_from, monitor_count, with_recorders=with_recorders)
+    data = get_monitor_data(nodenet_uid, 0, monitor_from, monitor_count)
     data['logs'] = get_logger_messages(logger, after)
     return data
 
@@ -534,7 +534,7 @@ def get_nodes(nodenet_uid, nodespaces=[], include_links=True, links_to_nodespace
     return nodenet.get_nodes(nodespaces, include_links, links_to_nodespaces=links_to_nodespaces)
 
 
-def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None, recorders=None):
+def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
     """ returns the current state of the calculation
     """
     data = {}
@@ -586,8 +586,6 @@ def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=No
             data['monitors'] = get_monitoring_info(nodenet_uid=nodenet_uid, **monitors)
         if dashboard is not None:
             data['dashboard'] = get_agent_dashboard(nodenet_uid)
-        if recorders is not None:
-            data['recorders'] = nodenet_obj.construct_recorders_dict()
         return True, data
     else:
         return False, "No such agent"
@@ -606,7 +604,6 @@ def unload_nodenet(nodenet_uid):
         del netapi_consoles[nodenet_uid]
     stop_nodenetrunner(nodenet_uid)
     nodenet = nodenets[nodenet_uid]
-    nodenet.close_figures()
     if nodenet.world:
         worlds[nodenet.world].unregister_nodenet(nodenet.uid)
     del nodenets[nodenet_uid]
@@ -810,7 +807,7 @@ def step_nodenet(nodenet_uid):
 
     if nodenet.world and not type(worlds[nodenet.world]).is_realtime:
         worlds[nodenet.world].step(runner_config['runner_timestep'])
-    nodenet.update_monitors_and_recorders()
+    nodenet.update_monitors()
     return nodenet.current_step
 
 
@@ -833,7 +830,7 @@ def single_step_nodenet_only(nodenet_uid):
         ps.print_stats('micropsi_')
         logging.getLogger("agent.%s" % nodenet_uid).debug(s.getvalue())
 
-    nodenet.update_monitors_and_recorders()
+    nodenet.update_monitors()
     return nodenet.current_step
 
 
@@ -851,13 +848,13 @@ def step_nodenets_in_world(world_uid, nodenet_uid=None, steps=1):
     if nodenet and nodenet.world == world_uid:
         for i in range(steps):
             nodenet.timed_step(runner_config.data)
-            nodenet.update_monitors_and_recorders()
+            nodenet.update_monitors()
     else:
         for i in range(steps):
             for uid in worlds[world_uid].agents:
                 nodenet = get_nodenet(uid)
                 nodenet.timed_step(runner_config.data)
-                nodenet.update_monitors_and_recorders()
+                nodenet.update_monitors()
     return True
 
 
@@ -1576,7 +1573,6 @@ def get_netapi_autocomplete_data(nodenet_uid, name=None):
 
     shell = netapi_consoles[nodenet_uid]
     res, locs = shell.push("[k for k in locals() if not k.startswith('_')]")
-    locs = eval(locs)
 
     def parsemembers(members):
         data = {}
@@ -1605,7 +1601,9 @@ def get_netapi_autocomplete_data(nodenet_uid, name=None):
         'types': {},
         'autocomplete_options': {}
     }
-
+    if not locs:
+        return data
+    locs = eval(locs)
     for n in locs:
         if name is None or n == name:
             res, typedescript = shell.push(n)
@@ -2087,50 +2085,16 @@ def initialize(config=None):
         AUTOSAVE_PATH = os.path.join(PERSISTENCY_PATH, "nodenets", "__autosave__")
         os.makedirs(AUTOSAVE_PATH, exist_ok=True)
 
-    # bring up plotting infrastructure
-    try:
-        import matplotlib
-        matplotlib.rcParams['webagg.port'] = int(config['micropsi2'].get('webagg_port', 6545))
-        matplotlib.rcParams['webagg.open_in_browser'] = False
-        matplotlib.use('WebAgg')
-
-        def plotter_initializer():
-            from matplotlib import pyplot as plt
-            plt.show()
-
-        plt_thread = threading.Thread(target=plotter_initializer, args=(), daemon=True)
-        plt_thread.start()
-    except ImportError:
-        pass
-
     if logger is None:
         logger = MicropsiLogger({
             'system': config['logging']['level_system'],
             'world': config['logging']['level_world']
         }, config['logging'].get('logfile'))
 
-    try:
-        import theano
-        precision = config['theano']['precision']
-        if precision == "32":
-            theano.config.floatX = "float32"
-        elif precision == "64":
-            theano.config.floatX = "float64"
-        else:  # pragma: no cover
-            logging.getLogger("system").warning("Unsupported precision value from configuration: %s, falling back to float64", precision)
-            theano.config.floatX = "float64"
-            config['theano']['precision'] = "64"
-    except ImportError:
-        pass
-
     result, errors = reload_code()
     load_definitions()
     for e in errors:
         logging.getLogger("system").error(e)
-
-    # shut tornado up
-    for key in ["tornado.application", "tornado.access", "tornado", "tornado.general"]:
-        logging.getLogger(key).setLevel(logging.ERROR)
 
     # initialize runners
     # Initialize the threads for the continuous calculation of nodenets and worlds

@@ -578,6 +578,7 @@ def test_runtime_autosave_dict(runtime, test_nodenet, resourcepath):
         # step and runner_conditions might differ
         for key in ['nodes', 'links', 'modulators', 'uid', 'name', 'owner', 'world', 'worldadapter', 'version', 'monitors', 'nodespaces']:
             assert restored[key] == original[key]
+        tmp.cleanup()
 
 
 @pytest.mark.engine("numpy_engine")
@@ -599,7 +600,7 @@ def test_runtime_autosave_numpy(runtime, test_nodenet, resourcepath):
 import numpy as np
 
 def source(netapi, node, parameters):
-    return np.random.rand(8).astype(netapi.floatX)
+    return np.random.rand(8)
 """)
     with open(os.path.join(resourcepath, "nodetypes", "Target.py"), 'w') as fp:
         fp.write("""nodetype_definition = {
@@ -647,6 +648,7 @@ def target(X, netapi, node, parameters):
         assert nsource.outputmap == {'X': {(ntarget.uid, 'X')}}
         assert np.all(ntarget.get_state("incoming") == target.get_state("incoming"))
         assert nneuron.get_gate('gen').get_links()[0].target_node == ntarget
+        tmp.cleanup()
 
 
 @pytest.mark.engine("theano_engine")
@@ -669,7 +671,7 @@ def test_runtime_autosave_theano(runtime, test_nodenet, resourcepath):
 
 def source_init(netapi, node, parameters):
     import numpy as np
-    w_array = np.random.rand(8).astype(netapi.floatX)
+    w_array = np.random.rand(8)
     node.set_theta("weights", w_array)
 
 def source(netapi, node, parameters):

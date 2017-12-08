@@ -16,9 +16,7 @@ all:
 clean:
 	rm -rf include lib .Python bin
 
-tests:
-	-bin/py.test
-	-bin/py.test --agents
+tests: test-toolkit test-agents test-worlds
 
 test-coverage:
 	bin/py.test --cov micropsi_core --cov micropsi_server --cov-report html
@@ -28,6 +26,9 @@ test-toolkit:
 
 test-agents:
 	bin/py.test --agents
+
+test-worlds:
+	bin/py.test --worlds
 
 vrep:
 	bin/pip install -e git+git@github.com:micropsi-industries/vrep-interface.git#egg=vrep-interface-dev

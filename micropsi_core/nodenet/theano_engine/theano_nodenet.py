@@ -14,14 +14,10 @@ from theano import tensor as T
 import numpy as np
 import scipy
 
-try:
-    import ipdb as pdb
-except ImportError:
-    import pdb
+import pdb
 
 from micropsi_core.tools import post_mortem
 from micropsi_core.nodenet import monitor
-from micropsi_core.nodenet import recorder
 from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION
 from micropsi_core.nodenet.node import Nodetype, HighdimensionalNodetype
 from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators
@@ -136,21 +132,9 @@ class TheanoNodenetCore(Nodenet):
         for type, data in STANDARD_NODETYPES.items():
             self.nodetypes[type] = Nodetype(nodenet=self, **data)
 
-        precision = settings['theano']['precision']
-        if precision == "32":
-            T.config.floatX = "float32"
-            self.theanofloatX = "float32"
-            self.scipyfloatX = scipy.float32
-            self.numpyfloatX = np.float32
-            self.byte_per_float = 4
-        elif precision == "64":
-            T.config.floatX = "float64"
-            self.theanofloatX = "float64"
-            self.scipyfloatX = scipy.float64
-            self.numpyfloatX = np.float64
-            self.byte_per_float = 8
-        else:
-            raise RuntimeError("Unsupported float precision value")
+        self.numpyfloatX = getattr(np, T.config.floatX)
+
+        self.byte_per_float = 8
 
         device = T.config.device
         self.logger.info("Theano configured to use %s", device)
@@ -480,7 +464,6 @@ class TheanoNodenetCore(Nodenet):
         metadata['monitors'] = self.construct_monitors_dict()
         metadata['modulators'] = self.construct_modulators_dict()
         metadata['partition_parents'] = self.inverted_partitionmap
-        metadata['recorders'] = self.construct_recorders_dict()
 
         if zipfile:
             zipfile.writestr('nodenet.json', json.dumps(metadata))
@@ -500,9 +483,6 @@ class TheanoNodenetCore(Nodenet):
                     zipfile.writestr(filename, stream.getvalue())
                 else:
                     np.savez(os.path.join(base_path, filename), **states)
-
-        for recorder_uid in self._recorders:
-            self._recorders[recorder_uid].save()
 
         for partition in self.partitions.values():
             # save partitions
@@ -573,10 +553,6 @@ class TheanoNodenetCore(Nodenet):
                     self._monitors[mon.uid] = mon
                 else:
                     self.logger.warning('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], monitorid))
-
-            for recorder_uid in initfrom.get('recorders', {}):
-                data = initfrom['recorders'][recorder_uid]
-                self._recorders[recorder_uid] = getattr(recorder, data['classname'])(self, **data)
 
             # re-initialize step operators for theano recompile to new shared variables
             self.initialize_stepoperators()
@@ -873,7 +849,6 @@ class TheanoNodenetCore(Nodenet):
         return uid
 
     def delete_node(self, uid):
-        self.close_figures(uid)
         partition = self.get_partition(uid)
         node_id = node_from_id(uid)
 
@@ -1324,7 +1299,6 @@ class TheanoNodenetCore(Nodenet):
                 position = instance.position
                 name = instance.name
                 partition = self.get_partition(uid)
-                self.close_figures(uid)
                 new_instance = TheanoNode(self, partition, instance.parent_nodespace, uid, partition.allocated_nodes[node_from_id(uid)])
 
                 new_native_module_instances[uid] = new_instance
@@ -1846,24 +1820,6 @@ class TheanoNodenetCore(Nodenet):
                 uid = nodespace_to_id(uid, partition.pid)
                 result['nodespaces_dirty'][uid] = self.get_nodespace(uid).get_data()
         return result
-
-    def add_gate_activation_recorder(self, group_definition, name, interval=1):
-        """ Adds an activation recorder to a group of nodes."""
-        rec = recorder.GateActivationRecorder(self, group_definition, name, interval=interval)
-        self._recorders[rec.uid] = rec
-        return rec
-
-    def add_node_activation_recorder(self, group_definition, name, interval=1):
-        """ Adds an activation recorder to a group of nodes."""
-        rec = recorder.NodeActivationRecorder(self, group_definition, name, interval=interval)
-        self._recorders[rec.uid] = rec
-        return rec
-
-    def add_linkweight_recorder(self, from_group_definition, to_group_definition, name, interval=1):
-        """ Adds a linkweight recorder to links between to groups."""
-        rec = recorder.LinkweightRecorder(self, from_group_definition, to_group_definition, name, interval=interval)
-        self._recorders[rec.uid] = rec
-        return rec
 
     def get_dashboard(self):
         data = super().get_dashboard()

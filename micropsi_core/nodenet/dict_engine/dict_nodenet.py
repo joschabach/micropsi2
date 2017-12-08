@@ -141,8 +141,6 @@ class DictNodenet(Nodenet):
         try:
             import numpy
             self.numpy_available = True
-            self.numpyfloatX = numpy.float32
-            self.floatX = 'float32'
         except ImportError:
             self.numpy_available = False
 
@@ -443,7 +441,6 @@ class DictNodenet(Nodenet):
         return activations
 
     def delete_node(self, node_uid):
-        self.close_figures(node_uid)
         if node_uid in self._nodespaces:
             affected_entity_ids = self._nodespaces[node_uid].get_known_ids()
             for uid in affected_entity_ids:

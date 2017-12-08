@@ -15,6 +15,8 @@ Prerequisites
 Run on OS X or Linux:
 -----
  * Run `./run.sh`
+ * Optionally add `--console` to launch Jupyter console
+ * Otherwise to launch the console later type `jupyter-qtconsole --existing`
  * View in browser at [http://localhost:6543/](http://localhost:6543/)
 
 
@@ -35,9 +37,8 @@ Installing environments
 
 Attribution
 -----
-[micropsi2](https://github.com/joschabach/micropsi2) uses 
+[micropsi2](https://github.com/joschabach/micropsi2) uses
 
  * [bottle](https://github.com/defnull/bottle)
  * [spock](https://github.com/nickelpro/spock)
  * [paperjs](http://github.com/paperjs/paper.js)
- * [theano](https://github.com/Theano/Theano)

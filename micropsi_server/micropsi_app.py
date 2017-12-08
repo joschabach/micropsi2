@@ -32,6 +32,8 @@ import logging
 
 from configuration import config as cfg
 
+from threading import Thread
+
 VERSION = cfg['micropsi2']['version']
 APPTITLE = cfg['micropsi2']['apptitle']
 
@@ -146,21 +148,8 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                     response.status = 500
                     import traceback
                     logging.getLogger('system').error("Error: " + str(err) + " \n " + traceback.format_exc())
-
-                    # either drop to debugger in the offending stack frame, or just display a message and the trace.
-                    on_exception = cfg['micropsi2'].get('on_exception', None)
-                    if on_exception == 'debug':
-                        import sys
-                        # use the nice ipdb if it is there, but don't throw a fit if it isnt:
-                        try:
-                            import ipdb as pdb
-                        except ImportError:
-                            import pdb
-                        _, _, tb = sys.exc_info()
-                        pdb.post_mortem(tb)
-                    else:
-                        return {'status': 'error', 'data': str(err), 'traceback': traceback.format_exc()}
-
+                    tools.post_mortem()
+                    return {'status': 'error', 'data': str(err), 'traceback': traceback.format_exc()}
                 # except TypeError as err:
                 #     response.status = 400
                 #     return {"Error": "Bad parameters in remote procedure call: %s" % err}
@@ -638,27 +627,6 @@ def export_nodenet(nodenet_uid):
     return runtime.export_nodenet(nodenet_uid)
 
 
-@micropsi_app.route("/recorder/export/<nodenet_uid>-<recorder_uid>")
-def export_recorder(nodenet_uid, recorder_uid):
-    data = runtime.export_recorders(nodenet_uid, [recorder_uid])
-    recorder = runtime.get_recorder(nodenet_uid, recorder_uid)
-    response.set_header('Content-type', 'application/octet-stream')
-    response.set_header('Content-Disposition', 'attachment; filename="recorder_%s.npz"' % recorder.name)
-    return data
-
-
-@micropsi_app.route("/recorder/export/<nodenet_uid>", method="POST")
-def export_recorders(nodenet_uid):
-    uids = []
-    for param in request.params.allitems():
-        if param[0] == 'recorder_uids[]':
-            uids.append(param[1])
-    data = runtime.export_recorders(nodenet_uid, uids)
-    response.set_header('Content-type', 'application/octet-stream')
-    response.set_header('Content-Disposition', 'attachment; filename="recorders_%s.npz"' % nodenet_uid)
-    return data
-
-
 @micropsi_app.route("/agent/edit")
 def edit_nodenet():
     user_id, permissions, token = get_request_data()
@@ -866,17 +834,16 @@ def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadap
 
 
 @rpc("get_calculation_state")
-def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None, recorders=None):
-    """ Return the current simulation state for any of the following: the given nodenet, world, monitors, dashboard, recorders
+def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
+    """ Return the current simulation state for any of the following: the given nodenet, world, monitors, dashboard
     Return values depend on the parameters:
         if you provide the nodenet-parameter (a dict, with all-optional keys: nodespaces, include_links, links_to_nodespaces) you will get the contents of the nodenet
         if you provide the nodenet_diff-parameter (a dict, with key "step" (the step to which the diff is calculated, and optional nodespaces) you will get a diff of the nodenet
         if you provide the world-parameter (anything) you will get the state of the nodenet's environment
         if you provide the monitor-parameter (anything), you will get data of all monitors registered in the nodenet
         if you provide the dashboard-parameter (anything) you will get a dict of dashboard data
-        if you provide the recorder-parameter (anything), you will get data of all recorders registered in the nodenet
     """
-    return runtime.get_calculation_state(nodenet_uid, nodenet=nodenet, nodenet_diff=nodenet_diff, world=world, monitors=monitors, dashboard=dashboard, recorders=recorders)
+    return runtime.get_calculation_state(nodenet_uid, nodenet=nodenet, nodenet_diff=nodenet_diff, world=world, monitors=monitors, dashboard=dashboard)
 
 
 @rpc("get_nodenet_changes")
@@ -1516,44 +1483,6 @@ def get_emoexpression_parameters(nodenet_uid):
     return True, emoexpression.calc_emoexpression_parameters(nodenet)
 
 
-# --------- recorder --------
-
-
-@rpc("add_gate_activation_recorder")
-def add_gate_activation_recorder(nodenet_uid, group_definition, name, interval=1):
-    """ Add an activation recorder to a group of nodes."""
-    return runtime.add_gate_activation_recorder(nodenet_uid, group_definition, name, interval)
-
-
-@rpc("add_node_activation_recorder")
-def add_node_activation_recorder(nodenet_uid, group_definition, name, interval=1):
-    """ Add an activation recorder to a group of nodes."""
-    return runtime.add_node_activation_recorder(nodenet_uid, group_definition, name, interval)
-
-
-@rpc("add_linkweight_recorder")
-def add_linkweight_recorder(nodenet_uid, from_group_definition, to_group_definition, name, interval=1):
-    """ Add a linkweight recorder to links between to groups."""
-    return runtime.add_linkweight_recorder(nodenet_uid, from_group_definition, to_group_definition, name, interval)
-
-
-@rpc("remove_recorder")
-def remove_recorder(nodenet_uid, recorder_uid):
-    """ Delete a recorder."""
-    return runtime.remove_recorder(nodenet_uid, recorder_uid)
-
-
-@rpc("clear_recorder")
-def clear_recorder(nodenet_uid, recorder_uid):
-    """ Clear the recorder's history """
-    return runtime.clear_recorder(nodenet_uid, recorder_uid)
-
-
-@rpc("get_recorders")
-def get_recorders(nodenet_uid):
-    """ Return a dict of recorders"""
-    return runtime.get_recorder_data(nodenet_uid)
-
 # --------- logging --------
 
 
@@ -1577,9 +1506,9 @@ def get_logger_messages(logger=[], after=0):
 
 
 @rpc("get_monitoring_info")
-def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor_count=-1, with_recorders=False):
-    """ Return monitor, logger, recorder data """
-    data = runtime.get_monitoring_info(nodenet_uid, logger, after, monitor_from, monitor_count, with_recorders=with_recorders)
+def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor_count=-1):
+    """ Return monitor, logger data """
+    data = runtime.get_monitoring_info(nodenet_uid, logger, after, monitor_from, monitor_count)
     return True, data
 
 
@@ -1658,11 +1587,50 @@ def runtime_info():
 # -----------------------------------------------------------------------------------------------
 
 
+def ipython_kernel_thread():
+    import mock
+    import IPython
+    from ipykernel.zmqshell import ZMQInteractiveShell
+    from IPython.core.autocall import ZMQExitAutocall
+
+    class KeepAlive(ZMQExitAutocall):
+        def __call__(self):
+            super().__call__(True)
+
+    ZMQInteractiveShell.exiter = KeepAlive()
+    with mock.patch('signal.signal'):
+        IPython.embed_kernel()
+
+
+def start_ipython_console():
+    import sys
+    import time
+
+    Thread(target=ipython_kernel_thread).start()
+
+    count = 0
+    # wait until ipython hijacked the streams
+    while (sys.stderr == sys.__stderr__) and count < 10:
+        count += 1
+        time.sleep(0.1)
+
+    # revert input and error back to their original state
+    sys.stdin, sys.stderr = sys.__stdin__, sys.__stderr__
+
+
 def main(host=None, port=None):
     host = host or cfg['micropsi2']['host']
     port = port or cfg['micropsi2']['port']
+    try:
+        import IPython
+        import ipykernel
+        start_ipython_console()
+    except ImportError as err:
+        logging.getLogger('system').warning("Warning: IPython console not available: " + err.msg)
+
     print("Starting App on Port " + str(port))
     runtime.initialize()
+
     try:
         from cherrypy import wsgiserver
         server = 'cherrypy'

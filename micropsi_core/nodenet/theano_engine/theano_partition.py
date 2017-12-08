@@ -259,9 +259,9 @@ class TheanoPartition():
 
         # instantiate theano data structures
         if self.sparse:
-            self.w = theano.shared(sp.csr_matrix((self.NoE, self.NoE), dtype=nodenet.scipyfloatX), name="w")
+            self.w = theano.shared(sp.csr_matrix((self.NoE, self.NoE), dtype=nodenet.numpyfloatX), name="w")
         else:
-            w_matrix = np.zeros((self.NoE, self.NoE), dtype=nodenet.scipyfloatX)
+            w_matrix = np.zeros((self.NoE, self.NoE), dtype=nodenet.numpyfloatX)
             self.w = theano.shared(value=w_matrix.astype(T.config.floatX), name="w", borrow=True)
 
         self.t = theano.shared(value=np.int32(0), name="t")
@@ -1143,9 +1143,9 @@ class TheanoPartition():
         self.allocated_elements_to_activators = new_allocated_elements_to_activators
 
         if self.sparse:
-            new_w = sp.csr_matrix((new_NoE, new_NoE), dtype=self.nodenet.scipyfloatX)
+            new_w = sp.csr_matrix((new_NoE, new_NoE), dtype=self.nodenet.numpyfloatX)
         else:
-            new_w = np.zeros((new_NoE, new_NoE), dtype=self.nodenet.scipyfloatX)
+            new_w = np.zeros((new_NoE, new_NoE), dtype=self.nodenet.numpyfloatX)
         new_w[0:self.NoE, 0:self.NoE] = self.w.get_value(borrow=True)
         self.w.set_value(new_w, borrow=True)
 

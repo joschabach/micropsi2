@@ -1,4 +1,10 @@
 
+0.14-alpha12 (2017-12-08)
+==========
+* Ipython console
+* Remove theano
+
+
 0.13-alpha11 (2017-11-29)
 ==========
  * Support for devices (cameras, etc)

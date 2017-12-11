@@ -1642,7 +1642,7 @@ def main(host=None, port=None, console=True):
         server = 'wsgiref'
         kwargs = {}
 
-    run(micropsi_app, host=host, port=port, quiet=False, server=server, **kwargs)
+    run(micropsi_app, host=host, port=port, quiet=True, server=server, **kwargs)
 
 
 if __name__ == "__main__":

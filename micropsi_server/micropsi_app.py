@@ -1621,17 +1621,17 @@ def start_ipython_console():
 def main(host=None, port=None, console=True):
     host = host or cfg['micropsi2']['host']
     port = port or cfg['micropsi2']['port']
+    print("Starting App on Port " + str(port))
     if console:
         try:
             import IPython
             import ipykernel
             start_ipython_console()
         except ImportError as err:
-            logging.getLogger('system').warning("Warning: IPython console not available: " + err.msg)
+            print("Warning: IPython console not available: " + err.msg)
     else:
-        logging.getLogger("system").info("Starting without ipython console")
+        print("Starting without ipython console")
 
-    print("Starting App on Port " + str(port))
     runtime.initialize()
 
     try:

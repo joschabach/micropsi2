@@ -242,15 +242,6 @@ class MicropsiRunner(threading.Thread):
                     except Exception as err:
                         logging.getLogger("system").error("Auto-save failure for nodenet %s: %s: %s" % (uid, type(err).__name__, str(err)))
 
-            calc_time = datetime.now() - start
-            if step.total_seconds() > 0:
-                left = step - calc_time
-                if left.total_seconds() > 0:
-                    time.sleep(left.total_seconds())
-                elif left.total_seconds() < 0:
-                    logging.getLogger("system").warning("Overlong step %d took %.4f secs, allowed are %.4f secs!" %
-                                                    (self.total_steps, calc_time.total_seconds(), step.total_seconds()))
-
             if self.profiler:
                 self.profiler.enable()
             for wuid, world in worlds.items():
@@ -265,6 +256,16 @@ class MicropsiRunner(threading.Thread):
                         logging.getLogger("world").error("Exception in Environment:", exc_info=1)
                         MicropsiRunner.last_world_exception[nodenets[uid].world] = sys.exc_info()
                         post_mortem()
+
+            calc_time = datetime.now() - start
+            if step.total_seconds() > 0:
+                left = step - calc_time
+                if left.total_seconds() > 0:
+                    time.sleep(left.total_seconds())
+                elif left.total_seconds() < 0:
+                    logging.getLogger("system").warning("Overlong step %d took %.4f secs, allowed are %.4f secs!" %
+                                                    (self.total_steps, calc_time.total_seconds(), step.total_seconds()))
+
             if self.profiler:
                 self.profiler.disable()
 

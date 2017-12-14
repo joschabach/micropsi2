@@ -357,6 +357,8 @@ def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor
     """ Returns log-messages and monitor-data for the given nodenet."""
     data = get_monitor_data(nodenet_uid, 0, monitor_from, monitor_count)
     data['logs'] = get_logger_messages(logger, after)
+    res, status = get_status_tree(nodenet_uid)
+    data['status'] = status
     return data
 
 

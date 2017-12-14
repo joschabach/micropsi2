@@ -1036,6 +1036,12 @@ def abort_behavior_rpc(token):
     return runtime.abort_behavior(token)
 
 
+@rpc("get_status_tree")
+def get_status_tree(nodenet_uid, level="debug"):
+    """ Return status tree as an array of dicts """
+    return runtime.get_status_tree(nodenet_uid, level)
+
+
 # Device
 
 @rpc("get_device_types")

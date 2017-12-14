@@ -1147,6 +1147,11 @@ def abort_behavior(token):
     return True, stop_nodenetrunner(behavior_token_map[token])
 
 
+def get_status_tree(nodenet_uid, level="debug"):
+    """ Return progress tree as an array of dicts """
+    return True, nodenets[nodenet_uid].statuslogger.get_status_tree(level)
+
+
 def __pythonify(name):
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name).lower()
     return re.sub('([\s+\W])', '_', s1)

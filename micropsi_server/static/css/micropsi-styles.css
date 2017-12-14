@@ -685,3 +685,51 @@ table th {
 #timeseries_controls .tooltip.top {
   opacity: 0.8;
 }
+
+
+/* status logger */
+
+
+#status_table{
+  width: 100%;
+}
+.status_indicator {
+  margin:10px;
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1px solid #333;
+}
+
+.inactive {
+  background: gray;
+}
+
+.inprogress {
+  background: #090;
+  animation: colorchange_success 4.5s infinite;
+  -webkit-animation: colorchange_success 4.5s infinite;
+}
+
+@keyframes colorchange_success{
+  0%  {background: #0d0;}
+  50%  {background: #393;}
+  100%  {background: #0d0;}
+}
+@webkit-keyframes colorchange_success{
+  0%  {background: #0d0;}
+  50%  {background: #393;}
+  100%  {background: #0d0;}
+}
+
+.success {
+  background: #0d0;
+}
+
+.failure {
+  background: #0b0;
+}
+
+
+

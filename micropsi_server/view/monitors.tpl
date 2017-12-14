@@ -113,7 +113,13 @@
                     </div>
                 </div>
             </div>
-           
+            <div class="status_field layout_field">
+                <h4>Status</h4>
+                <div class="contentbox section">
+                    <table id="status_table" class="table-condensed table-striped">
+                    </table>
+                </div>
+            </div>
             <p style="clear:both">&nbsp;</p>
         </div>
     </div>

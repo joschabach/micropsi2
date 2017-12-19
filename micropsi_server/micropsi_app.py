@@ -1622,6 +1622,8 @@ def ipython_kernel_thread():
     from unittest import mock
     import IPython
     from ipykernel.zmqshell import ZMQInteractiveShell
+    from ipykernel import kernelapp
+    kernelapp._ctrl_c_message = "Starting Ipython Kernel"
     from IPython.core.autocall import ZMQExitAutocall
 
     class KeepAlive(ZMQExitAutocall):

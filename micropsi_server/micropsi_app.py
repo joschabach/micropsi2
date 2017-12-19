@@ -1587,6 +1587,37 @@ def runtime_info():
 # -----------------------------------------------------------------------------------------------
 
 
+consolethread = None
+
+
+def signal_handler(sig, msg):
+    from micropsi_core import runtime
+    if consolethread:
+        from ipykernel.zmqshell import ZMQInteractiveShell
+        from IPython.core.history import HistoryManager
+        import IPython
+        IPython.sys.stdout.write("""
+######################
+#                    #
+#       ERROR        #
+#                    #
+######################
+
+The runtime for this console has been shut down!\n\n\n""")
+
+        ZMQInteractiveShell._instance.quiet = False
+        def empty(a):
+            pass
+        HistoryManager.end_session = empty
+
+        try:
+            ZMQInteractiveShell.exiter.__call__(keep_alive=False)
+        except AttributeError:  # explodes, if no ipython session present
+            pass
+    # call the runtime's signal handler
+    runtime.signal_handler(sig, msg)
+
+
 def ipython_kernel_thread():
     from unittest import mock
     import IPython
@@ -1594,10 +1625,10 @@ def ipython_kernel_thread():
     from IPython.core.autocall import ZMQExitAutocall
 
     class KeepAlive(ZMQExitAutocall):
-        def __call__(self):
-            super().__call__(True)
-
+        def __call__(self, keep_alive=True):
+            super().__call__(keep_alive)
     ZMQInteractiveShell.exiter = KeepAlive()
+
     with mock.patch('signal.signal'):
         IPython.embed_kernel()
 
@@ -1605,8 +1636,10 @@ def ipython_kernel_thread():
 def start_ipython_console():
     import sys
     import time
-
-    Thread(target=ipython_kernel_thread).start()
+    global consolethread
+    consolethread = Thread(target=ipython_kernel_thread)
+    consolethread.daemon = True
+    consolethread.start()
 
     count = 0
     # wait until ipython hijacked the streams
@@ -1619,9 +1652,17 @@ def start_ipython_console():
 
 
 def main(host=None, port=None, console=True):
+    import signal
     host = host or cfg['micropsi2']['host']
     port = port or cfg['micropsi2']['port']
     print("Starting App on Port " + str(port))
+
+    # register our own signal handlers first.
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGABRT, signal_handler)
+
+    # start the console if desired
     if console:
         try:
             import IPython
@@ -1632,8 +1673,10 @@ def main(host=None, port=None, console=True):
     else:
         print("Starting without ipython console")
 
+    # init the runtime
     runtime.initialize()
 
+    # start the webserver
     try:
         from cherrypy import wsgiserver
         server = 'cherrypy'

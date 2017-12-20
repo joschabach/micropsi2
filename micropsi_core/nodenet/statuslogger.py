@@ -8,7 +8,7 @@ from micropsi_core.runtime import logger
 class StatusLogger(object):
 
     INACTIVE = "inactive"
-    INPROGRESS = "in progress"
+    ACTIVE = "active"
     SUCCESS = "success"
     FAILURE = "failure"
 
@@ -18,7 +18,7 @@ class StatusLogger(object):
         self._logger = logging.getLogger(name)
         logger.register_logger(name, logging.DEBUG)
         self.status_dict = {}
-        self.states = [self.INACTIVE, self.INPROGRESS, self.SUCCESS, self.FAILURE]
+        self.states = [self.INACTIVE, self.ACTIVE, self.SUCCESS, self.FAILURE]
 
     def log(self, level, key, state, msg="", progress=None):
         """ Log the given message

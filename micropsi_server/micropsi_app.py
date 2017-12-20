@@ -1632,7 +1632,8 @@ def ipython_kernel_thread():
     ZMQInteractiveShell.exiter = KeepAlive()
 
     with mock.patch('signal.signal'):
-        IPython.embed_kernel()
+        with mock.patch('ipykernel.kernelbase.signal'):
+            IPython.embed_kernel()
 
 
 def start_ipython_console():

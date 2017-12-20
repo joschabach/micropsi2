@@ -1,5 +1,9 @@
+
 0.15-alpha13 (unreleased)
 ==========
+* Bugfixes for netapi, ipython console
+* Fix runner timing
+
 
 0.14-alpha12 (2017-12-08)
 ==========

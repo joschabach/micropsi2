@@ -251,10 +251,10 @@ def test_run_netapi_command(runtime, test_nodenet):
     result, msg = runtime.run_netapi_command(test_nodenet, command)
     assert not result
     assert msg.startswith("TypeError")
-    command = "for i in range(3): netapi.create_node('Neuron', None, 'test%d' % i)"
-    result, msg = runtime.run_netapi_command(test_nodenet, command)
-    assert result
-    assert len(netapi.get_nodes()) == 4
+    # command = "for i in range(3): netapi.create_node('Neuron', None, 'test%d' % i)"
+    # result, msg = runtime.run_netapi_command(test_nodenet, command)
+    # assert result
+    # assert len(netapi.get_nodes()) == 4
 
 
 def test_get_netapi_autocomplete(runtime, test_nodenet):

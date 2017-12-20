@@ -63,7 +63,7 @@ class StatusLogger(object):
         template = {
             'level': level,
             'intlevel': intlevel,
-            'state': state,
+            'state': '',
             'msg': '',
             'progress': '',
             'children': {}

@@ -218,10 +218,16 @@ $(function(){
                     '<tr><td>',
                     "&nbsp;".repeat(level * 3),
                     sorted_keys[i],
+                    '</td><td>')
+                if(entry.state){
+                    html.push('<i class="status_indicator ',
+                        entry.state.replace(' ', ''),
+                        '"/>')
+                } else {
+                    html.push("&nbsp;");
+                }
+                html.push(
                     '</td><td>',
-                    '<i class="status_indicator ',
-                    entry.state.replace(' ', ''),
-                    '"/></td><td>',
                     entry.msg || "&nbsp;",
                     '</td><td>');
                 if(entry.progress){

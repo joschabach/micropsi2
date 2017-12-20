@@ -1,5 +1,5 @@
 
-0.15-alpha13 (unreleased)
+0.15-alpha13 (2017-12-20)
 ==========
 * Bugfixes for netapi, ipython console
 * Fix runner timing

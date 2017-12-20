@@ -100,8 +100,8 @@ class NetapiShell(InteractiveConsole):
             self.err_line_separator = '\n\n'
         except ImportError:
             self.err_line_separator = '\n'
-        self.stdout = sys.stdout
-        self.stderr = sys.stderr
+        self.stdout = sys.__stdout__
+        self.stderr = sys.__stderr__
         self.outcache = FileCacher()
         self.errcache = FileCacher()
 
@@ -109,10 +109,14 @@ class NetapiShell(InteractiveConsole):
         return
 
     def get_output(self):
+        sys.__stdout__ = self.outcache
+        sys.__stderr__ = self.errcache
         sys.stdout = self.outcache
         sys.stderr = self.errcache
 
     def return_output(self):
+        sys.__stdout__ = self.stdout
+        sys.__stderr__ = self.stderr
         sys.stdout = self.stdout
         sys.stderr = self.stderr
 
@@ -146,10 +150,12 @@ class NetapiShell(InteractiveConsole):
                         begin_exception_message = True
                     if begin_exception_message and len(part) == 0:
                         break
-                    cleaned_parts.append(part.strip())
+                    if part.strip():
+                        cleaned_parts.append(part.strip())
+
                 if len(cleaned_parts) > 1:
                     cleaned_parts = ['\nTraceback:'] + cleaned_parts
-                return False, "\n\n".join(cleaned_parts)
+                return False, "\n".join(cleaned_parts)
             else:
                 return False, err
 
@@ -242,15 +248,6 @@ class MicropsiRunner(threading.Thread):
                     except Exception as err:
                         logging.getLogger("system").error("Auto-save failure for nodenet %s: %s: %s" % (uid, type(err).__name__, str(err)))
 
-            calc_time = datetime.now() - start
-            if step.total_seconds() > 0:
-                left = step - calc_time
-                if left.total_seconds() > 0:
-                    time.sleep(left.total_seconds())
-                elif left.total_seconds() < 0:
-                    logging.getLogger("system").warning("Overlong step %d took %.4f secs, allowed are %.4f secs!" %
-                                                    (self.total_steps, calc_time.total_seconds(), step.total_seconds()))
-
             if self.profiler:
                 self.profiler.enable()
             for wuid, world in worlds.items():
@@ -265,6 +262,16 @@ class MicropsiRunner(threading.Thread):
                         logging.getLogger("world").error("Exception in Environment:", exc_info=1)
                         MicropsiRunner.last_world_exception[nodenets[uid].world] = sys.exc_info()
                         post_mortem()
+
+            calc_time = datetime.now() - start
+            if step.total_seconds() > 0:
+                left = step - calc_time
+                if left.total_seconds() > 0:
+                    time.sleep(left.total_seconds())
+                elif left.total_seconds() < 0:
+                    logging.getLogger("system").warning("Overlong step %d took %.4f secs, allowed are %.4f secs!" %
+                                                    (self.total_steps, calc_time.total_seconds(), step.total_seconds()))
+
             if self.profiler:
                 self.profiler.disable()
 
@@ -1560,8 +1567,11 @@ def run_netapi_command(nodenet_uid, command):
     nodenet = get_nodenet(nodenet_uid)
     shell = netapi_consoles[nodenet_uid]
     with nodenet.netlock:
-        result = shell.push(command)
-    return result
+        success, msg = shell.push("last_result = %s" % command)
+        if success:
+            return shell.push("print(last_result)")
+        else:
+            return success, msg
 
 
 def get_netapi_autocomplete_data(nodenet_uid, name=None):
@@ -1572,7 +1582,7 @@ def get_netapi_autocomplete_data(nodenet_uid, name=None):
     nodetypes = get_available_node_types(nodenet_uid)
 
     shell = netapi_consoles[nodenet_uid]
-    res, locs = shell.push("[k for k in locals() if not k.startswith('_')]")
+    res, locs = shell.push("print([k for k in locals() if not k.startswith('_')])")
 
     def parsemembers(members):
         data = {}
@@ -1606,7 +1616,7 @@ def get_netapi_autocomplete_data(nodenet_uid, name=None):
     locs = eval(locs)
     for n in locs:
         if name is None or n == name:
-            res, typedescript = shell.push(n)
+            res, typedescript = shell.push("print(%s)" % n)
             if 'netapi' in typedescript:
                 data['types'][n] = 'netapi'
             else:

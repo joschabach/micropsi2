@@ -262,6 +262,7 @@ class World(object):
         if nodenet_uid in self.agents:
             # stop corresponding nodenet
             micropsi_core.runtime.stop_nodenetrunner(nodenet_uid)
+            self.agents[nodenet_uid].shutdown()
             del self.agents[nodenet_uid]
         if nodenet_uid in self.data['agents']:
             del self.data['agents'][nodenet_uid]

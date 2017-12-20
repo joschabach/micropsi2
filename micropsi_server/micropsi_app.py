@@ -1561,7 +1561,7 @@ def run_netapi_command(nodenet_uid, command):
         raise RuntimeError("Netapi console only available if serving to localhost only")
 
 
-@rpc("get_netapi_signatures")
+@rpc("get_netapi_autocomplete_data")
 def get_netapi_autocomplete_data(nodenet_uid, name=None):
     """ Return autocomplete-options for the netapi console. """
     return True, runtime.get_netapi_autocomplete_data(nodenet_uid, name=None)
@@ -1587,17 +1587,50 @@ def runtime_info():
 # -----------------------------------------------------------------------------------------------
 
 
+consolethread = None
+
+
+def signal_handler(sig, msg):
+    from micropsi_core import runtime
+    if consolethread:
+        from ipykernel.zmqshell import ZMQInteractiveShell
+        from IPython.core.history import HistoryManager
+        import IPython
+        IPython.sys.stdout.write("""
+######################
+#                    #
+#       ERROR        #
+#                    #
+######################
+
+The runtime for this console has been shut down!\n\n\n""")
+
+        ZMQInteractiveShell._instance.quiet = False
+        def empty(a):
+            pass
+        HistoryManager.end_session = empty
+
+        try:
+            ZMQInteractiveShell.exiter.__call__(keep_alive=False)
+        except AttributeError:  # explodes, if no ipython session present
+            pass
+    # call the runtime's signal handler
+    runtime.signal_handler(sig, msg)
+
+
 def ipython_kernel_thread():
     from unittest import mock
     import IPython
     from ipykernel.zmqshell import ZMQInteractiveShell
+    from ipykernel import kernelapp
+    kernelapp._ctrl_c_message = "Starting Ipython Kernel"
     from IPython.core.autocall import ZMQExitAutocall
 
     class KeepAlive(ZMQExitAutocall):
-        def __call__(self):
-            super().__call__(True)
-
+        def __call__(self, keep_alive=True):
+            super().__call__(keep_alive)
     ZMQInteractiveShell.exiter = KeepAlive()
+
     with mock.patch('signal.signal'):
         IPython.embed_kernel()
 
@@ -1605,8 +1638,10 @@ def ipython_kernel_thread():
 def start_ipython_console():
     import sys
     import time
-
-    Thread(target=ipython_kernel_thread).start()
+    global consolethread
+    consolethread = Thread(target=ipython_kernel_thread)
+    consolethread.daemon = True
+    consolethread.start()
 
     count = 0
     # wait until ipython hijacked the streams
@@ -1618,19 +1653,32 @@ def start_ipython_console():
     sys.stdin, sys.stderr = sys.__stdin__, sys.__stderr__
 
 
-def main(host=None, port=None):
+def main(host=None, port=None, console=True):
+    import signal
     host = host or cfg['micropsi2']['host']
     port = port or cfg['micropsi2']['port']
-    try:
-        import IPython
-        import ipykernel
-        start_ipython_console()
-    except ImportError as err:
-        logging.getLogger('system').warning("Warning: IPython console not available: " + err.msg)
-
     print("Starting App on Port " + str(port))
+
+    # register our own signal handlers first.
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGABRT, signal_handler)
+
+    # start the console if desired
+    if console:
+        try:
+            import IPython
+            import ipykernel
+            start_ipython_console()
+        except ImportError as err:
+            print("Warning: IPython console not available: " + err.msg)
+    else:
+        print("Starting without ipython console")
+
+    # init the runtime
     runtime.initialize()
 
+    # start the webserver
     try:
         from cherrypy import wsgiserver
         server = 'cherrypy'
@@ -1639,12 +1687,15 @@ def main(host=None, port=None):
         server = 'wsgiref'
         kwargs = {}
 
-    run(micropsi_app, host=host, port=port, quiet=False, server=server, **kwargs)
+    run(micropsi_app, host=host, port=port, quiet=True, server=server, **kwargs)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Start the %s server." % APPTITLE)
     parser.add_argument('-d', '--host', type=str, default=cfg['micropsi2']['host'])
     parser.add_argument('-p', '--port', type=int, default=cfg['micropsi2']['port'])
+    parser.add_argument('--console', dest='console', action='store_true')
+    parser.add_argument('--no-console', dest='console', action='store_false')
+    parser.set_defaults(console=True)
     args = parser.parse_args()
-    main(host=args.host, port=args.port)
+    main(host=args.host, port=args.port, console=args.console)

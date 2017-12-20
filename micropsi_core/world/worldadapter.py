@@ -68,6 +68,7 @@ class WorldAdapterMixin(object):
         pass  # pragma: no cover
 
     def shutdown(self):
+        super().shutdown()
         pass  # pragma: no cover
 
 
@@ -186,6 +187,10 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
     def is_alive(self):
         """called by the world to check whether the agent has died and should be removed"""
         return True
+
+    def shutdown(self):
+        """ Called before the instance is deleted or recreated """
+        pass
 
 
 class Default(WorldAdapter):

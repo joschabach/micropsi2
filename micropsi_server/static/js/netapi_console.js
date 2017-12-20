@@ -160,7 +160,7 @@ $(function(){
         if(name){
             params['name'] = name;
         }
-        api.call('get_netapi_signatures', params, function(data){
+        api.call('get_netapi_autocomplete_data', params, function(data){
             if(name){
                 var type = data.types[name]
                 nametypes[name] = type
@@ -328,14 +328,16 @@ $(function(){
     function autocomplete_properties(obj, last){
         html = [];
         var type = nametypes[obj];
-        var sorted = Object.keys(autocomplete_options[type]).sort();
-        for(var i in sorted){
-            var key = sorted[i];
-            if(key && (last == "" || key.startsWith(last))){
-                if(autocomplete_options[type][key] == null){
-                    html.push('<li><a data-complete="property" data="'+key+'">'+key+'</a></li>');
-                } else {
-                    html.push('<li><a data-complete="property" data="'+key+'">'+key+'()</a></li>');
+        if(autocomplete_options[type]) {
+            var sorted = Object.keys(autocomplete_options[type]).sort();
+            for(var i in sorted){
+                var key = sorted[i];
+                if(key && (last == "" || key.startsWith(last))){
+                    if(autocomplete_options[type][key] == null){
+                        html.push('<li><a data-complete="property" data="'+key+'">'+key+'</a></li>');
+                    } else {
+                        html.push('<li><a data-complete="property" data="'+key+'">'+key+'()</a></li>');
+                    }
                 }
             }
         }

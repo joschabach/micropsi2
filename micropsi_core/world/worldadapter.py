@@ -382,19 +382,22 @@ try:
         def set_flow_datasource(self, name, values):
             """Set the values of the given flow_datasource """
             assert isinstance(values, np.ndarray), "must provide numpy array"
-            assert self.flow_datasources[name].shape == values.shape
+            shape = self.flow_datasources[name].shape
+            assert shape == values.shape, "Datasource %s expects shape %s, got %s" % (name, shape, values.shape)
             self.flow_datasources[name] = values
 
         def add_to_flow_datatarget(self, name, values):
             """Add the given values to the given flow_datatarget """
             assert isinstance(values, np.ndarray), "must provide numpy array"
-            assert self.flow_datatargets[name].shape == values.shape
+            shape = self.flow_datatargets[name].shape
+            assert shape == values.shape, "Datatarget %s expects shape %s, got %s" % (name, shape, values.shape)
             self.flow_datatargets[name] += values
 
         def set_flow_datatarget_feedback(self, name, values):
             """Set the values of the given flow_datatarget_feedback """
             assert isinstance(values, np.ndarray), "must provide numpy array"
-            assert self.flow_datatarget_feedbacks[name].shape == values.shape
+            shape = self.flow_datasources[name].shape
+            assert shape == values.shape, "DatatargetFeedback %s expects shape %s, got %s" % (name, shape, values.shape)
             self.flow_datatarget_feedbacks[name] = values
 
         def set_datasource_values(self, values):

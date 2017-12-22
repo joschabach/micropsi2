@@ -702,11 +702,11 @@ table th {
   border: 1px solid #333;
 }
 
-.inactive {
+#status_table .inactive {
   background: gray;
 }
 
-.inprogress {
+#status_table .active {
   background: #090;
   animation: colorchange_success 4.5s infinite;
   -webkit-animation: colorchange_success 4.5s infinite;
@@ -723,12 +723,12 @@ table th {
   100%  {background: #0d0;}
 }
 
-.success {
+#status_table .success {
   background: #0d0;
 }
 
-.failure {
-  background: #0b0;
+#status_table .failure {
+  background: #b00;
 }
 
 

@@ -210,7 +210,7 @@ $(function(){
         var html = [];
 
         function fill_html(data, level){
-            sorted_keys = Object.keys(data);
+            var sorted_keys = Object.keys(data);
             sorted_keys.sort(sortfunc);
             for(var i = 0; i < sorted_keys.length; i++){
                 entry = data[sorted_keys[i]];
@@ -222,7 +222,7 @@ $(function(){
                 if(entry.state){
                     html.push('<i class="status_indicator ',
                         entry.state.replace(' ', ''),
-                        '"/>')
+                        '" title="', entry.state, '" ',', />')
                 } else {
                     html.push("&nbsp;");
                 }

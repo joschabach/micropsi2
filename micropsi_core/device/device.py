@@ -140,6 +140,10 @@ class InputDeviceAsync(InputDevice):
         if not self.initialized:
             self.initialized = True
             self.thread.start()
+            attempt_counter = 0
+            while self.data is None and attempt_counter < 1000:
+                time.sleep(0.05)
+                attempt_counter += 1
         return self.data
 
     def deinit(self):

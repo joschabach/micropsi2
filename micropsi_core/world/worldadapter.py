@@ -430,7 +430,7 @@ try:
             for k in self.device_map:
                 if k in devicemanager.online_devices:
                     if issubclass(devicemanager.online_devices[k].__class__, InputDevice):
-                        data = devicemanager.online_devices[k].read_data()
+                        data = devicemanager.online_devices[k].get_data()
                         assert isinstance(data, np.ndarray), "device %s must provide numpy array" % self.device_map[k]
                         self.set_flow_datasource(self.device_map[k], data)
                 elif devicemanager.known_devices[k].get('nature') == "InputDevice":
@@ -441,7 +441,7 @@ try:
                 if k in devicemanager.online_devices:
                     if issubclass(devicemanager.online_devices[k].__class__, OutputDevice):
                         data = self.get_flow_datatarget(self.device_map[k])
-                        devicemanager.online_devices[k].write_data(data)
+                        devicemanager.online_devices[k].set_data(data)
                 elif devicemanager.known_devices[k].get('nature') == "OutputDevice":
                     self.logger.error("Device %s is not connected." % self.device_map[k])
 

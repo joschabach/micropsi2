@@ -90,6 +90,9 @@ class ConfigurationManager(object):
         with open(self.config_file_name, mode='w+', encoding="utf-8") as file:
             json.dump(self.data, file, indent=4)
 
+    def get(self, key, alt=None):
+        return self.data[key] if key in self.data else alt
+
     def __setitem__(self, key, value):
         self.data[key] = value
         if self.auto_save:

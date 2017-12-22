@@ -15,7 +15,7 @@ def test_set_logging_level(runtime):
     runtime.set_logging_levels({'system': 'DEBUG', 'world': 'DEBUG', 'agent': 'DEBUG'})
     assert logging.getLogger('system').getEffectiveLevel() == logging.DEBUG
     assert logging.getLogger('world').getEffectiveLevel() == logging.DEBUG
-    assert runtime.runtime_config['logging']['level_agent'] == 'DEBUG'
+    assert runtime.runner_config['log_level_agent'] == 'DEBUG'
 
 
 def test_get_logging_levels(runtime):

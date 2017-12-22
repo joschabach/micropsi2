@@ -17,6 +17,7 @@
             %end
 
             <fieldset class="well">
+                <p>Runner</p>
 
                 %if not defined("name_error"):
                 <div class="control-group">
@@ -25,7 +26,7 @@
                 %end
                     <label class="control-label" for="timestep">Interval in milliseconds</label>
                     <div class="controls">
-                        <input type="text" class="input-xlarge" maxlength="256" id="timestep" name="timestep" value="{{value['timestep']}}" />
+                        <input type="text" class="input-medium" maxlength="256" id="timestep" name="timestep" value="{{value['timestep']}}" />
                         %if defined("name_error"):
                         <span class="help-inline">{{name_error}}</span>
                         %end
@@ -34,14 +35,39 @@
                 <div class="control-group">
                     <label class="control-label" for="infguard">NaN/Inf Guard</label>
                     <div class="controls">
-                        <input type="checkbox" class="input-xlarge" id="infguard" name="infguard"
+                        <input type="checkbox" class="input-medium" id="infguard" name="infguard"
                         %if 'infguard' in value and value['infguard']:
                             checked="checked"
                         %end
                         />
                     </div>
                 </div>
-
+             </fieldset>
+             <fieldset class="well">
+                <p>Logging</p>
+                % for name in ["system", "world", "agent"]:
+                    <div class="control-group">
+                        <label class="control-label" for="log_level_{{name}}">{{name}}</label>
+                        <div class="controls">
+                            <select id="log_level_{{name}}" name="log_level_{{name}}" class="input-medium">
+                                % for lvl in ["debug", "info", "warning", "error", "critical"]:
+                                    <option
+                                    % if lvl == value['log_levels'][name]:
+                                        selected = "selected"
+                                    %end
+                                    >{{lvl}}</option>
+                                %end
+                            </select>
+                        </div>
+                    </div>
+                %end
+                <div class="control-group">
+                    <label class="control-label" for="log_file">Logfile</label>
+                    <div class="controls">
+                        <input type="text" class="input-medium" id="log_file" name="log_file" value="{{value['log_file'] or ''}}"
+                        />
+                    </div>
+                </div>
             </fieldset>
     </div>
 

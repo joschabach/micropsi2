@@ -765,7 +765,16 @@ def world_list(current_world=None):
 def edit_runner_properties():
     user_id, permissions, token = get_request_data()
     if len(request.params) > 0:
-        runtime.set_runner_properties(int(request.params['timestep']), bool(request.params.get('infguard')))
+        log_levels = {
+            'agent': request.params.get('log_level_agent'),
+            'system': request.params.get('log_level_system'),
+            'world': request.params.get('log_level_world')
+        }
+        runtime.set_runner_properties(
+            int(request.params['timestep']),
+            bool(request.params.get('infguard')),
+            log_levels,
+            request.params.get('log_file'))
         return dict(status="success", msg="Settings saved")
     else:
         return template("runner_form", action="/config/runner", value=runtime.get_runner_properties())

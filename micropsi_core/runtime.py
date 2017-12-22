@@ -256,8 +256,9 @@ def kill_runners(signal=None, frame=None):
 def set_logging_levels(logging_levels):
     for key in logging_levels:
         if key == 'agent':
-            runtime_config['logging']['level_agent'] = logging_levels[key]
+            runner_config['log_level_agent'] = logging_levels[key]
         else:
+            runner_config['log_level_agent'] = logging_levels[key]
             logger.set_logging_level(key, logging_levels[key])
     return True
 
@@ -283,7 +284,7 @@ def get_logging_levels(nodenet_uid=None):
         if key.startswith('agent') or key in ['world', 'system']:
             levels[key] = logging.getLevelName(logging.getLogger(key).getEffectiveLevel())
     if 'agent' not in levels:
-        levels['agent'] = runtime_config['logging']['level_agent']
+        levels['agent'] = runner_config['log_level_agent']
     return levels
 
 
@@ -621,7 +622,7 @@ def start_nodenetrunner(nodenet_uid):
     return True
 
 
-def set_runner_properties(timestep, infguard=False):
+def set_runner_properties(timestep, infguard=False, log_levels={}, log_file=None):
     """Sets the speed of the nodenet calculation in ms.
 
     Argument:
@@ -631,6 +632,11 @@ def set_runner_properties(timestep, infguard=False):
     runner_config['runner_infguard'] = bool(infguard)
     runner['timestep'] = timestep
     runner['infguard'] = bool(infguard)
+    if log_levels:
+        set_logging_levels(log_levels)
+    if log_file is not None:
+        logger.set_logfile(log_file)
+        runner_config['log_file'] = log_file
     return True
 
 
@@ -661,7 +667,9 @@ def get_runner_properties():
     """Returns the speed that has been configured for the nodenet runner (in ms)."""
     return {
         'timestep': runner_config['runner_timestep'],
-        'infguard': runner_config['runner_infguard']
+        'infguard': runner_config['runner_infguard'],
+        'log_levels': get_logging_levels(),
+        'log_file': logger.log_to_file
     }
 
 
@@ -1912,6 +1920,12 @@ def initialize(config=None):
     sys.path.append(WORLD_PATH)
 
     runner_config = ConfigurationManager(config['paths']['server_settings_path'])
+    # migration code.
+    if 'log_level_system' not in runner_config:
+        runner_config['log_level_system'] = config['logging']['level_system']
+        runner_config['log_level_agent'] = config['logging']['level_agent']
+        runner_config['log_level_world'] = config['logging']['level_system']
+        runner_config['log_file'] = config['logging'].get('logfile', '')
 
     # create autosave-dir if not exists:
     auto_save_intervals = config['micropsi2'].get('auto_save_intervals')
@@ -1922,9 +1936,9 @@ def initialize(config=None):
 
     if logger is None:
         logger = MicropsiLogger({
-            'system': config['logging']['level_system'],
-            'world': config['logging']['level_world']
-        }, config['logging'].get('logfile'))
+            'system': runner_config['log_level_system'],
+            'world': runner_config['log_level_world']
+        }, runner_config.get('log_file'))
 
     result, errors = reload_code()
     load_definitions()

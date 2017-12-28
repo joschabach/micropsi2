@@ -11,6 +11,7 @@ class Device(metaclass=ABCMeta):
     that further specify the direction of the data flow
     """
     def __init__(self, config):
+        self.logger = logging.getLogger("world")
         for item in self.__class__.get_options():
             if item['name'] not in config:
                 config[item['name']] = item.get('default')
@@ -126,7 +127,7 @@ class InputDeviceAsync(InputDevice):
                 self.data = self.read_data()
                 time.sleep(0.05)
         except Exception as e:
-            logging.getLogger('system').error("Async input device thread crashed: %s", e)
+            self.logger.error("Async input device thread crashed: %s", e)
 
     @abstractmethod
     def read_data(self):

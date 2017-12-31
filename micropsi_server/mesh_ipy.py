@@ -106,6 +106,12 @@ class IPythonConnection(object):
         self.prompt_in = u"In[{}]: "
         self.prompt_out = u"Out[{}]: "
 
+    def get_buffer(self):
+        return {
+            "lines": self.buf,
+            "highlights": self.buf.highlights
+        }
+
     def create_outbuf(self):
         if self.buf is not None:
             return
@@ -366,11 +372,11 @@ class IPythonConnection(object):
         self.disp_status("DEAD")
 
 
-c = IPythonConnection()
-c.ipy_connect(["--existing"])
-c.ipy_run(["print(\"wrdlbrmpfd\")"])
-c.ipy_run(["print(runtime)"])
+#c = IPythonConnection()
+#c.ipy_connect(["--existing"])
+#c.ipy_run(["print(\"wrdlbrmpfd\")"])
+#c.ipy_run(["print(runtime)"])
 
-print("\n".join(c.buf))
+#print("\n".join(c.buf))
 
 #c.ipy_run("print('well well')")

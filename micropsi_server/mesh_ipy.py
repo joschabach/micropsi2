@@ -245,9 +245,8 @@ class IPythonConnection(object):
         self.create_outbuf()
         self.connect(args)
 
-    def ipy_run(self, args):
-        code = args[0]
-        silent = bool(args[1]) if len(args) > 1 else False
+    def run(self, code):
+        silent = False  # bool(args[1]) if len(args) > 1 else False
         if self.km and not self.km.is_alive():
             # Todo: communicate kernel restart
             if self.km.has_kernel:
@@ -269,32 +268,28 @@ class IPythonConnection(object):
     def ipy_write(self, args):
         self.append_outbuf(args[0])
 
-    def ipy_complete(self, args):
-        #line = self.vim.current.line
-        #pos = self.vim.funcs.col('.') - 1
+    def autocomplete(self, line, pos):
+        reply = self.waitfor(self.kc.complete(line, pos))
+        content = reply["content"]
+        start = content["cursor_start"] + 1
+        matches = content["matches"]
+        return {
+            "start": start,
+            "matches": matches
+        }
 
-        #reply = self.waitfor(self.kc.complete(line, pos))
-        #content = reply["content"]
-        #start = content["cursor_start"] + 1
+    def history(self, item):
+        #reply = self.waitfor(self.kc.history(raw=True, output=False, hist_access_type='tail', n=item))
+        reply = self.waitfor(self.kc.history())
+        content = reply["content"]
 
-        ## Todo: now return completion...
-        pass
+        if len(content["history"]) == 0:
+            return 0, 0, ""
 
-    def ipy_omnifunc(self,args):
-        findstart, base = args
-        if findstart:
-            if not self.has_connection:
-                return False
-            line = self.vim.current.line
-            pos = self.vim.funcs.col('.')-1
+        if abs(item) > len(content["history"]):
+            item = 0
 
-            reply = self.waitfor(self.kc.complete(line, pos))
-            content = reply["content"]
-            start = content["cursor_start"]
-            self._matches = content['matches']
-            return start
-        else:
-            return self._matches
+        return content["history"][item]
 
     def ipy_objinfo(self, args):
         word, level = args

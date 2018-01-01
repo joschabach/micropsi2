@@ -185,10 +185,7 @@ class IPythonConnection(object):
         if has_previous:
             self.ip_app.connection_file = self.ip_app._new_connection_file()
 
-        ## messages will be recieved in Jupyter's event loop threads
-        ## so use the async self
         self.ip_app.initialize(self, argv)
-        #self.ip_app.initialize(self, argv)
         self.ip_app.start()
         self.kc = self.ip_app.kernel_client
         self.km = self.ip_app.kernel_manager
@@ -369,9 +366,6 @@ class IPythonConnection(object):
 
 #c = IPythonConnection()
 #c.ipy_connect(["--existing"])
-#c.ipy_run(["print(\"wrdlbrmpfd\")"])
-#c.ipy_run(["print(runtime)"])
-
+#c.run("print(\"wrdlbrmpfd\")")
+#c.run("print(runtime)")
 #print("\n".join(c.buf))
-
-#c.ipy_run("print('well well')")

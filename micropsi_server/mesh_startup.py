@@ -1,3 +1,5 @@
+from threading import Thread
+import time
 from micropsi_server.mesh_ipy import IPythonConnection
 ipython_client = IPythonConnection()
 
@@ -11,20 +13,25 @@ def mesh_startup(port=7543, start_runtime=True):
     import sys
     sys.exit = no_exit
 
-    import threading
-    from threading import Thread
-    main_thread = threading.current_thread()
+    runtime_thread = None
 
     if start_runtime:
         def micropsi_runtime_main():
             import micropsi_server.micropsi_app
             micropsi_server.micropsi_app.main(None, port)
 
-        main_thread = Thread(target=micropsi_runtime_main)
-        main_thread.start()
+        runtime_thread = Thread(target=micropsi_runtime_main)
+        runtime_thread.start()
 
     ipython_client.ipy_connect(["--existing"])
-    #c.ipy_run(["print(\"Runtime is: \"+runtime.runtime_info())"])
 
-    if main_thread != threading.current_thread():
-        main_thread.join()
+    if runtime_thread is not None:
+        runtime_thread.join()
+    else:
+        while ipython_client is not None:
+            time.sleep(0.1)
+
+
+def request_termination():
+    global ipython_client
+    ipython_client = None

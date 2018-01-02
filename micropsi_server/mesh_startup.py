@@ -1,37 +1,67 @@
 from threading import Thread
+import os
 import time
+
 from micropsi_server.mesh_ipy import IPythonConnection
 ipython_client = IPythonConnection()
+console_termination_requested = False
 
 
 def no_exit(code):
     pass
 
 
-def mesh_startup(port=7543, start_runtime=True):
-
+def start_runtime_and_console(port=7543):
+    import micropsi_server
+    import micropsi_server.micropsi_app
     import sys
+
     sys.exit = no_exit
 
-    runtime_thread = None
+    # make sure we have a kernel dir to write to
+    import jupyter_core
+    kernel_dir = jupyter_core.paths.jupyter_path('kernels')[0]
+    if not os.path.isdir(kernel_dir):
+        print("Creating IPython kernel dir: %s" % kernel_dir)
+        try:
+            os.makedirs(kernel_dir)
+        except Exception as e:
+            print(e)
+            print("Cannot create IPython kernel dir, IPython console may not be available.")
 
-    if start_runtime:
-        def micropsi_runtime_main():
-            import micropsi_server.micropsi_app
-            micropsi_server.micropsi_app.main(None, port)
-
-        runtime_thread = Thread(target=micropsi_runtime_main)
-        runtime_thread.start()
-
-    ipython_client.ipy_connect(["--existing"])
-
-    if runtime_thread is not None:
-        runtime_thread.join()
-    else:
-        while ipython_client is not None:
+    def client_daemon():
+        while micropsi_server.micropsi_app.get_console_info() is None and console_termination_requested is False:
             time.sleep(0.1)
+
+        if console_termination_requested:
+            return
+
+        ipython_client.ipy_connect(["--existing"])
+
+    ipython_client_thread = Thread(target=client_daemon)
+    ipython_client_thread.start()
+
+    micropsi_server.micropsi_app.main(None, port, console=True)
+
+
+def start_console(kernel_info=None):
+    import tempfile
+    import json
+
+    if kernel_info is None:
+        ipython_client.ipy_connect(["--existing"])
+    else:
+        with tempfile.NamedTemporaryFile() as temp:
+            temp.write(json.dumps(kernel_info).encode())
+            temp.flush()
+            print("IPython console info %s" % json.dumps(kernel_info))
+            print("Connecting to IPython console using kernel file %s" % temp.name)
+            ipython_client.ipy_connect(["--existing", temp.name])
+
+    while console_termination_requested is False:
+        time.sleep(0.1)
 
 
 def request_termination():
-    global ipython_client
-    ipython_client = None
+    global console_termination_requested
+    console_termination_requested = True

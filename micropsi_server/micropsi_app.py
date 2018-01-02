@@ -1584,11 +1584,28 @@ def runtime_info():
     """ Return a dict of information about this runtime, like version and configuration"""
     return True, runtime.runtime_info()
 
+
+def get_console_info():
+    from jupyter_client import find_connection_file
+    global console_is_started
+    if not console_is_started:
+        return None
+    connection_file = find_connection_file()
+    with open(connection_file) as connection_info_file:
+        return json.load(connection_info_file)
+    return None
+
+
+@rpc("console_info")
+def console_info():
+    """ Return a dict of information about the IPython console"""
+    return True, get_console_info()
+
 # -----------------------------------------------------------------------------------------------
 
 
 consolethread = None
-
+console_is_started = False
 
 def signal_handler(sig, msg):
     from micropsi_core import runtime
@@ -1640,6 +1657,8 @@ def start_ipython_console():
     import sys
     import time
     global consolethread
+    global console_is_started
+
     consolethread = Thread(target=ipython_kernel_thread)
     consolethread.daemon = True
     consolethread.start()
@@ -1653,6 +1672,7 @@ def start_ipython_console():
     # revert input and error back to their original state
     sys.stdin, sys.stderr = sys.__stdin__, sys.__stderr__
 
+    console_is_started = True
 
 def main(host=None, port=None, console=True):
     host = host or cfg['micropsi2']['host']

@@ -1655,15 +1655,17 @@ def start_ipython_console():
 
 
 def main(host=None, port=None, console=True):
-    import signal
     host = host or cfg['micropsi2']['host']
     port = port or cfg['micropsi2']['port']
     print("Starting App on Port " + str(port))
 
     # register our own signal handlers first.
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-    signal.signal(signal.SIGABRT, signal_handler)
+    import threading
+    if threading.current_thread() == threading.main_thread():
+        import signal
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+        signal.signal(signal.SIGABRT, signal_handler)
 
     # start the console if desired
     if console:

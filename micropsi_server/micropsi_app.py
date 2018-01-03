@@ -1587,12 +1587,17 @@ def runtime_info():
 
 def get_console_info():
     from jupyter_client import find_connection_file
+    import socket
     global console_is_started
     if not console_is_started:
         return None
     connection_file = find_connection_file()
     with open(connection_file) as connection_info_file:
-        return json.load(connection_info_file)
+        connection_info = json.load(connection_info_file)
+        if connection_info["ip"] != "127.0.0.1":
+            external_ip = socket.gethostbyname(socket.gethostname())
+            connection_info["ip"] = external_ip
+        return connection_info
     return None
 
 

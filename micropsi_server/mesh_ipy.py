@@ -276,15 +276,24 @@ class IPythonConnection(object):
         }
 
     def history(self, item):
-        #reply = self.waitfor(self.kc.history(raw=True, output=False, hist_access_type='tail', n=item))
         reply = self.waitfor(self.kc.history())
         content = reply["content"]
 
-        if len(content["history"]) == 0:
+        if len(content["history"]) == 0 or abs(item) > len(content["history"]):
             return 0, 0, ""
 
-        if abs(item) > len(content["history"]):
-            item = 0
+        return content["history"][item]
+
+    def search(self, prefix, item):
+        reply = self.waitfor(self.kc.history(raw=True,
+                                             output=False,
+                                             hist_access_type='search',
+                                             pattern="%s*" % prefix,
+                                             unique=True))
+        content = reply["content"]
+
+        if len(content["history"]) == 0 or abs(item) > len(content["history"]):
+            return 0, 0, ""
 
         return content["history"][item]
 

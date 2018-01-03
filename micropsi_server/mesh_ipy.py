@@ -227,8 +227,13 @@ class IPythonConnection(object):
 
     def waitfor(self, msg_id, retval=None):
         self.handle(msg_id, self.print_handler)
-        while msg_id in self.pending_shell_msgs:
+        c = 0
+        while msg_id in self.pending_shell_msgs and c < 30:
             time.sleep(0.1)
+            c += 1
+        if msg_id not in self.pending_shell_results:
+            self.buf.append("No reply from runtime within 3 seconds for message %s" %
+                            str(self.pending_shell_msgs[msg_id]))
         return self.pending_shell_results.pop(msg_id)
 
     def ignore(self, msg_id):

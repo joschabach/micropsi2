@@ -57,7 +57,12 @@ def start_console(kernel_info=None):
             temp.flush()
             print("IPython console info %s" % json.dumps(kernel_info))
             print("Connecting to IPython console using kernel file %s" % temp.name)
-            ipython_client.ipy_connect(["--existing", temp.name])
+            try:
+                ipython_client.ipy_connect(["--existing", temp.name])
+            except:
+                print("IPython client connection failed.")
+                import traceback
+                traceback.print_exc()
 
     while console_termination_requested is False:
         time.sleep(0.1)

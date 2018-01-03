@@ -179,7 +179,6 @@ class IPythonConnection(object):
 
         has_previous = self.has_connection
         if has_previous:
-            # TODO: kill last kernel if we owend it?
             JupyterMESHApp.clear_instance()
 
         self.ip_app = JupyterMESHApp.instance()
@@ -233,8 +232,8 @@ class IPythonConnection(object):
             time.sleep(0.1)
             c += 1
         if msg_id not in self.pending_shell_results:
-            self.buf.append("No reply from runtime within 3 seconds for message %s" %
-                            str(self.pending_shell_msgs[msg_id]))
+            self.buf.append("No reply from runtime within 3 seconds for message %s" % msg_id)
+            return retval
         return self.pending_shell_results.pop(msg_id)
 
     def ignore(self, msg_id):

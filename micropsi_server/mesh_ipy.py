@@ -297,21 +297,19 @@ class IPythonConnection(object):
 
         return content["history"][item]
 
-    def ipy_objinfo(self, args):
-        word, level = args
-        #TODO: send entire line
-        reply = self.waitfor(self.kc.inspect(word, None, level))
+    def inspect(self, line, cursor, level):
+        reply = self.waitfor(self.kc.inspect(line, cursor, level))
 
         c = reply['content']
         if c["status"] == "error":
-            l = self.append_outbuf("\nerror when inspecting {}: {}\n".format(word, c.get("ename", "")))
+            l = self.append_outbuf("\nerror when inspecting {}: {}\n".format(line, c.get("ename", "")))
             if self.do_highlight:
                 self.buf.add_highlight("Error", l+1, 0, -1)
             if "traceback" in c:
                 self.append_outbuf('\n'.join(c['traceback'])+"\n")
 
         elif not c.get('found'):
-            l = self.append_outbuf("\nnot found: {}\n".format(word))
+            l = self.append_outbuf("\nnot found: {}\n".format(line))
             if self.do_highlight:
                 self.buf.add_highlight("WarningMsg", l+1, 0, -1)
         else:

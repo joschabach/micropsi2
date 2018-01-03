@@ -1635,7 +1635,7 @@ The runtime for this console has been shut down!\n\n\n""")
     runtime.signal_handler(sig, msg)
 
 
-def ipython_kernel_thread():
+def ipython_kernel_thread(ip="127.0.0.1"):
     from unittest import mock
     import IPython
     from ipykernel.zmqshell import ZMQInteractiveShell
@@ -1648,18 +1648,23 @@ def ipython_kernel_thread():
             super().__call__(keep_alive)
     ZMQInteractiveShell.exiter = KeepAlive()
 
+    if ip == "0.0.0.0":
+        ip = "*"
+    elif ip == "localhost":
+        ip = "127.0.0.1"
+
     with mock.patch('signal.signal'):
         with mock.patch('ipykernel.kernelbase.signal'):
-            IPython.embed_kernel()
+            IPython.embed_kernel(ip=ip)
 
 
-def start_ipython_console():
+def start_ipython_console(host="127.0.0.1"):
     import sys
     import time
     global consolethread
     global console_is_started
 
-    consolethread = Thread(target=ipython_kernel_thread)
+    consolethread = Thread(target=ipython_kernel_thread, args=[host])
     consolethread.daemon = True
     consolethread.start()
 
@@ -1674,10 +1679,11 @@ def start_ipython_console():
 
     console_is_started = True
 
+
 def main(host=None, port=None, console=True):
     host = host or cfg['micropsi2']['host']
     port = port or cfg['micropsi2']['port']
-    print("Starting App on Port " + str(port))
+    print("Starting app on port %s, serving for %s" % (str(port), str(host)))
 
     # register our own signal handlers first.
     import threading
@@ -1692,7 +1698,7 @@ def main(host=None, port=None, console=True):
         try:
             import IPython
             import ipykernel
-            start_ipython_console()
+            start_ipython_console(host)
         except ImportError as err:
             print("Warning: IPython console not available: " + err.msg)
     else:

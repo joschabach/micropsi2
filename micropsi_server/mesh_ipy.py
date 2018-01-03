@@ -56,7 +56,7 @@ class JupyterMESHApp(JupyterApp, JupyterConsoleApp):
             )
         self.kernel_client.shell_channel.call_handlers = self.target.on_shell_msg
         self.kernel_client.iopub_channel.call_handlers = self.target.on_iopub_msg
-        #self.kernel_client.stdin_channel.call_handlers = self.target.on_stdin_msg
+        self.kernel_client.stdin_channel.call_handlers = self.target.on_stdin_msg
         self.kernel_client.hb_channel.call_handlers = self.target.on_hb_msg
         self.kernel_client.start_channels()
 
@@ -101,6 +101,7 @@ class IPythonConnection(object):
         self.on_iopub_msg = ExclusiveHandler(self._on_iopub_msg)
 
         self.last_msg = None
+        self.input_mode = False
 
         self.max_in = 1000
         self.prompt_in = u"In[{}]: "
@@ -248,6 +249,11 @@ class IPythonConnection(object):
         self.connect(args)
 
     def run(self, code):
+
+        if self.input_mode:
+            self.input(code)
+            return
+
         silent = False  # bool(args[1]) if len(args) > 1 else False
         if self.km and not self.km.is_alive():
             # Todo: communicate kernel restart
@@ -320,6 +326,10 @@ class IPythonConnection(object):
         else:
             self.append_outbuf("\n"+c['data']['text/plain']+"\n")
 
+    def input(self, data):
+        self.kc.input(data)
+        self.input_mode = False
+
     def ipy_interrupt(self, args):
         self.km.interrupt_kernel()
 
@@ -366,14 +376,32 @@ class IPythonConnection(object):
         try:
             handler = self.pending_shell_msgs.pop(msg_id)
         except KeyError:
+            self.input_mode = False
             print('unexpected shell msg: %r', m)
             return
         if handler is not None:
             self.pending_shell_results[msg_id] = handler(m)
 
+    def on_stdin_msg(self, m):
+        self.last_msg = m
+        msg_id = m['parent_header']['msg_id']
+        try:
+            handler = self.pending_shell_msgs.pop(msg_id)
+        except KeyError:
+            print('unexpected stdin msg: %r', m)
+            return
+        if handler is not None:
+            self.pending_shell_results[msg_id] = handler(m)
+
+        t = m['header'].get('msg_type', None)
+        if t == "input_request":
+            #self.input_mode = True
+            self.input("quit")
+
     def on_hb_msg(self, time_since):
         # this gets called when heartbeat is lost
         self.disp_status("DEAD")
+
 
 
 #c = IPythonConnection()

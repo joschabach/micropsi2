@@ -117,6 +117,13 @@ class IPythonConnection(object):
         self.connection_args = args
 
     def get_buffer(self):
+
+        if not self.has_connection:
+            try:
+                self.connect()
+            except:
+                pass
+
         return {
             "lines": self.buf,
             "highlights": self.buf.highlights

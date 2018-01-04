@@ -178,22 +178,29 @@ class IPythonConnection(object):
         return lineidx
 
     def connect(self):
-
+        
         argv = self.connection_args
 
-        has_previous = self.has_connection
-        if has_previous:
-            JupyterMESHApp.clear_instance()
+        try:
 
-        self.ip_app = JupyterMESHApp.instance()
-        if has_previous:
-            self.ip_app.connection_file = self.ip_app._new_connection_file()
+            has_previous = self.has_connection
+            if has_previous:
+                JupyterMESHApp.clear_instance()
 
-        self.ip_app.initialize(self, argv)
-        self.ip_app.start()
-        self.kc = self.ip_app.kernel_client
-        self.km = self.ip_app.kernel_manager
-        self.has_connection = True
+            self.ip_app = JupyterMESHApp.instance()
+            if has_previous:
+                self.ip_app.connection_file = self.ip_app._new_connection_file()
+
+            self.ip_app.initialize(self, argv)
+            self.ip_app.start()
+            self.kc = self.ip_app.kernel_client
+            self.km = self.ip_app.kernel_manager
+            self.has_connection = True
+
+        except:
+            import traceback
+            self.buf.append(traceback.format_exc())
+            return
 
         reply = self.waitfor(self.kc.kernel_info())
         c = reply['content']

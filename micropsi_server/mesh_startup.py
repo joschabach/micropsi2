@@ -54,15 +54,13 @@ def start_console(kernel_info=None):
         while console_termination_requested is False:
             time.sleep(0.1)
     else:
-        with tempfile.NamedTemporaryFile() as temp:
+        with tempfile.NamedTemporaryFile(delete=False) as temp:
             temp.write(json.dumps(kernel_info).encode())
             temp.flush()
-            print("IPython console info %s" % json.dumps(kernel_info))
-            print("Connecting to IPython console using kernel file %s" % temp.name)
-            ipython_client.set_connection_args(["--existing", temp.name])
+        ipython_client.set_connection_args(["--existing", temp.name])
 
-            while console_termination_requested is False:
-                time.sleep(0.1)
+        while console_termination_requested is False:
+            time.sleep(0.1)
 
 
 def request_termination():

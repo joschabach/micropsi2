@@ -22,6 +22,7 @@ class Buffer(list):
     def add_highlight_line(self, type, line):
         self.highlights.append((type, (line, -1, -1)))
 
+
 class RedirectingKernelManager(KernelManager):
     def _launch_kernel(self, cmd, **b):
         nullfile = "/dev/null" if os.name != 'nt' else 'NUL'
@@ -65,6 +66,7 @@ class JupyterMESHApp(JupyterApp, JupyterConsoleApp):
         super(JupyterMESHApp, self).initialize(argv)
         JupyterConsoleApp.initialize(self, argv)
 
+
 class ExclusiveHandler(object):
     """Wrapper for buffering incoming messages from a asynchronous source.
     Wraps an async message handler function and ensures a previous message will
@@ -106,19 +108,19 @@ class IPythonConnection(object):
         self.max_in = 1000
         self.prompt_in = u"In[{}]: "
         self.prompt_out = u"Out[{}]: "
+        self.connection_args = []
+
+        self.buf = Buffer()
+        self.hl_handler.bold_text_enabled = True
+
+    def set_connection_args(self, args):
+        self.connection_args = args
 
     def get_buffer(self):
         return {
             "lines": self.buf,
             "highlights": self.buf.highlights
         }
-
-    def create_outbuf(self):
-        if self.buf is not None:
-            return
-        self.buf = Buffer()
-
-        self.hl_handler.bold_text_enabled = True
 
     def append_outbuf(self, data):
         lineidx = len(self.buf)-1
@@ -175,7 +177,9 @@ class IPythonConnection(object):
         self.buf[-1:] = textlines
         return lineidx
 
-    def connect(self, argv):
+    def connect(self):
+
+        argv = self.connection_args
 
         has_previous = self.has_connection
         if has_previous:
@@ -244,11 +248,10 @@ class IPythonConnection(object):
         #print("Printing msg result:"+str(o))
         return o
 
-    def ipy_connect(self, args):
-        self.create_outbuf()
-        self.connect(args)
-
     def run(self, code):
+
+        if not self.has_connection:
+            self.connect()
 
         if self.input_mode:
             self.input(code)
@@ -277,6 +280,10 @@ class IPythonConnection(object):
         self.append_outbuf(args[0])
 
     def autocomplete(self, line, pos):
+
+        if not self.has_connection:
+            self.connect()
+
         reply = self.waitfor(self.kc.complete(line, pos))
         content = reply["content"]
         start = content["cursor_start"] + 1
@@ -287,6 +294,10 @@ class IPythonConnection(object):
         }
 
     def history(self, item):
+
+        if not self.has_connection:
+            self.connect()
+
         reply = self.waitfor(self.kc.history())
         content = reply["content"]
 
@@ -296,6 +307,10 @@ class IPythonConnection(object):
         return content["history"][item]
 
     def search(self, prefix, item):
+
+        if not self.has_connection:
+            self.connect()
+
         reply = self.waitfor(self.kc.history(raw=True,
                                              output=False,
                                              hist_access_type='search',
@@ -309,6 +324,10 @@ class IPythonConnection(object):
         return content["history"][item]
 
     def inspect(self, line, cursor, level):
+
+        if not self.has_connection:
+            self.connect()
+
         reply = self.waitfor(self.kc.inspect(line, cursor, level))
 
         c = reply['content']
@@ -401,11 +420,3 @@ class IPythonConnection(object):
     def on_hb_msg(self, time_since):
         # this gets called when heartbeat is lost
         self.disp_status("DEAD")
-
-
-
-#c = IPythonConnection()
-#c.ipy_connect(["--existing"])
-#c.run("print(\"wrdlbrmpfd\")")
-#c.run("print(runtime)")
-#print("\n".join(c.buf))

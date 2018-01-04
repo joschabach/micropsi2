@@ -50,17 +50,17 @@ def start_console(kernel_info=None):
     import json
 
     if kernel_info is None:
-        ipython_client.ipy_connect(["--existing"])
+        ipython_client.set_connection_args(["--existing"])
     else:
         with tempfile.NamedTemporaryFile() as temp:
             temp.write(json.dumps(kernel_info).encode())
             temp.flush()
             print("IPython console info %s" % json.dumps(kernel_info))
             print("Connecting to IPython console using kernel file %s" % temp.name)
-            ipython_client.ipy_connect(["--existing", temp.name])
+            ipython_client.set_connection_args(["--existing", temp.name])
 
-    while console_termination_requested is False:
-        time.sleep(0.1)
+            while console_termination_requested is False:
+                time.sleep(0.1)
 
 
 def request_termination():

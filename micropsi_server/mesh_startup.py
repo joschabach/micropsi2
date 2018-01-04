@@ -51,6 +51,8 @@ def start_console(kernel_info=None):
 
     if kernel_info is None:
         ipython_client.set_connection_args(["--existing"])
+        while console_termination_requested is False:
+            time.sleep(0.1)
     else:
         with tempfile.NamedTemporaryFile() as temp:
             temp.write(json.dumps(kernel_info).encode())

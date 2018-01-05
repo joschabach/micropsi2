@@ -148,5 +148,6 @@ class InputDeviceAsync(InputDevice):
         return self.data
 
     def deinit(self):
+        if self.running:
+            self.thread.join()
         self.running = False
-        self.thread.join()

@@ -19,7 +19,6 @@ import logging
 import zipfile
 import threading
 
-from code import InteractiveConsole
 from datetime import datetime, timedelta
 
 from micropsi_core.config import ConfigurationManager
@@ -64,103 +63,11 @@ world_classes = {}
 worldadapter_classes = {}
 worldobject_classes = {}
 
-
-netapi_consoles = {}
-
 initialized = False
 
 auto_save_intervals = None
 
 behavior_token_map = dict()
-
-
-class FileCacher():
-    """Cache the stdout text so we can analyze it before returning it"""
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.out = []
-
-    def write(self, line):
-        self.out.append(line)
-
-    def flush(self):
-        output = '\n'.join(self.out)
-        self.reset()
-        return output
-
-
-class NetapiShell(InteractiveConsole):
-    """Wrapper around Python that can filter input/output to the shell"""
-    def __init__(self, netapi):
-        try:
-            # theano messes with the formatting of exceptions
-            import theano
-            self.err_line_separator = '\n\n'
-        except ImportError:
-            self.err_line_separator = '\n'
-        self.stdout = sys.__stdout__
-        self.stderr = sys.__stderr__
-        self.outcache = FileCacher()
-        self.errcache = FileCacher()
-
-        InteractiveConsole.__init__(self, locals={'netapi': netapi})
-        return
-
-    def get_output(self):
-        sys.__stdout__ = self.outcache
-        sys.__stderr__ = self.errcache
-        sys.stdout = self.outcache
-        sys.stderr = self.errcache
-
-    def return_output(self):
-        sys.__stdout__ = self.stdout
-        sys.__stderr__ = self.stderr
-        sys.stdout = self.stdout
-        sys.stderr = self.stderr
-
-    def push(self, line):
-        self.get_output()
-        incomplete = InteractiveConsole.push(self, line)
-        if incomplete:
-            InteractiveConsole.push(self, '\n')
-        self.return_output()
-        err = self.errcache.flush()
-
-        if err:
-            parts = err.strip().split(self.err_line_separator)
-            if parts[0].startswith("Traceback"):
-                cleaned_parts = []
-                begin_exception_message = False
-                ignored_last = False
-                for part in parts[1:]:
-                    # ignore traceback items relating to the console itself or the toolkit:
-                    if 'in runcode' in part or '<console>"' in part or 'micropsi_core' in part:
-                        ignored_last = True
-                        continue
-                    if ignored_last and part.startswith('    '):
-                        # if ignoring a traceback line, also drop its continuation
-                        # in the next line if there is one.
-                        continue
-                    ignored_last = False
-                    # gather all lines of the exception message, but
-                    # none of the stuff after the next blank line:
-                    if ":" in part:
-                        begin_exception_message = True
-                    if begin_exception_message and len(part) == 0:
-                        break
-                    if part.strip():
-                        cleaned_parts.append(part.strip())
-
-                if len(cleaned_parts) > 1:
-                    cleaned_parts = ['\nTraceback:'] + cleaned_parts
-                return False, "\n".join(cleaned_parts)
-            else:
-                return False, err
-
-        out = self.outcache.flush()
-        return True, out.strip()
 
 
 def signal_handler(signal, frame):
@@ -491,8 +398,6 @@ def load_nodenet(nodenet_uid):
 
                 nodenets[nodenet_uid].load()
 
-                netapi_consoles[nodenet_uid] = NetapiShell(nodenets[nodenet_uid].netapi)
-
                 if "settings" in data:
                     nodenets[nodenet_uid].settings = data["settings"].copy()
                 else:
@@ -607,8 +512,6 @@ def unload_nodenet(nodenet_uid):
     """
     if nodenet_uid not in nodenets:
         return False
-    if nodenet_uid in netapi_consoles:
-        del netapi_consoles[nodenet_uid]
     stop_nodenetrunner(nodenet_uid)
     nodenet = nodenets[nodenet_uid]
     if nodenet.world:
@@ -1561,88 +1464,6 @@ def get_agent_dashboard(nodenet_uid):
         data = net.get_dashboard()
         data['face'] = calc_emoexpression_parameters(net)
         return data
-
-
-def run_netapi_command(nodenet_uid, command):
-    nodenet = get_nodenet(nodenet_uid)
-    shell = netapi_consoles[nodenet_uid]
-    with nodenet.netlock:
-        success, msg = shell.push("last_result = %s" % command)
-        if success:
-            return shell.push("print(last_result)")
-        else:
-            return success, msg
-
-
-def get_netapi_autocomplete_data(nodenet_uid, name=None):
-    import inspect
-    nodenet = get_nodenet(nodenet_uid)
-    if nodenet is None or nodenet_uid not in netapi_consoles:
-        return {}
-    nodetypes = get_available_node_types(nodenet_uid)
-
-    shell = netapi_consoles[nodenet_uid]
-    res, locs = shell.push("print([k for k in locals() if not k.startswith('_')])")
-
-    def parsemembers(members):
-        data = {}
-        for name, thing in members:
-            if name.startswith('_'):
-                continue
-            if inspect.isroutine(thing):
-                sig = inspect.signature(thing)
-                params = []
-                for key in sig.parameters:
-                    if key == 'self':
-                        continue
-                    if sig.parameters[key].default != inspect.Signature.empty:
-                        params.append({
-                            'name': key,
-                            'default': sig.parameters[key].default
-                        })
-                    else:
-                        params.append({'name': key})
-                data[name] = params
-            else:
-                data[name] = None
-        return data
-
-    data = {
-        'types': {},
-        'autocomplete_options': {}
-    }
-    if not locs:
-        return data
-    locs = eval(locs)
-    for n in locs:
-        if name is None or n == name:
-            res, typedescript = shell.push("print(%s)" % n)
-            if 'netapi' in typedescript:
-                data['types'][n] = 'netapi'
-            else:
-                # get type of thing.
-                match = re.search('^<([A-Za-z]+) ', typedescript)
-                if match:
-                    typename = match.group(1)
-                    if typename in ['Nodespace', 'Node', 'Gate', 'Slot']:
-                        data['types'][n] = typename
-                    elif typename in nodetypes['nodetypes'] or typename in nodetypes['native_modules']:
-                        data['types'][n] = 'Node'
-
-    for t in set(data['types'].values()):
-        if t == 'netapi':
-            netapi = nodenet.netapi
-            methods = inspect.getmembers(netapi, inspect.ismethod)
-            data['autocomplete_options']['netapi'] = parsemembers(methods)
-        elif t == 'Nodespace':
-            from micropsi_core.nodenet.nodespace import Nodespace
-            data['autocomplete_options']['Nodespace'] = parsemembers(inspect.getmembers(Nodespace))
-        elif t in ['Node', 'Gate', 'Slot']:
-            from micropsi_core.nodenet import node
-            cls = getattr(node, t)
-            data['autocomplete_options'][t] = parsemembers(inspect.getmembers(cls))
-
-    return data
 
 
 def flow(nodenet_uid, source_uid, source_output, target_uid, target_input):

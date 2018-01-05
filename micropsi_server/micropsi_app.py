@@ -37,8 +37,6 @@ from threading import Thread
 VERSION = cfg['micropsi2']['version']
 APPTITLE = cfg['micropsi2']['apptitle']
 
-INCLUDE_CONSOLE = cfg['micropsi2']['host'] == 'localhost'
-
 APP_PATH = os.path.dirname(__file__)
 
 micropsi_app = Bottle()
@@ -222,14 +220,13 @@ def index():
         logging_levels=runtime.get_logging_levels(),
         version=VERSION,
         user_id=user_id,
-        permissions=permissions,
-        console=INCLUDE_CONSOLE)
+        permissions=permissions)
 
 
 @micropsi_app.route("/agent")
 def nodenet():
     user_id, permissions, token = get_request_data()
-    return template("viewer", mode="nodenet", version=VERSION, user_id=user_id, permissions=permissions, console=INCLUDE_CONSOLE)
+    return template("viewer", mode="nodenet", version=VERSION, user_id=user_id, permissions=permissions)
 
 
 @micropsi_app.route("/monitors")
@@ -1552,21 +1549,6 @@ def get_agent_dashboard(nodenet_uid):
     return True, runtime.get_agent_dashboard(nodenet_uid)
 
 
-@rpc("run_netapi_command", permission_required="manage nodenets")
-def run_netapi_command(nodenet_uid, command):
-    """ Run a netapi command from the netapi console """
-    if INCLUDE_CONSOLE:
-        return runtime.run_netapi_command(nodenet_uid, command)
-    else:
-        raise RuntimeError("Netapi console only available if serving to localhost only")
-
-
-@rpc("get_netapi_autocomplete_data")
-def get_netapi_autocomplete_data(nodenet_uid, name=None):
-    """ Return autocomplete-options for the netapi console. """
-    return True, runtime.get_netapi_autocomplete_data(nodenet_uid, name=None)
-
-
 @rpc("flow")
 def flow(nodenet_uid, source_uid, source_output, target_uid, target_input):
     """ Create a connection between two flow_modules """
@@ -1584,11 +1566,33 @@ def runtime_info():
     """ Return a dict of information about this runtime, like version and configuration"""
     return True, runtime.runtime_info()
 
+
+def get_console_info():
+    from jupyter_client import find_connection_file
+    import socket
+    global console_is_started
+    if not console_is_started:
+        return None
+    connection_file = find_connection_file()
+    with open(connection_file) as connection_info_file:
+        connection_info = json.load(connection_info_file)
+        if connection_info["ip"] != "127.0.0.1":
+            external_ip = socket.gethostbyname(socket.gethostname())
+            connection_info["ip"] = external_ip
+        return connection_info
+    return None
+
+
+@rpc("console_info")
+def console_info():
+    """ Return a dict of information about the IPython console"""
+    return True, get_console_info()
+
 # -----------------------------------------------------------------------------------------------
 
 
 consolethread = None
-
+console_is_started = False
 
 def signal_handler(sig, msg):
     from micropsi_core import runtime
@@ -1618,7 +1622,7 @@ The runtime for this console has been shut down!\n\n\n""")
     runtime.signal_handler(sig, msg)
 
 
-def ipython_kernel_thread():
+def ipython_kernel_thread(ip="127.0.0.1"):
     from unittest import mock
     import IPython
     from ipykernel.zmqshell import ZMQInteractiveShell
@@ -1631,16 +1635,23 @@ def ipython_kernel_thread():
             super().__call__(keep_alive)
     ZMQInteractiveShell.exiter = KeepAlive()
 
+    if ip == "0.0.0.0":
+        ip = "*"
+    elif ip == "localhost":
+        ip = "127.0.0.1"
+
     with mock.patch('signal.signal'):
         with mock.patch('ipykernel.kernelbase.signal'):
-            IPython.embed_kernel()
+            IPython.embed_kernel(ip=ip)
 
 
-def start_ipython_console():
+def start_ipython_console(host="127.0.0.1"):
     import sys
     import time
     global consolethread
-    consolethread = Thread(target=ipython_kernel_thread)
+    global console_is_started
+
+    consolethread = Thread(target=ipython_kernel_thread, args=[host])
     consolethread.daemon = True
     consolethread.start()
 
@@ -1653,24 +1664,28 @@ def start_ipython_console():
     # revert input and error back to their original state
     sys.stdin, sys.stderr = sys.__stdin__, sys.__stderr__
 
+    console_is_started = True
+
 
 def main(host=None, port=None, console=True):
-    import signal
     host = host or cfg['micropsi2']['host']
     port = port or cfg['micropsi2']['port']
-    print("Starting App on Port " + str(port))
+    print("Starting app on port %s, serving for %s" % (str(port), str(host)))
 
     # register our own signal handlers first.
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-    signal.signal(signal.SIGABRT, signal_handler)
+    import threading
+    if threading.current_thread() == threading.main_thread():
+        import signal
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+        signal.signal(signal.SIGABRT, signal_handler)
 
     # start the console if desired
     if console:
         try:
             import IPython
             import ipykernel
-            start_ipython_console()
+            start_ipython_console(host)
         except ImportError as err:
             print("Warning: IPython console not available: " + err.msg)
     else:

@@ -229,56 +229,6 @@ def test_get_nodes(runtime, engine, test_nodenet):
         assert n2.uid in result['nodes']
 
 
-def test_run_netapi_command(runtime, test_nodenet):
-    nodenet = runtime.nodenets[test_nodenet]
-    netapi = nodenet.netapi
-    command = "foo = netapi.create_node('Pipe', None, 'foo')"
-    result, _ = runtime.run_netapi_command(test_nodenet, command)
-    assert result
-    command = "netapi.link(foo, 'gen', foo, 'gen')"
-    result, _ = runtime.run_netapi_command(test_nodenet, command)
-    assert result
-    nodes = netapi.get_nodes()
-    assert len(nodes) == 1
-    assert nodes[0].get_gate('gen').get_links()[0].target_node == nodes[0]
-    command = "netapi.get_node('%s')" % nodes[0].uid
-    result, node = runtime.run_netapi_command(test_nodenet, command)
-    assert node == str(nodes[0])
-    command = "[n.name for n in netapi.get_nodes()]"
-    result, node = runtime.run_netapi_command(test_nodenet, command)
-    assert node == "['foo']"
-    command = "netapi.create_node()"
-    result, msg = runtime.run_netapi_command(test_nodenet, command)
-    assert not result
-    assert msg.startswith("TypeError")
-    # command = "for i in range(3): netapi.create_node('Neuron', None, 'test%d' % i)"
-    # result, msg = runtime.run_netapi_command(test_nodenet, command)
-    # assert result
-    # assert len(netapi.get_nodes()) == 4
-
-
-def test_get_netapi_autocomplete(runtime, test_nodenet):
-    runtime.run_netapi_command(test_nodenet, "foonode = netapi.create_node('Pipe', None, 'foo')")
-    runtime.run_netapi_command(test_nodenet, "foogate = foonode.get_gate('gen')")
-    runtime.run_netapi_command(test_nodenet, "fooslot = foonode.get_slot('gen')")
-    runtime.run_netapi_command(test_nodenet, "nodespace = netapi.create_nodespace(None, 'foospace')")
-    runtime.run_netapi_command(test_nodenet, "barnode = netapi.create_node('Neuron', None, 'foo')")
-    data = runtime.get_netapi_autocomplete_data(test_nodenet)
-    data['types']['foonode'] = 'Node'
-    data['types']['foogate'] = 'Gate'
-    data['types']['fooslot'] = 'Slot'
-    data['types']['nodespace'] = 'Nodespace'
-    data['types']['barnode'] = 'Node'
-    assert data['autocomplete_options']['Node']["get_gate"][0]['name'] == 'type'
-    assert data['autocomplete_options']['Gate']["get_links"] == []
-    assert data['autocomplete_options']['Slot']["get_links"] == []
-    assert data['autocomplete_options']['Nodespace']["get_known_ids"][0]['name'] == 'entitytype'
-    assert data['autocomplete_options']['Node']['name'] is None
-    data = runtime.get_netapi_autocomplete_data(test_nodenet, name='foonode')
-    assert list(data['types'].keys()) == ['foonode']
-    assert list(data['autocomplete_options'].keys()) == ['Node']
-
-
 def test_get_nodenet_by_name(runtime, test_nodenet):
     assert runtime.get_nodenet_uid_by_name("Foobar") is None
     assert runtime.get_nodenet_uid_by_name("Testnet") == test_nodenet

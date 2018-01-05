@@ -26,7 +26,7 @@ class Buffer(list):
 class RedirectingKernelManager(KernelManager):
     def _launch_kernel(self, cmd, **b):
         nullfile = "/dev/null" if os.name != 'nt' else 'NUL'
-        self._null = open(nullfile,"wb",0)
+        self._null = open(nullfile, "wb", 0)
         b['stdout'] = self._null.fileno()
         b['stderr'] = self._null.fileno()
         return super(RedirectingKernelManager, self)._launch_kernel(cmd, **b)
@@ -36,7 +36,7 @@ class JupyterMESHApp(JupyterApp, JupyterConsoleApp):
     # don't use blocking client; we override call_handlers below
     kernel_client_class = ThreadedKernelClient
     kernel_manager_class = RedirectingKernelManager
-    aliases = JupyterConsoleApp.aliases #this the way?
+    aliases = JupyterConsoleApp.aliases  # this the way?
     flags = JupyterConsoleApp.flags
 
     def init_kernel_client(self):
@@ -45,16 +45,15 @@ class JupyterMESHApp(JupyterApp, JupyterConsoleApp):
             self.kernel_client = self.kernel_manager.client()
         else:
             self.kernel_client = self.kernel_client_class(
-                                session=self.session,
-                                ip=self.ip,
-                                transport=self.transport,
-                                shell_port=self.shell_port,
-                                iopub_port=self.iopub_port,
-                                stdin_port=self.stdin_port,
-                                hb_port=self.hb_port,
-                                connection_file=self.connection_file,
-                                parent=self,
-            )
+                session=self.session,
+                ip=self.ip,
+                transport=self.transport,
+                shell_port=self.shell_port,
+                iopub_port=self.iopub_port,
+                stdin_port=self.stdin_port,
+                hb_port=self.hb_port,
+                connection_file=self.connection_file,
+                parent=self)
         self.kernel_client.shell_channel.call_handlers = self.target.on_shell_msg
         self.kernel_client.iopub_channel.call_handlers = self.target.on_iopub_msg
         self.kernel_client.stdin_channel.call_handlers = self.target.on_stdin_msg
@@ -130,7 +129,7 @@ class IPythonConnection(object):
         }
 
     def append_outbuf(self, data):
-        lineidx = len(self.buf)-1
+        lineidx = len(self.buf) - 1
         lastline = self.buf[-1]
 
         lines = []
@@ -156,11 +155,12 @@ class IPythonConnection(object):
                 if self.do_highlight:
                     bold = self.hl_handler.bold or self.hl_handler.intensity > 0
                     color = self.hl_handler.foreground_color
-                    if color and color > 16: color = None
+                    if color and color > 16:
+                        color = None
 
                     if color is not None:
                         if bold and color < 8:
-                            color += 8 # be bright and shiny
+                            color += 8  # be bright and shiny
                         groups.append("IPyFg{}".format(color))
 
                     if bold:
@@ -171,7 +171,7 @@ class IPythonConnection(object):
 
         textlines = []
         hls = []
-        for i,line in enumerate(lines):
+        for i, line in enumerate(lines):
             text = ''.join(c[1] for c in line)
             textlines.append(text)
             colend = 0
@@ -179,13 +179,12 @@ class IPythonConnection(object):
                 colstart = colend
                 colend = colstart + len(chunk[1])
                 for hl in chunk[0]:
-                    hls.append([hl, lineidx+i, colstart, colend])
+                    hls.append([hl, lineidx + i, colstart, colend])
 
         self.buf[-1:] = textlines
         return lineidx
 
     def connect(self):
-        
         argv = self.connection_args
 
         try:
@@ -223,10 +222,10 @@ class IPythonConnection(object):
         if len(ipy_version) >= 4 and ipy_version[3] != '':
             vdesc += '-' + ipy_version[3]
         banner.extend([
-                "Jupyter {}".format(vdesc),
-                "language: {} {}".format(lang, langver),
-                "",
-                ])
+            "Jupyter {}".format(vdesc),
+            "language: {} {}".format(lang, langver),
+            "",
+        ])
 
         if has_previous:
             pos = len(self.buf)
@@ -235,7 +234,7 @@ class IPythonConnection(object):
             pos = 0
             self.buf[:0] = banner
         for i in range(len(banner)):
-            self.buf.add_highlight_line('Comment', pos+i)
+            self.buf.add_highlight_line('Comment', pos + i)
 
     def disp_status(self, status):
         pass
@@ -258,7 +257,7 @@ class IPythonConnection(object):
         self.handle(msg_id, None)
 
     def print_handler(self, o):
-        #print("Printing msg result:"+str(o))
+        # print("Printing msg result:"+str(o))
         return o
 
     def run(self, code):
@@ -281,7 +280,7 @@ class IPythonConnection(object):
 
         reply = self.waitfor(self.kc.execute(code, silent=silent))
         content = reply['content']
-        payload = content.get('payload',())
+        payload = content.get('payload', ())
         for p in payload:
             if p.get("source") == "page":
                 if 'text' in p:
@@ -347,16 +346,16 @@ class IPythonConnection(object):
         if c["status"] == "error":
             l = self.append_outbuf("\nerror when inspecting {}: {}\n".format(line, c.get("ename", "")))
             if self.do_highlight:
-                self.buf.add_highlight("Error", l+1, 0, -1)
+                self.buf.add_highlight("Error", l + 1, 0, -1)
             if "traceback" in c:
-                self.append_outbuf('\n'.join(c['traceback'])+"\n")
+                self.append_outbuf('\n'.join(c['traceback']) + "\n")
 
         elif not c.get('found'):
             l = self.append_outbuf("\nnot found: {}\n".format(line))
             if self.do_highlight:
-                self.buf.add_highlight("WarningMsg", l+1, 0, -1)
+                self.buf.add_highlight("WarningMsg", l + 1, 0, -1)
         else:
-            self.append_outbuf("\n"+c['data']['text/plain']+"\n")
+            self.append_outbuf("\n" + c['data']['text/plain'] + "\n")
 
     def input(self, data):
         self.kc.input(data)
@@ -370,7 +369,7 @@ class IPythonConnection(object):
 
     def _on_iopub_msg(self, m):
         try:
-            t = m['header'].get('msg_type',None)
+            t = m['header'].get('msg_type', None)
             c = m['content']
 
             if t == 'status':
@@ -381,9 +380,9 @@ class IPythonConnection(object):
                 code = c['code'].rstrip().split('\n')
                 if self.max_in and len(code) > self.max_in:
                     code = code[:self.max_in] + ['.....']
-                sep = '\n'+' '*len(prompt)
+                sep = '\n' + ' ' * len(prompt)
                 line = self.append_outbuf(u'\n{}{}\n'.format(prompt, sep.join(code)))
-                self.buf.add_highlight('IPyIn', line+1, 0, len(prompt))
+                self.buf.add_highlight('IPyIn', line + 1, 0, len(prompt))
             elif t in ['pyout', 'execute_result']:
                 no = c['execution_count']
                 res = c['data']['text/plain']
@@ -391,7 +390,7 @@ class IPythonConnection(object):
                 line = self.append_outbuf((u'{}{}\n').format(prompt, res.rstrip()))
                 self.buf.add_highlight('IPyOut', line, 0, len(prompt))
             elif t in ['pyerr', 'error']:
-                #TODO: this should be made language specific
+                # TODO: this should be made language specific
                 # as the amt of info in 'traceback' differs
                 self.append_outbuf('\n'.join(c['traceback']) + '\n')
             elif t == 'stream':
@@ -427,7 +426,7 @@ class IPythonConnection(object):
 
         t = m['header'].get('msg_type', None)
         if t == "input_request":
-            #self.input_mode = True
+            # self.input_mode = True
             self.input("quit")
 
     def on_hb_msg(self, time_since):

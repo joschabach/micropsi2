@@ -1,4 +1,3 @@
-from threading import Thread
 import os
 import time
 
@@ -39,8 +38,8 @@ def start_runtime_and_console(port=7543):
         ipython_client.ipy_connect(["--existing"])
 
     # Disable IPython client for now, does not start, find out if there's a way around that
-    #ipython_client_thread = Thread(target=client_daemon)
-    #ipython_client_thread.start()
+    # ipython_client_thread = Thread(target=client_daemon)
+    # ipython_client_thread.start()
 
     micropsi_server.micropsi_app.main(None, port, console=True)
 

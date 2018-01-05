@@ -2,11 +2,11 @@
 import pytest
 
 
-def create_dummy_device(resourcepath, name="dummy", retval="[1,2,3,4,5]", connected="True"):
+def create_dummy_device(resourcepath, name="dummy", retval="[1,2,3,4,5]", connected="True", device_type="InputDevice"):
     dummy_device = """
-from micropsi_core.device.device import InputDevice
+from micropsi_core.device.device import %s
 
-class %sDevice(InputDevice):
+class %sDevice(%s):
 
     @classmethod
     def get_options(cls):
@@ -20,12 +20,14 @@ class %sDevice(InputDevice):
     def __init__(self, config):
         super().__init__(config)
         connected = %s
+        self.calls = 0
         if not connected:
             raise RuntimeError("Failed to connect")
         self.init_foobar = config['foobar']
 
     def read_data(self):
         import numpy as np
+        self.calls += 1
         return np.array(%s)
 
     def get_data_size(self):
@@ -33,7 +35,7 @@ class %sDevice(InputDevice):
 
     def get_prefix(self):
         return "%s"
-""" % (name.capitalize(), connected, retval, name)
+""" % (device_type, name.capitalize(), device_type, connected, retval, name)
 
     import os
     os.makedirs(os.path.join(resourcepath, 'devices', name), exist_ok=True)
@@ -84,15 +86,42 @@ def test_devicemanager(runtime, test_nodenet, resourcepath):
 @pytest.mark.engine("theano_engine")
 @pytest.mark.engine("numpy_engine")
 def test_devices_with_worldadapters(runtime, test_nodenet, resourcepath, default_world):
+    import numpy as np
     create_dummy_device(resourcepath)
 
     res, errors = runtime.reload_code()
     _, uid = runtime.add_device('DummyDevice', {'name': 'foo'})
 
-    runtime.set_nodenet_properties(test_nodenet, world_uid=default_world, worldadapter="ArrayWorldAdapter", device_map={uid: 'dummy'})
+    runtime.set_nodenet_properties(
+        test_nodenet, world_uid=default_world,
+        worldadapter="ArrayWorldAdapter", device_map={uid: 'dummy'})
+    wa = runtime.get_nodenet(test_nodenet).worldadapter_instance
+    assert 'dummy' in wa.get_available_flow_datasources()
+    runtime.step_nodenet(test_nodenet)
+    assert np.all(wa.get_flow_datasource('dummy') == [1, 2, 3, 4, 5])
+    runtime.remove_device(uid)
 
-    assert 'dummy' in runtime.get_nodenet(test_nodenet).worldadapter_instance.get_available_flow_datasources()
 
+@pytest.mark.engine("theano_engine")
+@pytest.mark.engine("numpy_engine")
+def test_async_devices(runtime, test_nodenet, resourcepath, default_world):
+    import numpy as np
+    create_dummy_device(resourcepath, device_type="InputDeviceAsync")
+    res, errors = runtime.reload_code()
+    _, uid = runtime.add_device('DummyDevice', {'name': 'foo'})
+    runtime.set_nodenet_properties(
+        test_nodenet, world_uid=default_world,
+        worldadapter="ArrayWorldAdapter", device_map={uid: 'dummy'})
+    wa = runtime.get_nodenet(test_nodenet).worldadapter_instance
+    assert 'dummy' in wa.get_available_flow_datasources()
+    res, errs = runtime.reload_code()  # tests stopping unstarted threads.
+    assert res
+    runtime.step_nodenet(test_nodenet)
+    wa = runtime.get_nodenet(test_nodenet).worldadapter_instance
+    assert np.all(wa.get_flow_datasource('dummy') == [1, 2, 3, 4, 5])
+    import time
+    time.sleep(.2)
+    assert runtime.devicemanager.online_devices[uid].calls > 2
     runtime.remove_device(uid)
 
 

@@ -37,8 +37,6 @@ from threading import Thread
 VERSION = cfg['micropsi2']['version']
 APPTITLE = cfg['micropsi2']['apptitle']
 
-INCLUDE_CONSOLE = cfg['micropsi2']['host'] == 'localhost'
-
 APP_PATH = os.path.dirname(__file__)
 
 micropsi_app = Bottle()
@@ -222,14 +220,13 @@ def index():
         logging_levels=runtime.get_logging_levels(),
         version=VERSION,
         user_id=user_id,
-        permissions=permissions,
-        console=INCLUDE_CONSOLE)
+        permissions=permissions)
 
 
 @micropsi_app.route("/agent")
 def nodenet():
     user_id, permissions, token = get_request_data()
-    return template("viewer", mode="nodenet", version=VERSION, user_id=user_id, permissions=permissions, console=INCLUDE_CONSOLE)
+    return template("viewer", mode="nodenet", version=VERSION, user_id=user_id, permissions=permissions)
 
 
 @micropsi_app.route("/monitors")
@@ -1550,21 +1547,6 @@ def get_available_operations():
 def get_agent_dashboard(nodenet_uid):
     """ Return a dict of data to display the agent's state in a dashboard """
     return True, runtime.get_agent_dashboard(nodenet_uid)
-
-
-@rpc("run_netapi_command", permission_required="manage nodenets")
-def run_netapi_command(nodenet_uid, command):
-    """ Run a netapi command from the netapi console """
-    if INCLUDE_CONSOLE:
-        return runtime.run_netapi_command(nodenet_uid, command)
-    else:
-        raise RuntimeError("Netapi console only available if serving to localhost only")
-
-
-@rpc("get_netapi_autocomplete_data")
-def get_netapi_autocomplete_data(nodenet_uid, name=None):
-    """ Return autocomplete-options for the netapi console. """
-    return True, runtime.get_netapi_autocomplete_data(nodenet_uid, name=None)
 
 
 @rpc("flow")

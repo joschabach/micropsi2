@@ -396,7 +396,7 @@ try:
         def set_flow_datatarget_feedback(self, name, values):
             """Set the values of the given flow_datatarget_feedback """
             assert isinstance(values, np.ndarray), "must provide numpy array"
-            shape = self.flow_datasources[name].shape
+            shape = self.flow_datatarget_feedbacks[name].shape
             assert shape == values.shape, "DatatargetFeedback %s expects shape %s, got %s" % (name, shape, values.shape)
             self.flow_datatarget_feedbacks[name] = values
 

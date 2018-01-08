@@ -51,6 +51,16 @@ class StatusLogger(object):
         log_msg += msg
         self._logger.log(intlevel, log_msg)
 
+    def remove(self, key):
+        path = key.split('.')
+        if len(path) == 1:
+            del self.status_dict[path[0]]
+        else:
+            item = self.status_dict
+            for x in path[:-1]:
+                item = item[x]['children']
+            del item[path[-1]]
+
     def _track_status(self, level, intlevel, key, state, msg, progress):
         path = key.split('.')
         data = {

@@ -11,3 +11,6 @@ def test_statuslogger_does_not_overwrite_children(runtime, test_nodenet):
     assert tree['Learning']['msg'] == "Learning complete"
     assert tree['Learning']['children']['Foo']['level'] == "info"
     assert tree['Learning']['children']['Foo']['state'] == "active"
+    sl.remove("Learning.Foo")
+    res, tree = runtime.get_status_tree(test_nodenet)
+    assert 'Foo' not in tree['Learning']['children']

@@ -149,5 +149,5 @@ class InputDeviceAsync(InputDevice):
 
     def deinit(self):
         if self.running:
+            self.running = False
             self.thread.join()
-        self.running = False

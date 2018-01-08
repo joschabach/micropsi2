@@ -71,10 +71,14 @@ behavior_token_map = dict()
 
 
 def signal_handler(signal, frame):
-    logging.getLogger('system').info("Shutting down")
+    logging.getLogger('system').debug("Killing runners...")
     kill_runners()
+    logging.getLogger('system').debug("stopping devices...")
+    devicemanager.shutdown()
+    logging.getLogger('system').debug("stopping worlds...")
     for uid in worlds:
         worlds[uid].signal_handler(signal, frame)
+    logging.getLogger('system').info("Shutting down...")
     sys.exit(0)
 
 

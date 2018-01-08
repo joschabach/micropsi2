@@ -124,3 +124,8 @@ def reload_devices(json_path):
             online_devices[k] = device_types[data[k]['type']](data[k]['config'])
         except Exception as e:
             logging.getLogger('system').error("Error when loading device %s with uid %s: %s" % (data[k]['type'], k, e))
+
+
+def shutdown():
+    for d in list(online_devices.keys()):
+        online_devices[d].deinit()

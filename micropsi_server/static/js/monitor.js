@@ -50,10 +50,7 @@ $(function(){
         refreshMonitors();
     }
 
-    var splitviewclass = 'span6';
-    if(theano_available){
-        splitviewclass = 'span4'
-    }
+    var splitviewclass = 'span4';
 
     var count_sections = $('.layout_field').length;
     $('.layoutbtn').on('click', function(event){
@@ -150,6 +147,7 @@ $(function(){
         currentSimulationStep = data.current_step;
         setMonitorData(data);
         setLoggingData(data);
+        setStatusData(data);
     }
 
     if($('#monitor').height() > 0){
@@ -198,6 +196,58 @@ $(function(){
         if(logs.length > viewProperties.max_log_entries){
             logs.splice(0, logs.length - viewProperties.max_log_entries);
         }
+    }
+
+    function sortfunc(a, b){
+        if(a < b) return -1;
+        if(a > b) return 1;
+        return 0;
+    };
+
+    function setStatusData(data){
+        var table = $('#status_table');
+        table.html();
+        var html = [];
+
+        function fill_html(data, level){
+            var sorted_keys = Object.keys(data);
+            sorted_keys.sort(sortfunc);
+            for(var i = 0; i < sorted_keys.length; i++){
+                entry = data[sorted_keys[i]];
+                html.push(
+                    '<tr><td>',
+                    "&nbsp;".repeat(level * 3),
+                    sorted_keys[i],
+                    '</td><td>')
+                if(entry.state){
+                    html.push('<i class="status_indicator ',
+                        entry.state.replace(' ', ''),
+                        '" title="', entry.state, '" ',', />')
+                } else {
+                    html.push("&nbsp;");
+                }
+                html.push(
+                    '</td><td>',
+                    entry.msg || "&nbsp;",
+                    '</td><td>');
+                if(entry.progress){
+                    html.push(
+                        entry.progress[0] || "?",
+                        ' / ',
+                        entry.progress[1] || "?",
+                    );
+                }
+                else {
+                    html.push("&nbsp;");
+                }
+                html.push('</td></tr>');
+                if(Object.keys(entry.children).length){
+                    fill_html(entry.children, level+1);
+                }
+            }
+        }
+        fill_html(data.status, 0)
+        table.html(html.join(''));
     }
 
     function refreshLoggerView(){

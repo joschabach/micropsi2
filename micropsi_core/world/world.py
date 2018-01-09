@@ -334,7 +334,8 @@ class World(object):
 
     def signal_handler(self, *args):
         """ stuff to do on sigint, sigabrt, etc"""
-        pass  # pragma: no cover
+        for uid in self.agents:
+            self.agents[uid].shutdown()
 
     def __del__(self):
         """ Empty destructor """

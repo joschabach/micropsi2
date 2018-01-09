@@ -253,6 +253,8 @@ class World(object):
                 return False, "Nodenet agent already exists in this world, but has the wrong type"
             elif config == self.agents[nodenet_uid].config and device_map == self.agents[nodenet_uid].device_map:
                     return True, self.agents[nodenet_uid]
+            else:
+                self.agents[nodenet_uid].shutdown()  # shutdown the old instance before replacing
         return self.spawn_agent(worldadapter, nodenet_uid, nodenet_name=nodenet_name, config=config, device_map=device_map)
 
     def unregister_nodenet(self, nodenet_uid):

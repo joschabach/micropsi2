@@ -263,12 +263,12 @@ def kill_runners(signal=None, frame=None):
 def set_logging_levels(logging_levels):
     for key in logging_levels:
         if key == 'agent':
-            runner_config['log_level_agent'] = logging_levels[key]
+            runner_config['log_level_agent'] = logging_levels[key].upper()
             for uid in nodenets:
-                logger.set_logging_level("agent.%s" % uid, logging_levels[key])
+                logger.set_logging_level("agent.%s" % uid, logging_levels[key].upper())
         else:
-            runner_config['log_level_agent'] = logging_levels[key]
-            logger.set_logging_level(key, logging_levels[key])
+            runner_config['log_level_%s' % key] = logging_levels[key].upper()
+            logger.set_logging_level(key, logging_levels[key].upper())
     return True
 
 
@@ -288,12 +288,11 @@ def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor
 
 
 def get_logging_levels(nodenet_uid=None):
-    levels = {}
-    for key in logging.Logger.manager.loggerDict:
-        if key.startswith('agent') or key in ['world', 'system']:
-            levels[key] = logging.getLevelName(logging.getLogger(key).getEffectiveLevel())
-    if 'agent' not in levels:
-        levels['agent'] = runner_config['log_level_agent']
+    levels = {
+        'system': runner_config['log_level_system'],
+        'world': runner_config['log_level_world'],
+        'agent': runner_config['log_level_agent']
+    }
     return levels
 
 
@@ -381,7 +380,7 @@ def load_nodenet(nodenet_uid):
 
                 engine = data.get('engine') or 'dict_engine'
 
-                logger.register_logger("agent.%s" % nodenet_uid, runtime_config['logging']['level_agent'])
+                logger.register_logger("agent.%s" % nodenet_uid, runner_config['log_level_agent'])
 
                 params = {
                     'persistency_path': os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, data.uid),

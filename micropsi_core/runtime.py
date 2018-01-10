@@ -264,6 +264,8 @@ def set_logging_levels(logging_levels):
     for key in logging_levels:
         if key == 'agent':
             runner_config['log_level_agent'] = logging_levels[key]
+            for uid in nodenets:
+                logger.set_logging_level("agent.%s" % uid, logging_levels[key])
         else:
             runner_config['log_level_agent'] = logging_levels[key]
             logger.set_logging_level(key, logging_levels[key])

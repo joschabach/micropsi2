@@ -1924,10 +1924,16 @@ def initialize(config=None):
     runner_config = ConfigurationManager(config['paths']['server_settings_path'])
     # migration code.
     if 'log_level_system' not in runner_config:
-        runner_config['log_level_system'] = config['logging']['level_system']
-        runner_config['log_level_agent'] = config['logging']['level_agent']
-        runner_config['log_level_world'] = config['logging']['level_system']
-        runner_config['log_file'] = config['logging'].get('logfile', '')
+        if 'logging' in config:
+            runner_config['log_level_system'] = config['logging']['level_system']
+            runner_config['log_level_agent'] = config['logging']['level_agent']
+            runner_config['log_level_world'] = config['logging']['level_system']
+            runner_config['log_file'] = config['logging'].get('logfile', '')
+        else:
+            runner_config['log_level_system'] = 'WARNING'
+            runner_config['log_level_agent'] = 'WARNING'
+            runner_config['log_level_world'] = 'WARNING'
+            runner_config['log_file'] = ''
 
     # create autosave-dir if not exists:
     auto_save_intervals = config['micropsi2'].get('auto_save_intervals')

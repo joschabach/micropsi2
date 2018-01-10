@@ -26,6 +26,20 @@ def test_get_logging_levels(runtime):
     assert res['world'] == 'WARNING'
 
 
+def test_set_logfile(runtime, resourcepath):
+    import os
+    logfile = os.path.join(resourcepath, 'mpsi_test.log')
+    runtime.set_runner_properties(23,
+        log_levels={'system': 'debug', 'agent': 'debug', 'world': 'debug'},
+        log_file=logfile)
+    logging.getLogger('system').info("Some message")
+    assert os.path.isfile(logfile)
+    os.remove(logfile)
+    runtime.set_runner_properties(42, log_file='')
+    logging.getLogger('system').info("Some message")
+    assert not os.path.isfile(logfile)
+
+
 def test_get_logger_messages(runtime):
     msg = "Attention passengers. The next redline train to braintree is now arriving!"
     runtime.set_logging_levels({'system': 'INFO'})

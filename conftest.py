@@ -37,8 +37,6 @@ cfg['paths']['server_settings_path'] = os.path.join(testpath, 'server_cfg.json')
 cfg['paths']['usermanager_path'] = os.path.join(testpath, 'user-db.json')
 cfg['paths']['device_settings_path'] = os.path.join(testpath, 'devices.json')
 
-if 'logfile' in cfg['logging']:
-    del cfg['logging']['logfile']
 cfg['micropsi2']['single_agent_mode'] = ''
 if 'theano' in cfg:
     cfg['theano']['initial_number_of_nodes'] = '50'
@@ -160,7 +158,7 @@ def set_logging_levels():
     """ sets the logging levels of the default loggers back to WARNING """
     logging.getLogger('system').setLevel(logging.WARNING)
     logging.getLogger('world').setLevel(logging.WARNING)
-    micropsi_runtime.runtime_config['logging']['level_agent'] = 'WARNING'
+    micropsi_runtime.runner_config['log_level_agent'] = 'WARNING'
 
 
 @pytest.fixture(scope="session")

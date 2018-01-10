@@ -19,6 +19,11 @@ import logging
 import zipfile
 import threading
 
+import io
+import pstats
+import cProfile
+
+
 from datetime import datetime, timedelta
 
 from micropsi_core.config import ConfigurationManager
@@ -92,11 +97,14 @@ class MicropsiRunner(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
-        if runtime_config['micropsi2'].get('profile_runner'):
-            import cProfile
-            self.profiler = cProfile.Profile()
+        if runtime_config['micropsi2'].get('profile_nodenet'):
+            self.nodenet_profiler = cProfile.Profile()
         else:
-            self.profiler = None
+            self.nodenet_profiler = None
+        if runtime_config['micropsi2'].get('profile_world'):
+            self.world_profiler = cProfile.Profile()
+        else:
+            self.world_profiler = None
         self.daemon = True
         self.paused = True
         self.state = threading.Condition()
@@ -117,8 +125,8 @@ class MicropsiRunner(threading.Thread):
             log = False
             uids = [uid for uid in nodenets if nodenets[uid].is_active]
             nodenets_to_save = []
-            if self.profiler:
-                self.profiler.enable()
+            if self.nodenet_profiler:
+                self.nodenet_profiler.enable()
             for uid in uids:
                 if uid in nodenets:
                     nodenet = nodenets[uid]
@@ -144,8 +152,8 @@ class MicropsiRunner(threading.Thread):
                                     nodenets_to_save.append((nodenet.uid, val))
                                     break
 
-            if self.profiler:
-                self.profiler.disable()
+            if self.nodenet_profiler:
+                self.nodenet_profiler.disable()
 
             for uid, interval in nodenets_to_save:
                 if uid in nodenets:
@@ -159,8 +167,8 @@ class MicropsiRunner(threading.Thread):
                     except Exception as err:
                         logging.getLogger("system").error("Auto-save failure for nodenet %s: %s: %s" % (uid, type(err).__name__, str(err)))
 
-            if self.profiler:
-                self.profiler.enable()
+            if self.world_profiler:
+                self.world_profiler.enable()
             for wuid, world in worlds.items():
                 if world.is_active:
                     uids.append(wuid)
@@ -183,8 +191,8 @@ class MicropsiRunner(threading.Thread):
                     logging.getLogger("system").warning("Overlong step %d took %.4f secs, allowed are %.4f secs!" %
                                                     (self.total_steps, calc_time.total_seconds(), step.total_seconds()))
 
-            if self.profiler:
-                self.profiler.disable()
+            if self.world_profiler:
+                self.world_profiler.disable()
 
             if log:
                 step_time = datetime.now() - start
@@ -203,15 +211,18 @@ class MicropsiRunner(threading.Thread):
 
                 if self.total_steps % self.granularity == 0:
                     average_calc_duration = self.sum_of_calc_durations / self.number_of_samples
-                    if self.profiler:
-                        import pstats
-                        import io
+                    if self.nodenet_profiler:
                         s = io.StringIO()
                         sortby = 'cumtime'
-                        ps = pstats.Stats(self.profiler, stream=s).sort_stats(sortby)
-                        ps.print_stats('micropsi_')
-                        logging.getLogger("system").debug(s.getvalue())
-
+                        ps = pstats.Stats(self.nodenet_profiler, stream=s).sort_stats(sortby)
+                        ps.print_stats(os.path.basename(RESOURCE_PATH))
+                        logging.getLogger("system").debug("Nodenet profiler: %s" % s.getvalue())
+                    if self.world_profiler:
+                        s = io.StringIO()
+                        sortby = 'cumtime'
+                        ps = pstats.Stats(self.world_profiler, stream=s).sort_stats(sortby)
+                        ps.print_stats(os.path.basename(WORLD_PATH))
+                        logging.getLogger("system").debug("World profiler: %s" % s.getvalue())
                     logging.getLogger("system").debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_calc_duration))
                     self.sum_of_calc_durations = 0
                     self.sum_of_step_durations = 0
@@ -703,8 +714,7 @@ def step_nodenet(nodenet_uid):
     if nodenet.is_active:
         nodenet.is_active = False
 
-    if runtime_config['micropsi2'].get('profile_runner'):
-        import cProfile
+    if runtime_config['micropsi2'].get('profile_nodenet'):
         profiler = cProfile.Profile()
         profiler.enable()
 
@@ -717,10 +727,8 @@ def step_nodenet(nodenet_uid):
 
     nodenet.timed_step(runner_config.data)
 
-    if runtime_config['micropsi2'].get('profile_runner'):
+    if runtime_config['micropsi2'].get('profile_nodenet'):
         profiler.disable()
-        import pstats
-        import io
         s = io.StringIO()
         sortby = 'cumtime'
         ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
@@ -735,17 +743,14 @@ def step_nodenet(nodenet_uid):
 
 def single_step_nodenet_only(nodenet_uid):
     nodenet = get_nodenet(nodenet_uid)
-    if runtime_config['micropsi2'].get('profile_runner'):
-        import cProfile
+    if runtime_config['micropsi2'].get('profile_nodenet'):
         profiler = cProfile.Profile()
         profiler.enable()
 
     nodenet.timed_step(runner_config.data)
 
-    if runtime_config['micropsi2'].get('profile_runner'):
+    if runtime_config['micropsi2'].get('profile_nodenet'):
         profiler.disable()
-        import pstats
-        import io
         s = io.StringIO()
         sortby = 'cumtime'
         ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
@@ -1427,18 +1432,15 @@ def run_recipe(nodenet_uid, name, parameters):
             params[key] = parameters[key]
     if name in custom_recipes:
         func = custom_recipes[name]['function']
-        if runtime_config['micropsi2'].get('profile_runner'):
-            import cProfile
+        if runtime_config['micropsi2'].get('profile_nodenet'):
             profiler = cProfile.Profile()
             profiler.enable()
         result = {'reload': True}
         ret = func(netapi, **params)
         if ret:
             result.update(ret)
-        if runtime_config['micropsi2'].get('profile_runner'):
+        if runtime_config['micropsi2'].get('profile_nodenet'):
             profiler.disable()
-            import pstats
-            import io
             s = io.StringIO()
             sortby = 'cumtime'
             ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)

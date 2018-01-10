@@ -1,6 +1,8 @@
 
 0.16-alpha14 (unrelease)
 ==========
+* Add status reporting API
+* Migrate logging and profiling settings from config.ini to UI
 
 
 0.15-alpha13 (2017-12-20)

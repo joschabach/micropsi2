@@ -75,7 +75,7 @@
                             <select id="log_level_{{name}}" name="log_level_{{name}}" class="input-medium">
                                 % for lvl in ["debug", "info", "warning", "error", "critical"]:
                                     <option
-                                    % if lvl == value['log_levels'][name]:
+                                    % if lvl.upper() == value['log_levels'][name].upper():
                                         selected = "selected"
                                     %end
                                     >{{lvl}}</option>

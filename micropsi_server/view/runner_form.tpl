@@ -40,6 +40,29 @@
                             checked="checked"
                         %end
                         />
+                        <span class="help-inline hint small">Stop runner if NaNs detected in flow</span>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="profile_nodenet">Profile nodenet</label>
+                    <div class="controls">
+                        <input type="checkbox" class="input-medium" id="profile_nodenet" name="profile_nodenet"
+                        %if 'profile_nodenet' in value and value['profile_nodenet']:
+                            checked="checked"
+                        %end
+                        />
+                        <span class="help-inline hint small">Log profile info for nodenet</span>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="profile_world">Profile world</label>
+                    <div class="controls">
+                        <input type="checkbox" class="input-medium" id="profile_world" name="profile_world"
+                        %if 'profile_world' in value and value['profile_world']:
+                            checked="checked"
+                        %end
+                        />
+                        <span class="help-inline hint small">Log profile info for world</span>
                     </div>
                 </div>
              </fieldset>

@@ -97,14 +97,8 @@ class MicropsiRunner(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
-        if runtime_config['micropsi2'].get('profile_nodenet'):
-            self.nodenet_profiler = cProfile.Profile()
-        else:
-            self.nodenet_profiler = None
-        if runtime_config['micropsi2'].get('profile_world'):
-            self.world_profiler = cProfile.Profile()
-        else:
-            self.world_profiler = None
+        self.nodenet_profiler = cProfile.Profile()
+        self.world_profiler = cProfile.Profile()
         self.daemon = True
         self.paused = True
         self.state = threading.Condition()
@@ -125,7 +119,9 @@ class MicropsiRunner(threading.Thread):
             log = False
             uids = [uid for uid in nodenets if nodenets[uid].is_active]
             nodenets_to_save = []
-            if self.nodenet_profiler:
+            profile_net = runner_config['profile_nodenet']
+            profile_world = runner_config['profile_world']
+            if profile_net:
                 self.nodenet_profiler.enable()
             for uid in uids:
                 if uid in nodenets:
@@ -152,7 +148,7 @@ class MicropsiRunner(threading.Thread):
                                     nodenets_to_save.append((nodenet.uid, val))
                                     break
 
-            if self.nodenet_profiler:
+            if profile_net:
                 self.nodenet_profiler.disable()
 
             for uid, interval in nodenets_to_save:
@@ -167,7 +163,7 @@ class MicropsiRunner(threading.Thread):
                     except Exception as err:
                         logging.getLogger("system").error("Auto-save failure for nodenet %s: %s: %s" % (uid, type(err).__name__, str(err)))
 
-            if self.world_profiler:
+            if profile_world:
                 self.world_profiler.enable()
             for wuid, world in worlds.items():
                 if world.is_active:
@@ -191,7 +187,7 @@ class MicropsiRunner(threading.Thread):
                     logging.getLogger("system").warning("Overlong step %d took %.4f secs, allowed are %.4f secs!" %
                                                     (self.total_steps, calc_time.total_seconds(), step.total_seconds()))
 
-            if self.world_profiler:
+            if profile_world:
                 self.world_profiler.disable()
 
             if log:
@@ -211,18 +207,18 @@ class MicropsiRunner(threading.Thread):
 
                 if self.total_steps % self.granularity == 0:
                     average_calc_duration = self.sum_of_calc_durations / self.number_of_samples
-                    if self.nodenet_profiler:
+                    if profile_net:
                         s = io.StringIO()
                         sortby = 'cumtime'
                         ps = pstats.Stats(self.nodenet_profiler, stream=s).sort_stats(sortby)
                         ps.print_stats(os.path.basename(RESOURCE_PATH))
-                        logging.getLogger("system").debug("Nodenet profiler: %s" % s.getvalue())
-                    if self.world_profiler:
+                        logging.getLogger("system").info("Nodenet profiler: %s" % s.getvalue())
+                    if profile_world:
                         s = io.StringIO()
                         sortby = 'cumtime'
                         ps = pstats.Stats(self.world_profiler, stream=s).sort_stats(sortby)
                         ps.print_stats(os.path.basename(WORLD_PATH))
-                        logging.getLogger("system").debug("World profiler: %s" % s.getvalue())
+                        logging.getLogger("system").info("World profiler: %s" % s.getvalue())
                     logging.getLogger("system").debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_calc_duration))
                     self.sum_of_calc_durations = 0
                     self.sum_of_step_durations = 0
@@ -633,7 +629,7 @@ def start_nodenetrunner(nodenet_uid):
     return True
 
 
-def set_runner_properties(timestep, infguard=False, log_levels={}, log_file=None):
+def set_runner_properties(timestep, infguard=False, profile_nodenet=False, profile_world=False, log_levels={}, log_file=None):
     """Sets the speed of the nodenet calculation in ms.
 
     Argument:
@@ -641,14 +637,27 @@ def set_runner_properties(timestep, infguard=False, log_levels={}, log_file=None
     """
     runner_config['runner_timestep'] = timestep
     runner_config['runner_infguard'] = bool(infguard)
+    runner_config['profile_nodenet'] = bool(profile_nodenet)
+    runner_config['profile_world'] = bool(profile_world)
     runner['timestep'] = timestep
-    runner['infguard'] = bool(infguard)
     if log_levels:
         set_logging_levels(log_levels)
     if log_file is not None:
         logger.set_logfile(log_file)
         runner_config['log_file'] = log_file
     return True
+
+
+def get_runner_properties():
+    """Returns the speed that has been configured for the nodenet runner (in ms)."""
+    return {
+        'timestep': runner_config['runner_timestep'],
+        'infguard': runner_config['runner_infguard'],
+        'profile_nodenet': runner_config['profile_nodenet'],
+        'profile_world': runner_config['profile_world'],
+        'log_levels': get_logging_levels(),
+        'log_file': logger.log_to_file
+    }
 
 
 def set_runner_condition(nodenet_uid, monitor=None, steps=None):
@@ -672,16 +681,6 @@ def set_runner_condition(nodenet_uid, monitor=None, steps=None):
 def remove_runner_condition(nodenet_uid):
     get_nodenet(nodenet_uid).unset_runner_condition()
     return True
-
-
-def get_runner_properties():
-    """Returns the speed that has been configured for the nodenet runner (in ms)."""
-    return {
-        'timestep': runner_config['runner_timestep'],
-        'infguard': runner_config['runner_infguard'],
-        'log_levels': get_logging_levels(),
-        'log_file': logger.log_to_file
-    }
 
 
 def get_is_nodenet_running(nodenet_uid):
@@ -1953,8 +1952,17 @@ def initialize(config=None):
         runner_config['runner_timestep'] = 10
     if 'runner_infguard' not in runner_config:
         runner_config['runner_infguard'] = True
+    if 'profile_nodenet' not in runner_config:
+        runner_config['profile_nodenet'] = False
+    if 'profile_world' not in runner_config:
+        runner_config['profile_world'] = False
 
-    set_runner_properties(runner_config['runner_timestep'], runner_config['runner_infguard'])
+    set_runner_properties(
+        runner_config['runner_timestep'],
+        runner_config['runner_infguard'],
+        runner_config['profile_nodenet'],
+        runner_config['profile_world']
+    )
 
     runner['running'] = True
     if runner.get('runner') is None:

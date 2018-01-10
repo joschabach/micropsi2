@@ -773,6 +773,8 @@ def edit_runner_properties():
         runtime.set_runner_properties(
             int(request.params['timestep']),
             bool(request.params.get('infguard')),
+            bool(request.params.get('profile_nodenet')),
+            bool(request.params.get('profile_world')),
             log_levels,
             request.params.get('log_file'))
         return dict(status="success", msg="Settings saved")
@@ -951,10 +953,9 @@ def remove_runner_condition(nodenet_uid):
 
 
 @rpc("set_runner_properties", permission_required="manage server")
-def set_runner_properties(timestep, infguard):
-    """ Configure the server-settings:
-    timestep: miliseconds per nodenet-step"""
-    return runtime.set_runner_properties(timestep, infguard)
+def set_runner_properties(timestep, infguard=False, profile_nodenet=False, profile_world=False, log_levels={}, log_file=None):
+    """ Configure the server-settings for the runner """
+    return runtime.set_runner_properties(timestep, infguard, profile_nodenet, profile_world, log_levels, log_file)
 
 
 @rpc("get_runner_properties")

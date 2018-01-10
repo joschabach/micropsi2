@@ -19,6 +19,11 @@ import logging
 import zipfile
 import threading
 
+import io
+import pstats
+import cProfile
+
+
 from datetime import datetime, timedelta
 
 from micropsi_core.config import ConfigurationManager
@@ -92,11 +97,6 @@ class MicropsiRunner(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
-        if runtime_config['micropsi2'].get('profile_runner'):
-            import cProfile
-            self.profiler = cProfile.Profile()
-        else:
-            self.profiler = None
         self.daemon = True
         self.paused = True
         self.state = threading.Condition()
@@ -117,8 +117,11 @@ class MicropsiRunner(threading.Thread):
             log = False
             uids = [uid for uid in nodenets if nodenets[uid].is_active]
             nodenets_to_save = []
-            if self.profiler:
-                self.profiler.enable()
+            profile_net = runner_config['profile_nodenet']
+            profile_world = runner_config['profile_world']
+            if profile_net:
+                nodenet_profiler = cProfile.Profile()
+                nodenet_profiler.enable()
             for uid in uids:
                 if uid in nodenets:
                     nodenet = nodenets[uid]
@@ -144,8 +147,8 @@ class MicropsiRunner(threading.Thread):
                                     nodenets_to_save.append((nodenet.uid, val))
                                     break
 
-            if self.profiler:
-                self.profiler.disable()
+            if profile_net:
+                nodenet_profiler.disable()
 
             for uid, interval in nodenets_to_save:
                 if uid in nodenets:
@@ -159,8 +162,9 @@ class MicropsiRunner(threading.Thread):
                     except Exception as err:
                         logging.getLogger("system").error("Auto-save failure for nodenet %s: %s: %s" % (uid, type(err).__name__, str(err)))
 
-            if self.profiler:
-                self.profiler.enable()
+            if profile_world:
+                world_profiler = cProfile.Profile()
+                world_profiler.enable()
             for wuid, world in worlds.items():
                 if world.is_active:
                     uids.append(wuid)
@@ -183,8 +187,8 @@ class MicropsiRunner(threading.Thread):
                     logging.getLogger("system").warning("Overlong step %d took %.4f secs, allowed are %.4f secs!" %
                                                     (self.total_steps, calc_time.total_seconds(), step.total_seconds()))
 
-            if self.profiler:
-                self.profiler.disable()
+            if profile_world:
+                world_profiler.disable()
 
             if log:
                 step_time = datetime.now() - start
@@ -203,15 +207,18 @@ class MicropsiRunner(threading.Thread):
 
                 if self.total_steps % self.granularity == 0:
                     average_calc_duration = self.sum_of_calc_durations / self.number_of_samples
-                    if self.profiler:
-                        import pstats
-                        import io
+                    if profile_net:
                         s = io.StringIO()
                         sortby = 'cumtime'
-                        ps = pstats.Stats(self.profiler, stream=s).sort_stats(sortby)
-                        ps.print_stats('micropsi_')
-                        logging.getLogger("system").debug(s.getvalue())
-
+                        ps = pstats.Stats(nodenet_profiler, stream=s).sort_stats(sortby)
+                        ps.print_stats(os.path.basename(RESOURCE_PATH))
+                        logging.getLogger("system").info("Nodenet profiler: %s" % s.getvalue())
+                    if profile_world:
+                        s = io.StringIO()
+                        sortby = 'cumtime'
+                        ps = pstats.Stats(world_profiler, stream=s).sort_stats(sortby)
+                        ps.print_stats(os.path.basename(WORLD_PATH))
+                        logging.getLogger("system").info("World profiler: %s" % s.getvalue())
                     logging.getLogger("system").debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_calc_duration))
                     self.sum_of_calc_durations = 0
                     self.sum_of_step_durations = 0
@@ -256,9 +263,12 @@ def kill_runners(signal=None, frame=None):
 def set_logging_levels(logging_levels):
     for key in logging_levels:
         if key == 'agent':
-            runtime_config['logging']['level_agent'] = logging_levels[key]
+            runner_config['log_level_agent'] = logging_levels[key].upper()
+            for uid in nodenets:
+                logger.set_logging_level("agent.%s" % uid, logging_levels[key].upper())
         else:
-            logger.set_logging_level(key, logging_levels[key])
+            runner_config['log_level_%s' % key] = logging_levels[key].upper()
+            logger.set_logging_level(key, logging_levels[key].upper())
     return True
 
 
@@ -280,12 +290,11 @@ def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor
 
 
 def get_logging_levels(nodenet_uid=None):
-    levels = {}
-    for key in logging.Logger.manager.loggerDict:
-        if key.startswith('agent') or key in ['world', 'system']:
-            levels[key] = logging.getLevelName(logging.getLogger(key).getEffectiveLevel())
-    if 'agent' not in levels:
-        levels['agent'] = runtime_config['logging']['level_agent']
+    levels = {
+        'system': logging.getLevelName(logging.getLogger('system').getEffectiveLevel()),
+        'world': logging.getLevelName(logging.getLogger('world').getEffectiveLevel()),
+        'agent': runner_config['log_level_agent']
+    }
     return levels
 
 
@@ -373,7 +382,7 @@ def load_nodenet(nodenet_uid):
 
                 engine = data.get('engine') or 'dict_engine'
 
-                logger.register_logger("agent.%s" % nodenet_uid, runtime_config['logging']['level_agent'])
+                logger.register_logger("agent.%s" % nodenet_uid, runner_config['log_level_agent'])
 
                 params = {
                     'persistency_path': os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, data.uid),
@@ -623,7 +632,7 @@ def start_nodenetrunner(nodenet_uid):
     return True
 
 
-def set_runner_properties(timestep, infguard=False):
+def set_runner_properties(timestep, infguard=False, profile_nodenet=False, profile_world=False, log_levels={}, log_file=None):
     """Sets the speed of the nodenet calculation in ms.
 
     Argument:
@@ -631,9 +640,27 @@ def set_runner_properties(timestep, infguard=False):
     """
     runner_config['runner_timestep'] = timestep
     runner_config['runner_infguard'] = bool(infguard)
+    runner_config['profile_nodenet'] = bool(profile_nodenet)
+    runner_config['profile_world'] = bool(profile_world)
     runner['timestep'] = timestep
-    runner['infguard'] = bool(infguard)
+    if log_levels:
+        set_logging_levels(log_levels)
+    if log_file is not None:
+        logger.set_logfile(log_file)
+        runner_config['log_file'] = log_file
     return True
+
+
+def get_runner_properties():
+    """Returns the speed that has been configured for the nodenet runner (in ms)."""
+    return {
+        'timestep': runner_config['runner_timestep'],
+        'infguard': runner_config['runner_infguard'],
+        'profile_nodenet': runner_config['profile_nodenet'],
+        'profile_world': runner_config['profile_world'],
+        'log_levels': get_logging_levels(),
+        'log_file': logger.log_to_file
+    }
 
 
 def set_runner_condition(nodenet_uid, monitor=None, steps=None):
@@ -657,14 +684,6 @@ def set_runner_condition(nodenet_uid, monitor=None, steps=None):
 def remove_runner_condition(nodenet_uid):
     get_nodenet(nodenet_uid).unset_runner_condition()
     return True
-
-
-def get_runner_properties():
-    """Returns the speed that has been configured for the nodenet runner (in ms)."""
-    return {
-        'timestep': runner_config['runner_timestep'],
-        'infguard': runner_config['runner_infguard']
-    }
 
 
 def get_is_nodenet_running(nodenet_uid):
@@ -697,8 +716,7 @@ def step_nodenet(nodenet_uid):
     if nodenet.is_active:
         nodenet.is_active = False
 
-    if runtime_config['micropsi2'].get('profile_runner'):
-        import cProfile
+    if runtime_config['micropsi2'].get('profile_nodenet'):
         profiler = cProfile.Profile()
         profiler.enable()
 
@@ -711,10 +729,8 @@ def step_nodenet(nodenet_uid):
 
     nodenet.timed_step(runner_config.data)
 
-    if runtime_config['micropsi2'].get('profile_runner'):
+    if runtime_config['micropsi2'].get('profile_nodenet'):
         profiler.disable()
-        import pstats
-        import io
         s = io.StringIO()
         sortby = 'cumtime'
         ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
@@ -729,17 +745,14 @@ def step_nodenet(nodenet_uid):
 
 def single_step_nodenet_only(nodenet_uid):
     nodenet = get_nodenet(nodenet_uid)
-    if runtime_config['micropsi2'].get('profile_runner'):
-        import cProfile
+    if runtime_config['micropsi2'].get('profile_nodenet'):
         profiler = cProfile.Profile()
         profiler.enable()
 
     nodenet.timed_step(runner_config.data)
 
-    if runtime_config['micropsi2'].get('profile_runner'):
+    if runtime_config['micropsi2'].get('profile_nodenet'):
         profiler.disable()
-        import pstats
-        import io
         s = io.StringIO()
         sortby = 'cumtime'
         ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
@@ -1426,18 +1439,15 @@ def run_recipe(nodenet_uid, name, parameters):
             params[key] = parameters[key]
     if name in custom_recipes:
         func = custom_recipes[name]['function']
-        if runtime_config['micropsi2'].get('profile_runner'):
-            import cProfile
+        if runtime_config['micropsi2'].get('profile_nodenet'):
             profiler = cProfile.Profile()
             profiler.enable()
         result = {'reload': True}
         ret = func(netapi, **params)
         if ret:
             result.update(ret)
-        if runtime_config['micropsi2'].get('profile_runner'):
+        if runtime_config['micropsi2'].get('profile_nodenet'):
             profiler.disable()
-            import pstats
-            import io
             s = io.StringIO()
             sortby = 'cumtime'
             ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
@@ -1919,6 +1929,18 @@ def initialize(config=None):
     sys.path.append(WORLD_PATH)
 
     runner_config = ConfigurationManager(config['paths']['server_settings_path'])
+    # migration code.
+    if 'log_level_system' not in runner_config:
+        if 'logging' in config:
+            runner_config['log_level_system'] = config['logging']['level_system']
+            runner_config['log_level_agent'] = config['logging']['level_agent']
+            runner_config['log_level_world'] = config['logging']['level_system']
+            runner_config['log_file'] = config['logging'].get('logfile', '')
+        else:
+            runner_config['log_level_system'] = 'WARNING'
+            runner_config['log_level_agent'] = 'WARNING'
+            runner_config['log_level_world'] = 'WARNING'
+            runner_config['log_file'] = ''
 
     # create autosave-dir if not exists:
     auto_save_intervals = config['micropsi2'].get('auto_save_intervals')
@@ -1929,9 +1951,9 @@ def initialize(config=None):
 
     if logger is None:
         logger = MicropsiLogger({
-            'system': config['logging']['level_system'],
-            'world': config['logging']['level_world']
-        }, config['logging'].get('logfile'))
+            'system': runner_config['log_level_system'],
+            'world': runner_config['log_level_world']
+        }, runner_config.get('log_file'))
 
     result, errors = reload_code()
     load_definitions()
@@ -1944,8 +1966,17 @@ def initialize(config=None):
         runner_config['runner_timestep'] = 10
     if 'runner_infguard' not in runner_config:
         runner_config['runner_infguard'] = True
+    if 'profile_nodenet' not in runner_config:
+        runner_config['profile_nodenet'] = False
+    if 'profile_world' not in runner_config:
+        runner_config['profile_world'] = False
 
-    set_runner_properties(runner_config['runner_timestep'], runner_config['runner_infguard'])
+    set_runner_properties(
+        runner_config['runner_timestep'],
+        runner_config['runner_infguard'],
+        runner_config['profile_nodenet'],
+        runner_config['profile_world']
+    )
 
     runner['running'] = True
     if runner.get('runner') is None:

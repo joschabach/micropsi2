@@ -98,6 +98,22 @@ class MicropsiLogger():
         self.register_logger("system", self.logging_levels.get(default_logging_levels.get('system', {}), logging.WARNING))
         self.register_logger("world", self.logging_levels.get(default_logging_levels.get('world', {}), logging.WARNING))
 
+    def set_logfile(self, logfile=None):
+        if logfile:
+            self.log_to_file = logfile
+            if os.path.isfile(logfile):
+                os.remove(logfile)
+            self.filehandler = logging.FileHandler(logfile, mode='a')
+            formatter = logging.Formatter(self.default_format)
+            self.filehandler.setFormatter(formatter)
+            self.filehandler.set_name('filehandler')
+            for name in self.loggers:
+                self.loggers[name].addHandler(self.filehandler)
+        elif self.log_to_file:
+            self.log_to_file = False
+            for name in self.loggers:
+                self.loggers[name].handlers.remove(self.filehandler)
+
     def register_logger(self, name, level):
         self.loggers[name] = logging.getLogger(name)
         self.loggers[name].setLevel(level)
@@ -126,7 +142,7 @@ class MicropsiLogger():
             self.record_storage[key] = []
 
     def set_logging_level(self, logger, level):
-        logging.getLogger(logger).setLevel(self.logging_levels[level])
+        logging.getLogger(logger).setLevel(self.logging_levels[level.upper()])
 
     def get_logs(self, logger=[], after=0):
         """

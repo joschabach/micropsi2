@@ -69,11 +69,3 @@ for key in ['agent_directory', 'world_directory', 'persistency_directory']:
     else:
         config['paths'][key] = data_path
     makedirs(config['paths'][key])
-
-if 'logging' not in config:
-    config['logging'] = {}
-
-for level in ['level_agent', 'level_system', 'level_world']:
-    if level not in config['logging']:
-        warnings.warn('logging level for %s not set in config.ini - defaulting to WARNING' % level)
-        config['logging'][level] = 'WARNING'

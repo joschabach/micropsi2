@@ -289,8 +289,8 @@ def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor
 
 def get_logging_levels(nodenet_uid=None):
     levels = {
-        'system': runner_config['log_level_system'],
-        'world': runner_config['log_level_world'],
+        'system': logging.getLevelName(logging.getLogger('system').getEffectiveLevel()),
+        'world': logging.getLevelName(logging.getLogger('world').getEffectiveLevel()),
         'agent': runner_config['log_level_agent']
     }
     return levels

@@ -11,12 +11,13 @@ def get_devices():
     """ Return a dict of devices with device uids
     as keys and config dict as a value """
     online_devs = devicemanager.get_online_devices()
-    for d in online_devs:
-        online_devs[d]['online'] = True
     known_devs = devicemanager.get_known_devices()
     for d in known_devs:
-        known_devs[d]['online'] = False
-    return {**known_devs, **online_devs}
+        if d in online_devs:
+            known_devs[d]['online'] = True
+        else:
+            known_devs[d]['online'] = False
+    return known_devs
 
 
 def add_device(device_type, config):

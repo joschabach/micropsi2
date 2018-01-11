@@ -109,7 +109,11 @@ function refresh_device_list(){
     }
     data = Object.values(device_data).sort(sort_devices);
     for(var i in data){
-        html.push('<option value="'+data[i].uid+'">'+data[i].config.name+'</option>');
+        if(data[i].online){
+            html.push('<option value="'+data[i].uid+'">'+data[i].config.name+'</option>');
+        } else {
+            html.push('<option value="'+data[i].uid+'" disabled="disabled">'+data[i].config.name+' (offline)</option>');
+        }
     }
     list.html(html.join(''));
     detail.hide();

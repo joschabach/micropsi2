@@ -37,4 +37,4 @@ def set_device_properties(device_uid, config):
         devicemanager.remove_device(device_uid)
         devicemanager.add_device(devtype, config, device_uid)
         return True
-    return False
+    return False, "This device is not online and can not be configured"

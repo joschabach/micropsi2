@@ -100,6 +100,8 @@ class MicropsiRunner(threading.Thread):
         self.daemon = True
         self.paused = True
         self.state = threading.Condition()
+        self.nodenet_profiler = None
+        self.world_profiler = None
         self.start()
 
     def run(self):
@@ -120,8 +122,9 @@ class MicropsiRunner(threading.Thread):
             profile_net = runner_config['profile_nodenet']
             profile_world = runner_config['profile_world']
             if profile_net:
-                nodenet_profiler = cProfile.Profile()
-                nodenet_profiler.enable()
+                if self.nodenet_profiler is None:
+                    self.nodenet_profiler = cProfile.Profile()
+                self.nodenet_profiler.enable()
             for uid in uids:
                 if uid in nodenets:
                     nodenet = nodenets[uid]
@@ -148,7 +151,7 @@ class MicropsiRunner(threading.Thread):
                                     break
 
             if profile_net:
-                nodenet_profiler.disable()
+                self.nodenet_profiler.disable()
 
             for uid, interval in nodenets_to_save:
                 if uid in nodenets:
@@ -163,8 +166,9 @@ class MicropsiRunner(threading.Thread):
                         logging.getLogger("system").error("Auto-save failure for nodenet %s: %s: %s" % (uid, type(err).__name__, str(err)))
 
             if profile_world:
-                world_profiler = cProfile.Profile()
-                world_profiler.enable()
+                if self.world_profiler is None:
+                    self.world_profiler = cProfile.Profile()
+                self.world_profiler.enable()
             for wuid, world in worlds.items():
                 if world.is_active:
                     uids.append(wuid)
@@ -188,7 +192,7 @@ class MicropsiRunner(threading.Thread):
                                                     (self.total_steps, calc_time.total_seconds(), step.total_seconds()))
 
             if profile_world:
-                world_profiler.disable()
+                self.world_profiler.disable()
 
             if log:
                 step_time = datetime.now() - start
@@ -210,15 +214,17 @@ class MicropsiRunner(threading.Thread):
                     if profile_net:
                         s = io.StringIO()
                         sortby = 'cumtime'
-                        ps = pstats.Stats(nodenet_profiler, stream=s).sort_stats(sortby)
+                        ps = pstats.Stats(self.nodenet_profiler, stream=s).sort_stats(sortby)
                         ps.print_stats(os.path.basename(RESOURCE_PATH))
                         logging.getLogger("system").info("Nodenet profiler: %s" % s.getvalue())
+                        self.nodenet_profiler = None
                     if profile_world:
                         s = io.StringIO()
                         sortby = 'cumtime'
-                        ps = pstats.Stats(world_profiler, stream=s).sort_stats(sortby)
+                        ps = pstats.Stats(self.world_profiler, stream=s).sort_stats(sortby)
                         ps.print_stats(os.path.basename(WORLD_PATH))
                         logging.getLogger("system").info("World profiler: %s" % s.getvalue())
+                        self.world_profiler = None
                     logging.getLogger("system").debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_calc_duration))
                     self.sum_of_calc_durations = 0
                     self.sum_of_step_durations = 0

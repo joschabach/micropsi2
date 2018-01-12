@@ -259,6 +259,9 @@ try:
                             device_data = devicemanager.online_devices[k].get_config()
                         else:
                             device_data = devicemanager.known_devices[k]
+                            if device_data['type'] not in devicemanager.device_types:
+                                self.logger.error("Device %s (uid: %s) has unknown type %s. not adding datasource or datatarget" % (data['device_map'][k], k, device_data['type']))
+                                continue
                         if device_data.get('nature') == InputDevice.__name__:
                             self.add_flow_datasource(self.device_map[k], device_data['data_size'])
                         elif device_data.get('nature') == OutputDevice.__name__:

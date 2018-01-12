@@ -180,7 +180,7 @@ class World(object):
         for uid in self.agents:
             with self.agents[uid].datasource_lock:
                 self.agents[uid].update(step_inteval_ms)
-        for uid in self.agents.copy():
+        for uid in list(self.agents.keys()):
             if not self.agents[uid].is_alive():
                 # remove from living agents for the moment
                 # TODO: unregister?

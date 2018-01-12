@@ -117,7 +117,6 @@ def reload_devices(json_path):
     known_devices = data.copy()
     for k in data:
         if data[k]['type'] not in device_types:
-            del known_devices[k]
             logging.getLogger('system').warning("Device type %s not found!" % data[k]['type'])
             continue
         try:

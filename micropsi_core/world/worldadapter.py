@@ -259,6 +259,9 @@ try:
                             device_data = devicemanager.online_devices[k].get_config()
                         else:
                             device_data = devicemanager.known_devices[k]
+                            if device_data['type'] not in devicemanager.device_types:
+                                self.logger.error("Device %s (uid: %s) has unknown type %s. not adding datasource or datatarget" % (data['device_map'][k], k, device_data['type']))
+                                continue
                         if device_data.get('nature') == InputDevice.__name__:
                             self.add_flow_datasource(self.device_map[k], device_data['data_size'])
                         elif device_data.get('nature') == OutputDevice.__name__:
@@ -431,7 +434,7 @@ try:
                 if k in devicemanager.online_devices:
                     if issubclass(devicemanager.online_devices[k].__class__, InputDevice):
                         data = devicemanager.online_devices[k].get_data()
-                        assert isinstance(data, np.ndarray), "device %s must provide numpy array" % self.device_map[k]
+                        assert isinstance(data, np.ndarray), "device %s must provide numpy array, not %s" % (self.device_map[k], type(data))
                         self.set_flow_datasource(self.device_map[k], data)
                 elif devicemanager.known_devices[k].get('nature') == "InputDevice":
                     self.logger.error("Device %s is not connected. Using zeros." % self.device_map[k])

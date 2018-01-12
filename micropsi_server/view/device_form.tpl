@@ -22,50 +22,54 @@
         </div>
         <div id="detail_component" style="float:right; width: 66%; overflow: auto;">
             <form id="device_detail" class="">
-                <div>
-                    <label class="control-label" for="input_device_type">Type</label>
-                    <div class="controls">
-                        <select class="input-medium" id="input_device_type" name="input_device_type">
-                            % for type in sorted(device_types.keys()):
-                                <option value="{{type}}">{{type}}</option>
-                            %end
-                        </select>
-                    </div>
+                <div class="offline">
+                    <button type="button" id="button_delete_offline_device">Delete</button>
                 </div>
-
-
-                %for type, config in device_types.items():
-                    % for param in config:
-                    <div class="control-group device_config device_config_{{type}}" style="display:none">
-                        <label class="control-label" for="device_config_{{type}}_{{param['name']}}">{{param['name']}}</label>
+                <div class="online">
+                    <div>
+                        <label class="control-label" for="input_device_type">Type</label>
                         <div class="controls">
-                            %if param.get('description'):
-                                <span class="hint xsmall">{{param['description']}}</span>
-                            %end
-                            % if param.get('options'):
-                            <select class="input-xlarge" id="device_config_{{type}}_{{param['name']}}" name="{{type}}_{{param['name']}}">
-                                % for val in param['options']:
-                                    <option value="{{val}}"
-                                        %if param.get('default') and param['default'] == val:
-                                            selected="selected"
-                                        %end
-                                    >{{val}}</option>
+                            <select class="input-medium" id="input_device_type" name="input_device_type">
+                                % for type in sorted(device_types.keys()):
+                                    <option value="{{type}}">{{type}}</option>
                                 %end
                             </select>
-                            %else:
-                            <input class="input-xlarge" id="device_config_{{type}}_{{param['name']}}" name="{{type}}_{{param['name']}}"
-                                type="text" value="{{param.get('default', '')}}" />
-                            %end
                         </div>
                     </div>
+
+
+                    %for type, config in device_types.items():
+                        % for param in config:
+                        <div class="control-group device_config device_config_{{type}}" style="display:none">
+                            <label class="control-label" for="device_config_{{type}}_{{param['name']}}">{{param['name']}}</label>
+                            <div class="controls">
+                                %if param.get('description'):
+                                    <span class="hint xsmall">{{param['description']}}</span>
+                                %end
+                                % if param.get('options'):
+                                <select class="input-xlarge" id="device_config_{{type}}_{{param['name']}}" name="{{type}}_{{param['name']}}">
+                                    % for val in param['options']:
+                                        <option value="{{val}}"
+                                            %if param.get('default') and param['default'] == val:
+                                                selected="selected"
+                                            %end
+                                        >{{val}}</option>
+                                    %end
+                                </select>
+                                %else:
+                                <input class="input-xlarge" id="device_config_{{type}}_{{param['name']}}" name="{{type}}_{{param['name']}}"
+                                    type="text" value="{{param.get('default', '')}}" />
+                                %end
+                            </div>
+                        </div>
+                        %end
                     %end
-                %end
 
-                <div class="modal-buttons">
-                    <button type="button" id="button_delete_device">Delete</button>
-                    <button type="submit" id="button_save_device">Save</button>
+                    <div class="modal-buttons">
+                        <button type="button" id="button_delete_device">Delete</button>
+                        <button type="submit" id="button_save_device">Save</button>
+                    </div>
                 </div>
-
             </form>
 
         </div>
@@ -112,7 +116,7 @@ function refresh_device_list(){
         if(data[i].online){
             html.push('<option value="'+data[i].uid+'">'+data[i].config.name+'</option>');
         } else {
-            html.push('<option value="'+data[i].uid+'" disabled="disabled">'+data[i].config.name+' (offline)</option>');
+            html.push('<option value="'+data[i].uid+'">'+data[i].config.name+' (offline)</option>');
         }
     }
     list.html(html.join(''));
@@ -128,18 +132,25 @@ function show_device_params(devicetype){
 
 function fill_detail_values(deviceuid){
     var data = device_data[deviceuid];
-    $('#input_device_name').val(data.config.name);
-    $('#input_device_type').val(data.type);
-    if(deviceuid == 'new'){
-        $('#input_device_type').removeAttr('disabled');
-    } else {
-        $('#input_device_type').attr('disabled', 'disabled');
-    }
-    show_device_params($('#input_device_type').val());
-    for (var key in data.config){
-        if(key){
-            $('#device_config_'+data.type+'_'+key).val(data.config[key]);
+    if(data.online){
+        $('#device_detail .online').show();
+        $('#device_detail .offline').hide();
+        $('#input_device_name').val(data.config.name);
+        $('#input_device_type').val(data.type);
+        if(deviceuid == 'new'){
+            $('#input_device_type').removeAttr('disabled');
+        } else {
+            $('#input_device_type').attr('disabled', 'disabled');
         }
+        show_device_params($('#input_device_type').val());
+        for (var key in data.config){
+            if(key){
+                $('#device_config_'+data.type+'_'+key).val(data.config[key]);
+            }
+        }
+    } else {
+        $('#device_detail .offline').show();
+        $('#device_detail .online').hide();
     }
 }
 
@@ -152,6 +163,22 @@ function select_device(selected_uid){
         detail.show();
     } else {
         detail.hide();
+    }
+}
+
+function delete_device(event){
+    event.preventDefault();
+    if(selected_device_uid == 'new'){
+        delete device_data['new'];
+        refresh_device_list();
+    } else {
+        if(confirm("Really delete this device?")){
+            api.call('remove_device', {'device_uid': selected_device_uid}, function(result){
+                var name = device_data[selected_device_uid].config.name;
+                update_all();
+                dialogs.notification("Device "+name+" deleted");
+            })
+        }
     }
 }
 
@@ -176,21 +203,9 @@ $('#input_device_type').on('change', function(event){
     show_device_params(val);
 });
 
-$('#button_delete_device').on('click', function(event){
-    event.preventDefault();
-    if(selected_device_uid == 'new'){
-        delete device_data['new'];
-        refresh_device_list();
-    } else {
-        if(confirm("Really delete this device?")){
-            api.call('remove_device', {'device_uid': selected_device_uid}, function(result){
-                var name = device_data[selected_device_uid].config.name;
-                update_all();
-                dialogs.notification("Device "+name+" deleted");
-            })
-        }
-    }
-});
+$('#button_delete_device').on('click', delete_device);
+$('#button_delete_offline_device').on('click', delete_device);
+
 
 $('#button_save_device').on('click', function(event){
     event.preventDefault();

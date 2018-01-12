@@ -81,6 +81,7 @@ def remove_device(device_uid):
     if device_uid in known_devices:
         del known_devices[device_uid]
         if device_uid in online_devices:
+            online_devices[device_uid].deinit()
             del online_devices[device_uid]
         with open(device_json_path, 'w', encoding='utf-8') as devices_json:
             devices_json.write(json.dumps(get_known_devices()))

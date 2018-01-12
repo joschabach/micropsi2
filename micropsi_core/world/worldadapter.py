@@ -431,7 +431,7 @@ try:
                 if k in devicemanager.online_devices:
                     if issubclass(devicemanager.online_devices[k].__class__, InputDevice):
                         data = devicemanager.online_devices[k].get_data()
-                        assert isinstance(data, np.ndarray), "device %s must provide numpy array" % self.device_map[k]
+                        assert isinstance(data, np.ndarray), "device %s must provide numpy array, not %s" % (self.device_map[k], type(data))
                         self.set_flow_datasource(self.device_map[k], data)
                 elif devicemanager.known_devices[k].get('nature') == "InputDevice":
                     self.logger.error("Device %s is not connected. Using zeros." % self.device_map[k])

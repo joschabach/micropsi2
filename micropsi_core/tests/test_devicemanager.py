@@ -177,6 +177,7 @@ def test_unconnected_or_removed_devices(runtime, test_nodenet, resourcepath, def
 
     runtime.set_nodenet_properties(test_nodenet, world_uid=default_world, worldadapter="ArrayWorldAdapter", device_map={uid: 'dummy'})
     assert {'dummy'} == set(runtime.get_nodenet(test_nodenet).worldadapter_instance.get_available_flow_datasources())
+    assert runtime.get_devices()[uid]['online']
     runtime.save_nodenet(test_nodenet)
     runtime.unload_nodenet(test_nodenet)
 
@@ -186,6 +187,7 @@ def test_unconnected_or_removed_devices(runtime, test_nodenet, resourcepath, def
 
     nodenet = runtime.get_nodenet(test_nodenet)
     assert {'dummy'} == set(nodenet.worldadapter_instance.get_available_flow_datasources())
+    assert not runtime.get_devices()[uid]['online']
     runtime.step_nodenet(test_nodenet)
     assert np.all(nodenet.worldadapter_instance.get_flow_datasource('dummy') == np.zeros(5))
     runtime.unload_nodenet(test_nodenet)
@@ -196,3 +198,4 @@ def test_unconnected_or_removed_devices(runtime, test_nodenet, resourcepath, def
 
     nodenet = runtime.get_nodenet(test_nodenet)
     assert 'dummy' not in nodenet.worldadapter_instance.get_available_flow_datasources()
+    assert not runtime.get_devices()[uid]['online']

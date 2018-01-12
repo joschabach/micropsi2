@@ -158,7 +158,8 @@ function select_device(selected_uid){
 $('#button_add_device').on('click', function(event){
     event.preventDefault();
     device_data['new'] = {
-        'config': {'name': 'new device'}
+        'config': {'name': 'new device'},
+        'online': true
     };
     refresh_device_list();
     select_device('new')

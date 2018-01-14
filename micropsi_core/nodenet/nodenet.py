@@ -748,7 +748,7 @@ class Nodenet(metaclass=ABCMeta):
         If a monitor with the given name already exists, it's value-function is updated. """
         if name in self._adhoc_monitors:
             self._adhoc_monitors[name].function = function
-            self._adhoc_monitors[name].parameters
+            self._adhoc_monitors[name].parameters = parameters
         else:
             mon = monitor.AdhocMonitor(self, function, name, parameters=parameters)
             self._adhoc_monitors[name] = mon

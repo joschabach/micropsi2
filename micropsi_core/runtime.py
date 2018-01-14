@@ -1083,7 +1083,11 @@ def abort_behavior(token):
 
 def get_status_tree(nodenet_uid, level="debug"):
     """ Return progress tree as an array of dicts """
-    return True, nodenets[nodenet_uid].statuslogger.get_status_tree(level)
+    net = get_nodenet(nodenet_uid)
+    if net is not None:
+        return True, net.statuslogger.get_status_tree(level)
+    else:
+        return False, "Unknown nodenet"
 
 
 def __pythonify(name):

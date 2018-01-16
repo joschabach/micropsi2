@@ -645,7 +645,7 @@ def set_runner_properties(timestep, infguard=False, profile_nodenet=False, profi
         timestep: sets the calculation speed.
     """
     if log_file is not None:
-        if not os.access(runner_config['log_file'], os.W_OK):
+        if not tools.is_file_writeable(log_file):
             return False, "Can not write to specified log file."
         logger.set_logfile(log_file)
         runner_config['log_file'] = log_file
@@ -1964,7 +1964,7 @@ def initialize(config=None):
     logger_error = False
     if logger is None:
         if runner_config.get('log_file'):
-            if not os.access(runner_config['log_file'], os.W_OK):
+            if not tools.is_file_writeable(runner_config['log_file']):
                 runner_config['log_file'] = ''
                 logger_error = "Attention: Can not write to specified log file. Not logging to file."
         logger = MicropsiLogger({

@@ -656,7 +656,7 @@ def set_runner_properties(timestep, infguard=False, profile_nodenet=False, profi
     runner_config['profile_nodenet'] = bool(profile_nodenet)
     runner_config['profile_world'] = bool(profile_world)
     runner['timestep'] = timestep
-    return True
+    return True, ""
 
 
 def get_runner_properties():

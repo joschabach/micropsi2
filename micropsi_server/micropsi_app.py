@@ -770,14 +770,14 @@ def edit_runner_properties():
             'system': request.params.get('log_level_system'),
             'world': request.params.get('log_level_world')
         }
-        runtime.set_runner_properties(
+        result, msg = runtime.set_runner_properties(
             int(request.params['timestep']),
             bool(request.params.get('infguard')),
             bool(request.params.get('profile_nodenet')),
             bool(request.params.get('profile_world')),
             log_levels,
             request.params.get('log_file'))
-        return dict(status="success", msg="Settings saved")
+        return dict(status="success" if result else "error", msg="Settings saved" if result else msg)
     else:
         return template("runner_form", action="/config/runner", value=runtime.get_runner_properties())
 

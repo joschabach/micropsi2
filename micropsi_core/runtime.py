@@ -1959,11 +1959,18 @@ def initialize(config=None):
         AUTOSAVE_PATH = os.path.join(PERSISTENCY_PATH, "nodenets", "__autosave__")
         os.makedirs(AUTOSAVE_PATH, exist_ok=True)
 
+    logger_error = False
     if logger is None:
+        if runner_config.get('log_file'):
+            if not os.access(runner_config['log_file'], os.W_OK):
+                runner_config['log_file'] = ''
+                logger_error = "Attention: Can not write to specified log file. Not logging to file."
         logger = MicropsiLogger({
             'system': runner_config['log_level_system'],
             'world': runner_config['log_level_world']
         }, runner_config.get('log_file'))
+    if logger_error:
+        logging.getLogger("system").error(logger_error)
 
     result, errors = reload_code()
     load_definitions()

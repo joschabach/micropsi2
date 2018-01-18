@@ -143,8 +143,10 @@ var dialogs = {
 
 var api = {
 
+    base_url: '/rpc/',
+
     call: function(functionname, params, success_cb, error_cb, method){
-        var url = '/rpc/'+functionname;
+        var url = api.base_url+functionname;
         $.ajax({
             url: url,
             data: ((method != "get") ? JSON.stringify(params) : params),

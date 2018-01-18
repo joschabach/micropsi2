@@ -26,10 +26,10 @@ def get_request_data():
     return user_id, permissions, token
 
 
-def rpc(app, command, method="GET", permission_required=None):
+def rpc(app, command, method="POST", permission_required=None):
     # Defines a decorator for accessing API calls. Use it by specifying the
     # API method, followed by the permissions necessary to execute the method.
-    # Within the calling web page, use http://<url>/rpc/<method>(arg1="val1", arg2="val2", ...)
+    # Within the calling web page, use http://<url>/rpc/<method>?arg1=val1&arg2=val2
     # Import these arguments into your decorated function:
     #     @rpc("my_method")
     #     def this_is_my_method(arg1, arg2):
@@ -51,25 +51,16 @@ def rpc(app, command, method="GET", permission_required=None):
 
     def _decorator(func):
         @app.route('/' + command, "POST")
-        @app.route('/' + command + "()", method)
-        @app.route('/' + command + "(:argument#.+#)", method)
+        @app.route('/' + command, method)
         def _wrapper(argument=None):
             response.content_type = 'application/json; charset=utf8'
             kwargs = {}
-            if argument:
-                try:
-                    # split at commas and correct illegaly split lists:
-                    arglist = argument.split(",")
-                    kwargs = []
-                    for index, val in enumerate(arglist):
-                        if '=' not in val:
-                            kwargs[len(kwargs) - 1] = kwargs[-1:][0] + ',' + val  # ugly.
-                        else:
-                            kwargs.append(val)
-                    kwargs = dict((n.strip(), json.loads(v)) for n, v in (item.split('=') for item in kwargs))
-                except (IndexError, ValueError) as err:
-                    response.status = 400
-                    return {'status': 'error', 'data': "Malformed arguments for remote procedure call: %s" % str(err)}
+            if request.method == "GET":
+                kwargs = {}
+                for key in request.params:
+                    kwargs[key] = request.params.getall(key)
+                    if len(kwargs[key]) == 1:
+                        kwargs[key] = kwargs[key][0]
             else:
                 try:
                     kwargs = request.json

@@ -4,6 +4,7 @@ Contains RPC calls for the core runtime
 
 """
 import json
+
 from micropsi_core import runtime
 from micropsi_core import tools
 
@@ -14,8 +15,8 @@ from micropsi_server.tools import get_request_data, usermanager, rpc
 core_rpc_api = Bottle()
 
 
-@rpc(core_rpc_api, "get_nodenet_metadata")
-def get_nodenet_metadata(nodenet_uid, nodespace='Root', include_links=True):
+@rpc(core_rpc_api, "get_nodenet_metadata", method="GET")
+def get_nodenet_metadata(nodenet_uid, nodespace='Root'):
     """ Return metadata for the given nodenet_uid """
     return runtime.get_nodenet_metadata(nodenet_uid)
 
@@ -60,15 +61,15 @@ def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=No
 @rpc(core_rpc_api, "get_nodenet_changes")
 def get_nodenet_changes(nodenet_uid, nodespaces=[], since_step=0):
     """ Return a diff of the nodenets state between the given since_step and the current state. optionally filtered by nodespaces"""
-    data = runtime.get_nodenet_activation_data(nodenet_uid, nodespaces=nodespaces, last_call_step=since_step)
+    data = runtime.get_nodenet_activation_data(nodenet_uid, nodespaces=nodespaces, last_call_step=int(since_step))
     if data['has_changes']:
-        data['changes'] = runtime.get_nodespace_changes(nodenet_uid, nodespaces=nodespaces, since_step=since_step)
+        data['changes'] = runtime.get_nodespace_changes(nodenet_uid, nodespaces=nodespaces, since_step=int(since_step))
     else:
         data['changes'] = {}
     return True, data
 
 
-@rpc(core_rpc_api, "generate_uid")
+@rpc(core_rpc_api, "generate_uid", method="GET")
 def generate_uid():
     """ Return a unique identifier"""
     return True, tools.generate_uid()
@@ -77,7 +78,7 @@ def generate_uid():
 @rpc(core_rpc_api, "create_auth_token")
 def create_auth_token(user, password, remember=True):
     """ Create a session for the user, and returns a token for identification"""
-    token = usermanager.start_session(user, password, remember)
+    token = usermanager.start_session(user, password, tools.parse_bool(remember))
     if token:
         return True, token
     else:
@@ -94,7 +95,7 @@ def invalidate_auth_token(token):
     return True
 
 
-@rpc(core_rpc_api, "get_available_nodenets")
+@rpc(core_rpc_api, "get_available_nodenets", method="GET")
 def get_available_nodenets(user_id=None):
     """ Return a dict of available nodenets, optionally filtered by owner"""
     if user_id and user_id not in usermanager.users:
@@ -158,16 +159,16 @@ def remove_runner_condition(nodenet_uid):
 @rpc(core_rpc_api, "set_runner_properties", permission_required="manage server")
 def set_runner_properties(timestep, infguard=False, profile_nodenet=False, profile_world=False, log_levels={}, log_file=None):
     """ Configure the server-settings for the runner """
-    return runtime.set_runner_properties(timestep, infguard, profile_nodenet, profile_world, log_levels, log_file)
+    return runtime.set_runner_properties(int(timestep), tools.parse_bool(infguard), tools.parse_bool(profile_nodenet), tools.parse_bool(profile_world), log_levels, log_file)
 
 
-@rpc(core_rpc_api, "get_runner_properties")
+@rpc(core_rpc_api, "get_runner_properties", method="GET")
 def get_runner_properties():
     """ Return the server-settings, returning timestep in a dict"""
     return True, runtime.get_runner_properties()
 
 
-@rpc(core_rpc_api, "get_is_calculation_running")
+@rpc(core_rpc_api, "get_is_calculation_running", method="GET")
 def get_is_calculation_running(nodenet_uid):
     """ Return True if the given calculation of the given nodenet is currentyly runnning """
     return True, runtime.get_is_nodenet_running(nodenet_uid)
@@ -209,7 +210,7 @@ def save_nodenet(nodenet_uid):
     return runtime.save_nodenet(nodenet_uid)
 
 
-@rpc(core_rpc_api, "export_nodenet")
+@rpc(core_rpc_api, "export_nodenet", method="GET")
 def export_nodenet_rpc(nodenet_uid):
     """ Return a json dump of the nodenet"""
     return True, runtime.export_nodenet(nodenet_uid)
@@ -234,7 +235,7 @@ def start_behavior_rpc(nodenet_uid, condition=None, worldadapter_param=None):
     return runtime.start_behavior(nodenet_uid, condition, worldadapter_param)
 
 
-@rpc(core_rpc_api, "get_behavior_state")
+@rpc(core_rpc_api, "get_behavior_state", method="GET")
 def get_behavior_state_rpc(token):
     """ Return the state of the behavior execution identified by token """
     return runtime.get_behavior_state(token)
@@ -246,7 +247,7 @@ def abort_behavior_rpc(token):
     return runtime.abort_behavior(token)
 
 
-@rpc(core_rpc_api, "get_status_tree")
+@rpc(core_rpc_api, "get_status_tree", method="GET")
 def get_status_tree(nodenet_uid, level="debug"):
     """ Return status tree as an array of dicts """
     return runtime.get_status_tree(nodenet_uid, level)
@@ -254,14 +255,14 @@ def get_status_tree(nodenet_uid, level="debug"):
 
 # Device
 
-@rpc(core_rpc_api, "get_device_types")
+@rpc(core_rpc_api, "get_device_types", method="GET")
 def get_device_types():
     """ Return a dict with device types as keys and config dict as value """
     data = runtime.get_device_types()
     return True, data
 
 
-@rpc(core_rpc_api, "get_devices")
+@rpc(core_rpc_api, "get_devices", method="GET")
 def get_devices():
     """ Return a dict with device uids as keys and config dict as value """
     data = runtime.get_devices()
@@ -292,10 +293,10 @@ def set_device_properties(device_uid, config):
 def step_nodenets_in_world(world_uid, nodenet_uid=None, steps=1):
     """ Advance all nodenets registered in the given world
     (or, only the given nodenet) by the given number of steps"""
-    return runtime.step_nodenets_in_world(world_uid, nodenet_uid=nodenet_uid, steps=steps)
+    return runtime.step_nodenets_in_world(world_uid, nodenet_uid=nodenet_uid, steps=int(steps))
 
 
-@rpc(core_rpc_api, "get_available_worlds")
+@rpc(core_rpc_api, "get_available_worlds", method="GET")
 def get_available_worlds(user_id=None):
     """ Return a dict of available worlds, optionally filtered by owner)"""
     data = {}
@@ -313,7 +314,7 @@ def get_available_worlds(user_id=None):
     return True, data
 
 
-@rpc(core_rpc_api, "get_world_properties")
+@rpc(core_rpc_api, "get_world_properties", method="GET")
 def get_world_properties(world_uid):
     """ Return a bunch of properties for the given world (name, type, config, agents, ...)"""
     try:
@@ -322,14 +323,14 @@ def get_world_properties(world_uid):
         return False, 'World %s not found' % world_uid
 
 
-@rpc(core_rpc_api, "get_worldadapters")
+@rpc(core_rpc_api, "get_worldadapters", method="GET")
 def get_worldadapters(world_uid, nodenet_uid=None):
     """ Return the world adapters available in the given world. Provide an optional nodenet_uid of an agent
     in the given world to obtain datasources and datatargets for the agent's worldadapter """
     return True, runtime.get_worldadapters(world_uid, nodenet_uid=nodenet_uid)
 
 
-@rpc(core_rpc_api, "get_world_objects")
+@rpc(core_rpc_api, "get_world_objects", method="GET")
 def get_world_objects(world_uid, type=None):
     """ Returns a dict of worldobjects present in the world, optionally filtered by type """
     try:
@@ -341,7 +342,7 @@ def get_world_objects(world_uid, type=None):
 @rpc(core_rpc_api, "add_worldobject")
 def add_worldobject(world_uid, type, position, orientation=0.0, name="", parameters=None):
     """ Add a worldobject of the given type """
-    return runtime.add_worldobject(world_uid, type, position, orientation=orientation, name=name, parameters=parameters)
+    return runtime.add_worldobject(world_uid, type, position, orientation=float(orientation), name=name, parameters=parameters)
 
 
 @rpc(core_rpc_api, "delete_worldobject")
@@ -353,7 +354,7 @@ def delete_worldobject(world_uid, object_uid):
 @rpc(core_rpc_api, "set_worldobject_properties")
 def set_worldobject_properties(world_uid, uid, position=None, orientation=None, name=None, parameters=None):
     """ Set the properties of a worldobject in the given world """
-    if runtime.set_worldobject_properties(world_uid, uid, position, int(orientation), name, parameters):
+    if runtime.set_worldobject_properties(world_uid, uid, position, float(orientation), name, parameters):
         return dict(status="success")
     else:
         return dict(status="error", msg="unknown environment or world object")
@@ -362,7 +363,7 @@ def set_worldobject_properties(world_uid, uid, position=None, orientation=None, 
 @rpc(core_rpc_api, "set_worldagent_properties")
 def set_worldagent_properties(world_uid, uid, position=None, orientation=None, name=None, parameters=None):
     """ Set the properties of an agent in the given world """
-    if runtime.set_worldagent_properties(world_uid, uid, position, orientation, name, parameters):
+    if runtime.set_worldagent_properties(world_uid, uid, position, float(orientation), name, parameters):
         return dict(status="success")
     else:
         return dict(status="error", msg="unknown environment or world object")
@@ -376,7 +377,7 @@ def new_world(world_name, world_type, owner=None, config={}):
     return runtime.new_world(world_name, world_type, owner=owner, config=config)
 
 
-@rpc(core_rpc_api, "get_available_world_types")
+@rpc(core_rpc_api, "get_available_world_types", method="GET")
 def get_available_world_types():
     """ Return a dict with world_types as keys and their configuration-dicts as value  """
     data = runtime.get_available_world_types()
@@ -391,10 +392,10 @@ def delete_world(world_uid):
     return runtime.delete_world(world_uid)
 
 
-@rpc(core_rpc_api, "get_world_view")
+@rpc(core_rpc_api, "get_world_view", method="GET")
 def get_world_view(world_uid, step):
     """ Return a dict containing current_step, agents, objetcs"""
-    return True, runtime.get_world_view(world_uid, step)
+    return True, runtime.get_world_view(world_uid, int(step))
 
 
 @rpc(core_rpc_api, "set_world_properties", permission_required="manage worlds")
@@ -421,7 +422,7 @@ def save_world(world_uid):
     return runtime.save_world(world_uid)
 
 
-@rpc(core_rpc_api, "export_world")
+@rpc(core_rpc_api, "export_world", method="GET")
 def export_world_rpc(world_uid):
     """ Return a complete json dump of the world's state"""
     return True, runtime.export_world(world_uid)
@@ -492,15 +493,15 @@ def clear_monitor(nodenet_uid, monitor_uid):
         return dict(status='error', msg='unknown agent or monitor')
 
 
-@rpc(core_rpc_api, "get_monitor_data")
+@rpc(core_rpc_api, "get_monitor_data", method="GET")
 def get_monitor_data(nodenet_uid, step=0, monitor_from=0, monitor_count=-1):
     """ Return data for monitors in this nodenet """
-    return True, runtime.get_monitor_data(nodenet_uid, step, from_step=monitor_from, count=monitor_count)
+    return True, runtime.get_monitor_data(nodenet_uid, int(step), from_step=int(monitor_from), count=int(monitor_count))
 
 
 # Nodenet
 
-@rpc(core_rpc_api, "get_nodespace_list")
+@rpc(core_rpc_api, "get_nodespace_list", method="GET")
 def get_nodespace_list(nodenet_uid):
     """ Return a list of nodespaces in the given nodenet."""
     return True, runtime.get_nodespace_list(nodenet_uid)
@@ -509,10 +510,10 @@ def get_nodespace_list(nodenet_uid):
 @rpc(core_rpc_api, "get_nodespace_activations")
 def get_nodespace_activations(nodenet_uid, nodespaces, last_call_step=-1):
     """ Return a dict of uids to lists of activation values"""
-    return True, runtime.get_nodenet_activation_data(nodenet_uid, nodespaces, last_call_step)
+    return True, runtime.get_nodenet_activation_data(nodenet_uid, nodespaces, int(last_call_step))
 
 
-@rpc(core_rpc_api, "get_nodespace_properties")
+@rpc(core_rpc_api, "get_nodespace_properties", method="GET")
 def get_nodespace_properties(nodenet_uid, nodespace_uid=None):
     """ Return a dict of properties of the nodespace"""
     return True, runtime.get_nodespace_properties(nodenet_uid, nodespace_uid)
@@ -524,7 +525,7 @@ def set_nodespace_properties(nodenet_uid, nodespace_uid, properties):
     return True, runtime.set_nodespace_properties(nodenet_uid, nodespace_uid, properties)
 
 
-@rpc(core_rpc_api, "get_node")
+@rpc(core_rpc_api, "get_node", method="GET")
 def get_node(nodenet_uid, node_uid):
     """ Return the complete json data for this node"""
     return runtime.get_node(nodenet_uid, node_uid)
@@ -592,13 +593,13 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     return True, runtime.generate_netapi_fragment(nodenet_uid, node_uids)
 
 
-@rpc(core_rpc_api, "get_available_node_types")
+@rpc(core_rpc_api, "get_available_node_types", method="GET")
 def get_available_node_types(nodenet_uid):
     """ Return a dict of available built-in node types and native module types"""
     return True, runtime.get_available_node_types(nodenet_uid)
 
 
-@rpc(core_rpc_api, "get_available_native_module_types")
+@rpc(core_rpc_api, "get_available_native_module_types", method="GET")
 def get_available_native_module_types(nodenet_uid):
     """ Return a dict of available native module types"""
     return True, runtime.get_available_native_module_types(nodenet_uid)
@@ -621,19 +622,19 @@ def set_gate_configuration(nodenet_uid, node_uid, gate_type, gatefunction=None, 
     return runtime.set_gate_configuration(nodenet_uid, node_uid, gate_type, gatefunction, gatefunction_parameters)
 
 
-@rpc(core_rpc_api, "get_available_gatefunctions")
+@rpc(core_rpc_api, "get_available_gatefunctions", method="GET")
 def get_available_gatefunctions(nodenet_uid):
     """ Return a dict of possible gatefunctions and their parameters"""
     return True, runtime.get_available_gatefunctions(nodenet_uid)
 
 
-@rpc(core_rpc_api, "get_available_datasources")
+@rpc(core_rpc_api, "get_available_datasources", method="GET")
 def get_available_datasources(nodenet_uid):
     """ Return an ordered list of available datasources """
     return True, runtime.get_available_datasources(nodenet_uid)
 
 
-@rpc(core_rpc_api, "get_available_datatargets")
+@rpc(core_rpc_api, "get_available_datatargets", method="GET")
 def get_available_datatargets(nodenet_uid):
     """ Return an ordered list of available datatargets """
     return True, runtime.get_available_datatargets(nodenet_uid)
@@ -654,13 +655,13 @@ def bind_datatarget_to_actuator(nodenet_uid, actuator_uid, datatarget):
 @rpc(core_rpc_api, "add_link", permission_required="manage nodenets")
 def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1):
     """ Create a link between the given nodes """
-    return runtime.add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=weight)
+    return runtime.add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=float(weight))
 
 
 @rpc(core_rpc_api, "set_link_weight", permission_required="manage nodenets")
 def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight):
     """ Set the weight of an existing link between the given nodes """
-    return runtime.set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight)
+    return runtime.set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, float(weight))
 
 
 @rpc(core_rpc_api, "get_links_for_nodes")
@@ -692,7 +693,7 @@ def user_prompt_response(nodenet_uid, node_uid, key, parameters, resume_nodenet)
 
 
 # Face
-@rpc(core_rpc_api, "get_emoexpression_parameters")
+@rpc(core_rpc_api, "get_emoexpression_parameters", method="GET")
 def get_emoexpression_parameters(nodenet_uid):
     """ Return a dict of parameters to visualize the emotional state of the agent """
     from micropsi_core import emoexpression
@@ -703,7 +704,7 @@ def get_emoexpression_parameters(nodenet_uid):
 # --------- logging --------
 
 
-@rpc(core_rpc_api, "get_logging_levels")
+@rpc(core_rpc_api, "get_logging_levels", method="GET")
 def get_logging_levels():
     """ Set the logging levels """
     return True, runtime.get_logging_levels()
@@ -716,22 +717,22 @@ def set_logging_levels(logging_levels):
     return True
 
 
-@rpc(core_rpc_api, "get_logger_messages")
+@rpc(core_rpc_api, "get_logger_messages", method="GET")
 def get_logger_messages(logger=[], after=0):
     """ Get Logger messages for the given loggers, after the given timestamp """
-    return True, runtime.get_logger_messages(logger, after)
+    return True, runtime.get_logger_messages(logger, int(after))
 
 
-@rpc(core_rpc_api, "get_monitoring_info")
+@rpc(core_rpc_api, "get_monitoring_info", method="GET")
 def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor_count=-1):
     """ Return monitor, logger data """
-    data = runtime.get_monitoring_info(nodenet_uid, logger, after, monitor_from, monitor_count)
+    data = runtime.get_monitoring_info(nodenet_uid, logger, int(after), int(monitor_from), int(monitor_count))
     return True, data
 
 
 # --------- benchmark info --------
 
-@rpc(core_rpc_api, "benchmark_info")
+@rpc(core_rpc_api, "benchmark_info", method="GET")
 def benchmark_info():
     """ Time some math operations to determine the speed of the underlying machine. """
     return True, runtime.benchmark_info()
@@ -745,7 +746,7 @@ def run_recipe(nodenet_uid, name, parameters):
     return runtime.run_recipe(nodenet_uid, name, parameters)
 
 
-@rpc(core_rpc_api, 'get_available_recipes')
+@rpc(core_rpc_api, 'get_available_recipes', method="GET")
 def get_available_recipes():
     """ Return a dict of available recipes """
     return True, runtime.get_available_recipes()
@@ -757,13 +758,13 @@ def run_operation(nodenet_uid, name, parameters, selection_uids):
     return runtime.run_operation(nodenet_uid, name, parameters, selection_uids)
 
 
-@rpc(core_rpc_api, 'get_available_operations')
+@rpc(core_rpc_api, 'get_available_operations', method="GET")
 def get_available_operations():
     """ Return a dict of available operations """
     return True, runtime.get_available_operations()
 
 
-@rpc(core_rpc_api, 'get_agent_dashboard')
+@rpc(core_rpc_api, 'get_agent_dashboard', method="GET")
 def get_agent_dashboard(nodenet_uid):
     """ Return a dict of data to display the agent's state in a dashboard """
     return True, runtime.get_agent_dashboard(nodenet_uid)
@@ -781,7 +782,7 @@ def unflow(nodenet_uid, source_uid, source_output, target_uid, target_input):
     return runtime.unflow(nodenet_uid, source_uid, source_output, target_uid, target_input)
 
 
-@rpc(core_rpc_api, "runtime_info")
+@rpc(core_rpc_api, "runtime_info", method="GET")
 def runtime_info():
     """ Return a dict of information about this runtime, like version and configuration"""
     return True, runtime.runtime_info()
@@ -803,7 +804,7 @@ def get_console_info():
     return None
 
 
-@rpc(core_rpc_api, "console_info")
+@rpc(core_rpc_api, "console_info", method="GET")
 def console_info():
     """ Return a dict of information about the IPython console"""
     return True, get_console_info()

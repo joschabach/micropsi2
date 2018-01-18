@@ -331,3 +331,11 @@ def itersubclasses(cls, folder=None, _seen=None):
                 yield sub
             for sub in itersubclasses(sub, folder=folder, _seen=_seen):
                 yield sub
+
+
+def parse_bool(val):
+    from distutils.util import strtobool
+    if type(val) == bool:
+        return val
+    else:
+        return strtobool(str(val))

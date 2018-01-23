@@ -835,7 +835,7 @@ def test_get_nodespace_list(app, test_nodenet, node):
 def test_get_nodespace_activations(app, test_nodenet, node):
     response = app.post_json('/rpc/get_nodespace_activations', params={
         'nodenet_uid': test_nodenet,
-        'nodespaces': ['Root'],
+        'nodespaces': [None],
         'last_call_step': -1
     })
     assert_success(response)
@@ -847,7 +847,7 @@ def test_get_nodespace_activations(app, test_nodenet, node):
     })
     response = app.post_json('/rpc/get_nodespace_activations', params={
         'nodenet_uid': test_nodenet,
-        'nodespaces': ['Root'],
+        'nodespaces': [None],
         'last_call_step': -1
     })
     assert response.json_body['data']['activations'][node][0] == -1

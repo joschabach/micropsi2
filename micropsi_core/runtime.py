@@ -644,11 +644,11 @@ def set_runner_properties(timestep, infguard=False, profile_nodenet=False, profi
     Argument:
         timestep: sets the calculation speed.
     """
-    if log_file is not None:
+    if log_file:
         if not tools.is_file_writeable(log_file):
             return False, "Can not write to specified log file."
         logger.set_logfile(log_file)
-        runner_config['log_file'] = log_file
+    runner_config['log_file'] = log_file
     if log_levels:
         set_logging_levels(log_levels)
     runner_config['runner_timestep'] = timestep

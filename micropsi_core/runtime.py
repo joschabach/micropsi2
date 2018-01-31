@@ -37,6 +37,14 @@ from micropsi_core.micropsi_logger import MicropsiLogger
 from micropsi_core.tools import Bunch, post_mortem, generate_uid
 from micropsi_core.device import devicemanager
 
+try:
+    from tensorrt.lite import Engine
+    import pycuda.driver as cuda
+except ImportError:
+    tensorrt_available = False
+else:
+    tensorrt_available = True
+
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
 
@@ -1608,6 +1616,9 @@ def load_user_files(path, resourcetype, errors=[]):
                         err = parse_recipe_or_operations_file(abspath, resourcetype)
                     elif resourcetype == 'nodetypes':
                         err = parse_native_module_file(abspath)
+                elif f.endswith(".engine"):
+                    if resourcetype == 'nodetypes' and tensorrt_available:
+                        err = parse_tensorrt_engine_as_native_module(abspath)
                 if err:
                     errors.append(err)
     return errors
@@ -1717,6 +1728,22 @@ def parse_native_module_file(path):
         post_mortem()
         return "%s when importing nodetype file %s: %s" % (e.__class__.__name__, relpath, str(e))
 
+
+def parse_tensorrt_engine_as_native_module(path):
+    global native_modules
+    try:
+        trt_engine = Engine(PLAN=path)
+        moduledef = dict()
+        moduledef['inputs'] = trt_engine.input_names
+        moduledef['outputs'] = trt_engine.output_names
+        _, moduledef['name'] = os.path.split(path)
+        if moduledef['name'] in native_modules:
+            logging.getLogger("system").warning("Native module names must be unique. %s is not." % moduledef['name'])
+        moduledef['flow_module'] = True
+        native_modules[moduledef['name']] = moduledef
+    except Exception as e:
+        post_mortem()
+        return "%s when importing TensorRT engine file %s: %s" % (e.__class__.__name__, relpath, str(e))
 
 def nodedef_sanity_check(nodetype_definition):
     """ catch some common errors in nodetype definitions """

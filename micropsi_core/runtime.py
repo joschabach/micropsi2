@@ -1749,7 +1749,7 @@ def parse_tensorrt_engine_as_native_module(path):
         moduledef['outputs'] = outputs
         moduledef['path'] = path
         moduledef['is_tensorrt_engine'] = True
-        logging.getLogger('system').info('Engine: %s, inputs: %s, outputs: %s'%(relpath,inputs,outputs))
+        logging.getLogger('system').debug('Found TensorRT engine: %s, inputs: %s, outputs: %s'%(relpath,inputs,outputs))
         _, moduledef['name'] = os.path.split(path)
         if moduledef['name'] in native_modules:
             logging.getLogger("system").warning("Native module names must be unique. %s is not." % moduledef['name'])

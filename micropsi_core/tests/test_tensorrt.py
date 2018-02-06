@@ -1,10 +1,12 @@
 import pytest
 
 
+tf = pytest.importorskip("tensorflow")
+trt = pytest.importorskip("tensorrt")
+uff = pytest.importorskip("uff")
+
+
 def create_dummy_engine(resourcepath):
-    import tensorflow as tf
-    import tensorrt as trt
-    import uff
     model = tf.placeholder(tf.float32, [None, 28, 28, 1], name='input')
 
     model = tf.layers.conv2d(model, 64, 5, 2, padding='SAME', activation=None, name='conv1', reuse=tf.AUTO_REUSE)

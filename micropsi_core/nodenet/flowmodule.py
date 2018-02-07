@@ -248,7 +248,6 @@ class FlowModule(object):
         import pycuda.driver as cuda
         cuda.init()
         args[1].cuda_context = cuda.Device(0).make_context()
-        args[1].cuda_context.push()
         args[0].logger.info('Loading TensorRT engine: %s' % self.engine_file)
         args[1].trt_engine = Engine(PLAN=self.engine_file)
         cuda.Context.pop()

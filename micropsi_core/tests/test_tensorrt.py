@@ -5,8 +5,11 @@ tf = pytest.importorskip("tensorflow")
 trt = pytest.importorskip("tensorrt")
 uff = pytest.importorskip("uff")
 
+engine_glob = ''
+
 
 def create_dummy_engine(resourcepath):
+    global engine_glob
     model = tf.placeholder(tf.float32, [None, 28, 28, 1], name='input')
 
     model = tf.layers.conv2d(model, 64, 5, 2, padding='SAME', activation=None, name='conv1', reuse=tf.AUTO_REUSE)
@@ -27,18 +30,20 @@ def create_dummy_engine(resourcepath):
     G_LOGGER = trt.infer.ConsoleLogger(trt.infer.LogSeverity.ERROR)
     engine = trt.utils.uff_to_trt_engine(G_LOGGER, uff_model, uff_parser, 1, 1 << 20)
 
-    import os
-    os.makedirs(os.path.join(resourcepath, 'nodetypes'), exist_ok=True)
-    filename = os.path.join(resourcepath, 'nodetypes', 'dummy.engine')
-    trt.utils.write_engine_to_file(filename, engine.serialize())
     uff_parser.destroy()
-    engine.destroy()
+    engine_glob = engine
 
 
 @pytest.mark.engine("theano_engine")
 @pytest.mark.engine("numpy_engine")
 def test_tensorrt_flowmodule(runtime, test_nodenet, resourcepath, default_world):
-    create_dummy_engine(resourcepath)
+    if engine_glob is '':
+        create_dummy_engine(resourcepath)
+    import os
+    os.makedirs(os.path.join(resourcepath, 'nodetypes'), exist_ok=True)
+    filename = os.path.join(resourcepath, 'nodetypes', 'dummy.engine')
+    trt.utils.write_engine_to_file(filename, engine_glob.serialize())
+
     res, errors = runtime.reload_code()
     assert res
     assert 'dummy.engine' in runtime.nodenets[test_nodenet].native_modules

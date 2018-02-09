@@ -1749,6 +1749,7 @@ def parse_tensorrt_engine_as_native_module(path):
         moduledef['outputs'] = outputs
         moduledef['path'] = path
         moduledef['is_tensorrt_engine'] = True
+        moduledef['category'] = os.path.dirname(relpath).replace(os.sep, '/')
         logging.getLogger('system').debug('Found TensorRT engine: %s, inputs: %s, outputs: %s'%(relpath,inputs,outputs))
         _, moduledef['name'] = os.path.split(path)
         if moduledef['name'] in native_modules:

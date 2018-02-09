@@ -46,6 +46,14 @@ def test_tensorrt_flowmodule(runtime, test_nodenet, resourcepath, default_world)
 
     res, errors = runtime.reload_code()
     assert res
+    assert 'dummy.engine' in runtime.native_modules
+    assert runtime.native_modules['flow_module']
+    assert runtime.native_modules['is_tensorrt_engine']
+    assert runtime.native_modules['name'] == ['dummy.engine']
+    assert runtime.native_modules['inputs'] == ['input']
+    assert runtime.native_modules['outputs'] == ['output']
+    assert runtime.native_modules['path'] == filename
+    assert runtime.native_modules['category'] == ''
     assert 'dummy.engine' in runtime.nodenets[test_nodenet].native_modules
     netapi = runtime.nodenets[test_nodenet].netapi
     dummy = netapi.create_node('dummy.engine')

@@ -37,6 +37,7 @@ from micropsi_core.micropsi_logger import MicropsiLogger
 from micropsi_core.tools import Bunch, post_mortem, generate_uid
 from micropsi_core.device import devicemanager
 
+
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
 
@@ -1608,6 +1609,9 @@ def load_user_files(path, resourcetype, errors=[]):
                         err = parse_recipe_or_operations_file(abspath, resourcetype)
                     elif resourcetype == 'nodetypes':
                         err = parse_native_module_file(abspath)
+                elif f.endswith(".engine"):
+                    if resourcetype == 'nodetypes':
+                        err = parse_tensorrt_engine_as_native_module(abspath)
                 if err:
                     errors.append(err)
     return errors
@@ -1716,6 +1720,39 @@ def parse_native_module_file(path):
     except Exception as e:
         post_mortem()
         return "%s when importing nodetype file %s: %s" % (e.__class__.__name__, relpath, str(e))
+
+
+def parse_tensorrt_engine_as_native_module(path):
+    global native_modules
+    try:
+        import tensorrt as trt
+        base_path = os.path.join(RESOURCE_PATH, 'nodetypes')
+        relpath = os.path.relpath(path, start=base_path)
+        trt_logger = trt.infer.ConsoleLogger(trt.infer.LogSeverity.ERROR)
+        trt_engine = trt.utils.load_engine(trt_logger, path)
+        inputs = []
+        outputs = []
+        for n in range(trt_engine.get_nb_bindings()):
+            if trt_engine.binding_is_input(n):
+                inputs.append(trt_engine.get_binding_name(n))
+            else:
+                outputs.append(trt_engine.get_binding_name(n))
+        trt_engine.destroy()
+        moduledef = dict()
+        moduledef['inputs'] = inputs
+        moduledef['outputs'] = outputs
+        moduledef['path'] = path
+        moduledef['is_tensorrt_engine'] = True
+        moduledef['category'] = os.path.dirname(relpath).replace(os.sep, '/')
+        logging.getLogger('system').debug('Found TensorRT engine: %s, inputs: %s, outputs: %s'%(relpath,inputs,outputs))
+        _, moduledef['name'] = os.path.split(path)
+        if moduledef['name'] in native_modules:
+            logging.getLogger("system").warning("Native module names must be unique. %s is not." % moduledef['name'])
+        moduledef['flow_module'] = True
+        native_modules[moduledef['name']] = moduledef
+    except Exception as e:
+        post_mortem()
+        return "%s when importing TensorRT engine file %s: %s" % (e.__class__.__name__, relpath, str(e))
 
 
 def nodedef_sanity_check(nodetype_definition):

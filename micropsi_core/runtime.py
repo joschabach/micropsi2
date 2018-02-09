@@ -36,14 +36,8 @@ from micropsi_core.nodenet import node_alignment
 from micropsi_core.micropsi_logger import MicropsiLogger
 from micropsi_core.tools import Bunch, post_mortem, generate_uid
 from micropsi_core.device import devicemanager
-'''
-try:
-    import tensorrt as trt
-except ImportError:
-    tensorrt_available = False
-else:
-    tensorrt_available = True
-'''
+
+
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
 

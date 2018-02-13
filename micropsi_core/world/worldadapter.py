@@ -52,7 +52,7 @@ class WorldAdapterMixin(object):
         """ Called on reset """
         pass  # pragma: no cover
 
-    def update_datasources_and_targets(self):
+    def update_data_sources_and_targets(self):
         pass  # pragma: no cover
 
     def write_to_world(self):

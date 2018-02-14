@@ -16,6 +16,7 @@ from .netapi import NetAPI
 from . import monitor
 from .node import Nodetype, FlowNodetype, HighdimensionalNodetype
 from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators
+from micropsi_core.nodenet.statuslogger import StatusLogger
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
@@ -145,6 +146,10 @@ class Nodenet(metaclass=ABCMeta):
         if self._worldadapter_instance:
             self._worldadapter_instance.nodenet = self
 
+    @property
+    def statuslogger(self):
+        return self._statuslogger
+
     def __init__(self, persistency_path, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None, version=None):
         """
         Constructor for the abstract base class, must be called by implementations
@@ -180,6 +185,7 @@ class Nodenet(metaclass=ABCMeta):
         self.user_prompt = None
         self.user_prompt_response = {}
 
+        self._statuslogger = StatusLogger("agent.%s.status" % self.uid)
         self._create_netapi()
 
         self.deleted_items = {}
@@ -742,7 +748,7 @@ class Nodenet(metaclass=ABCMeta):
         If a monitor with the given name already exists, it's value-function is updated. """
         if name in self._adhoc_monitors:
             self._adhoc_monitors[name].function = function
-            self._adhoc_monitors[name].parameters
+            self._adhoc_monitors[name].parameters = parameters
         else:
             mon = monitor.AdhocMonitor(self, function, name, parameters=parameters)
             self._adhoc_monitors[name] = mon

@@ -19,7 +19,11 @@ import logging
 import zipfile
 import threading
 
-from code import InteractiveConsole
+import io
+import pstats
+import cProfile
+
+
 from datetime import datetime, timedelta
 
 from micropsi_core.config import ConfigurationManager
@@ -32,6 +36,7 @@ from micropsi_core.nodenet import node_alignment
 from micropsi_core.micropsi_logger import MicropsiLogger
 from micropsi_core.tools import Bunch, post_mortem, generate_uid
 from micropsi_core.device import devicemanager
+
 
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
@@ -64,9 +69,6 @@ world_classes = {}
 worldadapter_classes = {}
 worldobject_classes = {}
 
-
-netapi_consoles = {}
-
 initialized = False
 
 auto_save_intervals = None
@@ -74,100 +76,15 @@ auto_save_intervals = None
 behavior_token_map = dict()
 
 
-class FileCacher():
-    """Cache the stdout text so we can analyze it before returning it"""
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.out = []
-
-    def write(self, line):
-        self.out.append(line)
-
-    def flush(self):
-        output = '\n'.join(self.out)
-        self.reset()
-        return output
-
-
-class NetapiShell(InteractiveConsole):
-    """Wrapper around Python that can filter input/output to the shell"""
-    def __init__(self, netapi):
-        try:
-            # theano messes with the formatting of exceptions
-            import theano
-            self.err_line_separator = '\n\n'
-        except ImportError:
-            self.err_line_separator = '\n'
-        self.stdout = sys.__stdout__
-        self.stderr = sys.__stderr__
-        self.outcache = FileCacher()
-        self.errcache = FileCacher()
-
-        InteractiveConsole.__init__(self, locals={'netapi': netapi})
-        return
-
-    def get_output(self):
-        sys.__stdout__ = self.outcache
-        sys.__stderr__ = self.errcache
-        sys.stdout = self.outcache
-        sys.stderr = self.errcache
-
-    def return_output(self):
-        sys.__stdout__ = self.stdout
-        sys.__stderr__ = self.stderr
-        sys.stdout = self.stdout
-        sys.stderr = self.stderr
-
-    def push(self, line):
-        self.get_output()
-        incomplete = InteractiveConsole.push(self, line)
-        if incomplete:
-            InteractiveConsole.push(self, '\n')
-        self.return_output()
-        err = self.errcache.flush()
-
-        if err:
-            parts = err.strip().split(self.err_line_separator)
-            if parts[0].startswith("Traceback"):
-                cleaned_parts = []
-                begin_exception_message = False
-                ignored_last = False
-                for part in parts[1:]:
-                    # ignore traceback items relating to the console itself or the toolkit:
-                    if 'in runcode' in part or '<console>"' in part or 'micropsi_core' in part:
-                        ignored_last = True
-                        continue
-                    if ignored_last and part.startswith('    '):
-                        # if ignoring a traceback line, also drop its continuation
-                        # in the next line if there is one.
-                        continue
-                    ignored_last = False
-                    # gather all lines of the exception message, but
-                    # none of the stuff after the next blank line:
-                    if ":" in part:
-                        begin_exception_message = True
-                    if begin_exception_message and len(part) == 0:
-                        break
-                    if part.strip():
-                        cleaned_parts.append(part.strip())
-
-                if len(cleaned_parts) > 1:
-                    cleaned_parts = ['\nTraceback:'] + cleaned_parts
-                return False, "\n".join(cleaned_parts)
-            else:
-                return False, err
-
-        out = self.outcache.flush()
-        return True, out.strip()
-
-
 def signal_handler(signal, frame):
-    logging.getLogger('system').info("Shutting down")
+    logging.getLogger('system').debug("Killing runners...")
     kill_runners()
+    logging.getLogger('system').debug("stopping devices...")
+    devicemanager.shutdown()
+    logging.getLogger('system').debug("stopping worlds...")
     for uid in worlds:
         worlds[uid].signal_handler(signal, frame)
+    logging.getLogger('system').info("Shutting down...")
     sys.exit(0)
 
 
@@ -181,14 +98,11 @@ class MicropsiRunner(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
-        if runtime_config['micropsi2'].get('profile_runner'):
-            import cProfile
-            self.profiler = cProfile.Profile()
-        else:
-            self.profiler = None
         self.daemon = True
         self.paused = True
         self.state = threading.Condition()
+        self.nodenet_profiler = None
+        self.world_profiler = None
         self.start()
 
     def run(self):
@@ -206,8 +120,12 @@ class MicropsiRunner(threading.Thread):
             log = False
             uids = [uid for uid in nodenets if nodenets[uid].is_active]
             nodenets_to_save = []
-            if self.profiler:
-                self.profiler.enable()
+            profile_net = runner_config['profile_nodenet']
+            profile_world = runner_config['profile_world']
+            if profile_net:
+                if self.nodenet_profiler is None:
+                    self.nodenet_profiler = cProfile.Profile()
+                self.nodenet_profiler.enable()
             for uid in uids:
                 if uid in nodenets:
                     nodenet = nodenets[uid]
@@ -233,8 +151,8 @@ class MicropsiRunner(threading.Thread):
                                     nodenets_to_save.append((nodenet.uid, val))
                                     break
 
-            if self.profiler:
-                self.profiler.disable()
+            if profile_net:
+                self.nodenet_profiler.disable()
 
             for uid, interval in nodenets_to_save:
                 if uid in nodenets:
@@ -248,8 +166,10 @@ class MicropsiRunner(threading.Thread):
                     except Exception as err:
                         logging.getLogger("system").error("Auto-save failure for nodenet %s: %s: %s" % (uid, type(err).__name__, str(err)))
 
-            if self.profiler:
-                self.profiler.enable()
+            if profile_world:
+                if self.world_profiler is None:
+                    self.world_profiler = cProfile.Profile()
+                self.world_profiler.enable()
             for wuid, world in worlds.items():
                 if world.is_active:
                     uids.append(wuid)
@@ -272,8 +192,8 @@ class MicropsiRunner(threading.Thread):
                     logging.getLogger("system").warning("Overlong step %d took %.4f secs, allowed are %.4f secs!" %
                                                     (self.total_steps, calc_time.total_seconds(), step.total_seconds()))
 
-            if self.profiler:
-                self.profiler.disable()
+            if profile_world:
+                self.world_profiler.disable()
 
             if log:
                 step_time = datetime.now() - start
@@ -292,15 +212,20 @@ class MicropsiRunner(threading.Thread):
 
                 if self.total_steps % self.granularity == 0:
                     average_calc_duration = self.sum_of_calc_durations / self.number_of_samples
-                    if self.profiler:
-                        import pstats
-                        import io
+                    if profile_net:
                         s = io.StringIO()
                         sortby = 'cumtime'
-                        ps = pstats.Stats(self.profiler, stream=s).sort_stats(sortby)
-                        ps.print_stats('micropsi_')
-                        logging.getLogger("system").debug(s.getvalue())
-
+                        ps = pstats.Stats(self.nodenet_profiler, stream=s).sort_stats(sortby)
+                        ps.print_stats(os.path.basename(RESOURCE_PATH))
+                        logging.getLogger("system").info("Nodenet profiler: %s" % s.getvalue())
+                        self.nodenet_profiler = None
+                    if profile_world:
+                        s = io.StringIO()
+                        sortby = 'cumtime'
+                        ps = pstats.Stats(self.world_profiler, stream=s).sort_stats(sortby)
+                        ps.print_stats(os.path.basename(WORLD_PATH))
+                        logging.getLogger("system").info("World profiler: %s" % s.getvalue())
+                        self.world_profiler = None
                     logging.getLogger("system").debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_calc_duration))
                     self.sum_of_calc_durations = 0
                     self.sum_of_step_durations = 0
@@ -345,9 +270,12 @@ def kill_runners(signal=None, frame=None):
 def set_logging_levels(logging_levels):
     for key in logging_levels:
         if key == 'agent':
-            runtime_config['logging']['level_agent'] = logging_levels[key]
+            runner_config['log_level_agent'] = logging_levels[key].upper()
+            for uid in nodenets:
+                logger.set_logging_level("agent.%s" % uid, logging_levels[key].upper())
         else:
-            logger.set_logging_level(key, logging_levels[key])
+            runner_config['log_level_%s' % key] = logging_levels[key].upper()
+            logger.set_logging_level(key, logging_levels[key].upper())
     return True
 
 
@@ -363,16 +291,17 @@ def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor
     """ Returns log-messages and monitor-data for the given nodenet."""
     data = get_monitor_data(nodenet_uid, 0, monitor_from, monitor_count)
     data['logs'] = get_logger_messages(logger, after)
+    res, status = get_status_tree(nodenet_uid)
+    data['status'] = status
     return data
 
 
 def get_logging_levels(nodenet_uid=None):
-    levels = {}
-    for key in logging.Logger.manager.loggerDict:
-        if key.startswith('agent') or key in ['world', 'system']:
-            levels[key] = logging.getLevelName(logging.getLogger(key).getEffectiveLevel())
-    if 'agent' not in levels:
-        levels['agent'] = runtime_config['logging']['level_agent']
+    levels = {
+        'system': logging.getLevelName(logging.getLogger('system').getEffectiveLevel()),
+        'world': logging.getLevelName(logging.getLogger('world').getEffectiveLevel()),
+        'agent': runner_config['log_level_agent']
+    }
     return levels
 
 
@@ -460,7 +389,7 @@ def load_nodenet(nodenet_uid):
 
                 engine = data.get('engine') or 'dict_engine'
 
-                logger.register_logger("agent.%s" % nodenet_uid, runtime_config['logging']['level_agent'])
+                logger.register_logger("agent.%s" % nodenet_uid, runner_config['log_level_agent'])
 
                 params = {
                     'persistency_path': os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, data.uid),
@@ -490,8 +419,6 @@ def load_nodenet(nodenet_uid):
                     return False, "Agent %s requires unknown engine %s" % (nodenet_uid, engine)
 
                 nodenets[nodenet_uid].load()
-
-                netapi_consoles[nodenet_uid] = NetapiShell(nodenets[nodenet_uid].netapi)
 
                 if "settings" in data:
                     nodenets[nodenet_uid].settings = data["settings"].copy()
@@ -607,8 +534,6 @@ def unload_nodenet(nodenet_uid):
     """
     if nodenet_uid not in nodenets:
         return False
-    if nodenet_uid in netapi_consoles:
-        del netapi_consoles[nodenet_uid]
     stop_nodenetrunner(nodenet_uid)
     nodenet = nodenets[nodenet_uid]
     if nodenet.world:
@@ -714,17 +639,37 @@ def start_nodenetrunner(nodenet_uid):
     return True
 
 
-def set_runner_properties(timestep, infguard=False):
+def set_runner_properties(timestep, infguard=False, profile_nodenet=False, profile_world=False, log_levels={}, log_file=None):
     """Sets the speed of the nodenet calculation in ms.
 
     Argument:
         timestep: sets the calculation speed.
     """
+    if log_file:
+        if not tools.is_file_writeable(log_file):
+            return False, "Can not write to specified log file."
+        logger.set_logfile(log_file)
+    runner_config['log_file'] = log_file
+    if log_levels:
+        set_logging_levels(log_levels)
     runner_config['runner_timestep'] = timestep
     runner_config['runner_infguard'] = bool(infguard)
+    runner_config['profile_nodenet'] = bool(profile_nodenet)
+    runner_config['profile_world'] = bool(profile_world)
     runner['timestep'] = timestep
-    runner['infguard'] = bool(infguard)
-    return True
+    return True, ""
+
+
+def get_runner_properties():
+    """Returns the speed that has been configured for the nodenet runner (in ms)."""
+    return {
+        'timestep': runner_config['runner_timestep'],
+        'infguard': runner_config['runner_infguard'],
+        'profile_nodenet': runner_config['profile_nodenet'],
+        'profile_world': runner_config['profile_world'],
+        'log_levels': get_logging_levels(),
+        'log_file': logger.log_to_file
+    }
 
 
 def set_runner_condition(nodenet_uid, monitor=None, steps=None):
@@ -748,14 +693,6 @@ def set_runner_condition(nodenet_uid, monitor=None, steps=None):
 def remove_runner_condition(nodenet_uid):
     get_nodenet(nodenet_uid).unset_runner_condition()
     return True
-
-
-def get_runner_properties():
-    """Returns the speed that has been configured for the nodenet runner (in ms)."""
-    return {
-        'timestep': runner_config['runner_timestep'],
-        'infguard': runner_config['runner_infguard']
-    }
 
 
 def get_is_nodenet_running(nodenet_uid):
@@ -788,8 +725,7 @@ def step_nodenet(nodenet_uid):
     if nodenet.is_active:
         nodenet.is_active = False
 
-    if runtime_config['micropsi2'].get('profile_runner'):
-        import cProfile
+    if runtime_config['micropsi2'].get('profile_nodenet'):
         profiler = cProfile.Profile()
         profiler.enable()
 
@@ -802,10 +738,8 @@ def step_nodenet(nodenet_uid):
 
     nodenet.timed_step(runner_config.data)
 
-    if runtime_config['micropsi2'].get('profile_runner'):
+    if runtime_config['micropsi2'].get('profile_nodenet'):
         profiler.disable()
-        import pstats
-        import io
         s = io.StringIO()
         sortby = 'cumtime'
         ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
@@ -820,17 +754,14 @@ def step_nodenet(nodenet_uid):
 
 def single_step_nodenet_only(nodenet_uid):
     nodenet = get_nodenet(nodenet_uid)
-    if runtime_config['micropsi2'].get('profile_runner'):
-        import cProfile
+    if runtime_config['micropsi2'].get('profile_nodenet'):
         profiler = cProfile.Profile()
         profiler.enable()
 
     nodenet.timed_step(runner_config.data)
 
-    if runtime_config['micropsi2'].get('profile_runner'):
+    if runtime_config['micropsi2'].get('profile_nodenet'):
         profiler.disable()
-        import pstats
-        import io
         s = io.StringIO()
         sortby = 'cumtime'
         ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
@@ -1151,6 +1082,15 @@ def get_behavior_state(token):
 def abort_behavior(token):
     """ Abort behavior identified with the token """
     return True, stop_nodenetrunner(behavior_token_map[token])
+
+
+def get_status_tree(nodenet_uid, level="debug"):
+    """ Return progress tree as an array of dicts """
+    net = get_nodenet(nodenet_uid)
+    if net is not None:
+        return True, net.statuslogger.get_status_tree(level)
+    else:
+        return False, "Unknown nodenet"
 
 
 def __pythonify(name):
@@ -1512,18 +1452,15 @@ def run_recipe(nodenet_uid, name, parameters):
             params[key] = parameters[key]
     if name in custom_recipes:
         func = custom_recipes[name]['function']
-        if runtime_config['micropsi2'].get('profile_runner'):
-            import cProfile
+        if runtime_config['micropsi2'].get('profile_nodenet'):
             profiler = cProfile.Profile()
             profiler.enable()
         result = {'reload': True}
         ret = func(netapi, **params)
         if ret:
             result.update(ret)
-        if runtime_config['micropsi2'].get('profile_runner'):
+        if runtime_config['micropsi2'].get('profile_nodenet'):
             profiler.disable()
-            import pstats
-            import io
             s = io.StringIO()
             sortby = 'cumtime'
             ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
@@ -1561,88 +1498,6 @@ def get_agent_dashboard(nodenet_uid):
         data = net.get_dashboard()
         data['face'] = calc_emoexpression_parameters(net)
         return data
-
-
-def run_netapi_command(nodenet_uid, command):
-    nodenet = get_nodenet(nodenet_uid)
-    shell = netapi_consoles[nodenet_uid]
-    with nodenet.netlock:
-        success, msg = shell.push("last_result = %s" % command)
-        if success:
-            return shell.push("print(last_result)")
-        else:
-            return success, msg
-
-
-def get_netapi_autocomplete_data(nodenet_uid, name=None):
-    import inspect
-    nodenet = get_nodenet(nodenet_uid)
-    if nodenet is None or nodenet_uid not in netapi_consoles:
-        return {}
-    nodetypes = get_available_node_types(nodenet_uid)
-
-    shell = netapi_consoles[nodenet_uid]
-    res, locs = shell.push("print([k for k in locals() if not k.startswith('_')])")
-
-    def parsemembers(members):
-        data = {}
-        for name, thing in members:
-            if name.startswith('_'):
-                continue
-            if inspect.isroutine(thing):
-                sig = inspect.signature(thing)
-                params = []
-                for key in sig.parameters:
-                    if key == 'self':
-                        continue
-                    if sig.parameters[key].default != inspect.Signature.empty:
-                        params.append({
-                            'name': key,
-                            'default': sig.parameters[key].default
-                        })
-                    else:
-                        params.append({'name': key})
-                data[name] = params
-            else:
-                data[name] = None
-        return data
-
-    data = {
-        'types': {},
-        'autocomplete_options': {}
-    }
-    if not locs:
-        return data
-    locs = eval(locs)
-    for n in locs:
-        if name is None or n == name:
-            res, typedescript = shell.push("print(%s)" % n)
-            if 'netapi' in typedescript:
-                data['types'][n] = 'netapi'
-            else:
-                # get type of thing.
-                match = re.search('^<([A-Za-z]+) ', typedescript)
-                if match:
-                    typename = match.group(1)
-                    if typename in ['Nodespace', 'Node', 'Gate', 'Slot']:
-                        data['types'][n] = typename
-                    elif typename in nodetypes['nodetypes'] or typename in nodetypes['native_modules']:
-                        data['types'][n] = 'Node'
-
-    for t in set(data['types'].values()):
-        if t == 'netapi':
-            netapi = nodenet.netapi
-            methods = inspect.getmembers(netapi, inspect.ismethod)
-            data['autocomplete_options']['netapi'] = parsemembers(methods)
-        elif t == 'Nodespace':
-            from micropsi_core.nodenet.nodespace import Nodespace
-            data['autocomplete_options']['Nodespace'] = parsemembers(inspect.getmembers(Nodespace))
-        elif t in ['Node', 'Gate', 'Slot']:
-            from micropsi_core.nodenet import node
-            cls = getattr(node, t)
-            data['autocomplete_options'][t] = parsemembers(inspect.getmembers(cls))
-
-    return data
 
 
 def flow(nodenet_uid, source_uid, source_output, target_uid, target_input):
@@ -1754,6 +1609,9 @@ def load_user_files(path, resourcetype, errors=[]):
                         err = parse_recipe_or_operations_file(abspath, resourcetype)
                     elif resourcetype == 'nodetypes':
                         err = parse_native_module_file(abspath)
+                elif f.endswith(".engine"):
+                    if resourcetype == 'nodetypes':
+                        err = parse_tensorrt_engine_as_native_module(abspath)
                 if err:
                     errors.append(err)
     return errors
@@ -1862,6 +1720,39 @@ def parse_native_module_file(path):
     except Exception as e:
         post_mortem()
         return "%s when importing nodetype file %s: %s" % (e.__class__.__name__, relpath, str(e))
+
+
+def parse_tensorrt_engine_as_native_module(path):
+    global native_modules
+    base_path = os.path.join(RESOURCE_PATH, 'nodetypes')
+    relpath = os.path.relpath(path, start=base_path)
+    try:
+        import tensorrt as trt
+        trt_logger = trt.infer.ConsoleLogger(trt.infer.LogSeverity.ERROR)
+        trt_engine = trt.utils.load_engine(trt_logger, path)
+        inputs = []
+        outputs = []
+        for n in range(trt_engine.get_nb_bindings()):
+            if trt_engine.binding_is_input(n):
+                inputs.append(trt_engine.get_binding_name(n))
+            else:
+                outputs.append(trt_engine.get_binding_name(n))
+        trt_engine.destroy()
+        moduledef = dict()
+        moduledef['inputs'] = inputs
+        moduledef['outputs'] = outputs
+        moduledef['path'] = path
+        moduledef['is_tensorrt_engine'] = True
+        moduledef['category'] = os.path.dirname(relpath).replace(os.sep, '/')
+        logging.getLogger('system').debug('Found TensorRT engine: %s, inputs: %s, outputs: %s' % (relpath, inputs, outputs))
+        _, moduledef['name'] = os.path.split(path)
+        if moduledef['name'] in native_modules:
+            logging.getLogger("system").warning("Native module names must be unique. %s is not." % moduledef['name'])
+        moduledef['flow_module'] = True
+        native_modules[moduledef['name']] = moduledef
+    except Exception as e:
+        post_mortem()
+        return "%s when importing TensorRT engine file %s: %s" % (e.__class__.__name__, relpath, str(e))
 
 
 def nodedef_sanity_check(nodetype_definition):
@@ -2087,6 +1978,18 @@ def initialize(config=None):
     sys.path.append(WORLD_PATH)
 
     runner_config = ConfigurationManager(config['paths']['server_settings_path'])
+    # migration code.
+    if 'log_level_system' not in runner_config:
+        if 'logging' in config:
+            runner_config['log_level_system'] = config['logging']['level_system']
+            runner_config['log_level_agent'] = config['logging']['level_agent']
+            runner_config['log_level_world'] = config['logging']['level_system']
+            runner_config['log_file'] = config['logging'].get('logfile', '')
+        else:
+            runner_config['log_level_system'] = 'WARNING'
+            runner_config['log_level_agent'] = 'WARNING'
+            runner_config['log_level_world'] = 'WARNING'
+            runner_config['log_file'] = ''
 
     # create autosave-dir if not exists:
     auto_save_intervals = config['micropsi2'].get('auto_save_intervals')
@@ -2095,11 +1998,18 @@ def initialize(config=None):
         AUTOSAVE_PATH = os.path.join(PERSISTENCY_PATH, "nodenets", "__autosave__")
         os.makedirs(AUTOSAVE_PATH, exist_ok=True)
 
+    logger_error = False
     if logger is None:
+        if runner_config.get('log_file'):
+            if not tools.is_file_writeable(runner_config['log_file']):
+                runner_config['log_file'] = ''
+                logger_error = "Attention: Can not write to specified log file. Not logging to file."
         logger = MicropsiLogger({
-            'system': config['logging']['level_system'],
-            'world': config['logging']['level_world']
-        }, config['logging'].get('logfile'))
+            'system': runner_config['log_level_system'],
+            'world': runner_config['log_level_world']
+        }, runner_config.get('log_file'))
+    if logger_error:
+        logging.getLogger("system").error(logger_error)
 
     result, errors = reload_code()
     load_definitions()
@@ -2112,8 +2022,17 @@ def initialize(config=None):
         runner_config['runner_timestep'] = 10
     if 'runner_infguard' not in runner_config:
         runner_config['runner_infguard'] = True
+    if 'profile_nodenet' not in runner_config:
+        runner_config['profile_nodenet'] = False
+    if 'profile_world' not in runner_config:
+        runner_config['profile_world'] = False
 
-    set_runner_properties(runner_config['runner_timestep'], runner_config['runner_infguard'])
+    set_runner_properties(
+        runner_config['runner_timestep'],
+        runner_config['runner_infguard'],
+        runner_config['profile_nodenet'],
+        runner_config['profile_world']
+    )
 
     runner['running'] = True
     if runner.get('runner') is None:

@@ -51,6 +51,11 @@ class NumpyNodenet(FlowEngine, DictNodenet):
                 del nodenet_data['nodes'][uid]
                 flow_data[uid] = data
 
+        nodespaces_to_merge = set(nodenet_data.get('nodespaces', {}).keys())
+        for nodespace in nodespaces_to_merge:
+            self.initialize_nodespace(nodespace, nodenet_data['nodespaces'])
+        del nodenet_data['nodespaces']
+
         for uid in flow_data:
             if not keep_uids:
                 newuid = tools.generate_uid()

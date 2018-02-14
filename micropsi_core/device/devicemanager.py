@@ -81,6 +81,7 @@ def remove_device(device_uid):
     if device_uid in known_devices:
         del known_devices[device_uid]
         if device_uid in online_devices:
+            online_devices[device_uid].deinit()
             del online_devices[device_uid]
         with open(device_json_path, 'w', encoding='utf-8') as devices_json:
             devices_json.write(json.dumps(get_known_devices()))
@@ -117,10 +118,14 @@ def reload_devices(json_path):
     known_devices = data.copy()
     for k in data:
         if data[k]['type'] not in device_types:
-            del known_devices[k]
             logging.getLogger('system').warning("Device type %s not found!" % data[k]['type'])
             continue
         try:
             online_devices[k] = device_types[data[k]['type']](data[k]['config'])
         except Exception as e:
             logging.getLogger('system').error("Error when loading device %s with uid %s: %s" % (data[k]['type'], k, e))
+
+
+def shutdown():
+    for d in list(online_devices.keys()):
+        online_devices[d].deinit()

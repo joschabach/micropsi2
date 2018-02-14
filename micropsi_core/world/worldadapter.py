@@ -52,8 +52,8 @@ class WorldAdapterMixin(object):
         """ Called on reset """
         pass  # pragma: no cover
 
-    def update_datasources_and_targets(self):
-        pass  # pragma: no cover
+    def update_data_sources_and_targets(self):
+        super().update_data_sources_and_targets()
 
     def write_to_world(self):
         super().write_to_world()
@@ -259,6 +259,9 @@ try:
                             device_data = devicemanager.online_devices[k].get_config()
                         else:
                             device_data = devicemanager.known_devices[k]
+                            if device_data['type'] not in devicemanager.device_types:
+                                self.logger.error("Device %s (uid: %s) has unknown type %s. not adding datasource or datatarget" % (data['device_map'][k], k, device_data['type']))
+                                continue
                         if device_data.get('nature') == InputDevice.__name__:
                             self.add_flow_datasource(self.device_map[k], device_data['data_size'])
                         elif device_data.get('nature') == OutputDevice.__name__:
@@ -382,19 +385,22 @@ try:
         def set_flow_datasource(self, name, values):
             """Set the values of the given flow_datasource """
             assert isinstance(values, np.ndarray), "must provide numpy array"
-            assert self.flow_datasources[name].shape == values.shape
+            shape = self.flow_datasources[name].shape
+            assert shape == values.shape, "Datasource %s expects shape %s, got %s" % (name, shape, values.shape)
             self.flow_datasources[name] = values
 
         def add_to_flow_datatarget(self, name, values):
             """Add the given values to the given flow_datatarget """
             assert isinstance(values, np.ndarray), "must provide numpy array"
-            assert self.flow_datatargets[name].shape == values.shape
+            shape = self.flow_datatargets[name].shape
+            assert shape == values.shape, "Datatarget %s expects shape %s, got %s" % (name, shape, values.shape)
             self.flow_datatargets[name] += values
 
         def set_flow_datatarget_feedback(self, name, values):
             """Set the values of the given flow_datatarget_feedback """
             assert isinstance(values, np.ndarray), "must provide numpy array"
-            assert self.flow_datatarget_feedbacks[name].shape == values.shape
+            shape = self.flow_datatarget_feedbacks[name].shape
+            assert shape == values.shape, "DatatargetFeedback %s expects shape %s, got %s" % (name, shape, values.shape)
             self.flow_datatarget_feedbacks[name] = values
 
         def set_datasource_values(self, values):
@@ -427,8 +433,8 @@ try:
             for k in self.device_map:
                 if k in devicemanager.online_devices:
                     if issubclass(devicemanager.online_devices[k].__class__, InputDevice):
-                        data = devicemanager.online_devices[k].read_data()
-                        assert isinstance(data, np.ndarray), "device %s must provide numpy array" % self.device_map[k]
+                        data = devicemanager.online_devices[k].get_data()
+                        assert isinstance(data, np.ndarray), "device %s must provide numpy array, not %s" % (self.device_map[k], type(data))
                         self.set_flow_datasource(self.device_map[k], data)
                 elif devicemanager.known_devices[k].get('nature') == "InputDevice":
                     self.logger.error("Device %s is not connected. Using zeros." % self.device_map[k])
@@ -438,7 +444,7 @@ try:
                 if k in devicemanager.online_devices:
                     if issubclass(devicemanager.online_devices[k].__class__, OutputDevice):
                         data = self.get_flow_datatarget(self.device_map[k])
-                        devicemanager.online_devices[k].write_data(data)
+                        devicemanager.online_devices[k].set_data(data)
                 elif devicemanager.known_devices[k].get('nature') == "OutputDevice":
                     self.logger.error("Device %s is not connected." % self.device_map[k])
 

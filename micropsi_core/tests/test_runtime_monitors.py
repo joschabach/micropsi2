@@ -265,7 +265,7 @@ def test_adhoc_monitor(runtime, test_nodenet):
 
     def parameterfunc(foo):
         return var * foo
-    netapi.add_adhoc_monitor(doublefunc, 'test', {'foo': 2})
+    netapi.add_adhoc_monitor(parameterfunc, 'test', {'foo': 2})
     runtime.step_nodenet(test_nodenet)
     items = list(runtime.get_monitor_data(test_nodenet)['monitors'].items())
     assert len(items) == 1

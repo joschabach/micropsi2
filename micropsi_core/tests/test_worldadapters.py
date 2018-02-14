@@ -172,8 +172,8 @@ def test_worldadapter_mixin(default_world):
             super().__init__(world, **data)
             self.add_datasource("some_setting")
 
-        def update_datasources_and_targets(self):
-            super().update_datasources_and_targets()
+        def update_data_sources_and_targets(self):
+            super().update_data_sources_and_targets()
             self.set_datasource_value("some_setting", self.some_setting)
 
     class TestArrayWA(TestMixin, wa.ArrayWorldAdapter):
@@ -189,7 +189,7 @@ def test_worldadapter_mixin(default_world):
             self.add_datasource("blubb")
 
         def update_data_sources_and_targets(self):
-            super().update_datasources_and_targets()
+            super().update_data_sources_and_targets()
             self.set_datasource_value("blubb", 21)
 
     world = runtime.worlds[default_world]

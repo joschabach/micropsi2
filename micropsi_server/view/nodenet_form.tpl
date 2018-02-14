@@ -176,20 +176,22 @@
                 <div class="control-group worldadapter-device-config" style="display:none;">
                     <label class="control-label">Devices</label>
                     % for uid in devices:
-                        <div class="controls">
-                            <label class="inline" style="width: 150px">
-                                <input type="checkbox" name="device-map-{{uid}}" value="{{uid}}"
+                        %if devices[uid]['online']:
+                            <div class="controls">
+                                <label class="inline" style="width: 150px">
+                                    <input type="checkbox" name="device-map-{{uid}}" value="{{uid}}"
+                                    % if nodenet and uid in nodenet['device_map']:
+                                        checked="checked"
+                                    % end
+                                    /> {{devices[uid]['config']['name']}}
+                                </label>
+                                <input type="text" readonly="readonly" id="device-name-{{uid}}" name="device-name-{{uid}}" data-prefix="{{devices[uid]['prefix']}}" class="input-small device-name-input"
                                 % if nodenet and uid in nodenet['device_map']:
-                                    checked="checked"
-                                % end
-                                /> {{devices[uid]['config']['name']}}
-                            </label>
-                            <input type="text" readonly="readonly" id="device-name-{{uid}}" name="device-name-{{uid}}" data-prefix="{{devices[uid]['prefix']}}" class="input-small device-name-input"
-                            % if nodenet and uid in nodenet['device_map']:
-                                value="{{nodenet['device_map'][uid]}}"
-                            %end
-                            />
-                        </div>
+                                    value="{{nodenet['device_map'][uid]}}"
+                                %end
+                                />
+                            </div>
+                        %end
                     % end
                 </div>
             </fieldset>

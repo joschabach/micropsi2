@@ -1,4 +1,7 @@
 from abc import ABCMeta, abstractmethod
+from threading import Thread, current_thread
+import logging
+import time
 
 
 class Device(metaclass=ABCMeta):
@@ -8,6 +11,7 @@ class Device(metaclass=ABCMeta):
     that further specify the direction of the data flow
     """
     def __init__(self, config):
+        self.logger = logging.getLogger("world")
         for item in self.__class__.get_options():
             if item['name'] not in config:
                 config[item['name']] = item.get('default')
@@ -71,6 +75,13 @@ class InputDevice(Device):
     def __init__(self, config):
         super().__init__(config)
 
+    def get_data(self):
+        """
+        Aks the implementation to read data from the device and returns it to
+        the world adapter. Do not override, implement read_data().
+        """
+        return self.read_data()
+
     @abstractmethod
     def read_data(self):
         """
@@ -84,6 +95,13 @@ class OutputDevice(Device):
     def __init__(self, config):
         super().__init__(config)
 
+    def set_data(self, data):
+        """
+        Passes data on to the device from the world adapter.
+        Do not override, implement write_data(data).
+        """
+        self.write_data(data)
+
     @abstractmethod
     def write_data(self, data):
         """
@@ -91,3 +109,45 @@ class OutputDevice(Device):
         with the data sent to the device
         """
         pass  # pragma: no cover
+
+
+class InputDeviceAsync(InputDevice):
+    def __init__(self, config):
+        super().__init__(config)
+        self.initialized = False
+        self.running = False
+        self.thread = Thread(target=self.read_data_continuously)
+        self.thread.daemon = True
+        self.data = None
+
+    def read_data_continuously(self):
+        try:
+            self.running = True
+            while self.running:
+                self.data = self.read_data()
+                time.sleep(0.05)
+        except Exception as e:
+            self.logger.error("Async input device thread crashed: %s", e)
+
+    @abstractmethod
+    def read_data(self):
+        """
+        Implementation should return the array (of size get_data_size())
+        with the data from the device
+        """
+        pass  # pragma: no cover
+
+    def get_data(self):
+        if not self.initialized:
+            self.initialized = True
+            self.thread.start()
+            attempt_counter = 0
+            while self.data is None and attempt_counter < 1000:
+                time.sleep(0.05)
+                attempt_counter += 1
+        return self.data
+
+    def deinit(self):
+        if self.running:
+            self.running = False
+            self.thread.join()

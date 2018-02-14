@@ -26,6 +26,10 @@ class NetAPI(object):
         """ The nodenet logger """
         return self._nodenet.logger
 
+    @property
+    def statuslogger(self):
+        return self._nodenet.statuslogger
+
     def __init__(self, nodenet):
         self._nodenet = nodenet
 

@@ -867,3 +867,32 @@ def test_flow_overlapping_graphs(runtime, test_nodenet, resourcepath):
     oldval = worldadapter.flow_datasources['vision']
     nodenet.step()
     assert np.all(worldadapter.flow_datatargets['motor'] == oldval * 6)
+
+
+@pytest.mark.engine("numpy_engine")
+def test_flow_nodes_in_nodespaces(runtime, test_nodenet, resourcepath):
+    nodenet, netapi, worldadapter = prepare(runtime, test_nodenet, resourcepath)
+    with netapi.flowbuilder:
+        neuron = netapi.create_node('Neuron', None, "Neuron1")
+        neuron.activation = 1
+        netapi.link(neuron, 'gen', neuron, 'gen')
+        ns = netapi.create_nodespace(None, name="subnodespace")
+        double1 = netapi.create_node('Double', None, "Double1")
+        double2 = netapi.create_node('Double', ns.uid, "Double2")
+
+        netapi.link(neuron, 'gen', double1, 'sub')
+        netapi.link(neuron, 'gen', double2, 'sub')
+        netapi.flow("worldadapter", "vision", double1, "inputs")
+        netapi.flow(double1, "outputs", double2, "inputs")
+        netapi.flow(double2, "outputs", "worldadapter", "motor")
+    oldval = worldadapter.flow_datasources['vision']
+    nodenet.step()
+    assert np.all(worldadapter.flow_datatargets['motor'] == oldval * 4)
+    runtime.save_nodenet(test_nodenet)
+    runtime.unload_nodenet(test_nodenet)
+    nodenet = runtime.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    assert netapi.get_node(double2.uid).parent_nodespace == ns.uid
+    oldval = nodenet.worldadapter_instance.flow_datasources['vision']
+    nodenet.step()
+    assert np.all(nodenet.worldadapter_instance.flow_datatargets['motor'] == oldval * 4)

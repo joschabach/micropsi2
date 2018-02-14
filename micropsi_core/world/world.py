@@ -180,7 +180,7 @@ class World(object):
         for uid in self.agents:
             with self.agents[uid].datasource_lock:
                 self.agents[uid].update(step_inteval_ms)
-        for uid in self.agents.copy():
+        for uid in list(self.agents.keys()):
             if not self.agents[uid].is_alive():
                 # remove from living agents for the moment
                 # TODO: unregister?
@@ -253,6 +253,8 @@ class World(object):
                 return False, "Nodenet agent already exists in this world, but has the wrong type"
             elif config == self.agents[nodenet_uid].config and device_map == self.agents[nodenet_uid].device_map:
                     return True, self.agents[nodenet_uid]
+            else:
+                self.agents[nodenet_uid].shutdown()  # shutdown the old instance before replacing
         return self.spawn_agent(worldadapter, nodenet_uid, nodenet_name=nodenet_name, config=config, device_map=device_map)
 
     def unregister_nodenet(self, nodenet_uid):
@@ -332,7 +334,8 @@ class World(object):
 
     def signal_handler(self, *args):
         """ stuff to do on sigint, sigabrt, etc"""
-        pass  # pragma: no cover
+        for uid in self.agents:
+            self.agents[uid].shutdown()
 
     def __del__(self):
         """ Empty destructor """

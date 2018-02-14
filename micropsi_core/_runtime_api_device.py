@@ -8,9 +8,16 @@ def get_device_types():
 
 
 def get_devices():
-    """ Return a dict of online devices
-    with device uids as keys and config dict as value """
-    return devicemanager.get_online_devices()
+    """ Return a dict of devices with device uids
+    as keys and config dict as a value """
+    online_devs = devicemanager.get_online_devices()
+    known_devs = devicemanager.get_known_devices()
+    for d in known_devs:
+        if d in online_devs:
+            known_devs[d]['online'] = True
+        else:
+            known_devs[d]['online'] = False
+    return known_devs
 
 
 def add_device(device_type, config):
@@ -30,4 +37,4 @@ def set_device_properties(device_uid, config):
         devicemanager.remove_device(device_uid)
         devicemanager.add_device(devtype, config, device_uid)
         return True
-    return False
+    return False, "This device is not online and can not be configured"

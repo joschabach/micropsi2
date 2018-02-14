@@ -46,6 +46,16 @@ def interactive_pdb():
     pdb.interaction(frame=None, traceback=last_tb)
 
 
+def is_file_writeable(path):
+    """
+    Returns true if the file specified is write- or createable
+    """
+    if os.path.isfile(path):
+        return os.access(path, os.W_OK)
+    else:
+        return os.access(os.path.dirname(path), os.W_OK)
+
+
 def pid_exists(pid):
     """Check whether pid exists in the current process table.
     UNIX only. obtained from http://stackoverflow.com/a/6940314/5952582
@@ -321,3 +331,11 @@ def itersubclasses(cls, folder=None, _seen=None):
                 yield sub
             for sub in itersubclasses(sub, folder=folder, _seen=_seen):
                 yield sub
+
+
+def parse_bool(val):
+    from distutils.util import strtobool
+    if type(val) == bool:
+        return val
+    else:
+        return strtobool(str(val))

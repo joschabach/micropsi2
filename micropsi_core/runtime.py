@@ -1724,10 +1724,10 @@ def parse_native_module_file(path):
 
 def parse_tensorrt_engine_as_native_module(path):
     global native_modules
+    base_path = os.path.join(RESOURCE_PATH, 'nodetypes')
+    relpath = os.path.relpath(path, start=base_path)
     try:
         import tensorrt as trt
-        base_path = os.path.join(RESOURCE_PATH, 'nodetypes')
-        relpath = os.path.relpath(path, start=base_path)
         trt_logger = trt.infer.ConsoleLogger(trt.infer.LogSeverity.ERROR)
         trt_engine = trt.utils.load_engine(trt_logger, path)
         inputs = []
@@ -1744,7 +1744,7 @@ def parse_tensorrt_engine_as_native_module(path):
         moduledef['path'] = path
         moduledef['is_tensorrt_engine'] = True
         moduledef['category'] = os.path.dirname(relpath).replace(os.sep, '/')
-        logging.getLogger('system').debug('Found TensorRT engine: %s, inputs: %s, outputs: %s'%(relpath,inputs,outputs))
+        logging.getLogger('system').debug('Found TensorRT engine: %s, inputs: %s, outputs: %s' % (relpath, inputs, outputs))
         _, moduledef['name'] = os.path.split(path)
         if moduledef['name'] in native_modules:
             logging.getLogger("system").warning("Native module names must be unique. %s is not." % moduledef['name'])

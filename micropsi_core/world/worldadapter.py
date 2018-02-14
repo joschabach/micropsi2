@@ -53,7 +53,7 @@ class WorldAdapterMixin(object):
         pass  # pragma: no cover
 
     def update_data_sources_and_targets(self):
-        pass  # pragma: no cover
+        super().update_data_sources_and_targets()
 
     def write_to_world(self):
         super().write_to_world()

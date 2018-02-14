@@ -1,5 +1,5 @@
 
-0.16-alpha14 (unrelease)
+0.16-alpha14 (2018-02-14)
 ==========
 * Add status reporting API
 * Migrate logging and profiling settings from config.ini to UI

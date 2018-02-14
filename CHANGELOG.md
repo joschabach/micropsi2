@@ -3,6 +3,8 @@
 ==========
 * Add status reporting API
 * Migrate logging and profiling settings from config.ini to UI
+* Add support for tensorrt
+* Add IPython Console for MESH
 
 
 0.15-alpha13 (2017-12-20)

@@ -15,4 +15,4 @@ pytest-cov==1.8.1
 scipy==0.17.0
 six==1.8.0
 -e git+https://github.com/micropsi-industries/spock.git#egg=spock-dev
-waitress==0.8.9
+waitress==1.4.0

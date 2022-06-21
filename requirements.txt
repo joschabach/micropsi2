@@ -7,7 +7,7 @@ cov-core==1.14.0
 coverage==3.7.1
 matplotlib==1.4.3
 mock==1.0.1
-numpy==1.9.2
+numpy==1.22.0
 py==1.4.31
 pycrypto==2.6.1
 pytest==2.8.7
